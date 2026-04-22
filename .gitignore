@@ -1,0 +1,92 @@
+# ==========================
+# OS Files
+# ==========================
+.DS_Store
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# ==========================
+# Editor / IDE
+# ==========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ==========================
+# Claude Code (local permissions — per-machine)
+# ==========================
+.claude/settings.local.json
+
+# ==========================
+# Word / Excel / PowerPoint Temp & Lock Files
+# ==========================
+~$*.docx
+~$*.doc
+~$*.xlsx
+~$*.xls
+~$*.pptx
+~$*.ppt
+.~lock.*#
+
+# ==========================
+# FUSE Hidden Files
+# ==========================
+.fuse_hidden*
+
+# ==========================
+# Node.js / JavaScript
+# ==========================
+node_modules/
+.next/
+dist/
+build/
+
+# ==========================
+# Temp Files
+# ==========================
+*.tmp
+*.bak
+*.orig
+*.log
+
+# ==========================
+# Rendered Diagrams (PlantUML → PNG)
+# ==========================
+_rendered/
+
+# ==========================
+# Confidential / Private Files
+# ==========================
+P13-RR-EWALLET/Others/Figma Flow/
+
+# ==========================
+# Pricing / Proposal / Sensitive Docs
+# (ห้าม push เอกสารราคา, ใบเสนอราคา, vendor pricing)
+# ==========================
+**/Proposal/
+**/Pricing*/
+**/vendor/
+**/*Pricing*.xlsx
+**/*Pricing*.md
+**/*Proposal*.pdf
+**/*Proposal*.xlsx
+**/*Quotation*.xlsx
+**/*Quotation*.pdf
+
+# ==========================
+# Playwright MCP (temp snapshots)
+# ==========================
+.playwright-mcp/
+
+# ==========================
+# Internal (API Keys, Credentials, Sensitive Data)
+# ==========================
+Internal/
+
+# Project-specific sensitive folders (confidential/PDF drops)
+P*/confidential/
+P*/confidenciacal/
+P*/SystemFlow/PDF_*/

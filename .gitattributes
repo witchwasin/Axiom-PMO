@@ -1,0 +1,26 @@
+# ==========================
+# Binary files — prevent merge corruption
+# ==========================
+*.docx binary
+*.doc  binary
+*.xlsx binary
+*.xls  binary
+*.pptx binary
+*.pdf  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+
+# ==========================
+# Text files — enable proper diff
+# ==========================
+*.md   text diff=markdown
+*.puml text
+*.csv  text
+*.json text
+
+# ==========================
+# Shell scripts — enforce LF line endings
+# ==========================
+*.sh text eol=lf

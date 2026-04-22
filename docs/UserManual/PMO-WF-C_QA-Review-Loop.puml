@@ -1,0 +1,160 @@
+@startuml
+title Module WF-C: PMO Collaboration — QA and Review Loop [Ref: PMO Workflow v2.2.1]
+
+' Lark Rule 8: Skinparam Layout Block
+skinparam BackgroundColor #FAFAFA
+skinparam DefaultFontName "Sarabun"
+skinparam DefaultFontSize 11
+skinparam ArrowColor #1B5E20
+skinparam ArrowFontSize 10
+skinparam ActivityBorderColor #2E7D32
+skinparam ActivityBackgroundColor #E8F5E9
+skinparam ActivityDiamondBorderColor #1565C0
+skinparam ActivityDiamondBackgroundColor #BBDEFB
+skinparam NoteBackgroundColor #FFF9C4
+skinparam NoteBorderColor #F57F17
+skinparam SwimlaneTitleFontColor white
+skinparam SwimlaneBorderColor #424242
+skinparam Padding 4
+skinparam ActivityShape roundBox
+skinparam Nodesep 35
+skinparam Ranksep 30
+skinparam ConditionEndStyle hline
+
+|#FFF3E0|PMO AI|
+start
+note right
+**→ ต่อจาก:** Module WF-B Step 25
+**Context:** Dev Done + Handoff Document
+end note
+
+:**26.** AI อัพเดท Card Status
+เปลี่ยนเป็น "QA Testing";
+
+:**27.** แจ้ง QA ว่ามีงานรอ Test
+ระบุ Module + Dev Branch
++ Handoff Document;
+
+' --- QA เขียน Test Cases ---
+|#F48FB1|QA|
+:**28.** เปิด PROJECT-QA Repo
+เขียน Test Cases ตาม Card;
+note right
+**AI-Assisted Testing (D057):**
+QA ใช้ VS Code + Claude Code
+- เขียน TC ใน PROJECT-QA repo
+- สั่ง AI รัน test (Playwright)
+- AI สรุปผล Pass/Fail
+end note
+
+:**29.** Push TC + Create PR
+ส่งมา PMO Template;
+
+' --- PM Review TC ---
+|#E8F0FE|PM|
+:**30.** Review Test Case PR;
+
+if (Approve PR?) then (Yes)
+
+  |#E8F0FE|PM|
+  :**31.** Merge PR
+  เข้า PMO Template;
+
+  ' --- QA รัน Test ---
+  |#F48FB1|QA|
+  :**32.** รัน Test ผ่าน
+  Playwright CLI / MCP
+  ตาม TC ที่ merge แล้ว;
+  note right
+  **Test ตาม Card:**
+  - Happy Case: x/x ผ่าน
+  - Alternative Case: x/x ผ่าน
+  - Exception Flow: x/x ผ่าน
+  end note
+
+  :**33.** Push ผลเข้า
+  PROJECT-QA Repo
+  + PMO TaskBoard;
+
+  ' --- AI บันทึกผล ---
+  |#FFF3E0|PMO AI|
+  :**34.** AI บันทึกอัตโนมัติ:
+  - QA Report (Pass/Fail)
+  - Traceability Matrix
+  - Activity Log;
+
+else (Reject)
+
+  |#F48FB1|QA|
+  :**30a.** แก้ TC ตาม comment;
+  note right
+  **Loop:** กลับไป Step 29
+  แก้ TC → Push PR ใหม่
+  end note
+  detach
+
+endif
+
+' --- PM Review ผล ---
+|#E8F0FE|PM|
+:**35.** ดูผลใน TaskBoard
++ PROJECT-QA Repo;
+
+if (Test ผ่าน?) then (Pass)
+
+  :**36.** นำเสนอ Client Review;
+
+  |#FCE4EC|Client|
+  :**37.** Review + Approve;
+
+  if (Client Approve?) then (Approve)
+
+    |#FFF3E0|PMO AI|
+    :**37a.** AI อัพเดท:
+    - Card Status = Done
+    - Traceability Matrix
+    - Activity Log
+    - ปิด Card สมบูรณ์;
+    stop
+
+  else (ต้องแก้ไข)
+
+    |#E8F0FE|PM|
+    :**37b.** สรุป Feedback
+    จาก Client;
+
+    |#FFF3E0|PMO AI|
+    :**37c.** AI อัพเดท:
+    - Card = Revision Required
+    - สร้าง Revision Note
+    - แจ้ง Dev;
+    note right
+    **Loop:** กลับไป WF-B Step 18
+    Dev แก้ → AI Review
+    → QA Test → Client Review
+    end note
+    detach
+
+  endif
+
+else (Fail)
+
+  |#E8F0FE|PM|
+  :**35a.** Reopen Card
+  หรือ ออก Card ใหม่
+  (ถ้า bug คนละ scope);
+
+  |#FFF3E0|PMO AI|
+  :**35b.** AI อัพเดท:
+  - Card = Revision Required
+  - สร้าง Revision Note
+  - แจ้ง Dev;
+  note right
+  **Loop:** กลับไป WF-B Step 18
+  Dev แก้ → AI Review
+  → QA Test ใหม่
+  end note
+  detach
+
+endif
+@enduml
