@@ -1,0 +1,130 @@
+@startuml
+title Module WF-B: PMO Collaboration — Dev Execution Phase [Ref: PMO Workflow v2.2.1]
+
+' Lark Rule 8: Skinparam Layout Block
+skinparam BackgroundColor #FAFAFA
+skinparam DefaultFontName "Sarabun"
+skinparam DefaultFontSize 11
+skinparam ArrowColor #1B5E20
+skinparam ArrowFontSize 10
+skinparam ActivityBorderColor #2E7D32
+skinparam ActivityBackgroundColor #E8F5E9
+skinparam ActivityDiamondBorderColor #1565C0
+skinparam ActivityDiamondBackgroundColor #BBDEFB
+skinparam NoteBackgroundColor #FFF9C4
+skinparam NoteBorderColor #F57F17
+skinparam SwimlaneTitleFontColor white
+skinparam SwimlaneBorderColor #424242
+skinparam Padding 4
+skinparam ActivityShape roundBox
+skinparam Nodesep 35
+skinparam Ranksep 30
+skinparam ConditionEndStyle hline
+
+|#A5D6A7|Dev|
+start
+note right
+**→ ต่อจาก:** Module WF-A Step 13
+**Context:** PM assign Card พร้อม
+Module + Test Cases แล้ว
+end note
+
+' --- Setup: Dev เปิด 2 VS Code ---
+:**14.** Clone PMO Repo
+เปิด VS Code Window 1;
+
+:**15.** เปิด Dev Repo
+(Code ของตัวเอง)
+VS Code Window 2;
+note right
+**Dev ทำงานกับ 2 Repo:**
+- Window 1: PMO Repo
+  (ดู Flow + คุย AI)
+- Window 2: Dev Repo
+  (เขียน Code)
+end note
+
+' --- Dev ถาม AI ---
+:**16.** [PMO Repo] เปิด Terminal
+ถาม AI: "งานรอบนี้ทำอะไร?";
+
+|#FFF3E0|PMO AI|
+:**17.** AI อ่าน TaskBoard
+ตอบกลับ:
+- Card ที่ assign ให้
+- SystemFlow ที่เกี่ยวข้อง
+- Test Cases ที่ต้องผ่าน
+- Deadline;
+
+' --- Dev เขียน Code ---
+|#A5D6A7|Dev|
+:**18.** [Dev Repo] เขียน Code
+ตาม SystemFlow;
+
+:**19.** รัน Test ในเครื่อง
+ตรวจ Happy + Alt + Exception;
+
+' --- Dev รายงานกลับ PMO ---
+:**20.** [PMO Repo] บอก AI:
+"Module X ทำเสร็จแล้ว";
+note right
+**Dev รายงานให้ AI:**
+- Module ที่ทำเสร็จ
+- Branch Name / Commit
+- ผล Test: Happy x/x,
+  Alt x/x, Exc x/x
+end note
+
+|#FFF3E0|PMO AI|
+:**21.** AI ตรวจสอบ:
+- เทียบ Code กับ SystemFlow
+- ตรวจ Test Coverage
+- ให้ Feedback;
+
+if (AI Review ผ่าน?) then (Pass)
+
+  |#A5D6A7|Dev|
+  :**22.** บอก AI:
+  "อัพเดท PM ให้หน่อย";
+
+  |#FFF3E0|PMO AI|
+  :**23.** AI อัพเดทอัตโนมัติ:
+  - TaskBoard Status = Dev Done
+  - Traceability Matrix
+  - Activity Log;
+
+  :**24.** AI สร้าง Handoff Document
+  ส่งต่อ context ให้ QA;
+  note right
+  **Handoff Document:**
+  - Module scope + SystemFlow ref
+  - Test Cases ที่ต้อง test
+  - Dev branch + setup instructions
+  - Known issues / limitations
+  QA ได้ context ครบ ไม่ต้องถามซ้ำ
+  end note
+
+  |#A5D6A7|Dev|
+  :**25.** Push ใน Dev Repo
+  (ให้ QA เข้าถึง Code ได้);
+
+  note right
+  **→ ต่อที่:** Module WF-C Step 26
+  **Context:** Dev Done รอ QA test
+  end note
+  stop
+
+else (ต้องแก้)
+
+  |#A5D6A7|Dev|
+  :**21a.** รับ Feedback จาก AI
+  กลับไปแก้ Code;
+  note right
+  **Loop:** กลับไป Step 19
+  แก้ Code → Test → รายงาน AI
+  วนจนกว่า AI Review จะผ่าน
+  end note
+  detach
+
+endif
+@enduml

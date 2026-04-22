@@ -1,0 +1,152 @@
+@startuml
+title Module WF-A: PMO Collaboration — PM Preparation Phase [Ref: PMO Workflow v2.2.1]
+
+' Lark Rule 8: Skinparam Layout Block
+skinparam BackgroundColor #FAFAFA
+skinparam DefaultFontName "Sarabun"
+skinparam DefaultFontSize 11
+skinparam ArrowColor #1B5E20
+skinparam ArrowFontSize 10
+skinparam ActivityBorderColor #2E7D32
+skinparam ActivityBackgroundColor #E8F5E9
+skinparam ActivityDiamondBorderColor #1565C0
+skinparam ActivityDiamondBackgroundColor #BBDEFB
+skinparam NoteBackgroundColor #FFF9C4
+skinparam NoteBorderColor #F57F17
+skinparam SwimlaneTitleFontColor white
+skinparam SwimlaneBorderColor #424242
+skinparam Padding 4
+skinparam ActivityShape roundBox
+skinparam Nodesep 35
+skinparam Ranksep 30
+skinparam ConditionEndStyle hline
+
+note right
+**PMO Collaboration Workflow v2.2.1:**
+- **WF-A:** PM Preparation (Step 1-13)
+- **WF-B:** Dev Execution (Step 14-25)
+- **WF-C:** QA and Review Loop (Step 26-37)
+- **WF-D:** Team Overview (Summary)
+end note
+
+|#FCE4EC|Client|
+start
+:**1.** ประชุมกับ PM
+แจ้ง Requirement;
+
+|#E8F0FE|PM|
+:**2.** รับ MOM + Transcription
+จากการประชุม;
+note right
+**Source of Truth:**
+- MOM = สรุปสิ่งที่ตกลง
+- Transcription = Safety Net
+  ดักจับ REQ ที่ MOM ตกหล่น
+- ถ้าไม่มี Transcription
+  → แจ้ง warning
+end note
+
+:**3.** สกัด Feature List
+จาก MOM → จัดให้ตรง REQ;
+note right
+**Quality Gate (Pre-gate):**
+ตรวจอัตโนมัติว่ามี
+MOM + REQ ครบก่อนสร้าง Flow
+end note
+
+:**4.** Cross-check Transcription
+หา REQ ที่ MOM ตกหล่น;
+
+if (พบ item ใหม่\nจาก Transcription?) then (Yes)
+  :**4a.** Flag รายงาน Client
+  "พบรายละเอียดนี้ใน
+  Transcription แต่ MOM
+  ไม่ได้ระบุ — เพิ่มไหม?";
+
+  |#FCE4EC|Client|
+  :**4b.** ตัดสินใจ
+  เพิ่ม / ไม่เพิ่ม;
+  |#E8F0FE|PM|
+else (No)
+endif
+
+:**5.** สร้าง UserFlow [DRAFT]
+จาก REQ + MOM
+(business language);
+
+:**6.** นำเสนอ UserFlow
+ให้ Client ตรวจ Logic;
+
+|#FCE4EC|Client|
+:**7.** Review UserFlow
+ตรวจว่า Logic ถูกต้อง;
+
+if (Approve?) then (Approve)
+
+  |#E8F0FE|PM|
+  note right
+  **Phase Gate:**
+  UserFlow ต้องผ่าน
+  Client Approve ก่อน
+  ถึงจะสร้าง UseCase ได้
+  end note
+
+  :**8.** สร้าง Use Case Diagram
+  จาก UserFlow ที่ Approved
+  + รัน QA Checklist 7 ข้อ;
+
+  :**9.** สร้าง SystemFlow
+  จาก UserFlow + UseCase
+  + รัน Validation 20+7+11 ข้อ;
+
+  :**10.** สร้าง Wireframe
+  อ้างอิง SystemFlow + Refero;
+
+else (ขอแก้ไข)
+
+  |#E8F0FE|PM|
+  :**7a.** แก้ไข UserFlow
+  ตาม Feedback;
+  note right
+  **Loop:** กลับไป Step 6
+  PM แก้ → นำเสนอ Client ใหม่
+  วนจนกว่า Client จะ Approve
+  end note
+  detach
+
+endif
+
+:**11.** แตก Card ตาม Module
+จาก SystemFlow;
+note right
+**Card แต่ละใบประกอบด้วย:**
+- Module Name + Scope
+- SystemFlow Reference (.puml)
+- Test Cases ที่ต้องผ่านครบ:
+  → Happy / Alternative / Exception
+**เงื่อนไขปิด Card:**
+ผ่าน Test ครบทุก Case เท่านั้น
+end note
+
+:**12.** Assign Card ให้ Dev + QA
+ตามกฎ No Duplicate
+(1 Card = 1 Owner);
+note right
+**Assignment:**
+- Dev = เจ้าของ Card (เขียน Code)
+- QA = เจ้าของ Test (เขียน TC)
+- แบ่ง domain expertise:
+  เช่น Content Side / Business Side
+end note
+
+:**13.** Push Update ใน PMO Repo
+(TaskBoard + SystemFlow
++ Test Cases + Assignment);
+
+note right
+**→ ต่อที่:** Module WF-B Step 14
+**Context:** Dev + QA รับ Card
+end note
+
+stop
+@enduml

@@ -1,0 +1,109 @@
+@startuml
+title PMO-WF-E: QA Repo + PMO Template Workflow
+
+skinparam BackgroundColor #FAFAFA
+skinparam DefaultFontName "Sarabun"
+skinparam ArrowColor #1B5E20
+skinparam ActivityBorderColor #2E7D32
+skinparam ActivityBackgroundColor #E8F5E9
+skinparam ActivityDiamondBorderColor #1565C0
+skinparam ActivityDiamondBackgroundColor #BBDEFB
+skinparam SwimlaneTitleFontColor white
+skinparam SwimlaneBorderColor #424242
+skinparam ConditionEndStyle diamond
+
+|#90CAF9|PMO Template|
+start
+
+:**Step 1:** PM สร้าง Card
+ระบุ Happy / Alt / Exception;
+
+:**Step 2:** PM Assign QA
+1 Card = 1 คน;
+
+---
+
+|#F48FB1|QA|
+
+:**Step 3:** อ่าน Card
+จาก PMO TaskBoard;
+
+:**Step 4:** เปิด VS Code
+เข้า PROJECT-QA repo;
+
+---
+
+|#FFE082|PROJECT-QA Repo|
+
+:**Step 5:** เขียน test case
+markdown (.md);
+
+:**Step 6:** เขียน Playwright
+script (.spec.ts);
+
+:**Step 7:** Push ขึ้น main
+CI auto: sync TC ไป Lark
++ สร้าง PR ไป PMO;
+
+---
+
+|#90CAF9|PMO Template|
+
+:**Step 8:** PM Review PR
+(CI สร้างมาอัตโนมัติ);
+
+if (Approve?) then (Yes)
+
+  :**Step 9:** Merge PR;
+
+  ---
+
+  |#FFE082|PROJECT-QA Repo|
+
+  :**Step 10:** QA รัน test
+  pnpm test;
+
+  :**Step 11:** ผล + evidence
+  เก็บ local ก่อน;
+
+  :**Step 12:** QA รัน sync-lark
+  Results + Evidence ไป Lark;
+
+  ---
+
+  |#90CAF9|PMO Template|
+
+  :**Step 13:** PM ดูผล Lark
+  + อัพเดท Card ใน PMO;
+
+  if (Pass?) then (Yes)
+
+    :**Step 14:** Card = QA Passed;
+
+    stop
+
+  else (Fail)
+
+    :**Step 15:** สร้าง Bug Card
+    ส่งกลับ Dev แก้;
+
+    detach
+
+  endif
+
+else (Reject)
+
+  |#F48FB1|QA|
+
+  :**Step 8.1:** แก้ตาม comment;
+
+  |#FFE082|PROJECT-QA Repo|
+
+  :**Step 8.2:** Push แก้ไข
+  CI สร้าง PR ใหม่อัตโนมัติ;
+
+  detach
+
+endif
+
+@enduml
