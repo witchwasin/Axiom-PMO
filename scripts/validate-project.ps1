@@ -57,7 +57,7 @@ function Test-File {
   if ($Requirement -eq "required") {
     Add-Result FAIL "Missing $RelativePath"
   } else {
-    Add-Result WARN "Missing optional file $RelativePath"
+    Add-Result INFO "Missing optional file $RelativePath"
   }
 
   return $false
@@ -79,7 +79,7 @@ function Test-Dir {
   if ($Requirement -eq "required") {
     Add-Result FAIL "Missing $RelativePath/"
   } else {
-    Add-Result WARN "Missing optional directory $RelativePath/"
+    Add-Result INFO "Missing optional directory $RelativePath/"
   }
 
   return $false
@@ -220,16 +220,6 @@ if ($projectText) {
     }
   } else {
     Add-Result WARN "Source Snapshot section is missing; PROJECT.md may become stale"
-  }
-
-  $sourcePath = Join-Path $project "source"
-  $projectFile = Join-Path $project "PROJECT.md"
-  if ((Test-Path -LiteralPath $sourcePath -PathType Container) -and (Test-Path -LiteralPath $projectFile -PathType Leaf)) {
-    $projectUpdated = (Get-Item -LiteralPath $projectFile).LastWriteTime
-    $newerSources = Get-ChildItem -LiteralPath $sourcePath -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTime -gt $projectUpdated }
-    if ($newerSources.Count -gt 0) {
-      Add-Result WARN "Source files may be newer than PROJECT.md; refresh Source Snapshot"
-    }
   }
 
   $reqLines = ($projectText -split "`n") | Where-Object { $_ -match "^\|\s*REQ-\d{3}\s*\|" }

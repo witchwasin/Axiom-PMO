@@ -1,0 +1,11 @@
+@startuml
+start
+:Open ticket board;
+:Move ticket status;
+if (Review notes present?) then (yes)
+  :Move to Done;
+else (no)
+  :Show validation message;
+endif
+stop
+@enduml

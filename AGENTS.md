@@ -37,6 +37,12 @@ projects/P01-CODE/
 
 Legacy folders such as `MOM/`, `REQ/`, `SystemFlow/`, `Wireframe/`, and `TaskBreakdown/` are still acceptable for old projects. New projects should prefer the lightweight shape above.
 
+Examples show the intended artifact weight by mode:
+
+- `examples/LITE-BUGFIX`: minimal low-risk bug fix.
+- `examples/STANDARD-FEATURE`: normal feature with flow, delivery, QA, and release.
+- `examples/STRICT-HIGH-RISK`: high-risk permission/audit work with RTM and separate review.
+
 ---
 
 ## Operating Modes

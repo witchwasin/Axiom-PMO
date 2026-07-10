@@ -706,3 +706,24 @@ Repo นี้ไม่ได้แค่จัดเอกสารใหม่
 - Framework doctor: PASS=19 WARN=0 FAIL=0
 
 สถานะหลัง update: พร้อมใช้เป็น Pilot ที่แข็งแรงขึ้น และเข้าใกล้ Stable มากกว่าเวอร์ชันรายงานแรก
+
+---
+
+## 15. Versioning And Examples Update
+
+เพิ่ม version marker และ changelog:
+
+- `VERSION`: `0.3.0-lite-ai-guardrails`
+- `CHANGELOG.md`: บันทึกการเปลี่ยนแปลงของ baseline, Lite AI workflow, และ validation hardening
+
+แยก examples ตาม mode:
+
+- `examples/LITE-BUGFIX`: แสดง Lite mode ที่ใช้เอกสารน้อยจริง เหมาะกับ bug fix หรือ content/config change เล็ก
+- `examples/STANDARD-FEATURE`: แสดง Standard mode สำหรับ feature ปกติที่มี flow, delivery, QA และ release
+- `examples/STRICT-HIGH-RISK`: แสดง Strict mode สำหรับงาน permission/audit พร้อม RTM, RAID, decision log, release และ rollback
+
+ผลลัพธ์:
+
+- AI เห็นชัดว่าแต่ละ mode ไม่ต้องใช้เอกสารเท่ากัน
+- Repo ดู mature ขึ้นเพราะมี version และ changelog
+- ตัวอย่างช่วยลดโอกาสที่ Lite mode จะถูกทำให้หนักเกินจำเป็น

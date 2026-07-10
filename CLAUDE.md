@@ -12,7 +12,7 @@
 
 ### New Project
 
-1. Copy `templates/` into a new folder such as `projects/P01-ABC/` or use `examples/P01-DEMO/` as a reference.
+1. Copy `templates/` into a new folder such as `projects/P01-ABC/` or use the closest example: `examples/LITE-BUGFIX`, `examples/STANDARD-FEATURE`, or `examples/STRICT-HIGH-RISK`.
 2. Put source files under `source/MOM/`, `source/Transcript/`, and `source/REQ/`.
 3. Fill `PROJECT.md` from source.
 4. Choose a default mode using `docs/process/`, then choose mode per work item in `DELIVERY.md`.
@@ -124,6 +124,9 @@ Update this when a reusable project/example is added.
 | Project Code | Full Name | Folder | Status | Notes |
 |---|---|---|---|---|
 | P01-DEMO | Demo Intake to Release | `examples/P01-DEMO` | Ready | Synthetic data only |
+| LITE-BUGFIX | Lite Bug Fix Example | `examples/LITE-BUGFIX` | Ready | Minimal docs for low-risk change |
+| STANDARD-FEATURE | Standard Feature Example | `examples/STANDARD-FEATURE` | Ready | Normal flow, delivery, QA, release |
+| STRICT-HIGH-RISK | Strict High-Risk Example | `examples/STRICT-HIGH-RISK` | Ready | Permission/audit example with RTM |
 
 ---
 
