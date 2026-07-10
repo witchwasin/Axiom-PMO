@@ -21,9 +21,9 @@ task_management:
 
 ## Work Items
 
-| ID | Mode | Mode Reason | Mode Approved By | Feature / Deliverable | Requirement Ref | Flow / Wireframe Ref | Acceptance Criteria | Test Checklist | Owner | Priority | Status | Review Stage | PR / Evidence | Labels |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| D-001 | Standard | normal feature | PM | <feature> | REQ-001 | DESIGN/FLOW.puml | <criteria> | <happy/alt/exception> | <owner> | high | To Do | none | | |
+| ID | Mode | Strict Trigger | Mode Reason | Mode Approved By | Feature / Deliverable | Requirement Ref | Design Ref | Acceptance Criteria | Test Checklist | Owner | Priority | Status | Review Stage | Evidence Ref | Labels |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| D-001 | Standard | none | normal feature | PM | <feature> | REQ-001 | DESIGN/FLOW.puml | <criteria> | <happy/alt/exception> | <owner> | high | To Do | none | | |
 
 ## Conditional Handoff
 

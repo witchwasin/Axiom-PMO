@@ -1,4 +1,5 @@
 {
+  "disableBypassPermissionsMode": "disable",
   "permissions": {
     "allow": [
       "Bash(git fetch:*)",
@@ -10,7 +11,32 @@
       "Bash(powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1:*)",
       "Bash(powershell -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1:*)",
       "Bash(powershell -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1:*)",
+      "Bash(powershell -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1:*)",
+      "Bash(powershell -ExecutionPolicy Bypass -File scripts/measure-context.ps1:*)",
       "WebSearch"
+    ],
+    "ask": [
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git tag:*)",
+      "Bash(gh release:*)",
+      "Bash(gh repo:*)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/*secret*)",
+      "Read(**/*credential*)",
+      "Write(.env)",
+      "Write(.env.*)",
+      "Write(**/*.pem)",
+      "Write(**/*.key)",
+      "Write(**/*secret*)",
+      "Write(**/*credential*)",
+      "Bash(type .env:*)",
+      "Bash(cat .env:*)"
     ]
   }
 }

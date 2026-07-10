@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.0-stable-candidate - 2026-07-10
+
+### Added
+
+- Added active skill runtime with 7 skills: `pmo-intake`, `pmo-design`, `pmo-delivery`, `pmo-build-review`, `pmo-quality-release`, `pmo-governance`, and `pmo-git-safety`.
+- Added `pmo-config/skill-manifest.yaml`.
+- Added `pmo-config/policy.yaml` for shared enums and stable workflow policy.
+- Added `pmo-config/validation-rules.yaml` as a central rule catalog for validator and doctor output.
+- Added baseline and patch manifest reports under `reports/`.
+- Added full validation matrix coverage with 7 positive cases and 25 negative fixture cases.
+
+### Changed
+
+- Archived legacy and optional skills under `.claude-archive/`.
+- Updated router and behavioral guide to load only the 7 active PMO skills by default.
+- Hardened `TASK-002` task source conflict detection and Strict release guardrail validation.
+
 ## 0.3.0-lite-ai-guardrails - 2026-07-10
 
 ### Added

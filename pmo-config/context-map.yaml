@@ -1,5 +1,7 @@
-version: 0.3.0-lite-ai-guardrails
+version: 0.4.0-stable-candidate
 purpose: Machine-readable context guidance. This is guidance, not enforcement.
+policy_ref: pmo-config/policy.yaml
+skill_manifest_ref: pmo-config/skill-manifest.yaml
 
 tasks:
   intake:

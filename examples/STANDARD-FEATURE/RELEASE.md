@@ -10,12 +10,14 @@
 - Happy path: move ticket across statuses.
 - Exception path: block Done when review notes are missing.
 
-## Rollback
+## Structured Rollback Plan
 
-- Hide status board route and restore previous ticket list.
+| Trigger | Owner | Steps | Verification | Evidence Ref |
+|---|---|---|---|---|
+| Status board release blocker | Demo Tech Lead | Hide status board route and restore previous ticket list | Previous ticket list loads | DEC-003 |
 
 ## Release Approval
 
-| Approver | Date | Evidence |
-|---|---|---|
-| Demo PO | 2026-07-10 | DEC-003 |
+| Gate | Approval Status | Approver | Role | Date | Evidence |
+|---|---|---|---|---|---|
+| Release Approved | approved | Demo PO | Product Owner | 2026-07-10 | DEC-003 |

@@ -1,0 +1,63 @@
+version: 0.4.0-stable-candidate
+rules:
+  STRUCT-001:
+    severity: fail
+    description: Required project file or directory is missing.
+  PLACEHOLDER-001:
+    severity: fail_release
+    description: Placeholder, TODO, or TBD remains at release gate.
+  SOURCE-001:
+    severity: fail_release
+    description: Requirement is missing source reference.
+  SOURCE-002:
+    severity: warn
+    description: Source Snapshot is missing or does not show sync time.
+  SOURCE-003:
+    severity: fail
+    description: Requirement IDs are duplicated.
+  EVIDENCE-001:
+    severity: fail_release
+    description: Requirement is missing evidence status or uses an invalid evidence status.
+  APPROVAL-001:
+    severity: fail
+    description: Approval row is missing or incomplete.
+  APPROVAL-002:
+    severity: fail
+    description: Approval contains placeholder, invalid date, missing role, or missing evidence.
+  TASK-001:
+    severity: warn
+    description: Task source of truth is missing or invalid.
+  TASK-002:
+    severity: fail
+    description: PROJECT.md and DELIVERY.md task source of truth conflict.
+  WORKITEM-001:
+    severity: warn
+    description: Work item is missing required governance fields.
+  STRICT-001:
+    severity: fail_release
+    description: Strict trigger exists but work item is not Strict.
+  STRICT-002:
+    severity: fail
+    description: Strict project is missing RAID, decision log, RTM, QA approval, or rollback evidence.
+  BLOCKER-001:
+    severity: fail_release
+    description: Open blocker exists during release validation.
+  RELEASE-001:
+    severity: fail_release
+    description: Release rollback plan is missing or unstructured.
+  LINK-001:
+    severity: fail_release
+    description: Local markdown link is broken.
+  SENSITIVE-001:
+    severity: warn
+    description: Potential sensitive file detected by pre-check.
+  DOCTOR-001:
+    severity: fail
+    description: Active skill runtime does not match skill manifest.
+  DOCTOR-002:
+    severity: fail
+    description: Router references archived legacy skill.
+  PERMISSION-001:
+    severity: fail
+    description: Dangerous git mutation is allowed by default.
+

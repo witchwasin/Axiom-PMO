@@ -1,0 +1,12 @@
+@startuml
+start
+:User requests export approval;
+if (User has Export Approver role?) then (yes)
+  :Approve export;
+  :Write audit record;
+else (no)
+  :Deny approval;
+  :Write denied attempt record;
+endif
+stop
+@enduml

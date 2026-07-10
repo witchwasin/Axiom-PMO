@@ -13,7 +13,7 @@ requirements:
     type: functional
     priority: must-have
     evidence_status: supported
-    status: confirmed
+    approval_status: pending
     acceptance_criteria:
       - "<testable criterion>"
     deliverable_ref: "DELIVERY.md D-001"

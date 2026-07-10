@@ -38,11 +38,11 @@ Demo project for a lightweight customer support request tracker.
 
 ### In Scope
 
-| ID | Requirement | Type | Source Ref | Evidence Status | Status |
+| ID | Requirement | Type | Source Ref | Evidence Status | Approval Status |
 |---|---|---|---|---:|---|
-| REQ-001 | Staff can create a support ticket with title, description, priority, and requester email. | functional | MOM-20260710 scope item 1 | supported | confirmed |
-| REQ-002 | Staff can move a ticket through To Do, In Progress, Review / Test, and Done. | functional | REQ-20260710 row 2 | supported | confirmed |
-| REQ-003 | PM can view open high-priority tickets before release. | functional | MOM-20260710 risk note | supported | confirmed |
+| REQ-001 | Staff can create a support ticket with title, description, priority, and requester email. | functional | MOM-20260710 scope item 1 | supported | approved |
+| REQ-002 | Staff can move a ticket through To Do, In Progress, Review / Test, and Done. | functional | REQ-20260710 row 2 | supported | approved |
+| REQ-003 | PM can view open high-priority tickets before release. | functional | MOM-20260710 risk note | supported | approved |
 
 ### Out of Scope
 
@@ -74,8 +74,8 @@ Demo project for a lightweight customer support request tracker.
 
 ## Approvals
 
-| Gate | Approver | Date | Evidence |
-|---|---|---|---|
-| Scope Approved | Demo PO | 2026-07-10 | DEC-001 |
-| Design Ready | Demo Tech Lead | 2026-07-10 | DEC-002 |
-| Release Approved | Demo PO | 2026-07-10 | DEC-003 |
+| Gate | Approval Status | Approver | Role | Date | Evidence |
+|---|---|---|---|---|---|
+| Scope Approved | approved | Demo PO | Product Owner | 2026-07-10 | DEC-001 |
+| Design Ready | approved | Demo Tech Lead | Tech Lead | 2026-07-10 | DEC-002 |
+| Release Approved | approved | Demo PO | Product Owner | 2026-07-10 | DEC-003 |

@@ -41,16 +41,16 @@ Legacy folders are supported. Map them this way:
 
 | User Intent | Mode Default | Read First | Load Skills |
 |---|---|---|---|
-| "เริ่ม project", intake, analyze MOM/REQ | Standard | `CONTEXT-ROUTER.md`, source, `PROJECT.md` | `pmo-analyze-new-mom`, `pmo-gap-analysis` |
-| "สรุป scope", "ถาม requirement" | Lite | `PROJECT.md`, source only if needed | `pmo-deep-interview`, `pmo-gap-analysis` |
-| "ทำ flow", "system flow", "activity diagram" | Standard | `PROJECT.md`, `DESIGN/` | `pmo-workflow-architect`, `pmo-activity-diagram`, `pmo-lark-plantuml` |
-| "ทำ use case" | Standard | `PROJECT.md`, `DESIGN/` | `pmo-use-case-diagram`, `pmo-review-diagram` |
-| "ทำ wireframe" | Standard | `PROJECT.md`, `DESIGN/FLOW.puml` | `pmo-wireframe-design` |
-| "แตกงาน", "handoff dev" | Standard | `PROJECT.md`, `DESIGN/`, `DELIVERY.md` | `pmo-task-breakdown`, `pmo-dev-handoff` |
-| "Dev เสร็จแล้ว", "review dev" | Standard | `DELIVERY.md`, relevant design | `pmo-dev-report`, optional code review skill |
-| "QA", "test", "bug" | Standard | `DELIVERY.md`, `RAID-log.md`, `RELEASE.md` | `pmo-qa-report`, `pmo-verification-evidence` |
-| "release", "deploy", "close" | Strict if production | `RELEASE.md`, `RAID-log.md`, `decision-log.md` | `pmo-deploy-checklist`, `pmo-security-scan` |
-| "commit", "push" | Strict | git status/diff | `pmo-git-push` |
+| "เริ่ม project", intake, analyze MOM/REQ | Standard | `CONTEXT-ROUTER.md`, source, `PROJECT.md` | `pmo-intake` |
+| "สรุป scope", "ถาม requirement" | Lite | `PROJECT.md`, source only if needed | `pmo-intake`, `pmo-governance` |
+| "ทำ flow", "system flow", "activity diagram" | Standard | `PROJECT.md`, `DESIGN/` | `pmo-design` |
+| "ทำ use case" | Standard | `PROJECT.md`, `DESIGN/` | `pmo-design` |
+| "ทำ wireframe" | Standard | `PROJECT.md`, `DESIGN/FLOW.puml` | `pmo-design` |
+| "แตกงาน", "handoff dev" | Standard | `PROJECT.md`, `DESIGN/`, `DELIVERY.md` | `pmo-delivery` |
+| "Dev เสร็จแล้ว", "review dev" | Standard | `DELIVERY.md`, relevant design | `pmo-build-review` |
+| "QA", "test", "bug" | Standard | `DELIVERY.md`, `RAID-log.md`, `RELEASE.md` | `pmo-quality-release` |
+| "release", "deploy", "close" | Strict if production | `RELEASE.md`, `RAID-log.md`, `decision-log.md` | `pmo-quality-release`, `pmo-governance` |
+| "commit", "push" | Strict | git status/diff | `pmo-git-safety` |
 
 Risk override: switch a work item to `Strict` when it involves payment, financial calculation, PII, sensitive data, authentication, authorization, permission, irreversible action, external integration, legal/compliance requirement, production data migration, critical infrastructure, or public-sector formal acceptance.
 
@@ -128,6 +128,20 @@ Update this when a reusable project/example is added.
 | STANDARD-FEATURE | Standard Feature Example | `examples/STANDARD-FEATURE` | Ready | Normal flow, delivery, QA, release |
 | STRICT-HIGH-RISK | Strict High-Risk Example | `examples/STRICT-HIGH-RISK` | Ready | Permission/audit example with RTM |
 
+## Active Skill Runtime
+
+The active runtime is limited to the 7 skills in `pmo-config/skill-manifest.yaml`:
+
+- `pmo-intake`
+- `pmo-design`
+- `pmo-delivery`
+- `pmo-build-review`
+- `pmo-quality-release`
+- `pmo-governance`
+- `pmo-git-safety`
+
+Archived skills under `.claude-archive/` are not loaded by default.
+
 ---
 
 ## Hook Policy
@@ -147,7 +161,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1
 
 ## Git Safety
 
-Load `pmo-git-push` before committing or pushing.
+Load `pmo-git-safety` before committing or pushing.
 
 Minimum manual checks:
 
