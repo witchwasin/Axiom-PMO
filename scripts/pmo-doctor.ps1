@@ -39,6 +39,8 @@ function Require-File {
 
 Require-File "AGENTS.md"
 Require-File "CLAUDE.md"
+Require-File "VERSION"
+Require-File "CHANGELOG.md"
 Require-File "CONTEXT-ROUTER.md"
 Require-File "pmo-config/context-map.yaml"
 Require-File "scripts/validate-project.ps1"
@@ -48,6 +50,17 @@ Require-File "scripts/run-validation-tests.ps1"
 $templateNames = @("PROJECT.md", "DELIVERY.md", "RELEASE.md", "RAID-log.md", "decision-log.md", "RTM.yaml", "WIREFRAME.md")
 foreach ($name in $templateNames) {
   Require-File (Join-Path "templates" $name)
+}
+
+$exampleNames = @("LITE-BUGFIX", "STANDARD-FEATURE", "STRICT-HIGH-RISK", "P01-DEMO")
+foreach ($name in $exampleNames) {
+  $examplePath = Join-Path "examples" $name
+  $fullExamplePath = Join-Path $repo $examplePath
+  if (Test-Path -LiteralPath $fullExamplePath -PathType Container) {
+    Add-Result PASS "Found $examplePath"
+  } else {
+    Add-Result FAIL "Missing $examplePath"
+  }
 }
 
 $settingsPath = Join-Path $repo ".claude/settings.json"
