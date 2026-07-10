@@ -155,15 +155,17 @@ If the user says "record", "log", "track", or "จดไว้" without a target
 
 Load skills on demand only. Never load all `.claude/skills/*` at once.
 
-Core skill groups:
+Active skill groups are defined in `pmo-config/skill-manifest.yaml`:
 
-- Intake: `pmo-analyze-new-mom`, `pmo-gap-analysis`, `pmo-deep-interview`
-- Design: `pmo-workflow-architect`, `pmo-activity-diagram`, `pmo-lark-plantuml`, optional `pmo-use-case-diagram`, `pmo-wireframe-design`
-- Delivery: `pmo-task-breakdown`, `pmo-dev-handoff`, `pmo-taskboard`
-- QA / Release: `pmo-qa-report`, `pmo-security-scan`, `pmo-deploy-checklist`, `pmo-verification-evidence`
-- Governance: `pmo-traceability`, `pmo-git-push`
+- Intake: `pmo-intake`
+- Design: `pmo-design`
+- Delivery: `pmo-delivery`
+- Build review: `pmo-build-review`
+- QA / Release: `pmo-quality-release`
+- Governance: `pmo-governance`
+- Git safety: `pmo-git-safety`
 
-Optional heavy skills such as team orchestration, code scaffolding, CI/CD, proposal writing, and deep frontend/backend review should be loaded only when the task explicitly needs them.
+Archived skills under `.claude-archive/` are preserved for reference only and must not be loaded by default.
 
 ---
 

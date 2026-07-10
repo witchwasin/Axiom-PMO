@@ -30,8 +30,12 @@
 - Target environment:
 - Deploy owner:
 - Deploy window:
-- Rollback trigger:
-- Rollback steps:
+
+## Structured Rollback Plan
+
+| Trigger | Owner | Steps | Verification | Evidence Ref |
+|---|---|---|---|---|
+| <rollback trigger> | <owner> | <numbered rollback steps> | <how rollback is verified> | <evidence ref> |
 
 ## Known Issues
 
@@ -40,6 +44,6 @@
 
 ## Release Approval
 
-| Gate | Approver | Date | Decision Ref |
-|---|---|---|---|
-| Release Approved | <name> | YYYY-MM-DD | DEC-001 |
+| Gate | Approval Status | Approver | Role | Date | Evidence |
+|---|---|---|---|---|---|
+| Release Approved | approved | pending | Product Owner | <name> | Product Owner | YYYY-MM-DD | DEC-001 |

@@ -31,10 +31,10 @@ Add a simple ticket status board for internal support tracking.
 
 ### In Scope
 
-| ID | Requirement | Type | Source Ref | Evidence Status | Status |
+| ID | Requirement | Type | Source Ref | Evidence Status | Approval Status |
 |---|---|---|---|---:|---|
-| REQ-001 | Staff can move tickets across four delivery statuses. | functional | REQ-20260710 row 1 | supported | confirmed |
-| REQ-002 | PM can filter open high-priority tickets. | functional | MOM-20260710 item 2 | supported | confirmed |
+| REQ-001 | Staff can move tickets across four delivery statuses. | functional | REQ-20260710 row 1 | supported | approved |
+| REQ-002 | PM can filter open high-priority tickets. | functional | MOM-20260710 item 2 | supported | approved |
 
 ### Out of Scope
 
@@ -48,8 +48,8 @@ Add a simple ticket status board for internal support tracking.
 
 ## Approvals
 
-| Gate | Approver | Date | Evidence |
-|---|---|---|---|
-| Scope Approved | Demo PO | 2026-07-10 | DEC-001 |
-| Design Ready | Demo Tech Lead | 2026-07-10 | DEC-002 |
-| Release Approved | Demo PO | 2026-07-10 | DEC-003 |
+| Gate | Approval Status | Approver | Role | Date | Evidence |
+|---|---|---|---|---|---|
+| Scope Approved | approved | Demo PO | Product Owner | 2026-07-10 | DEC-001 |
+| Design Ready | approved | Demo Tech Lead | Tech Lead | 2026-07-10 | DEC-002 |
+| Release Approved | approved | Demo PO | Product Owner | 2026-07-10 | DEC-003 |

@@ -18,9 +18,9 @@ task_management:
 
 ## Source Snapshot
 
-| Source ID | Version / Date | Last Synced At |
-|---|---|---|
-| MOM-YYYYMMDD | v1 | <ISO-8601> |
+| Source ID | Version / Date | SHA256 | Last Synced At |
+|---|---|---|---|
+| MOM-YYYYMMDD | v1 | <sha256> | <ISO-8601> |
 
 ## Summary
 
@@ -39,9 +39,9 @@ One-sentence project outcome:
 
 ### In Scope
 
-| ID | Requirement | Type | Source Ref | Evidence Status | Status |
+| ID | Requirement | Type | Source Ref | Evidence Status | Approval Status |
 |---|---|---|---|---:|---|
-| REQ-001 | <atomic, testable requirement> | functional | MOM-YYYYMMDD item-1 | supported | confirmed |
+| REQ-001 | <atomic, testable requirement> | functional | MOM-YYYYMMDD item-1 | supported | pending |
 
 ### Out of Scope
 
@@ -73,8 +73,8 @@ One-sentence project outcome:
 
 ## Approvals
 
-| Gate | Approver | Date | Evidence |
-|---|---|---|---|
-| Scope Approved | <approver name> | YYYY-MM-DD | DEC-001 |
-| Design Ready | <approver name> | YYYY-MM-DD | DEC-002 |
-| Release Approved | <approver name> | YYYY-MM-DD | DEC-003 |
+| Gate | Approval Status | Approver | Role | Date | Evidence |
+|---|---|---|---|---|---|---|---|
+| Scope Approved | approved | pending | Product Owner | <approver name> | Product Owner | YYYY-MM-DD | DEC-001 |
+| Design Ready | approved | pending | Tech Lead | <approver name> | Tech Lead | YYYY-MM-DD | DEC-002 |
+| Release Approved | approved | pending | Product Owner | <approver name> | Product Owner | YYYY-MM-DD | DEC-003 |

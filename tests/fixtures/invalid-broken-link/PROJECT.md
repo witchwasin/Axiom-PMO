@@ -16,16 +16,16 @@
 
 ### In Scope
 
-| ID | Requirement | Type | Source Ref | Evidence Status | Status |
+| ID | Requirement | Type | Source Ref | Evidence Status | Approval Status |
 |---|---|---|---|---:|---|
-| REQ-001 | User can submit a valid request. | functional | REQ-20260710 row 1 | supported | confirmed |
+| REQ-001 | User can submit a valid request. | functional | REQ-20260710 row 1 | supported | approved |
 
 See [missing design](DESIGN/MISSING.md).
 
 ## Approvals
 
-| Gate | Approver | Date | Evidence |
-|---|---|---|---|
-| Scope Approved | Fixture PO | 2026-07-10 | DEC-001 |
-| Design Ready | Fixture Lead | 2026-07-10 | DEC-002 |
-| Release Approved | Fixture PO | 2026-07-10 | DEC-003 |
+| Gate | Approval Status | Approver | Role | Date | Evidence |
+|---|---|---|---|---|---|
+| Scope Approved | approved | Fixture PO | Product Owner | 2026-07-10 | DEC-001 |
+| Design Ready | approved | Fixture Lead | Tech Lead | 2026-07-10 | DEC-002 |
+| Release Approved | approved | Fixture PO | Product Owner | 2026-07-10 | DEC-003 |

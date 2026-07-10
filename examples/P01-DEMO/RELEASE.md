@@ -30,8 +30,12 @@
 - Target environment: demo
 - Deploy owner: Demo Tech Lead
 - Deploy window: not applicable
-- Rollback trigger: demo blocker found
-- Rollback steps: restore previous demo package
+
+## Structured Rollback Plan
+
+| Trigger | Owner | Steps | Verification | Evidence Ref |
+|---|---|---|---|---|
+| Demo blocker found | Demo Tech Lead | Restore previous demo package | Demo opens with previous package | rollback-note-20260710 |
 
 ## Known Issues
 
@@ -41,6 +45,6 @@
 
 ## Release Approval
 
-| Gate | Approver | Date | Decision Ref |
-|---|---|---|---|
-| Release Approved | Demo PO | 2026-07-10 | DEC-003 |
+| Gate | Approval Status | Approver | Role | Date | Evidence |
+|---|---|---|---|---|---|
+| Release Approved | approved | Demo PO | Product Owner | 2026-07-10 | DEC-003 |

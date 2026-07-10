@@ -30,9 +30,9 @@ Fix a typo in the ticket submit button label.
 
 ### In Scope
 
-| ID | Requirement | Type | Source Ref | Evidence Status | Status |
+| ID | Requirement | Type | Source Ref | Evidence Status | Approval Status |
 |---|---|---|---|---:|---|
-| REQ-001 | Change the button label from "Sendd" to "Send". | content | REQ-20260710 row 1 | supported | confirmed |
+| REQ-001 | Change the button label from "Sendd" to "Send". | content | REQ-20260710 row 1 | supported | approved |
 
 ### Out of Scope
 
@@ -40,6 +40,6 @@ Fix a typo in the ticket submit button label.
 
 ## Approvals
 
-| Gate | Approver | Date | Evidence |
-|---|---|---|---|
-| Scope Approved | Demo PM | 2026-07-10 | DEC-001 |
+| Gate | Approval Status | Approver | Role | Date | Evidence |
+|---|---|---|---|---|---|
+| Scope Approved | approved | Demo PM | Product Owner | 2026-07-10 | DEC-001 |
