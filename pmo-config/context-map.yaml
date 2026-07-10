@@ -1,0 +1,103 @@
+version: v1
+purpose: Machine-readable context guidance. This is guidance, not enforcement.
+
+tasks:
+  intake:
+    required:
+      - PROJECT.md
+      - source/**
+    optional:
+      - RAID-log.md
+      - decision-log.md
+    max_initial_files:
+      lite: 5
+      standard: 8
+      strict: 12
+
+  scope:
+    required:
+      - PROJECT.md
+    optional:
+      - decision-log.md
+      - source/**
+    max_initial_files:
+      lite: 3
+      standard: 5
+      strict: 8
+
+  flow:
+    required:
+      - PROJECT.md
+      - DESIGN/**
+    optional:
+      - source/**
+    max_initial_files:
+      lite: 4
+      standard: 8
+      strict: 12
+
+  handoff:
+    required:
+      - PROJECT.md
+      - DESIGN/**
+      - DELIVERY.md
+    optional:
+      - RAID-log.md
+    max_initial_files:
+      lite: 4
+      standard: 8
+      strict: 12
+
+  qa_release:
+    required:
+      - DELIVERY.md
+      - RELEASE.md
+      - RAID-log.md
+    optional:
+      - decision-log.md
+      - PROJECT.md
+    max_initial_files:
+      lite: 4
+      standard: 8
+      strict: 12
+
+modes:
+  lite:
+    required_artifacts:
+      - PROJECT.md
+      - DELIVERY.md or GitHub Issue
+    separate_logs_required: false
+
+  standard:
+    required_artifacts:
+      - PROJECT.md
+      - DESIGN/ when flow or UI exists
+      - DELIVERY.md or GitHub Issues
+      - RELEASE.md when release/UAT exists
+    separate_logs_required: when meaningful risk or decision exists
+
+  strict:
+    required_artifacts:
+      - PROJECT.md
+      - DESIGN/
+      - DELIVERY.md or GitHub Issues
+      - RELEASE.md
+      - RAID-log.md
+      - decision-log.md
+      - RTM.yaml or traceability section
+    separate_logs_required: true
+
+strict_triggers:
+  - payment
+  - financial_calculation
+  - pii
+  - sensitive_data
+  - authentication
+  - authorization
+  - permission
+  - irreversible_action
+  - external_integration
+  - legal_compliance
+  - production_data_migration
+  - critical_infrastructure
+  - public_sector_formal_acceptance

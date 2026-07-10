@@ -1,0 +1,31 @@
+@startuml
+title P01-DEMO Ticket Flow [Ref: REQ-001, REQ-002, BR-001]
+
+|Staff|
+start
+:Create ticket;
+:Set title, description, priority, requester email;
+
+|System|
+:Validate required fields and email format;
+if (Valid?) then (yes)
+  :Save ticket as To Do;
+else (no)
+  :Show validation message;
+  stop
+endif
+
+|Staff|
+:Move ticket to In Progress;
+:Add review notes;
+:Move ticket to Review / Test;
+
+|PM / QA|
+if (Review notes complete?) then (yes)
+  :Move ticket to Done;
+else (no)
+  :Return to In Progress;
+endif
+
+stop
+@enduml
