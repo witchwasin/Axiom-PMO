@@ -93,6 +93,28 @@ function Get-ProjectText {
   return ""
 }
 
+function Test-PlaceholderValue {
+  param([string]$Value)
+
+  $trimmed = $Value.Trim()
+  if ($trimmed.Length -eq 0) { return $true }
+  return ($trimmed -match "<[^>]+>|TODO|TBD|YYYY-MM-DD|ISO-8601|pending|n/a")
+}
+
+function Test-DateValue {
+  param([string]$Value)
+
+  $trimmed = $Value.Trim()
+  $parsed = New-Object DateTime
+  return [DateTime]::TryParseExact(
+    $trimmed,
+    "yyyy-MM-dd",
+    [Globalization.CultureInfo]::InvariantCulture,
+    [Globalization.DateTimeStyles]::None,
+    [ref]$parsed
+  )
+}
+
 function Test-Approval {
   param(
     [string]$ProjectText,
@@ -102,18 +124,31 @@ function Test-Approval {
   $escapedGate = [regex]::Escape($GateName)
   $line = ($ProjectText -split "`n") | Where-Object { $_ -match "\|\s*$escapedGate\s*\|" } | Select-Object -First 1
   if (-not $line) {
-    Add-Result WARN "Approval row not found for $GateName"
+    Add-Result FAIL "Approval row not found for $GateName"
     return
   }
 
-  $parts = $line -split "\|"
-  $filled = ($parts | Where-Object { $_.Trim().Length -gt 0 }).Count
-  if ($filled -ge 4) {
-    Add-Result PASS "$GateName approval row appears populated"
-  } else {
-    $level = if ($Gate -eq "Release" -or $GateName -ne "Release Approved") { "WARN" } else { "INFO" }
-    Add-Result $level "$GateName approval row is not fully populated"
+  $parts = @($line -split "\|" | ForEach-Object { $_.Trim() } | Where-Object { $_.Length -gt 0 })
+  if ($parts.Count -lt 4) {
+    Add-Result FAIL "$GateName approval row is not fully populated"
+    return
   }
+
+  $approver = $parts[1]
+  $date = $parts[2]
+  $evidence = $parts[3]
+  $invalid = @()
+
+  if (Test-PlaceholderValue $approver) { $invalid += "approver" }
+  if ((Test-PlaceholderValue $date) -or -not (Test-DateValue $date)) { $invalid += "date" }
+  if (Test-PlaceholderValue $evidence) { $invalid += "evidence" }
+
+  if ($invalid.Count -gt 0) {
+    Add-Result FAIL "$GateName approval has invalid or placeholder fields: $($invalid -join ', ')"
+    return
+  }
+
+  Add-Result PASS "$GateName approval is valid"
 }
 
 # Required files by mode/gate.
@@ -169,16 +204,32 @@ if ($placeholderHits.Count -eq 0) {
 
 $projectText = Get-ProjectText
 if ($projectText) {
+  $projectTaskSource = $null
   if ($projectText -match "Task source:\s*(file|github)") {
+    $projectTaskSource = $Matches[1]
     Add-Result PASS "Task source is declared"
   } else {
     Add-Result WARN "Task source is not declared as file or github"
   }
 
   if ($projectText -match "## Source Snapshot") {
-    Add-Result PASS "Source Snapshot section exists"
+    if ($projectText -match "Last Synced At|synced_at") {
+      Add-Result PASS "Source Snapshot section exists"
+    } else {
+      Add-Result WARN "Source Snapshot exists but does not show sync time"
+    }
   } else {
     Add-Result WARN "Source Snapshot section is missing; PROJECT.md may become stale"
+  }
+
+  $sourcePath = Join-Path $project "source"
+  $projectFile = Join-Path $project "PROJECT.md"
+  if ((Test-Path -LiteralPath $sourcePath -PathType Container) -and (Test-Path -LiteralPath $projectFile -PathType Leaf)) {
+    $projectUpdated = (Get-Item -LiteralPath $projectFile).LastWriteTime
+    $newerSources = Get-ChildItem -LiteralPath $sourcePath -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTime -gt $projectUpdated }
+    if ($newerSources.Count -gt 0) {
+      Add-Result WARN "Source files may be newer than PROJECT.md; refresh Source Snapshot"
+    }
   }
 
   $reqLines = ($projectText -split "`n") | Where-Object { $_ -match "^\|\s*REQ-\d{3}\s*\|" }
@@ -188,16 +239,18 @@ if ($projectText) {
     $missingSource = $reqLines | Where-Object { $_ -notmatch "MOM-\d{8}|REQ-\d{8}|TR-\d{8}|DEC-\d{3}|source_ref|Source Ref" }
     $missingEvidence = $reqLines | Where-Object { $_ -notmatch "verified|supported|inferred|missing|conflict|Evidence Status" }
 
+    $missingLevel = if ($Gate -eq "Release") { "FAIL" } else { "WARN" }
+
     if ($missingSource.Count -eq 0) {
       Add-Result PASS "Requirement lines include source references"
     } else {
-      Add-Result WARN "$($missingSource.Count) requirement line(s) may be missing source_ref"
+      Add-Result $missingLevel "$($missingSource.Count) requirement line(s) may be missing source_ref"
     }
 
     if ($missingEvidence.Count -eq 0) {
       Add-Result PASS "Requirement lines include evidence status"
     } else {
-      Add-Result WARN "$($missingEvidence.Count) requirement line(s) may be missing evidence status"
+      Add-Result $missingLevel "$($missingEvidence.Count) requirement line(s) may be missing evidence status"
     }
   }
 
@@ -215,16 +268,22 @@ if ($projectText) {
 $deliveryPath = Join-Path $project "DELIVERY.md"
 if (Test-Path -LiteralPath $deliveryPath) {
   $deliveryText = Get-Content -LiteralPath $deliveryPath -Raw
+  $deliveryTaskSource = $null
   if ($deliveryText -match "Task source of truth:\s*`?(file|github)`?") {
+    $deliveryTaskSource = $Matches[1]
     Add-Result PASS "Delivery task source of truth is explicit"
   } else {
     Add-Result WARN "Delivery task source of truth should be file or github"
   }
 
-  if ($deliveryText -match "\|\s*Mode\s*\|" -and $deliveryText -match "\|\s*Review Stage\s*\|") {
-    Add-Result PASS "Delivery work items include Mode and Review Stage"
+  if ($projectTaskSource -and $deliveryTaskSource -and $projectTaskSource -ne $deliveryTaskSource) {
+    Add-Result FAIL "PROJECT.md task source ($projectTaskSource) does not match DELIVERY.md task source ($deliveryTaskSource)"
+  }
+
+  if ($deliveryText -match "\|\s*Mode\s*\|" -and $deliveryText -match "\|\s*Mode Reason\s*\|" -and $deliveryText -match "\|\s*Mode Approved By\s*\|" -and $deliveryText -match "\|\s*Review Stage\s*\|" -and $deliveryText -match "\|\s*PR / Evidence\s*\|") {
+    Add-Result PASS "Delivery work items include mode, reason, approval, review, and evidence fields"
   } else {
-    Add-Result WARN "Delivery work items should include Mode and Review Stage"
+    Add-Result WARN "Delivery work items should include Mode, Mode Reason, Mode Approved By, Review Stage, and PR / Evidence"
   }
 
   $workItemLines = ($deliveryText -split "`n") | Where-Object { $_ -match "^\|\s*D-\d{3}\s*\|" }
@@ -306,7 +365,8 @@ foreach ($file in $textFiles) {
 if ($linkHits.Count -eq 0) {
   Add-Result PASS "No broken local markdown links found"
 } else {
-  Add-Result WARN ("Broken local links: " + (($linkHits | Select-Object -First 8) -join ", "))
+  $linkLevel = if ($Gate -eq "Release") { "FAIL" } else { "WARN" }
+  Add-Result $linkLevel ("Broken local links: " + (($linkHits | Select-Object -First 8) -join ", "))
 }
 
 Write-Host "PMO Project Validation: $project"

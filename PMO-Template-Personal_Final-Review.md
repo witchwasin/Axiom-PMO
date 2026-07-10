@@ -683,3 +683,26 @@ Repo นี้ตอนนี้เหมาะสำหรับ:
 
 Repo นี้ไม่ได้แค่จัดเอกสารใหม่ แต่เปลี่ยนจาก template หนัก ๆ ให้กลายเป็น lightweight AI-ready PMO system ที่มี guardrails, validation, context discipline และ sample ที่ใช้งานได้จริง
 
+---
+
+## 14. Hardening Update
+
+หลังรายงานฉบับแรก มีการปิดช่องว่าง Priority 1 เพิ่มเติม:
+
+- เพิ่ม permission ให้ `scripts/pmo-doctor.ps1`
+- เพิ่ม permission ให้ `scripts/run-validation-tests.ps1`
+- ทำ approval validation ให้ reject placeholder, date format ผิด, approver ว่าง, evidence ว่าง
+- ทำให้ release gate fail เมื่อ requirement ไม่มี source reference หรือ evidence status
+- เพิ่ม task source consistency check ระหว่าง `PROJECT.md` และ `DELIVERY.md`
+- เพิ่ม work item fields: `Mode Reason`, `Mode Approved By`, `PR / Evidence`
+- เพิ่ม `Task Management` section เพื่อประกาศ source of truth
+- เพิ่ม validation fixture runner
+- เพิ่ม negative fixtures สำหรับ missing project, missing source ref, fake approval, open blocker, missing rollback, และ broken link
+
+ผลตรวจหลัง hardening:
+
+- Demo project validation: PASS=21 WARN=0 FAIL=0
+- Validation fixture tests: PASS=7 FAIL=0
+- Framework doctor: PASS=19 WARN=0 FAIL=0
+
+สถานะหลัง update: พร้อมใช้เป็น Pilot ที่แข็งแรงขึ้น และเข้าใกล้ Stable มากกว่าเวอร์ชันรายงานแรก

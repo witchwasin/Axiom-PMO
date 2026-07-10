@@ -6,6 +6,16 @@
 > Owner: Demo PM
 > Last updated: 2026-07-10
 
+## Task Management
+
+```yaml
+task_management:
+  source_of_truth: delivery_file
+  delivery_file: DELIVERY.md
+  github_repository:
+  rule: DELIVERY.md is the master task list for this demo
+```
+
 ## Source Snapshot
 
 | Source ID | Version / Date | Last Synced At |

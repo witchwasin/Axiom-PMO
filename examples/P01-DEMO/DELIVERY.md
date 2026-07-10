@@ -4,15 +4,26 @@
 
 - Mode: Standard
 - Task source of truth: `file`
+- Mode owner: Demo PM / Demo Tech Lead
 - Current status set: `To Do`, `In Progress`, `Review / Test`, `Done`
+
+## Task Source of Truth
+
+```yaml
+task_management:
+  source_of_truth: delivery_file
+  delivery_file: DELIVERY.md
+  github_repository:
+  sync_rule: DELIVERY.md is master; GitHub issues are optional links only
+```
 
 ## Work Items
 
-| ID | Mode | Feature / Deliverable | Requirement Ref | Flow / Wireframe Ref | Acceptance Criteria | Test Checklist | Owner | Priority | Status | Review Stage | Labels |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| D-001 | Standard | Ticket creation | REQ-001 | DESIGN/FLOW.puml, DESIGN/WIREFRAME.md WF-001 | Valid ticket saves as To Do; invalid email shows message | Happy, exception | Demo Dev | high | Review / Test | qa | review:qa |
-| D-002 | Standard | Ticket status workflow | REQ-002, BR-001 | DESIGN/FLOW.puml, DESIGN/WIREFRAME.md WF-002 | Ticket cannot move to Done without review notes | Happy, alternative, exception | Demo Dev | high | Review / Test | qa | review:qa |
-| D-003 | Lite | High-priority visibility | REQ-003 | DESIGN/WIREFRAME.md WF-002 | PM can see high-priority open tickets | Happy | Demo Dev | medium | To Do | none | needs-client |
+| ID | Mode | Mode Reason | Mode Approved By | Feature / Deliverable | Requirement Ref | Flow / Wireframe Ref | Acceptance Criteria | Test Checklist | Owner | Priority | Status | Review Stage | PR / Evidence | Labels |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| D-001 | Standard | normal feature | Demo PM | Ticket creation | REQ-001 | DESIGN/FLOW.puml, DESIGN/WIREFRAME.md WF-001 | Valid ticket saves as To Do; invalid email shows message | Happy, exception | Demo Dev | high | Review / Test | qa | demo evidence | review:qa |
+| D-002 | Standard | business rule workflow | Demo Tech Lead | Ticket status workflow | REQ-002, BR-001 | DESIGN/FLOW.puml, DESIGN/WIREFRAME.md WF-002 | Ticket cannot move to Done without review notes | Happy, alternative, exception | Demo Dev | high | Review / Test | qa | demo evidence | review:qa |
+| D-003 | Lite | low-risk dashboard visibility | Demo PM | High-priority visibility | REQ-003 | DESIGN/WIREFRAME.md WF-002 | PM can see high-priority open tickets | Happy | Demo Dev | medium | To Do | none | pending demo review | needs-client |
 
 ## Conditional Handoff
 

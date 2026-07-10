@@ -42,6 +42,8 @@ Require-File "CLAUDE.md"
 Require-File "CONTEXT-ROUTER.md"
 Require-File "pmo-config/context-map.yaml"
 Require-File "scripts/validate-project.ps1"
+Require-File "scripts/pmo-doctor.ps1"
+Require-File "scripts/run-validation-tests.ps1"
 
 $templateNames = @("PROJECT.md", "DELIVERY.md", "RELEASE.md", "RAID-log.md", "decision-log.md", "RTM.yaml", "WIREFRAME.md")
 foreach ($name in $templateNames) {
@@ -55,6 +57,16 @@ if (Test-Path -LiteralPath $settingsPath) {
     Add-Result FAIL ".claude/settings.json still allows git push/commit/tag"
   } else {
     Add-Result PASS ".claude/settings.json does not allow git push/commit/tag by default"
+  }
+  if ($settings -match "scripts/pmo-doctor\.ps1") {
+    Add-Result PASS ".claude/settings.json allows the framework doctor command"
+  } else {
+    Add-Result FAIL ".claude/settings.json does not allow scripts/pmo-doctor.ps1"
+  }
+  if ($settings -match "scripts/run-validation-tests\.ps1") {
+    Add-Result PASS ".claude/settings.json allows the validation fixture test command"
+  } else {
+    Add-Result FAIL ".claude/settings.json does not allow scripts/run-validation-tests.ps1"
   }
 
   if ($settings -match "echo 'PMO-") {
@@ -79,6 +91,9 @@ foreach ($skill in @("pmo-analyze-new-mom", "pmo-gap-analysis", "pmo-activity-di
 $links = @()
 foreach ($file in Get-ChildItem -LiteralPath $repo -Recurse -File -Include *.md -ErrorAction SilentlyContinue) {
   if ($file.FullName -match "\\.git\\") { continue }
+  $relativeFile = $file.FullName.Substring($repo.Length).TrimStart('\', '/')
+  if ($relativeFile -match "^tests[\\/]fixtures[\\/]invalid-") { continue }
+
   $content = Get-Content -LiteralPath $file.FullName -Raw -ErrorAction SilentlyContinue
   $matches = [regex]::Matches($content, "\[[^\]]+\]\((?!https?://)([^)#]+)(?:#[^)]+)?\)")
   foreach ($match in $matches) {
@@ -87,7 +102,7 @@ foreach ($file in Get-ChildItem -LiteralPath $repo -Recurse -File -Include *.md 
     $base = Split-Path -Parent $file.FullName
     $resolved = Join-Path $base $target
     if (-not (Test-Path -LiteralPath $resolved)) {
-      $links += "$($file.FullName.Substring($repo.Length).TrimStart('\', '/')) -> $target"
+      $links += "$relativeFile -> $target"
     }
   }
 }
