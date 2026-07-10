@@ -6,13 +6,24 @@
 
 - Mode: Lite / Standard / Strict
 - Task source of truth: `file` / `github`
+- Mode owner: PM / Tech Lead
 - Current status set: `To Do`, `In Progress`, `Review / Test`, `Done`
+
+## Task Source of Truth
+
+```yaml
+task_management:
+  source_of_truth: delivery_file # delivery_file or github
+  delivery_file: DELIVERY.md
+  github_repository:
+  sync_rule: if GitHub is master, this file is an index; if this file is master, GitHub issues are links only
+```
 
 ## Work Items
 
-| ID | Mode | Feature / Deliverable | Requirement Ref | Flow / Wireframe Ref | Acceptance Criteria | Test Checklist | Owner | Priority | Status | Review Stage | Labels |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| D-001 | Standard | <feature> | REQ-001 | DESIGN/FLOW.puml | <criteria> | <happy/alt/exception> | <owner> | high | To Do | none | |
+| ID | Mode | Mode Reason | Mode Approved By | Feature / Deliverable | Requirement Ref | Flow / Wireframe Ref | Acceptance Criteria | Test Checklist | Owner | Priority | Status | Review Stage | PR / Evidence | Labels |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| D-001 | Standard | normal feature | PM | <feature> | REQ-001 | DESIGN/FLOW.puml | <criteria> | <happy/alt/exception> | <owner> | high | To Do | none | | |
 
 ## Conditional Handoff
 

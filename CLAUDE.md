@@ -20,6 +20,8 @@
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath examples/P01-DEMO -Mode Standard -Gate Release
+powershell -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1
+powershell -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1
 ```
 
 ### Existing Legacy Project
@@ -128,12 +130,14 @@ Update this when a reusable project/example is added.
 ## Hook Policy
 
 Fake echo hooks have been removed. Use `scripts/validate-project.ps1` for real validation.
+Use `scripts/pmo-doctor.ps1` for framework health and `scripts/run-validation-tests.ps1` for positive/negative validator fixtures.
 
 Suggested validation command:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project-folder> -Mode Standard -Gate Release
 powershell -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1
+powershell -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1
 ```
 
 ---

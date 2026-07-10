@@ -6,6 +6,16 @@
 > Owner: <PM/PO>
 > Last updated: <YYYY-MM-DD>
 
+## Task Management
+
+```yaml
+task_management:
+  source_of_truth: delivery_file # delivery_file or github
+  delivery_file: DELIVERY.md
+  github_repository:
+  rule: only one task system is master; the other can only be an index or link
+```
+
 ## Source Snapshot
 
 | Source ID | Version / Date | Last Synced At |
@@ -65,6 +75,6 @@ One-sentence project outcome:
 
 | Gate | Approver | Date | Evidence |
 |---|---|---|---|
-| Scope Approved | <name> | YYYY-MM-DD | <MOM/Decision ID> |
-| Design Ready | <name> | YYYY-MM-DD | <MOM/Decision ID> |
-| Release Approved | <name> | YYYY-MM-DD | <MOM/Decision ID> |
+| Scope Approved | <approver name> | YYYY-MM-DD | DEC-001 |
+| Design Ready | <approver name> | YYYY-MM-DD | DEC-002 |
+| Release Approved | <approver name> | YYYY-MM-DD | DEC-003 |
