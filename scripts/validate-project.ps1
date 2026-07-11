@@ -32,6 +32,7 @@ if (-not (Test-Path -LiteralPath $policyPath -PathType Leaf)) {
 }
 $policy = Get-Content -LiteralPath $policyPath -Raw | ConvertFrom-Json
 $policyEnums = $policy.enums
+$sentinelRules = $policy.sentinel_rules
 
 $pass = 0
 $warn = 0
@@ -211,9 +212,29 @@ function Test-PlaceholderValue {
 
   $trimmed = $Value.Trim()
   if ($trimmed.Length -eq 0) { return $true }
-  if ($trimmed -eq "not_required") { return $false }
+  # not_required is a placeholder by default; it is only accepted where
+  # policy.json sentinel_rules explicitly allows it (see Test-FieldValue).
+  if ($trimmed -eq "not_required") { return $true }
   if ($trimmed -eq "-") { return $true }
   return ($trimmed -match "<[^>]+>|TODO|TBD|YYYY-MM-DD|ISO-8601|pending|n/a")
+}
+
+function Test-FieldValue {
+  param(
+    [string]$FieldName,
+    [string]$Value,
+    [string]$FieldMode
+  )
+
+  $trimmed = "$Value".Trim()
+  if ($trimmed -eq "not_required") {
+    $rule = $script:sentinelRules.not_required
+    if ($rule -and (@($rule.allowed_fields) -contains $FieldName) -and (@($rule.allowed_modes) -contains $FieldMode)) {
+      return $false
+    }
+    return $true
+  }
+  return (Test-PlaceholderValue $Value)
 }
 
 function Test-DateValue {
@@ -478,7 +499,7 @@ if (Test-Path -LiteralPath $deliveryPath) {
   $deliveryIds = Get-IdsFromRows $workItems
   foreach ($item in $workItems) {
     $requiredFields = @("ID", "Mode", "Mode Reason", "Mode Approved By", "Requirement Ref", "Design Ref", "Acceptance Criteria", "Test Checklist", "Owner", "Status", "Review Stage", "Evidence Ref")
-    $blankFields = $requiredFields | Where-Object { -not $item.$_ -or (Test-PlaceholderValue $item.$_) }
+    $blankFields = $requiredFields | Where-Object { -not $item.$_ -or (Test-FieldValue $_ $item.$_ $item.Mode) }
     if ($blankFields.Count -gt 0) {
       $workItemLevel = if ($Gate -eq "Release") { "FAIL" } else { "WARN" }
       Add-Result $workItemLevel "$($item.ID) has missing work item fields: $($blankFields -join ', ')" "WORKITEM-001"
@@ -507,12 +528,12 @@ if (Test-Path -LiteralPath $deliveryPath) {
     }
 
     foreach ($designRef in Split-ReferenceValues $item.'Design Ref') {
-      if ($designRef -eq "not_required" -and $Mode -eq "Lite") { continue }
+      if ($designRef -eq "not_required" -and -not (Test-FieldValue "Design Ref" $designRef $item.Mode)) { continue }
       $designPath = Get-DesignPathFromRef $designRef
       if ($designPath -and -not (Test-Path -LiteralPath (Join-Path $project $designPath) -PathType Leaf)) {
         Add-Result FAIL "$($item.ID) references missing design file: $designPath" "REF-001"
       }
-      if ($Mode -ne "Lite" -and -not $designPath) {
+      if ($item.Mode -ne "Lite" -and -not $designPath) {
         Add-Result FAIL "$($item.ID) is missing a resolvable design reference" "REF-001"
       }
     }
