@@ -1,5 +1,5 @@
 param(
-  [string[]]$Files = @("AGENTS.md", "CLAUDE.md", "CONTEXT-ROUTER.md", "pmo-config/context-map.yaml", "pmo-config/policy.yaml")
+  [string[]]$Files = @("AGENTS.md", "CLAUDE.md", "CONTEXT-ROUTER.md", "pmo-config/context-map.yaml", "pmo-config/policy.json")
 )
 
 $ErrorActionPreference = "Stop"
@@ -23,4 +23,3 @@ foreach ($relative in $Files) {
 $rows | Format-Table -AutoSize
 Write-Host ""
 Write-Host "Estimated Context Size is an approximation, not a tokenizer measurement."
-

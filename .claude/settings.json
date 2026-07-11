@@ -12,29 +12,33 @@
       "Bash(powershell -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1:*)",
       "Bash(powershell -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1:*)",
       "Bash(powershell -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1:*)",
-      "Bash(powershell -ExecutionPolicy Bypass -File scripts/measure-context.ps1:*)",
-      "WebSearch"
+      "Bash(powershell -ExecutionPolicy Bypass -File scripts/measure-context.ps1:*)"
     ],
     "ask": [
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(git tag:*)",
       "Bash(gh release:*)",
-      "Bash(gh repo:*)"
+      "Bash(gh repo:*)",
+      "WebSearch"
     ],
     "deny": [
       "Read(.env)",
       "Read(.env.*)",
       "Read(**/*.pem)",
       "Read(**/*.key)",
-      "Read(**/*secret*)",
-      "Read(**/*credential*)",
+      "Read(**/*.pfx)",
+      "Read(**/*.p12)",
+      "Read(**/id_rsa)",
+      "Read(**/id_ed25519)",
       "Write(.env)",
       "Write(.env.*)",
       "Write(**/*.pem)",
       "Write(**/*.key)",
-      "Write(**/*secret*)",
-      "Write(**/*credential*)",
+      "Write(**/*.pfx)",
+      "Write(**/*.p12)",
+      "Write(**/id_rsa)",
+      "Write(**/id_ed25519)",
       "Bash(type .env:*)",
       "Bash(cat .env:*)"
     ]

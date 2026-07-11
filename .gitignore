@@ -59,9 +59,16 @@ build/
 _rendered/
 
 # ==========================
-# Confidential / Private Files
+# Secrets / Credentials
 # ==========================
-P13-RR-EWALLET/Others/Figma Flow/
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+id_rsa
+id_ed25519
 
 # ==========================
 # Pricing / Proposal / Sensitive Docs
@@ -87,7 +94,6 @@ P13-RR-EWALLET/Others/Figma Flow/
 # ==========================
 Internal/
 
-# Project-specific sensitive folders (confidential/PDF drops)
+# Project-specific sensitive folders
 P*/confidential/
 P*/confidenciacal/
-P*/SystemFlow/PDF_*/

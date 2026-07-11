@@ -74,7 +74,7 @@ One-sentence project outcome:
 ## Approvals
 
 | Gate | Approval Status | Approver | Role | Date | Evidence |
-|---|---|---|---|---|---|---|---|
-| Scope Approved | approved | pending | Product Owner | <approver name> | Product Owner | YYYY-MM-DD | DEC-001 |
-| Design Ready | approved | pending | Tech Lead | <approver name> | Tech Lead | YYYY-MM-DD | DEC-002 |
-| Release Approved | approved | pending | Product Owner | <approver name> | Product Owner | YYYY-MM-DD | DEC-003 |
+|---|---|---|---|---|---|
+| Scope Approved | pending | <approver name> | Product Owner | YYYY-MM-DD | DEC-001 |
+| Design Ready | pending | <approver name> | Tech Lead | YYYY-MM-DD | DEC-002 |
+| Release Approved | pending | <approver name> | Product Owner | YYYY-MM-DD | DEC-003 |

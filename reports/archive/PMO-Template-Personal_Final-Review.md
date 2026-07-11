@@ -727,3 +727,6 @@ Repo นี้ไม่ได้แค่จัดเอกสารใหม่
 - AI เห็นชัดว่าแต่ละ mode ไม่ต้องใช้เอกสารเท่ากัน
 - Repo ดู mature ขึ้นเพราะมี version และ changelog
 - ตัวอย่างช่วยลดโอกาสที่ Lite mode จะถูกทำให้หนักเกินจำเป็น
+# SUPERSEDED - ARCHIVED REPORT
+
+This report is archived and is not the current acceptance source. It references older scores and version state. Use `reports/current-acceptance.md` for the current computed score, pending human actions, and final gate status.
