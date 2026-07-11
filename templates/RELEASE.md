@@ -46,4 +46,4 @@
 
 | Gate | Approval Status | Approver | Role | Date | Evidence |
 |---|---|---|---|---|---|
-| Release Approved | approved | pending | Product Owner | <name> | Product Owner | YYYY-MM-DD | DEC-001 |
+| Release Approved | pending | <approver name> | Product Owner | YYYY-MM-DD | DEC-001 |

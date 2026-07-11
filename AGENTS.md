@@ -155,7 +155,7 @@ If the user says "record", "log", "track", or "จดไว้" without a target
 
 Load skills on demand only. Never load all `.claude/skills/*` at once.
 
-Active skill groups are defined in `pmo-config/skill-manifest.yaml`:
+Active skill groups are defined in `pmo-config/skill-manifest.json`:
 
 - Intake: `pmo-intake`
 - Design: `pmo-design`
@@ -174,7 +174,7 @@ Archived skills under `.claude-archive/` are preserved for reference only and mu
 Before treating a project as ready, run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath examples/P01-DEMO -Mode Standard -Gate Release
+powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath examples/P01-DEMO -Mode Standard -Gate Release -FailOnWarning
 powershell -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1
 powershell -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1
 ```

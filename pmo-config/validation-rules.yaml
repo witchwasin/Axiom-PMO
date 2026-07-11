@@ -15,6 +15,18 @@ rules:
   SOURCE-003:
     severity: fail
     description: Requirement IDs are duplicated.
+  SOURCE-LINK-001:
+    severity: warn
+    description: Broken links in user-owned source files are informational or warning only.
+  REF-001:
+    severity: fail_release
+    description: Requirement, source, design, decision, or release references do not resolve.
+  ENUM-001:
+    severity: fail_release
+    description: Work item mode, status, review stage, or evidence enum is invalid.
+  RTM-001:
+    severity: fail
+    description: Strict RTM is empty, incomplete, or references missing requirements.
   EVIDENCE-001:
     severity: fail_release
     description: Requirement is missing evidence status or uses an invalid evidence status.
@@ -60,4 +72,10 @@ rules:
   PERMISSION-001:
     severity: fail
     description: Dangerous git mutation is allowed by default.
+  DOCTOR-SKILL-001:
+    severity: fail
+    description: Active skill SKILL.md frontmatter is missing, incomplete, or mismatched.
+  TABLE-001:
+    severity: fail
+    description: Markdown table column counts do not match the header.
 

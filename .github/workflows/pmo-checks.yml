@@ -1,0 +1,19 @@
+name: PMO Checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  pmo-checks:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run PMO framework checks
+        shell: powershell
+        run: |
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\run-all-checks.ps1 -RepoPath .

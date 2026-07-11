@@ -18,7 +18,7 @@ Old skills were archived instead of deleted:
 - `.claude-archive/optional-skills/`
 - `.claude-archive/legacy-skills/`
 
-The active runtime now uses only the 7 skills listed in `pmo-config/skill-manifest.yaml`.
+The active runtime now uses only the 7 skills listed in `pmo-config/skill-manifest.json`.
 
 ## Project Migration Steps
 
@@ -31,4 +31,3 @@ The active runtime now uses only the 7 skills listed in `pmo-config/skill-manife
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project-path> -Mode Standard -Gate Release
 ```
-

@@ -41,8 +41,9 @@ powershell -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1
 - `AGENTS.md`: shared AI behavior rules
 - `CLAUDE.md`: intent router
 - `CONTEXT-ROUTER.md`: context loading rules
-- `pmo-config/policy.yaml`: central enums and policy
-- `pmo-config/skill-manifest.yaml`: active skill runtime
+- `pmo-config/policy.json`: runtime enums and policy
+- `pmo-config/skill-manifest.json`: active skill runtime
+- `reports/current-acceptance.md`: current acceptance and computed score
 - `scripts/validate-project.ps1`: project validator
 - `scripts/pmo-doctor.ps1`: framework doctor
 
@@ -59,4 +60,3 @@ Only these 7 skills are active by default:
 - `pmo-git-safety`
 
 Archived skills live under `.claude-archive/` and are reference-only unless explicitly restored.
-
