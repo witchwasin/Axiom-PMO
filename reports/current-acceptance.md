@@ -9,9 +9,20 @@ Latest pushed branch commit before Final Gate: `ba3a22b`
 
 Part 4 Final Acceptance Gate passed locally. No commit or push was performed during this gate.
 
-Branch protection on `main` remains a pending human action for the repository owner. It must be configured in GitHub settings; executor automation cannot enforce it from the working tree.
+**Update (2026-07-12):** The repository owner reviewed the branch-protection recommendation
+below — including the note that it also guards against an AI agent pushing directly to
+`main` (not only human collaborators) — and made an explicit, informed decision to
+**waive it**. Rationale: this is currently a private, single-maintainer repository not
+shared with anyone. This is a deliberate, resolved decision, not an open task. It can be
+revisited at any time (e.g., before adding collaborators or making the repo public) at
+no cost to prior work.
 
-Required branch-protection settings:
+Because `main` is not configured to require the `PMO Checks` status, the plan's own
+floor condition "CI not a required check on main" is **not met**, by owner choice. Per
+R3.10, this keeps the score annotated rather than an unconditional 9+ claim — see
+Final Score below.
+
+Recommended settings, retained here for reference if reinstated later:
 
 - require pull request before merge
 - require the `PMO Checks` status check
@@ -96,14 +107,14 @@ Run-all gate:
 
 CI / repository controls:
 
-- `.github/workflows/pmo-checks.yml` exists and is covered by local `run-all-checks.ps1` parity, including the config mutation regression check.
-- Branch protection is still pending human repository-owner action on GitHub.
+- `.github/workflows/pmo-checks.yml` exists and is covered by local `run-all-checks.ps1` parity, including the config mutation regression check. Confirmed running and green on PR #1 (`PMO Checks`, run `29162625972`).
+- Branch protection on `main` was explicitly waived by the repository owner (2026-07-12) — private, single-maintainer repo. Not an open task; see § Final Gate Status above.
 
 ## Before / After Metrics
 
 | Area | Before remediation | After Final Gate |
 |---|---:|---:|
-| Overall practical readiness | about `7.5 / 10` | `9.03 / 10.00 pending branch protection` |
+| Overall practical readiness | about `7.5 / 10` | `9.03 / 10.00 -- branch protection waived by owner (private, single-maintainer repo)` |
 | Validation matrix size | 38 cases after early runtime hotfix | 53 cases |
 | Framework doctor result | not final-gate clean | `PASS=48 WARN=0 FAIL=0` |
 | Runtime modes | Lite / Standard / Strict defined | Lite / Standard / Strict validated with examples and E2E |
@@ -131,12 +142,12 @@ Formula:
 
 Public claim should remain:
 
-`9.03 / 10.00 pending branch protection`
+`9.03 / 10.00 -- branch protection waived by owner (private, single-maintainer repo)`
 
 ## Known Limitations + Remaining Risks
 
-- Branch protection on `main` is pending human action in GitHub settings.
-- Remote GitHub Actions status was not re-queried during this local Final Gate; local parity checks passed.
+- Branch protection on `main` is explicitly waived by owner decision (private, single-maintainer repo, 2026-07-12); can be reinstated any time before the repo is shared or made public.
+- Remote GitHub Actions was re-queried after opening PR #1: first run failed on a real CRLF regex bug in `PERMISSION-007` (only reproducible via a fresh checkout, not the local working copy); fixed and confirmed green on the second run (`29162625972`).
 - The accepted process violation remains recorded in `reports/process-violation.md`; future commit/push work must be reviewed before push.
 - `.claude/settings.json` guardrails depend on the AI runtime honoring those settings.
 
