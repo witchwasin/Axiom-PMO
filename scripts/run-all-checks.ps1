@@ -33,6 +33,7 @@ if ($TestChildScript) {
 
 Invoke-Check "pmo-doctor" { powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/pmo-doctor.ps1") -RepoPath $repo }
 Invoke-Check "validation-fixtures" { powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/run-validation-tests.ps1") -RepoPath $repo }
+Invoke-Check "config-mutation" { powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/config-mutation-tests.ps1") -RepoPath $repo }
 Invoke-Check "lite-example" { powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/validate-project.ps1") -ProjectPath (Join-Path $repo "examples/LITE-BUGFIX") -Mode Lite -Gate Scope -FailOnWarning }
 Invoke-Check "standard-example" { powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/validate-project.ps1") -ProjectPath (Join-Path $repo "examples/STANDARD-FEATURE") -Mode Standard -Gate Release -FailOnWarning }
 Invoke-Check "strict-example" { powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/validate-project.ps1") -ProjectPath (Join-Path $repo "examples/STRICT-HIGH-RISK") -Mode Strict -Gate Release -FailOnWarning }

@@ -3,6 +3,7 @@
 ## Scope
 
 - D-001
+- D-999
 
 ## Structured Rollback Plan
 

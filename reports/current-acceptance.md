@@ -2,33 +2,16 @@
 
 Date: 2026-07-11
 Branch: `remediation/9plus`
-Version: `0.4.0-stable-candidate`
+Baseline main: `37c919b`
+Latest pushed branch commit before Final Gate: `ba3a22b`
 
-## Status
+## Final Gate Status
 
-This report is the current close-out report for the remediation branch after Round 1, Round 2, and Round 3 governance work. Older acceptance reports are superseded unless explicitly referenced by this file.
+Part 4 Final Acceptance Gate passed locally. No commit or push was performed during this gate.
 
-## Verification
+Branch protection on `main` remains a pending human action for the repository owner. It must be configured in GitHub settings; executor automation cannot enforce it from the working tree.
 
-Run before Final Gate:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1
-```
-
-Expected gate:
-
-| Check | Required Result |
-|---|---:|
-| Framework doctor | WARN=0, FAIL=0 |
-| Validation matrix | FAIL=0 |
-| Lite E2E | PASS |
-| Standard E2E | PASS |
-| Strict E2E | PASS |
-
-## Pending Human Action
-
-Branch protection on `main` remains a pending repository-owner action unless already configured outside this repo. Required settings:
+Required branch-protection settings:
 
 - require pull request before merge
 - require the `PMO Checks` status check
@@ -36,11 +19,100 @@ Branch protection on `main` remains a pending repository-owner action unless alr
 - require at least one approval
 - disallow force push
 
-Executor automation cannot enforce this repository setting from inside the working tree.
+## Version Before / After
 
-## R3.10 Computed Scoring Rubric
+| Item | Before Final Gate | After Final Gate |
+|---|---|---|
+| `VERSION` | `0.4.0-stable-candidate` | `0.4.0-stable-candidate` |
+| top `CHANGELOG.md` version | `0.4.0-stable-candidate` | `0.4.0-stable-candidate` |
 
-Decision score uses the exact 8 dimensions and weights from `reports/remediation-plan.md` §R3.10.
+No version bump was made in Part 4 because this gate only added/adjusted acceptance-test evidence and the close-out report.
+
+## Files Created / Modified / Moved
+
+Created:
+
+- `tests/helpers/config-mutation-tests.ps1`
+
+Modified:
+
+- `reports/current-acceptance.md`
+- `tests/fixtures/invalid-part2-matrix/RELEASE.md`
+- `tests/fixtures/invalid-empty-rtm/DELIVERY.md`
+- `tests/fixtures/invalid-rtm-references-missing-requirement/DELIVERY.md`
+
+Moved:
+
+- none
+
+## Commands + Exit Codes
+
+| Command | Exit | Result |
+|---|---:|---|
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1` | 0 | `PASS=48 WARN=0 FAIL=0` |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1` | 0 | matrix `PASS=53 FAIL=0` |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1` | 0 | doctor, matrix, config mutation, Lite/Standard/Strict examples, and E2E all passed |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -TestChildScript tests/helpers/exit-1.ps1` | 1 | expected fail; fault injection is not swallowed |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File tests/helpers/config-mutation-tests.ps1 -RepoPath D:\GitHub\PMO-Template-Personal` | 0 | JSON runtime config proved as source of truth |
+
+Targeted gate checks also passed:
+
+| Check | Result |
+|---|---|
+| TODO / placeholder in `source/` | does not fail Release gate |
+| TODO / placeholder in governed files | fails Release gate |
+| fabricated `REQ`, `DEC`, and `D` references | fail reference/evidence validation |
+| empty RTM | fails |
+| RTM referencing missing requirement | fails |
+| empty rollback row | fails |
+| `WIREFRAME.html` | passes without false-positive placeholder errors |
+| Lite minimal Release | passes with `Release Approved`, no `RELEASE.md`, no QA, no RTM, no RAID |
+
+## Test Summary
+
+Framework doctor:
+
+- active skills: exactly 7
+- `DOCTOR-SKILL-001`: PASS
+- `TABLE-001`: PASS
+- fake echo hooks: none found
+- permission checks: PASS
+- local markdown links: PASS
+
+Validation matrix:
+
+- positive cases: 12
+- negative cases: 36
+- doctor-negative cases: 5
+- total: 53
+- result: `PASS=53 FAIL=0`
+
+Run-all gate:
+
+- Lite E2E: PASS
+- Standard E2E: PASS
+- Strict E2E: PASS
+- final result: PASS
+
+CI / repository controls:
+
+- `.github/workflows/pmo-checks.yml` exists and is covered by local `run-all-checks.ps1` parity, including the config mutation regression check.
+- Branch protection is still pending human repository-owner action on GitHub.
+
+## Before / After Metrics
+
+| Area | Before remediation | After Final Gate |
+|---|---:|---:|
+| Overall practical readiness | about `7.5 / 10` | `9.03 / 10.00 pending branch protection` |
+| Validation matrix size | 38 cases after early runtime hotfix | 53 cases |
+| Framework doctor result | not final-gate clean | `PASS=48 WARN=0 FAIL=0` |
+| Runtime modes | Lite / Standard / Strict defined | Lite / Standard / Strict validated with examples and E2E |
+| Config source of truth | partly document-driven | JSON config mutation-tested as runtime source of truth |
+| Release approval | inconsistent Lite exemption found | all modes require valid `Release Approved` |
+
+## Final Score
+
+Decision score uses the exact 8 dimensions and weights from `reports/remediation-plan.md` section `R3.10`.
 
 | Dimension | Weight | Score | Weighted |
 |---|---:|---:|---:|
@@ -53,26 +125,36 @@ Decision score uses the exact 8 dimensions and weights from `reports/remediation
 | Tooling, CI & Release Gate | 10% | 9.0 | 0.90 |
 | Traceability & Governance | 10% | 9.0 | 0.90 |
 
-Computed rubric score: `9.03 / 10.00`
+Formula:
 
-Supplemental non-scoring observations:
+`Final Score = SUM(dimension score * dimension weight) = 9.03 / 10.00`
 
-| Area | Note |
-|---|---|
-| Documentation consistency | Improved through `reports/current-acceptance.md`, archived superseded report, and JSON runtime references. |
-| Security & permissions | Improved through WebSearch approval, precise secret patterns, and doctor checks. |
-| Maintainability | Improved through JSON runtime config, E2E tests, and generator/source-snapshot scripts. |
+Public claim should remain:
 
-Floor check:
+`9.03 / 10.00 pending branch protection`
 
-| Floor | Status |
-|---|---|
-| Open P0 | Clear |
-| Validator below 9.0 | Clear |
-| Active Skills below 8.5 | Clear |
-| Tooling/CI below 8.5 | Clear |
-| Negative tests incomplete | Clear after matrix gate |
-| CI not a required check on main | Pending human branch-protection action |
-| Unauthorized push without recorded resolution | Recorded in `reports/process-violation.md`; disposition accepted |
+## Known Limitations + Remaining Risks
 
-Because branch protection is a pending human repository action, the computed score is `9.03`, but final public claims should say `9.03 pending branch protection` until the repository owner configures `main`.
+- Branch protection on `main` is pending human action in GitHub settings.
+- Remote GitHub Actions status was not re-queried during this local Final Gate; local parity checks passed.
+- The accepted process violation remains recorded in `reports/process-violation.md`; future commit/push work must be reviewed before push.
+- `.claude/settings.json` guardrails depend on the AI runtime honoring those settings.
+
+## Git Status + Diff Summary
+
+Working tree after Final Gate is intentionally not committed.
+
+Changed files:
+
+- `reports/current-acceptance.md`
+- `tests/fixtures/invalid-part2-matrix/RELEASE.md`
+- `tests/fixtures/invalid-empty-rtm/DELIVERY.md`
+- `tests/fixtures/invalid-rtm-references-missing-requirement/DELIVERY.md`
+- `tests/helpers/config-mutation-tests.ps1`
+
+Diff purpose:
+
+- add config mutation proof helper
+- wire config mutation proof into `run-all-checks.ps1`, which is the CI entry point
+- tighten negative fixtures used by Final Gate reference-integrity checks
+- record the Final Acceptance close-out report
