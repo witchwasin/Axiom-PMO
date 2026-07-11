@@ -1,11 +1,28 @@
 param(
-  [string]$RepoPath = (Resolve-Path ".").Path
+  [string]$RepoPath = (Resolve-Path ".").Path,
+  [string]$SkillRootOverride = "",
+  [string]$TemplateRootOverride = ""
 )
 
 $ErrorActionPreference = "Stop"
 
 $root = Resolve-Path -LiteralPath $RepoPath
 $repo = $root.Path
+$policyPath = Join-Path $repo "pmo-config/policy.json"
+$skillManifestPath = Join-Path $repo "pmo-config/skill-manifest.json"
+$validationRulesPath = Join-Path $repo "pmo-config/validation-rules.json"
+$policy = $null
+$skillManifest = $null
+$validationRules = $null
+if (Test-Path -LiteralPath $policyPath -PathType Leaf) {
+  $policy = Get-Content -LiteralPath $policyPath -Raw | ConvertFrom-Json
+}
+if (Test-Path -LiteralPath $skillManifestPath -PathType Leaf) {
+  $skillManifest = Get-Content -LiteralPath $skillManifestPath -Raw | ConvertFrom-Json
+}
+if (Test-Path -LiteralPath $validationRulesPath -PathType Leaf) {
+  $validationRules = Get-Content -LiteralPath $validationRulesPath -Raw | ConvertFrom-Json
+}
 
 $pass = 0
 $warn = 0
@@ -42,6 +59,97 @@ function Require-File {
   }
 }
 
+function Get-MarkdownTableDiagnostics {
+  param([string]$Path)
+
+  $diagnostics = @()
+  $lines = Get-Content -LiteralPath $Path -ErrorAction SilentlyContinue
+  $tableStart = -1
+  $tableLines = @()
+
+  for ($i = 0; $i -le $lines.Count; $i++) {
+    $line = if ($i -lt $lines.Count) { $lines[$i] } else { "" }
+    if ($line -match '^\s*\|') {
+      if ($tableStart -lt 0) { $tableStart = $i + 1 }
+      $tableLines += $line
+      continue
+    }
+
+    if ($tableLines.Count -gt 0) {
+      if ($tableLines.Count -ge 2) {
+        $headerCount = (($tableLines[0] -split '\|').Count - 2)
+        for ($j = 1; $j -lt $tableLines.Count; $j++) {
+          $cellCount = (($tableLines[$j] -split '\|').Count - 2)
+          if ($cellCount -ne $headerCount) {
+            $diagnostics += "$Path line $($tableStart + $j): expected $headerCount columns, got $cellCount"
+          }
+        }
+      }
+      $tableStart = -1
+      $tableLines = @()
+    }
+  }
+
+  return $diagnostics
+}
+
+function Test-SkillFrontmatter {
+  param(
+    [string]$SkillsRoot,
+    [string[]]$ExpectedSkills
+  )
+
+  $problems = @()
+  foreach ($skill in $ExpectedSkills) {
+    $skillFile = Join-Path (Join-Path $SkillsRoot $skill) "SKILL.md"
+    if (-not (Test-Path -LiteralPath $skillFile -PathType Leaf)) {
+      $problems += "$skill missing SKILL.md"
+      continue
+    }
+
+    $text = Get-Content -LiteralPath $skillFile -Raw
+    if ($text -notmatch '(?s)^---\s*\r?\n(.*?)\r?\n---') {
+      $problems += "$skill missing YAML frontmatter"
+      continue
+    }
+
+    $frontmatter = $Matches[1]
+    $nameMatch = [regex]::Match($frontmatter, '(?m)^\s*name:\s*(.+?)\s*$')
+    $descriptionMatch = [regex]::Match($frontmatter, '(?m)^\s*description:\s*(.+?)\s*$')
+    if (-not $nameMatch.Success) {
+      $problems += "$skill missing frontmatter name"
+    } elseif ($nameMatch.Groups[1].Value.Trim() -ne $skill) {
+      $problems += "$skill frontmatter name does not match folder"
+    }
+    if (-not $descriptionMatch.Success -or $descriptionMatch.Groups[1].Value.Trim().Length -lt 12) {
+      $problems += "$skill missing useful frontmatter description"
+    }
+  }
+
+  if ($problems.Count -eq 0) {
+    Add-Result PASS "Active skill frontmatter is valid" "DOCTOR-SKILL-001"
+  } else {
+    Add-Result FAIL ("Active skill frontmatter problems: " + (($problems | Select-Object -First 8) -join "; ")) "DOCTOR-SKILL-001"
+  }
+}
+
+function Test-MarkdownTables {
+  param([string]$RootPath)
+
+  $problems = @()
+  if (Test-Path -LiteralPath $RootPath) {
+    foreach ($file in Get-ChildItem -LiteralPath $RootPath -Recurse -File -Include *.md -ErrorAction SilentlyContinue) {
+      $problems += Get-MarkdownTableDiagnostics $file.FullName
+    }
+  }
+
+  if ($problems.Count -eq 0) {
+    Add-Result PASS "Markdown table column counts are consistent" "TABLE-001"
+  } else {
+    Add-Result FAIL ("Markdown table column mismatch: " + (($problems | Select-Object -First 8) -join "; ")) "TABLE-001"
+  }
+}
+
 Require-File "AGENTS.md"
 Require-File "CLAUDE.md"
 Require-File "VERSION"
@@ -52,9 +160,9 @@ Require-File "SECURITY.md"
 Require-File "MIGRATION.md"
 Require-File "CONTEXT-ROUTER.md"
 Require-File "pmo-config/context-map.yaml"
-Require-File "pmo-config/policy.yaml"
-Require-File "pmo-config/skill-manifest.yaml"
-Require-File "pmo-config/validation-rules.yaml"
+Require-File "pmo-config/policy.json"
+Require-File "pmo-config/skill-manifest.json"
+Require-File "pmo-config/validation-rules.json"
 Require-File "scripts/validate-project.ps1"
 Require-File "scripts/pmo-doctor.ps1"
 Require-File "scripts/run-validation-tests.ps1"
@@ -79,8 +187,11 @@ foreach ($name in $exampleNames) {
   }
 }
 
-$activeSkills = @("pmo-intake", "pmo-design", "pmo-delivery", "pmo-build-review", "pmo-quality-release", "pmo-governance", "pmo-git-safety")
-$skillsRoot = Join-Path $repo ".claude/skills"
+$activeSkills = @($skillManifest.active_skills | ForEach-Object { $_.id })
+if ($activeSkills.Count -eq 0) {
+  Add-Result FAIL "No active skills declared in pmo-config/skill-manifest.json" "DOCTOR-001"
+}
+$skillsRoot = if ($SkillRootOverride) { (Resolve-Path -LiteralPath $SkillRootOverride).Path } else { Join-Path $repo ".claude/skills" }
 $actualSkills = @()
 if (Test-Path -LiteralPath $skillsRoot -PathType Container) {
   $actualSkills = @(Get-ChildItem -LiteralPath $skillsRoot -Directory | Select-Object -ExpandProperty Name)
@@ -95,18 +206,34 @@ if ($missingActive.Count -eq 0 -and $extraActive.Count -eq 0) {
   if ($extraActive.Count -gt 0) { Add-Result FAIL ("Unexpected active skills: " + ($extraActive -join ", ")) "DOCTOR-001" }
 }
 
-$manifestText = Get-Content -LiteralPath (Join-Path $repo "pmo-config/skill-manifest.yaml") -Raw
-foreach ($skill in $activeSkills) {
-  if ($manifestText -notmatch [regex]::Escape($skill)) {
-    Add-Result FAIL "Skill manifest does not list $skill" "DOCTOR-001"
-  }
-}
+Test-SkillFrontmatter $skillsRoot $activeSkills
+
+$templateRoot = if ($TemplateRootOverride) { (Resolve-Path -LiteralPath $TemplateRootOverride).Path } else { Join-Path $repo "templates" }
+Test-MarkdownTables $templateRoot
 
 $contextMap = Get-Content -LiteralPath (Join-Path $repo "pmo-config/context-map.yaml") -Raw
-if ($contextMap -match "policy_ref:\s*pmo-config/policy.yaml" -and $contextMap -match "skill_manifest_ref:\s*pmo-config/skill-manifest.yaml") {
+if ($contextMap -match "policy_ref:\s*pmo-config/policy.json" -and $contextMap -match "skill_manifest_ref:\s*pmo-config/skill-manifest.json" -and $contextMap -match "validation_rules_ref:\s*pmo-config/validation-rules.json") {
   Add-Result PASS "Context map references central policy and skill manifest" "DOCTOR-003"
 } else {
-  Add-Result FAIL "Context map must reference policy.yaml and skill-manifest.yaml" "DOCTOR-003"
+  Add-Result FAIL "Context map must reference JSON runtime config files" "DOCTOR-003"
+}
+if ($validationRules -and $validationRules.rules.'STRUCT-001' -and $validationRules.rules.'ENUM-001' -and $validationRules.rules.'DOCTOR-001') {
+  Add-Result PASS "Validation rule catalog parses from JSON runtime config" "DOCTOR-003"
+} else {
+  Add-Result FAIL "Validation rule catalog is missing required runtime rules" "DOCTOR-003"
+}
+
+$versionText = (Get-Content -LiteralPath (Join-Path $repo "VERSION") -Raw).Trim()
+$changelogFirstVersion = ""
+$changelogText = Get-Content -LiteralPath (Join-Path $repo "CHANGELOG.md") -Raw
+if ($changelogText -match '(?m)^##\s+([^\s]+)\s+-') {
+  $changelogFirstVersion = $Matches[1]
+}
+$configVersions = @($policy.version, $skillManifest.version, $validationRules.version) | Where-Object { $_ }
+if ($versionText -eq $changelogFirstVersion -and ($configVersions | Where-Object { $_ -ne $versionText }).Count -eq 0) {
+  Add-Result PASS "VERSION, CHANGELOG, and JSON config versions match" "DOCTOR-005"
+} else {
+  Add-Result FAIL "Version drift: VERSION=$versionText CHANGELOG=$changelogFirstVersion CONFIG=$($configVersions -join ',')" "DOCTOR-005"
 }
 
 $settingsPath = Join-Path $repo ".claude/settings.json"
@@ -139,7 +266,8 @@ if (Test-Path -LiteralPath $settingsPath) {
   } else {
     Add-Result FAIL ".claude/settings.json should ask before git commit/push/tag" "PERMISSION-003"
   }
-  if (($denyEntries -join "`n") -match "\.env" -and ($denyEntries -join "`n") -match "\.pem" -and ($denyEntries -join "`n") -match "credential") {
+  $denyText = $denyEntries -join "`n"
+  if ($denyText -match "\.env" -and $denyText -match "\.pem" -and $denyText -match "\.pfx" -and $denyText -match "id_rsa" -and $denyText -match "id_ed25519") {
     Add-Result PASS ".claude/settings.json denies common secret and private key paths" "PERMISSION-004"
   } else {
     Add-Result FAIL ".claude/settings.json should deny common secret and private key paths" "PERMISSION-004"
@@ -160,6 +288,13 @@ if (Test-Path -LiteralPath $settingsPath) {
   } else {
     Add-Result FAIL ".claude/settings.json does not allow scripts/run-validation-tests.ps1" "PERMISSION-002"
   }
+  if (($allowEntries -join "`n") -match "\bWebSearch\b") {
+    Add-Result FAIL ".claude/settings.json allows WebSearch without approval" "PERMISSION-006"
+  } elseif (($askEntries -join "`n") -match "\bWebSearch\b") {
+    Add-Result PASS ".claude/settings.json asks before WebSearch" "PERMISSION-006"
+  } else {
+    Add-Result WARN ".claude/settings.json does not mention WebSearch" "PERMISSION-006"
+  }
 
   if ($settings -match "echo 'PMO-") {
     Add-Result FAIL "Fake PMO echo hooks still exist" "DOCTOR-HOOK"
@@ -168,6 +303,19 @@ if (Test-Path -LiteralPath $settingsPath) {
   }
 } else {
   Add-Result WARN ".claude/settings.json not found" "PERMISSION-002"
+}
+
+$gitignorePath = Join-Path $repo ".gitignore"
+if (Test-Path -LiteralPath $gitignorePath -PathType Leaf) {
+  $gitignore = Get-Content -LiteralPath $gitignorePath -Raw
+  $requiredIgnorePatterns = @(".env", ".env.*", "*.pem", "*.key", "*.pfx", "*.p12", "id_rsa", "id_ed25519")
+  $missingIgnores = @($requiredIgnorePatterns | Where-Object { $gitignore -notmatch ("(?m)^" + [regex]::Escape($_) + "$") })
+  $staleIgnores = @("P13-RR-EWALLET/Others/Figma Flow/", "P*/SystemFlow/PDF_*/") | Where-Object { $gitignore -match [regex]::Escape($_) }
+  if ($missingIgnores.Count -eq 0 -and $staleIgnores.Count -eq 0 -and $gitignore -notmatch '\*\*/\*secret\*|\*\*/\*credential\*') {
+    Add-Result PASS ".gitignore uses precise sensitive-file patterns" "PERMISSION-007"
+  } else {
+    Add-Result FAIL ".gitignore sensitive patterns need cleanup: missing=$($missingIgnores -join ',') stale=$($staleIgnores -join ',')" "PERMISSION-007"
+  }
 }
 
 $claude = Get-Content -LiteralPath (Join-Path $repo "CLAUDE.md") -Raw
@@ -206,6 +354,7 @@ foreach ($file in Get-ChildItem -LiteralPath $repo -Recurse -File -Include *.md 
   if ($file.FullName -match "\\.git\\") { continue }
   $relativeFile = $file.FullName.Substring($repo.Length).TrimStart('\', '/')
   if ($relativeFile -match "^tests[\\/]fixtures[\\/]invalid-") { continue }
+  if ($relativeFile -match "(^|[\\/])(source|MOM|REQ|Transcript)[\\/]") { continue }
 
   $content = Get-Content -LiteralPath $file.FullName -Raw -ErrorAction SilentlyContinue
   $matches = [regex]::Matches($content, "\[[^\]]+\]\((?!https?://)([^)#]+)(?:#[^)]+)?\)")

@@ -2,7 +2,7 @@
 
 Use this file before loading source files or skills. The goal is to answer the task with the smallest reliable context.
 
-This file is guidance. The machine-readable map is `pmo-config/context-map.yaml`.
+This file is guidance. The machine-readable map is `pmo-config/context-map.yaml`; runtime policy is in `pmo-config/policy.json`.
 
 ---
 

@@ -28,7 +28,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1
 
 ## Validation Rules
 
-Rules are cataloged in `pmo-config/validation-rules.yaml`.
+Rules are cataloged in `pmo-config/validation-rules.json`.
 
 Each validator output includes:
 
@@ -39,7 +39,7 @@ Each validator output includes:
 JSON output:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath examples/STANDARD-FEATURE -Mode Standard -Gate Release -Format Json
+powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath examples/STANDARD-FEATURE -Mode Standard -Gate Release -FailOnWarning -Format Json
 ```
 
 ## Fixture Policy

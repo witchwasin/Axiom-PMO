@@ -1,3 +1,9 @@
+# SUPERSEDED - NOT CURRENT ACCEPTANCE
+
+This report is superseded by the remediation process started on 2026-07-11. Its self-score of 9.1/10 is not accepted as final because later review found additional P0/P1 remediation items. It also described commit/push/tag as a future release operation even though commit `37c919b` had already been pushed without human diff review. See `reports/process-violation.md` and `reports/remediation-plan.md`.
+
+Branch protection on `main` remains a pending human action for the repository owner; executor automation cannot enforce it from this report.
+
 # Final Acceptance Report - 0.4.0-stable-candidate
 
 Date: 2026-07-10

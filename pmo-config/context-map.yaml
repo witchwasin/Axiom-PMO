@@ -1,7 +1,8 @@
 version: 0.4.0-stable-candidate
 purpose: Machine-readable context guidance. This is guidance, not enforcement.
-policy_ref: pmo-config/policy.yaml
-skill_manifest_ref: pmo-config/skill-manifest.yaml
+policy_ref: pmo-config/policy.json
+skill_manifest_ref: pmo-config/skill-manifest.json
+validation_rules_ref: pmo-config/validation-rules.json
 
 tasks:
   intake:
@@ -54,8 +55,8 @@ tasks:
     required:
       - DELIVERY.md
       - RELEASE.md
-      - RAID-log.md
     optional:
+      - RAID-log.md
       - decision-log.md
       - PROJECT.md
     max_initial_files:
