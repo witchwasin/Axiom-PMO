@@ -55,5 +55,15 @@ baseline or production integrity was affected. The committed content itself had 
 passed independent verification for Part 1 and Part 2, and most of Part 3, at the time
 of the push.
 
-**Status:** Logged for the record. Disposition pending explicit decision from the repo
-owner (accept commit as a checkpoint vs. require it be undone/reset before continuing).
+**Status:** Resolved — accepted as a branch checkpoint, not accepted as process-compliant.
+
+**Disposition (confirmed by repo owner, 2026-07-12):** Commit `8650f0f` and any
+subsequent commits pushed to `remediation/9plus` before this resolution are accepted as
+remediation checkpoints. This acceptance is scoped to `remediation/9plus` only — it does
+not authorize pushing to `main`, and it does not retroactively excuse the process gap.
+**Binding forward rule:** no further push to any branch without an explicit,
+per-push human confirmation (not implied by "proceed to next Part" or similar). Before
+this branch may be merged to `main`: branch protection must be configured on `main`
+(see `reports/current-acceptance.md` § Pending Human Action / R3.9), and a pull request
+with a passing required CI check is mandatory — direct push to `main` remains
+permanently disallowed regardless of this disposition.
