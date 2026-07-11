@@ -62,8 +62,13 @@ subsequent commits pushed to `remediation/9plus` before this resolution are acce
 remediation checkpoints. This acceptance is scoped to `remediation/9plus` only — it does
 not authorize pushing to `main`, and it does not retroactively excuse the process gap.
 **Binding forward rule:** no further push to any branch without an explicit,
-per-push human confirmation (not implied by "proceed to next Part" or similar). Before
-this branch may be merged to `main`: branch protection must be configured on `main`
-(see `reports/current-acceptance.md` § Pending Human Action / R3.9), and a pull request
-with a passing required CI check is mandatory — direct push to `main` remains
-permanently disallowed regardless of this disposition.
+per-push human confirmation (not implied by "proceed to next Part" or similar).
+
+**Update (2026-07-12):** the repo owner explicitly waived GitHub branch-protection
+settings on `main` for now (private, single-maintainer repo — see
+`reports/current-acceptance.md` § Final Gate Status). This means GitHub itself will not
+technically block a direct push to `main`. It does **not** relax the rule above: no
+agent working in this repo may push to `main` — or push anywhere — without the human
+explicitly confirming that specific push first. The protection that was going to be
+enforced by GitHub is, until reinstated, enforced entirely by this rule and by whoever
+is supervising the agent's work.
