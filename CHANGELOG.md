@@ -62,8 +62,10 @@
   owner for now (private, single-maintainer repo) — documented as a resolved decision,
   not an open task, in `reports/process-violation.md` and `reports/current-acceptance.md`.
 - Two process violations (unreviewed commit+push during the remediation) were logged
-  and resolved with disposition in `reports/process-violation.md`; `main` was never
-  affected by either.
+  and resolved with disposition in `reports/process-violation.md`. The first violation
+  pushed `37c919b` directly to `origin/main` (later accepted as the remediation
+  baseline); the second only affected the `remediation/9plus` working branch and never
+  touched `main`.
 
 - Added active skill runtime with 7 skills: `pmo-intake`, `pmo-design`, `pmo-delivery`, `pmo-build-review`, `pmo-quality-release`, `pmo-governance`, and `pmo-git-safety`.
 - Added `pmo-config/skill-manifest.json`.
