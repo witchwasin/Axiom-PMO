@@ -1,5 +1,9 @@
 # Baseline Report
 
+> **ARCHIVED** — this is a Phase-0 snapshot from before the `remediation-plan.md` (v3)
+> work. Superseded by `reports/remediation-plan.md` § Verified-findings appendix and
+> `reports/current-acceptance.md`. Kept for historical reference only.
+
 Date: 2026-07-10  
 Repo: `PMO-Template-Personal`  
 Baseline version: `0.3.0-lite-ai-guardrails`

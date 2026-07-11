@@ -1,5 +1,5 @@
 {
-  "version": "0.4.0-stable-candidate",
+  "version": "0.4.0",
   "rules": {
     "STRUCT-001": { "severity": "fail", "description": "Required project file or directory is missing." },
     "PLACEHOLDER-001": { "severity": "fail_release", "description": "Placeholder, TODO, or TBD remains at release gate." },

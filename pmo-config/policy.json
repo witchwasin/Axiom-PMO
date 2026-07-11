@@ -1,5 +1,5 @@
 {
-  "version": "0.4.0-stable-candidate",
+  "version": "0.4.0",
   "workflow": {
     "canonical_flow": [
       "source",
