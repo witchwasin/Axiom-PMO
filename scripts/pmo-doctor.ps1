@@ -309,7 +309,7 @@ $gitignorePath = Join-Path $repo ".gitignore"
 if (Test-Path -LiteralPath $gitignorePath -PathType Leaf) {
   $gitignore = Get-Content -LiteralPath $gitignorePath -Raw
   $requiredIgnorePatterns = @(".env", ".env.*", "*.pem", "*.key", "*.pfx", "*.p12", "id_rsa", "id_ed25519")
-  $missingIgnores = @($requiredIgnorePatterns | Where-Object { $gitignore -notmatch ("(?m)^" + [regex]::Escape($_) + "$") })
+  $missingIgnores = @($requiredIgnorePatterns | Where-Object { $gitignore -notmatch ("(?m)^" + [regex]::Escape($_) + "\r?$") })
   $staleIgnores = @("P13-RR-EWALLET/Others/Figma Flow/", "P*/SystemFlow/PDF_*/") | Where-Object { $gitignore -match [regex]::Escape($_) }
   if ($missingIgnores.Count -eq 0 -and $staleIgnores.Count -eq 0 -and $gitignore -notmatch '\*\*/\*secret\*|\*\*/\*credential\*') {
     Add-Result PASS ".gitignore uses precise sensitive-file patterns" "PERMISSION-007"
