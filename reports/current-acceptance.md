@@ -40,18 +40,28 @@ Executor automation cannot enforce this repository setting from inside the worki
 
 ## R3.10 Computed Scoring Rubric
 
+Decision score uses the exact 8 dimensions and weights from `reports/remediation-plan.md` §R3.10.
+
 | Dimension | Weight | Score | Weighted |
 |---|---:|---:|---:|
 | Architecture & Workflow Fit | 15% | 9.2 | 1.38 |
 | AI Runtime Fit | 10% | 9.0 | 0.90 |
-| Validator & Guardrails | 20% | 9.1 | 1.82 |
-| Active Skills | 10% | 8.8 | 0.88 |
-| Tooling, CI & E2E | 15% | 9.0 | 1.35 |
-| Documentation Consistency | 10% | 8.9 | 0.89 |
-| Security & Permissions | 10% | 9.0 | 0.90 |
-| Maintainability | 10% | 8.8 | 0.88 |
+| Context Discipline | 10% | 9.1 | 0.91 |
+| Validator Correctness | 20% | 9.1 | 1.82 |
+| Templates & Examples | 10% | 9.0 | 0.90 |
+| Active Skills Quality | 15% | 8.8 | 1.32 |
+| Tooling, CI & Release Gate | 10% | 9.0 | 0.90 |
+| Traceability & Governance | 10% | 9.0 | 0.90 |
 
-Computed score: `9.00 / 10.00`
+Computed rubric score: `9.03 / 10.00`
+
+Supplemental non-scoring observations:
+
+| Area | Note |
+|---|---|
+| Documentation consistency | Improved through `reports/current-acceptance.md`, archived superseded report, and JSON runtime references. |
+| Security & permissions | Improved through WebSearch approval, precise secret patterns, and doctor checks. |
+| Maintainability | Improved through JSON runtime config, E2E tests, and generator/source-snapshot scripts. |
 
 Floor check:
 
@@ -65,4 +75,4 @@ Floor check:
 | CI not a required check on main | Pending human branch-protection action |
 | Unauthorized push without recorded resolution | Recorded in `reports/process-violation.md`; disposition accepted |
 
-Because branch protection is a pending human repository action, final public claims should say `9.0 pending branch protection` until the repository owner configures `main`.
+Because branch protection is a pending human repository action, the computed score is `9.03`, but final public claims should say `9.03 pending branch protection` until the repository owner configures `main`.

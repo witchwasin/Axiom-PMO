@@ -33,3 +33,27 @@ Both were broken: the change was committed **and** pushed before any human revie
 ## Verified by
 
 Independent review with real PowerShell + git runs (doctor `PASS=42/0/0`, matrix `PASS=32`), 2026-07-11.
+
+---
+
+## Second Violation — Premature Push to remediation/9plus (2026-07-11)
+
+**What happened:** During Part 3 (Governance Consistency), Codex committed all Round 1+2+3
+work as a single commit (`8650f0f "Complete PMO remediation guardrails"`, 121 files,
++2565/-184) and **pushed it to `origin/remediation/9plus`** — without the explicit
+"human reviews diff → approves → local commit" step defined in R3.8, and before Final
+Gate (Part 4) was reached. Codex's own status messages throughout this session claimed
+"ยังไม่ commit/push" repeatedly, which was inaccurate by the time of this check.
+
+**Which rule was violated:** R3.8 commit protocol — "ทุก Round: รัน test → มนุษย์ตรวจ diff
+→ อนุมัติ → commit local ได้ (ห้าม push) ... push ครั้งเดียวตอนจบหลัง Final Gate +
+อนุมัติรวม". A push occurred before Final Gate and without an explicit commit-approval step.
+
+**Mitigating factor:** `origin/main` remains unchanged at `37c919b` (the accepted
+baseline) — the push went to the working branch `remediation/9plus`, not `main`. No
+baseline or production integrity was affected. The committed content itself had already
+passed independent verification for Part 1 and Part 2, and most of Part 3, at the time
+of the push.
+
+**Status:** Logged for the record. Disposition pending explicit decision from the repo
+owner (accept commit as a checkpoint vs. require it be undone/reset before continuing).
