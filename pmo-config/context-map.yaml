@@ -1,4 +1,4 @@
-version: 0.4.0-stable-candidate
+version: 0.4.0
 purpose: Machine-readable context guidance. This is guidance, not enforcement.
 policy_ref: pmo-config/policy.json
 skill_manifest_ref: pmo-config/skill-manifest.json

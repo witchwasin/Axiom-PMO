@@ -1,5 +1,9 @@
 # Patch Manifest
 
+> **ARCHIVED** — this is the original Phase-0 patch plan, superseded by the more
+> thorough `reports/remediation-plan.md` (v3), which incorporated two independent
+> reviews and fixed gaps this plan did not cover. Kept for historical reference only.
+
 Objective: move `PMO-Template-Personal` from pilot-grade `0.3.0-lite-ai-guardrails` toward a stable candidate by aligning runtime skills, router policy, templates, validation, doctor checks, permissions, examples, tests, and docs.
 
 ## Execution Rules

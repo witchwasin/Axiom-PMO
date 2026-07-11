@@ -1,13 +1,18 @@
 # Current Acceptance Report
 
-Date: 2026-07-11
-Branch: `remediation/9plus`
-Baseline main: `37c919b`
-Latest pushed branch commit before Final Gate: `ba3a22b`
+Date: 2026-07-11 (merged 2026-07-12)
+Status: **MERGED** — this remediation is complete. `remediation/9plus` was merged into
+`main` via [PR #1](https://github.com/witchwasin/PMO-Template-Personal/pull/1) as merge
+commit `ac1d42e`, then deleted (fully contained in `main`, nothing lost). All content
+below is the historical record of how that state was reached and verified.
+Pre-remediation baseline: `37c919b`
+Final merged commit on `main`: `ac1d42e`
 
 ## Final Gate Status
 
-Part 4 Final Acceptance Gate passed locally. No commit or push was performed during this gate.
+Part 4 Final Acceptance Gate passed locally, then remotely: opening PR #1 triggered
+`PMO Checks` CI for the first time, which caught a real CRLF regex bug invisible to the
+local working copy (see CHANGELOG "Fixed"). Fixed, confirmed green, then merged.
 
 **Update (2026-07-12):** The repository owner reviewed the branch-protection recommendation
 below — including the note that it also guards against an AI agent pushing directly to
@@ -38,6 +43,12 @@ Recommended settings, retained here for reference if reinstated later:
 | top `CHANGELOG.md` version | `0.4.0-stable-candidate` | `0.4.0-stable-candidate` |
 
 No version bump was made in Part 4 because this gate only added/adjusted acceptance-test evidence and the close-out report.
+
+**Post-merge update (2026-07-12):** after PR #1 merged and the repo was independently
+re-verified end-to-end, `VERSION` was bumped from `0.4.0-stable-candidate` to `0.4.0`
+(along with `CHANGELOG.md` and the three `pmo-config/*.json` version fields, kept
+consistent per `DOCTOR-005`). The table above reflects the state as of Final Gate; the
+repo's current `VERSION` is `0.4.0`.
 
 ## Files Created / Modified / Moved
 

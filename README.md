@@ -2,7 +2,7 @@
 
 Lightweight PMO operating template for small teams using AI.
 
-Current version: `0.4.0-stable-candidate`
+Current version: `0.4.0`
 
 ## What It Does
 
