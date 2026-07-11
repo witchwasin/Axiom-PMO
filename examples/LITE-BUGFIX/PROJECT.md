@@ -43,3 +43,4 @@ Fix a typo in the ticket submit button label.
 | Gate | Approval Status | Approver | Role | Date | Evidence |
 |---|---|---|---|---|---|
 | Scope Approved | approved | Demo PM | Product Owner | 2026-07-10 | DEC-001 |
+| Release Approved | approved | Demo PM | Product Owner | 2026-07-10 | ISSUE-45 |

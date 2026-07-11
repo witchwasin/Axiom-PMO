@@ -5,9 +5,9 @@
 ### Added
 
 - Added active skill runtime with 7 skills: `pmo-intake`, `pmo-design`, `pmo-delivery`, `pmo-build-review`, `pmo-quality-release`, `pmo-governance`, and `pmo-git-safety`.
-- Added `pmo-config/skill-manifest.yaml`.
-- Added `pmo-config/policy.yaml` for shared enums and stable workflow policy.
-- Added `pmo-config/validation-rules.yaml` as a central rule catalog for validator and doctor output.
+- Added `pmo-config/skill-manifest.json`.
+- Added `pmo-config/policy.json` for shared enums and stable workflow policy.
+- Added `pmo-config/validation-rules.json` as a central rule catalog for validator and doctor output.
 - Added baseline and patch manifest reports under `reports/`.
 - Added full validation matrix coverage with 7 positive cases and 25 negative fixture cases.
 

@@ -1,0 +1,55 @@
+{
+  "version": "0.4.0-stable-candidate",
+  "active_skills": [
+    {
+      "id": "pmo-intake",
+      "path": ".claude/skills/pmo-intake",
+      "purpose": "Intake, source review, requirements, gap analysis, and scope."
+    },
+    {
+      "id": "pmo-design",
+      "path": ".claude/skills/pmo-design",
+      "purpose": "Flow, UX, wireframe, and design-ready acceptance criteria."
+    },
+    {
+      "id": "pmo-delivery",
+      "path": ".claude/skills/pmo-delivery",
+      "purpose": "Delivery planning, handoff, task source of truth, and engineering sequencing."
+    },
+    {
+      "id": "pmo-build-review",
+      "path": ".claude/skills/pmo-build-review",
+      "purpose": "Build completion evidence, code review, and ready-for-QA checks."
+    },
+    {
+      "id": "pmo-quality-release",
+      "path": ".claude/skills/pmo-quality-release",
+      "purpose": "QA, verification, release readiness, rollback, and close-out."
+    },
+    {
+      "id": "pmo-governance",
+      "path": ".claude/skills/pmo-governance",
+      "purpose": "RAID, decisions, traceability, risk, and policy checks."
+    },
+    {
+      "id": "pmo-git-safety",
+      "path": ".claude/skills/pmo-git-safety",
+      "purpose": "Branch, diff, sensitive file, commit, push, tag, and release safety."
+    }
+  ],
+  "optional_archive": {
+    "root": ".claude-archive/optional-skills",
+    "skills": [
+      "agent-sessions-architecture",
+      "backend-code-review",
+      "design-system-patterns",
+      "frontend-testing",
+      "key-talking-point",
+      "senior-qa"
+    ]
+  },
+  "legacy_archive": {
+    "root": ".claude-archive/legacy-skills",
+    "note": "Legacy PMO skills are preserved for reference and must not be loaded by default."
+  }
+}

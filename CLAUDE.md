@@ -19,7 +19,7 @@
 5. Run validation before release:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath examples/P01-DEMO -Mode Standard -Gate Release
+powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath examples/P01-DEMO -Mode Standard -Gate Release -FailOnWarning
 powershell -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1
 powershell -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1
 ```
@@ -130,7 +130,7 @@ Update this when a reusable project/example is added.
 
 ## Active Skill Runtime
 
-The active runtime is limited to the 7 skills in `pmo-config/skill-manifest.yaml`:
+The active runtime is limited to the 7 skills in `pmo-config/skill-manifest.json`:
 
 - `pmo-intake`
 - `pmo-design`
@@ -152,7 +152,7 @@ Use `scripts/pmo-doctor.ps1` for framework health and `scripts/run-validation-te
 Suggested validation command:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project-folder> -Mode Standard -Gate Release
+powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project-folder> -Mode Standard -Gate Release -FailOnWarning
 powershell -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1
 powershell -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1
 ```
