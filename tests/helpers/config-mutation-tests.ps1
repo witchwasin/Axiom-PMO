@@ -46,6 +46,23 @@ try {
     powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tempRepo "scripts/pmo-doctor.ps1") -RepoPath $tempRepo
   }
 
+  # P5.1: artifact-policy.json mutation -- proves the Mode x Gate artifact
+  # matrix is genuinely config-driven, not a hardcoded fallback list. Add
+  # RTM.json to Standard/Release (a file valid-standard does not have) and
+  # confirm the validator now requires it. Restore policy.json first: this
+  # repo copy still carries the statuses-enum mutation from the test above,
+  # which would make Standard/Release fail on ENUM-001 regardless of the
+  # artifact-policy change, masking whether this mutation did anything.
+  Copy-Item -LiteralPath (Join-Path $RepoPath "pmo-config/policy.json") -Destination $policyPath -Force
+  $artifactPolicyPath = Join-Path $tempRepo "pmo-config/artifact-policy.json"
+  $artifactPolicy = Get-Content -LiteralPath $artifactPolicyPath -Raw | ConvertFrom-Json
+  $artifactPolicy.artifact_matrix.Standard.Release = @($artifactPolicy.artifact_matrix.Standard.Release) + "RTM.json"
+  $artifactPolicy | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $artifactPolicyPath -Encoding utf8
+
+  Invoke-ExpectFailure "artifact-policy mutation" {
+    powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tempRepo "scripts/validate-project.ps1") -ProjectPath (Join-Path $tempRepo "tests/fixtures/valid-standard") -Mode Standard -Gate Release
+  }
+
   Write-Host "[PASS] Config mutation tests prove JSON runtime config is source of truth"
 } finally {
   if (Test-Path -LiteralPath $workRoot) {

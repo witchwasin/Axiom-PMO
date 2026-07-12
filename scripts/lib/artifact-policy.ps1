@@ -88,7 +88,11 @@ function Test-RequiredArtifacts {
     $matrixRequired = @($modeMatrix.$Gate)
   }
 
-  $allTrackedArtifacts = @("DELIVERY.md", "RELEASE.md", "RAID-log.md", "decision-log.md", "DESIGN")
+  # RTM.json used to be hardcoded as Strict-only/always-optional here instead
+  # of going through the same Mode x Gate matrix as every other artifact --
+  # caught by a config-mutation test that added RTM.json to a mode's Release
+  # requirement and found the validator never actually enforced it.
+  $allTrackedArtifacts = @("DELIVERY.md", "RELEASE.md", "RAID-log.md", "decision-log.md", "DESIGN", "RTM.json")
   foreach ($artifact in $allTrackedArtifacts) {
     $requirement = if ($matrixRequired -contains $artifact) { "required" } else { "optional" }
     if ($artifact -eq "DESIGN") {
@@ -96,9 +100,6 @@ function Test-RequiredArtifacts {
     } else {
       Test-File $artifact $requirement | Out-Null
     }
-  }
-  if ($Mode -eq "Strict") {
-    Test-File "RTM.json" "optional" | Out-Null
   }
   Test-Dir "source" "optional" | Out-Null
 }
