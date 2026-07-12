@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "project": "INVALID-RTM-BROKEN-DELIVERY-REF",
+  "traceability": [
+    {
+      "requirement_id": "REQ-001",
+      "source_ref": "REQ-20260710 row 1",
+      "design_ref": "DESIGN/FLOW.puml",
+      "delivery_ref": "D-999",
+      "test_ref": "TEST-001",
+      "evidence_ref": "DEC-003",
+      "release_ref": "REL-001",
+      "status": "verified"
+    },
+    {
+      "requirement_id": "REQ-002",
+      "source_ref": "REQ-20260710 row 2",
+      "design_ref": "DESIGN/FLOW.puml",
+      "delivery_ref": "D-001",
+      "test_ref": "TEST-001",
+      "evidence_ref": "DEC-003",
+      "release_ref": "REL-001",
+      "status": "verified"
+    }
+  ]
+}

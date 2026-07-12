@@ -1,0 +1,160 @@
+﻿{
+    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-not-required-workitem",
+    "requested_mode":  "Lite",
+    "effective_mode":  "Lite",
+    "gate":  "Release",
+    "summary":  {
+                    "pass":  15,
+                    "warn":  0,
+                    "warn_blocking":  0,
+                    "fail":  3,
+                    "exit_code":  1
+                },
+    "results":  [
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "MODE-001",
+                        "message":  "Effective mode (Lite) matches requested mode (Lite)",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found PROJECT.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found DELIVERY.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "INFO",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Missing optional file RELEASE.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "INFO",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Missing optional file RAID-log.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "INFO",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Missing optional file decision-log.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "INFO",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Missing optional directory DESIGN/",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "INFO",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Missing optional file RTM.json",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found source/",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "PLACEHOLDER-001",
+                        "message":  "No placeholder/TODO/TBD markers found",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "TASK-001",
+                        "message":  "Task source is declared",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "SOURCE-002",
+                        "message":  "Source Snapshot section exists",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "SOURCE-001",
+                        "message":  "Requirement lines include source references",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "EVIDENCE-001",
+                        "message":  "Requirement lines include valid evidence status",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "APPROVAL-002",
+                        "message":  "Scope Approved approval is valid",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "APPROVAL-002",
+                        "message":  "Release Approved approval is valid",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "TASK-001",
+                        "message":  "Delivery task source of truth is explicit",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "WORKITEM-001",
+                        "message":  "Delivery work items include mode, strict trigger, reason, approval, review, and evidence fields",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "FAIL",
+                        "rule_id":  "WORKITEM-001",
+                        "message":  "D-001 has missing work item fields: Acceptance Criteria, Test Checklist, Owner, Evidence Ref",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "FAIL",
+                        "rule_id":  "TEST-EVIDENCE-001",
+                        "message":  "D-001 is in release scope but Test Checklist is empty",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "FAIL",
+                        "rule_id":  "TEST-EVIDENCE-001",
+                        "message":  "D-001 is in release scope but Evidence Ref is empty",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "SENSITIVE-001",
+                        "message":  "No obvious sensitive filenames found in governed files",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "LINK-001",
+                        "message":  "No broken local markdown links found",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "INFO",
+                        "rule_id":  "SOURCE-LINK-001",
+                        "message":  "No broken user-source links found",
+                        "blocking":  true
+                    }
+                ]
+}
+EXIT_CODE=1

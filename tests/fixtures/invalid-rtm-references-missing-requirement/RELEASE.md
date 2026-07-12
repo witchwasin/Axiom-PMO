@@ -1,8 +1,16 @@
 # RELEASE - INVALID-RTM-REFERENCES-MISSING-REQUIREMENT
 
+> Release ID: REL-001
+
 ## Scope
 
 - D-001
+
+## Test Summary
+
+| ID | Test Area | Result | Evidence | Notes |
+|---|---|---|---|---|
+| TEST-001 | Happy path | passed | DEC-003 | |
 
 ## Structured Rollback Plan
 
