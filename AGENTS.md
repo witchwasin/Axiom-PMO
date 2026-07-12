@@ -87,7 +87,7 @@ Use labels for detail: `blocked`, `needs-client`, `bug`, `high-risk`, `ready-to-
 
 ## Non-Negotiable Rules
 
-1. Read the relevant source before producing PMO output. Use `CONTEXT-ROUTER.md` and `pmo-config/context-map.yaml` to keep the read set small.
+1. Read the relevant source before producing PMO output. Use `CONTEXT-ROUTER.md` and `pmo-config/context-map.json` to keep the read set small.
 2. Never invent requirements, actors, business rules, dates, acceptance criteria, or approvals.
 3. Separate `Confirmed`, `Assumption`, and `Open Question` in every important output.
 4. Do not add features outside scope. If something seems missing, flag it as an open question or gap.
