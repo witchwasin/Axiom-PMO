@@ -5,14 +5,55 @@
 
 function Get-ReleaseRegistry {
   param([string]$ReleaseText)
-  $result = [pscustomobject]@{ ReleaseId = $null; TestIds = @() }
+  $result = [pscustomobject]@{ ReleaseId = $null; TestIds = @(); TestRows = @() }
   if (-not $ReleaseText) { return $result }
   if ($ReleaseText -match '(?m)^\s*>?\s*Release ID:\s*(REL-\d{3})\s*$') {
     $result.ReleaseId = $Matches[1]
   }
-  $testRows = Get-TableRowsAfterHeading $ReleaseText '^##\s+Test Summary'
-  $result.TestIds = @($testRows | Where-Object { $_.ID } | ForEach-Object { $_.ID.Trim() } | Where-Object { $_ -match '^TEST-\d{3}$' })
+  $testRows = @(Get-TableRowsAfterHeading $ReleaseText '^##\s+Test Summary')
+  $result.TestRows = @($testRows | Where-Object { $_.ID -match '^TEST-\d{3}$' })
+  $result.TestIds = @($result.TestRows | ForEach-Object { $_.ID.Trim() })
   return $result
+}
+
+function Test-TestSummary {
+  # H2: a Test Summary row that still says "pending" (or is blank/failed) must
+  # not let a Release pass just because a TEST-### id exists somewhere in the
+  # table -- Get-ReleaseRegistry used to collect only ids, never Result or
+  # Evidence, so an all-pending Test Summary was indistinguishable from an
+  # all-passed one to every other check. "skipped" is allowed only with a
+  # real reason in Notes (same shape as the Lite rollback waiver).
+  param(
+    $ReleaseRegistry,
+    [string]$Project,
+    [string[]]$DecisionIds
+  )
+
+  foreach ($row in @($ReleaseRegistry.TestRows)) {
+    $result = "$($row.Result)".Trim().ToLowerInvariant()
+    if ($result -eq "skipped") {
+      if (Test-PlaceholderValue $row.Notes) {
+        Add-Result FAIL "$($row.ID) is marked skipped but Notes does not state a reason" "TEST-RESULT-001"
+      } else {
+        Add-Result PASS "$($row.ID) is validly skipped (reason recorded)" "TEST-RESULT-001"
+      }
+      continue
+    }
+    if ($result -ne "passed") {
+      Add-Result FAIL "$($row.ID) has Result '$($row.Result)', expected passed (or skipped with a reason in Notes)" "TEST-RESULT-001"
+      continue
+    }
+    if (Test-PlaceholderValue $row.Evidence) {
+      Add-Result FAIL "$($row.ID) is passed but Evidence is empty" "TEST-EVIDENCE-002"
+      continue
+    }
+    $ref = Resolve-Reference -Value $row.Evidence -ReferenceTypesConfig $script:referenceTypesConfig -ProjectRoot $Project -DecisionIds $DecisionIds
+    if (-not $ref.Type -or -not $ref.Resolved) {
+      Add-Result FAIL "$($row.ID) is passed but Evidence '$($row.Evidence)' does not resolve to a real reference" "TEST-EVIDENCE-002"
+    } else {
+      Add-Result PASS "$($row.ID) is passed with resolvable evidence" "TEST-EVIDENCE-002"
+    }
+  }
 }
 
 function Test-RtmTraceability {

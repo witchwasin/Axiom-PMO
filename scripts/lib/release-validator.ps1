@@ -166,6 +166,10 @@ function Test-ReleaseArtifact {
     if ($Mode -eq "Strict") {
       Test-ReviewRow $releaseText "Security" "SECURITY-REVIEW-001" $Mode $DecisionIds $releaseRegistry | Out-Null
     }
+    # H2: any row present in the Test Summary table must be genuinely passed
+    # (or explicitly, reasonedly skipped) -- not just an ID the RTM can point
+    # at while the actual result still says "pending".
+    Test-TestSummary -ReleaseRegistry $releaseRegistry -Project $Project -DecisionIds $DecisionIds
   }
 
   return [pscustomobject]@{ ReleaseText = $releaseText; ReleaseRegistry = $releaseRegistry }

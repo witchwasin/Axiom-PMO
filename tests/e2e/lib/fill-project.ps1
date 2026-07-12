@@ -97,6 +97,9 @@ function Set-E2EProjectContent {
     $releaseFile = Join-Path $ProjectPath "RELEASE.md"
     $text = Get-Content -LiteralPath $releaseFile -Raw
     $text = $text -replace '<Decision ID or MOM>', "DEC-003"
+    # H2: Test Summary rows default to "pending" with no evidence; a real
+    # release needs a real result, not just an ID the RTM can point at.
+    $text = $text -replace '\|\s*(TEST-\d{3})\s*\|([^|]*)\|\s*pending\s*\|\s*\|\s*\|', '| $1 |$2| passed | DEC-003 |'
     $qaRow = "| QA | approved | E2E QA Lead | QA Lead | $Today | DEC-003 |"
     $text = $text -replace '\| QA \| pending \| <reviewer> \| QA Lead \| YYYY-MM-DD \| <evidence ref> \|', $qaRow
     if ($Mode -eq "Strict") {
