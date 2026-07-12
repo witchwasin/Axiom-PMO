@@ -18,7 +18,7 @@ Use for QA review, UAT/release gate, rollback review, or close-out summary.
 Use QA/release context only. Read source docs only when evidence conflicts with requirements.
 
 ## Mode Behavior
-Use `pmo-config/artifact-policy.json` for mode/gate artifact requirements and `pmo-config/policy.json` for approval gates and roles. Lite release starts from `PROJECT.md`; `DELIVERY.md` is conditional and `RELEASE.md` is optional unless the configured artifact policy or a real release/UAT trigger requires it. Never auto-create `RTM.json` or `RELEASE.md` for Lite without a trigger.
+Use `pmo-config/artifact-policy.json` for mode/gate artifact requirements and `pmo-config/policy.json` for approval gates and roles. Lite release requires `PROJECT.md` and `DELIVERY.md` (a prose "work item" mention is not parseable evidence); `RELEASE.md` stays optional unless the configured artifact policy or a real release/UAT trigger requires it. Never auto-create `RTM.json` or `RELEASE.md` for Lite without a trigger.
 
 ## Execution Steps
 1. Check open blockers.

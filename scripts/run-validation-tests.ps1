@@ -48,6 +48,7 @@ $cases = @(
   @{ Name = "invalid-missing-design-approval"; Path = "tests/fixtures/invalid-missing-design-approval"; Mode = "Standard"; Gate = "Design"; ShouldPass = $false; Rule = "APPROVAL-001"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "invalid-missing-release-approval"; Path = "tests/fixtures/invalid-missing-release-approval"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "APPROVAL-001"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "lite-release-missing-approval"; Path = "tests/fixtures/invalid-lite-release-no-approval"; Mode = "Lite"; Gate = "Release"; ShouldPass = $false; Rule = "APPROVAL-001"; ExpectedLevel = "FAIL"; Type = "negative" },
+  @{ Name = "lite-release-no-delivery-workitem-prose"; Path = "tests/fixtures/invalid-lite-release-no-delivery"; Mode = "Lite"; Gate = "Release"; ShouldPass = $false; Rule = "STRUCT-001"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "not-required-in-approval"; Path = "tests/fixtures/invalid-not-required-approval"; Mode = "Lite"; Gate = "Release"; ShouldPass = $false; Rule = "APPROVAL-002"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "not-required-in-workitem"; Path = "tests/fixtures/invalid-not-required-workitem"; Mode = "Lite"; Gate = "Release"; ShouldPass = $false; Rule = "WORKITEM-001"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "not-required-in-rollback"; Path = "tests/fixtures/invalid-not-required-rollback"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "RELEASE-001"; ExpectedLevel = "FAIL"; Type = "negative" },
@@ -139,8 +140,13 @@ foreach ($case in $cases) {
     if (-not (Test-Path -LiteralPath $goldenFile)) {
       $goldenMismatches += "$($case.Name): no golden file recorded"
     } else {
-      $expected = (Get-Content -LiteralPath $goldenFile -Raw).TrimEnd()
-      if ($expected -ne $rawOutput.TrimEnd()) {
+      # Compare with normalized line endings: git's text normalization
+      # rewrites the golden files' CRLF/LF mix on every checkout (autocrlf),
+      # so a byte-exact comparison flags every case after a git round-trip
+      # even though the content is identical.
+      $expected = ((Get-Content -LiteralPath $goldenFile -Raw) -replace "`r`n", "`n").TrimEnd()
+      $actual = ($rawOutput -replace "`r`n", "`n").TrimEnd()
+      if ($expected -ne $actual) {
         $goldenMismatches += "$($case.Name): output differs from golden master"
       }
     }

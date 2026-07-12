@@ -29,8 +29,10 @@ foreach ($c in $cmds) {
     if (-not (Test-Path -LiteralPath $file)) {
       $mismatches += "$($c.Name): no golden file"
     } else {
-      $expected = (Get-Content -LiteralPath $file -Raw).TrimEnd()
-      if ($expected -ne $raw.TrimEnd()) { $mismatches += "$($c.Name): differs" }
+      # Normalized line endings: git text normalization rewrites golden files
+      # on checkout, so byte-exact comparison false-flags after a round-trip.
+      $expected = ((Get-Content -LiteralPath $file -Raw) -replace "`r`n", "`n").TrimEnd()
+      if ($expected -ne ($raw -replace "`r`n", "`n").TrimEnd()) { $mismatches += "$($c.Name): differs" }
     }
   } else {
     Set-Content -LiteralPath $file -Value $raw -NoNewline -Encoding utf8
