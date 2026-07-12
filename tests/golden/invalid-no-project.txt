@@ -1,0 +1,100 @@
+﻿{
+    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-no-project",
+    "requested_mode":  "Standard",
+    "effective_mode":  "Standard",
+    "gate":  "Release",
+    "summary":  {
+                    "pass":  6,
+                    "warn":  0,
+                    "warn_blocking":  0,
+                    "fail":  4,
+                    "exit_code":  1
+                },
+    "results":  [
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "MODE-001",
+                        "message":  "Effective mode (Standard) matches requested mode (Standard)",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "FAIL",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Missing PROJECT.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found DELIVERY.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "FAIL",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Missing RELEASE.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "INFO",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Missing optional file RAID-log.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "INFO",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Missing optional file decision-log.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "FAIL",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Missing DESIGN/",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "INFO",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Missing optional directory source/",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "PLACEHOLDER-001",
+                        "message":  "No placeholder/TODO/TBD markers found",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "TASK-001",
+                        "message":  "Delivery task source of truth is explicit",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "FAIL",
+                        "rule_id":  "WORKITEM-001",
+                        "message":  "Delivery work items should include Mode, Strict Trigger, Mode Reason, Mode Approved By, Review Stage, and Evidence Ref",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "SENSITIVE-001",
+                        "message":  "No obvious sensitive filenames found in governed files",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "LINK-001",
+                        "message":  "No broken local markdown links found",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "INFO",
+                        "rule_id":  "SOURCE-LINK-001",
+                        "message":  "No broken user-source links found",
+                        "blocking":  true
+                    }
+                ]
+}
+EXIT_CODE=1

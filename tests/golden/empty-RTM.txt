@@ -1,0 +1,196 @@
+﻿{
+    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-empty-rtm",
+    "requested_mode":  "Strict",
+    "effective_mode":  "Strict",
+    "gate":  "Release",
+    "summary":  {
+                    "pass":  24,
+                    "warn":  0,
+                    "warn_blocking":  0,
+                    "fail":  5,
+                    "exit_code":  1
+                },
+    "results":  [
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "MODE-001",
+                        "message":  "Effective mode (Strict) matches requested mode (Strict)",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found PROJECT.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found DELIVERY.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found RELEASE.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found RAID-log.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found decision-log.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found DESIGN/",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found RTM.json",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found source/",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "PLACEHOLDER-001",
+                        "message":  "No placeholder/TODO/TBD markers found",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "TASK-001",
+                        "message":  "Task source is declared",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "SOURCE-002",
+                        "message":  "Source Snapshot section exists",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "SOURCE-001",
+                        "message":  "Requirement lines include source references",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "EVIDENCE-001",
+                        "message":  "Requirement lines include valid evidence status",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "APPROVAL-002",
+                        "message":  "Scope Approved approval is valid",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "APPROVAL-002",
+                        "message":  "Design Ready approval is valid",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "APPROVAL-002",
+                        "message":  "Release Approved approval is valid",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "TASK-001",
+                        "message":  "Delivery task source of truth is explicit",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "WORKITEM-001",
+                        "message":  "Delivery work items include mode, strict trigger, reason, approval, review, and evidence fields",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "BLOCKER-001",
+                        "message":  "No open blocker pattern found",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "RELEASE-001",
+                        "message":  "Release includes structured rollback plan",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "FAIL",
+                        "rule_id":  "QA-REVIEW-001",
+                        "message":  "QA review row not found in QA / Security Review table",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "FAIL",
+                        "rule_id":  "SECURITY-REVIEW-001",
+                        "message":  "Security review row not found in QA / Security Review table",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "FAIL",
+                        "rule_id":  "RELEASE-STATUS-001",
+                        "message":  "D-001 is in release scope but Status is \u0027Review / Test\u0027, not Done",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "FAIL",
+                        "rule_id":  "TEST-EVIDENCE-001",
+                        "message":  "D-001 is in release scope but Evidence Ref \u0027Fixture test\u0027 does not resolve to a real reference",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "FAIL",
+                        "rule_id":  "RTM-001",
+                        "message":  "RTM.json is empty, invalid, or missing schema_version/traceability",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRICT-002",
+                        "message":  "Strict release includes traceability, review, and release evidence guardrails",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "SENSITIVE-001",
+                        "message":  "No obvious sensitive filenames found in governed files",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "LINK-001",
+                        "message":  "No broken local markdown links found",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "INFO",
+                        "rule_id":  "SOURCE-LINK-001",
+                        "message":  "No broken user-source links found",
+                        "blocking":  true
+                    }
+                ]
+}
+EXIT_CODE=1
