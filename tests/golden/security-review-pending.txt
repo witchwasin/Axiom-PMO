@@ -4,7 +4,7 @@
     "effective_mode":  "Strict",
     "gate":  "Release",
     "summary":  {
-                    "pass":  25,
+                    "pass":  28,
                     "warn":  0,
                     "warn_blocking":  0,
                     "fail":  1,
@@ -147,6 +147,24 @@
                         "level":  "FAIL",
                         "rule_id":  "SECURITY-REVIEW-001",
                         "message":  "Security review row has invalid or placeholder fields: status",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "TEST-EVIDENCE-002",
+                        "message":  "TEST-001 is passed with resolvable evidence",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "TEST-EVIDENCE-002",
+                        "message":  "TEST-002 is passed with resolvable evidence",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "TEST-EVIDENCE-002",
+                        "message":  "TEST-003 is passed with resolvable evidence",
                         "blocking":  true
                     },
                     {

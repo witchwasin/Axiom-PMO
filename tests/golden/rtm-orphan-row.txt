@@ -4,7 +4,7 @@
     "effective_mode":  "Strict",
     "gate":  "Release",
     "summary":  {
-                    "pass":  24,
+                    "pass":  25,
                     "warn":  0,
                     "warn_blocking":  0,
                     "fail":  6,
@@ -147,6 +147,12 @@
                         "level":  "FAIL",
                         "rule_id":  "SECURITY-REVIEW-001",
                         "message":  "Security review row not found in QA / Security Review table",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "TEST-EVIDENCE-002",
+                        "message":  "TEST-001 is passed with resolvable evidence",
                         "blocking":  true
                     },
                     {

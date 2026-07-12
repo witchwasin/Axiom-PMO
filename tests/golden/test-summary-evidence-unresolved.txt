@@ -1,20 +1,20 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\examples\\STRICT-HIGH-RISK",
-    "requested_mode":  "Strict",
-    "effective_mode":  "Strict",
+    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-test-summary-evidence-unresolved",
+    "requested_mode":  "Standard",
+    "effective_mode":  "Standard",
     "gate":  "Release",
     "summary":  {
-                    "pass":  29,
+                    "pass":  23,
                     "warn":  0,
                     "warn_blocking":  0,
-                    "fail":  0,
-                    "exit_code":  0
+                    "fail":  1,
+                    "exit_code":  1
                 },
     "results":  [
                     {
                         "level":  "PASS",
                         "rule_id":  "MODE-001",
-                        "message":  "Effective mode (Strict) matches requested mode (Strict)",
+                        "message":  "Effective mode (Standard) matches requested mode (Standard)",
                         "blocking":  true
                     },
                     {
@@ -54,9 +54,9 @@
                         "blocking":  true
                     },
                     {
-                        "level":  "PASS",
+                        "level":  "INFO",
                         "rule_id":  "STRUCT-001",
-                        "message":  "Found RTM.json",
+                        "message":  "Missing optional file RTM.json",
                         "blocking":  true
                     },
                     {
@@ -144,33 +144,9 @@
                         "blocking":  true
                     },
                     {
-                        "level":  "PASS",
-                        "rule_id":  "SECURITY-REVIEW-001",
-                        "message":  "Security review is valid",
-                        "blocking":  true
-                    },
-                    {
-                        "level":  "PASS",
+                        "level":  "FAIL",
                         "rule_id":  "TEST-EVIDENCE-002",
-                        "message":  "TEST-001 is passed with resolvable evidence",
-                        "blocking":  true
-                    },
-                    {
-                        "level":  "PASS",
-                        "rule_id":  "TEST-EVIDENCE-002",
-                        "message":  "TEST-002 is passed with resolvable evidence",
-                        "blocking":  true
-                    },
-                    {
-                        "level":  "PASS",
-                        "rule_id":  "TEST-EVIDENCE-002",
-                        "message":  "TEST-003 is passed with resolvable evidence",
-                        "blocking":  true
-                    },
-                    {
-                        "level":  "PASS",
-                        "rule_id":  "STRICT-002",
-                        "message":  "Strict release includes traceability, review, and release evidence guardrails",
+                        "message":  "TEST-001 is passed but Evidence \u0027checked-by-team\u0027 does not resolve to a real reference",
                         "blocking":  true
                     },
                     {
@@ -193,4 +169,4 @@
                     }
                 ]
 }
-EXIT_CODE=0
+EXIT_CODE=1
