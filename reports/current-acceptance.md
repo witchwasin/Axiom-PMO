@@ -157,6 +157,17 @@ Public claim should remain:
 
 ## Known Limitations + Remaining Risks
 
+- Round 2 branch-protection decision (2026-07-12): GitHub branch protection and
+  rulesets are blocked by the current platform plan for this private repository.
+  The repository owner deferred option (A) make the repo public and option (B)
+  upgrade the plan, and selected option (C) for this remediation round: PR workflow,
+  CI checks, and explicit per-push human confirmation are the compensating controls.
+  This is recorded as a platform constraint with compensating control, not an
+  unresolved omission.
+- Round 2 LICENSE decision (2026-07-12): the repository owner explicitly deferred
+  adding any LICENSE for now. No LICENSE file or proprietary notice is added in this
+  round; the item is intentionally deferred and should not be scored as an accidental
+  omission.
 - Branch protection on `main` is explicitly waived by owner decision (private, single-maintainer repo, 2026-07-12); can be reinstated any time before the repo is shared or made public.
 - Remote GitHub Actions was re-queried after opening PR #1: first run failed on a real CRLF regex bug in `PERMISSION-007` (only reproducible via a fresh checkout, not the local working copy); fixed and confirmed green on the second run (`29162625972`).
 - The accepted process violation remains recorded in `reports/process-violation.md`; future commit/push work must be reviewed before push.
