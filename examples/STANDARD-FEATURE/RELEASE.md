@@ -2,13 +2,21 @@
 
 ## Release Scope
 
-- D-001 Status board
-- D-002 Priority filter
+| Deliverable | Requirement Ref | Included? | Notes |
+|---|---|---|---|
+| D-001 | REQ-001 | yes | |
+| D-002 | REQ-002 | no | Deferred to next release; filter UX needs more validation with PM. |
 
 ## Verification
 
 - Happy path: move ticket across statuses.
 - Exception path: block Done when review notes are missing.
+
+## QA / Security Review
+
+| Review Type | Status | Reviewer | Role | Date | Evidence |
+|---|---|---|---|---|---|
+| QA | approved | Demo QA Lead | QA Lead | 2026-07-10 | DEC-003 |
 
 ## Structured Rollback Plan
 

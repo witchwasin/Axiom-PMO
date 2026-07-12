@@ -30,7 +30,7 @@ try {
 
   $policyPath = Join-Path $tempRepo "pmo-config/policy.json"
   $policy = Get-Content -LiteralPath $policyPath -Raw | ConvertFrom-Json
-  $policy.enums.statuses = @($policy.enums.statuses | Where-Object { $_ -ne "Review / Test" })
+  $policy.enums.statuses = @($policy.enums.statuses | Where-Object { $_ -ne "Done" })
   $policy | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $policyPath -Encoding utf8
 
   Invoke-ExpectFailure "policy enum mutation" {

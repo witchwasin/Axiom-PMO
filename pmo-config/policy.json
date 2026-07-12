@@ -59,9 +59,19 @@
       "source_ref"
     ]
   },
+  "rollback_waiver": {
+    "allowed_modes": ["Lite"],
+    "allowed_change_types": ["content-only", "documentation-only", "config-only"]
+  },
   "table_schemas": {
     "approval_table": {
       "columns": ["Gate", "Approval Status", "Approver", "Role", "Date", "Evidence"]
+    },
+    "release_scope": {
+      "columns": ["Deliverable", "Requirement Ref", "Included?", "Notes"]
+    },
+    "qa_security_review": {
+      "columns": ["Review Type", "Status", "Reviewer", "Role", "Date", "Evidence"]
     },
     "delivery_work_items": {
       "columns": [
