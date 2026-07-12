@@ -1,5 +1,5 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-rtm-broken-evidence-ref",
+    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-rtm-missing-design-file",
     "requested_mode":  "Strict",
     "effective_mode":  "Strict",
     "gate":  "Release",
@@ -169,8 +169,8 @@
                     },
                     {
                         "level":  "FAIL",
-                        "rule_id":  "RTM-005",
-                        "message":  "RTM row REQ-001 has an unresolvable evidence_ref: DEC-999",
+                        "rule_id":  "RTM-009",
+                        "message":  "RTM row REQ-001 design_ref does not resolve to an existing design file: DESIGN/DOES-NOT-EXIST.puml",
                         "blocking":  true
                     },
                     {

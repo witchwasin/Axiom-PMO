@@ -1,5 +1,5 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-rtm-broken-evidence-ref",
+    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-rtm-bad-status",
     "requested_mode":  "Strict",
     "effective_mode":  "Strict",
     "gate":  "Release",
@@ -169,8 +169,8 @@
                     },
                     {
                         "level":  "FAIL",
-                        "rule_id":  "RTM-005",
-                        "message":  "RTM row REQ-001 has an unresolvable evidence_ref: DEC-999",
+                        "rule_id":  "RTM-010",
+                        "message":  "RTM row REQ-001 has an invalid status: totally-made-up",
                         "blocking":  true
                     },
                     {
