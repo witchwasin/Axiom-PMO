@@ -1,5 +1,19 @@
 {
-  "version": "0.4.0",
+  "version": "0.5.0",
+  "schema_version": "1.0",
+  "sentinel_rules": {
+    "not_required": {
+      "allowed_fields": ["Design Ref"],
+      "allowed_modes": ["Lite"]
+    }
+  },
+  "approval_roles": {
+    "Scope Approved": ["Product Owner", "Project Owner"],
+    "Design Ready": ["Tech Lead", "Solution Architect"],
+    "Release Approved": ["Product Owner", "Release Manager"],
+    "QA Approved": ["QA Lead"],
+    "Security Approved": ["Security Reviewer", "Tech Lead"]
+  },
   "workflow": {
     "canonical_flow": [
       "source",
@@ -46,9 +60,19 @@
       "source_ref"
     ]
   },
+  "rollback_waiver": {
+    "allowed_modes": ["Lite"],
+    "allowed_change_types": ["content-only", "documentation-only", "config-only"]
+  },
   "table_schemas": {
     "approval_table": {
       "columns": ["Gate", "Approval Status", "Approver", "Role", "Date", "Evidence"]
+    },
+    "release_scope": {
+      "columns": ["Deliverable", "Requirement Ref", "Included?", "Notes"]
+    },
+    "qa_security_review": {
+      "columns": ["Review Type", "Status", "Reviewer", "Role", "Date", "Evidence"]
     },
     "delivery_work_items": {
       "columns": [

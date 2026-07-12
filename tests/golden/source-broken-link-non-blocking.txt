@@ -1,0 +1,166 @@
+﻿{
+    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\valid-source-broken-link-non-blocking",
+    "requested_mode":  "Standard",
+    "effective_mode":  "Standard",
+    "gate":  "Release",
+    "summary":  {
+                    "pass":  23,
+                    "warn":  1,
+                    "warn_blocking":  0,
+                    "fail":  0,
+                    "exit_code":  0
+                },
+    "results":  [
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "MODE-001",
+                        "message":  "Effective mode (Standard) matches requested mode (Standard)",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found PROJECT.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found DELIVERY.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found RELEASE.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found RAID-log.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found decision-log.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found DESIGN/",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "INFO",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Missing optional file RTM.json",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found source/",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "PLACEHOLDER-001",
+                        "message":  "No placeholder/TODO/TBD markers found",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "TASK-001",
+                        "message":  "Task source is declared",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "SOURCE-002",
+                        "message":  "Source Snapshot section exists",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "SOURCE-001",
+                        "message":  "Requirement lines include source references",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "EVIDENCE-001",
+                        "message":  "Requirement lines include valid evidence status",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "APPROVAL-002",
+                        "message":  "Scope Approved approval is valid",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "APPROVAL-002",
+                        "message":  "Design Ready approval is valid",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "APPROVAL-002",
+                        "message":  "Release Approved approval is valid",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "TASK-001",
+                        "message":  "Delivery task source of truth is explicit",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "WORKITEM-001",
+                        "message":  "Delivery work items include mode, strict trigger, reason, approval, review, and evidence fields",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "BLOCKER-001",
+                        "message":  "No open blocker pattern found",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "RELEASE-001",
+                        "message":  "Release includes structured rollback plan",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "QA-REVIEW-001",
+                        "message":  "QA review is valid",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "SENSITIVE-001",
+                        "message":  "No obvious sensitive filenames found in governed files",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "LINK-001",
+                        "message":  "No broken local markdown links found",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "WARN",
+                        "rule_id":  "SOURCE-LINK-001",
+                        "message":  "Broken user-source links: REQ-20260710.md -\u003e ../Transcript/missing-transcript.md",
+                        "blocking":  false
+                    }
+                ]
+}
+EXIT_CODE=0

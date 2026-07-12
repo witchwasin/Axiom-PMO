@@ -1,0 +1,16 @@
+{
+  "version": "0.5.0",
+  "schema_version": "1.0",
+  "reference_types": {
+    "decision": "^DEC-\\d{3}$",
+    "requirement": "^REQ-\\d{3}$",
+    "delivery": "^D-\\d{3}$",
+    "test": "^TEST-\\d{3}$",
+    "release": "^REL-\\d{3}$",
+    "file": "^FILE:.+$",
+    "url": "^URL:https://.+$",
+    "issue": "^ISSUE:\\d+$",
+    "ci": "^CI:https://.+$"
+  },
+  "externally_unverified_types": ["url", "issue", "ci"]
+}

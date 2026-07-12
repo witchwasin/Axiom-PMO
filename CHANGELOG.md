@@ -1,5 +1,85 @@
 # Changelog
 
+## 0.5.0 - 2026-07-12
+
+> Round 2 remediation, `reports/upgrade-plan-9plus.md` (v2 unified). Baseline honest
+> score 8.3/10 (independent verdict on the merged 0.4.0 state). Worked on branch
+> `remediation/9plus-v2` in two parallel tracks — Track A (validator/tests) and Track B
+> (context map + skills + governance decisions, worktree `remediation/9plus-v2-codex`)
+> — merged at Phase 8. See `reports/upgrade-manifest.md` for phase-by-phase status and
+> `reports/current-acceptance.md` for the close-out report.
+
+### Added
+
+- Work-item completion enforcement at Release: every in-scope item must be `Done`,
+  reviewed, and have resolvable test/evidence proof (`RELEASE-STATUS-001`,
+  `REVIEW-001`, `TEST-EVIDENCE-001`). The existing "Release Scope" table is the
+  exclusion mechanism for items intentionally left out of a release
+  (`RELEASE-SCOPE-001`), replacing silent omission.
+- Structured `QA / Security Review` table in `RELEASE.md`, replacing a regex that
+  only checked whether the word "qa" appeared anywhere in `DELIVERY.md`
+  (`QA-REVIEW-001`, `SECURITY-REVIEW-001`).
+- Lite rollback waiver (`rollback_required: false` + `change_type` + `reason` +
+  `approver`) as an alternative to a full rollback table, valid only for change types
+  on the `pmo-config/policy.json` allowlist.
+- `scripts/lib/*.ps1` — `validate-project.ps1` split from a 1055-line monolith into 11
+  focused modules (config-loader, markdown-table-parser, reference-resolver,
+  result-writer, mode-resolver, artifact-policy, approval-validator, source-validator,
+  workitem-validator, rtm-validator, release-validator). The main script is now a
+  ~120-line orchestrator.
+- `tests/golden/` — byte-for-byte golden-master baseline (74 cases) proving the
+  modular refactor changed zero observable validator behavior beyond two documented
+  bug fixes (see Fixed).
+- Generator-to-Release E2E tests (`tests/e2e/{lite,standard,strict}.ps1`) now validate
+  real `new-project.ps1` output filled in deterministically
+  (`tests/e2e/lib/fill-project.ps1`), instead of copying an example project's files
+  over the generator's own output — the blind spot that hid the RTM.yaml vs RTM.json
+  schema mismatch in Round 1.
+- 4th config-mutation scenario (`artifact-policy.json`) and a schema_version mutation
+  scenario, wired into `tests/helpers/config-mutation-tests.ps1`.
+- 8 new fixtures covering the rules above plus `security-review-pending`,
+  `evidence-file-missing`, `malformed-external-evidence`, and
+  `source-broken-link-non-blocking` (positive).
+- `pmo-config/context-map.json` (converted from `context-map.yaml`), Mode x Intent
+  structure, fixing the standing Lite `qa_release` conflict (`PROJECT.md` required,
+  `DELIVERY.md` conditional, `RELEASE.md` optional).
+- `schema_version` on every `pmo-config/*.json` file, checked by a new `DOCTOR-006`
+  rule (not just present once at authoring time — proven by a mutation test).
+- `DOCTOR-006` (schema_version) rule.
+
+### Fixed
+
+- **`new-project.ps1 -Mode Lite`** generated a work item defaulting to `Mode: Standard`
+  with `Design Ref: DESIGN/FLOW.puml` (Lite never creates `DESIGN/`), silently
+  escalating every fresh Lite project's effective mode to Standard and failing
+  `REF-001` on a design file that was never created.
+- `<PROJECT-CODE>` was never substituted in generated `RELEASE.md` / `RAID-log.md` /
+  `decision-log.md` / `RTM.json` (only `PROJECT.md`/`DELIVERY.md` got it).
+- `RTM.json`'s required/optional status was hardcoded Strict-only/always-optional in
+  the validator instead of going through the Mode x Gate artifact matrix like every
+  other artifact — found by the new artifact-policy config-mutation test.
+- Two PowerShell `@($x).Count` array-wrapping bugs found during the modular refactor:
+  a `$null` value bound through a function parameter reports `Count=1` instead of 0,
+  and so does a never-initialized script variable — both different from a plain
+  script-level `$null` (`Count=0`). One was already live in this round's own Release
+  work-item-completion code, silently producing phantom failures with blank IDs
+  whenever `DELIVERY.md` was missing entirely.
+- `DOCTOR-004`'s legacy-pattern scan flagged skills that correctly *prohibit*
+  "log every minor AI action" as if they contained the old over-logging anti-pattern
+  instruction itself; now negation-aware.
+- `new-project.ps1` now propagates its Draft-validation exit code instead of always
+  exiting 0.
+
+### Governance
+
+- Branch protection: confirmed 403 on GitHub free-plan private repos (platform
+  constraint, not a policy waiver). Recorded as option (C): PR workflow + CI + explicit
+  per-push human confirmation are the compensating controls.
+- LICENSE: owner explicitly deferred adding one for now (2026-07-12) — recorded as an
+  intentional decision, not an omission.
+- P5.3 (PSScriptAnalyzer static analysis) explicitly skipped by owner decision
+  (2026-07-12) — not installed on this machine.
+
 ## 0.4.0 - 2026-07-10 (updated through 2026-07-12)
 
 > The entries below span the full remediation covered by `reports/remediation-plan.md`
@@ -62,8 +142,10 @@
   owner for now (private, single-maintainer repo) — documented as a resolved decision,
   not an open task, in `reports/process-violation.md` and `reports/current-acceptance.md`.
 - Two process violations (unreviewed commit+push during the remediation) were logged
-  and resolved with disposition in `reports/process-violation.md`; `main` was never
-  affected by either.
+  and resolved with disposition in `reports/process-violation.md`. The first violation
+  pushed `37c919b` directly to `origin/main` (later accepted as the remediation
+  baseline); the second only affected the `remediation/9plus` working branch and never
+  touched `main`.
 
 - Added active skill runtime with 7 skills: `pmo-intake`, `pmo-design`, `pmo-delivery`, `pmo-build-review`, `pmo-quality-release`, `pmo-governance`, and `pmo-git-safety`.
 - Added `pmo-config/skill-manifest.json`.

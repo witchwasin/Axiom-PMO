@@ -1,0 +1,154 @@
+﻿{
+    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\valid-lite-rollback-waiver",
+    "requested_mode":  "Lite",
+    "effective_mode":  "Lite",
+    "gate":  "Release",
+    "summary":  {
+                    "pass":  21,
+                    "warn":  0,
+                    "warn_blocking":  0,
+                    "fail":  0,
+                    "exit_code":  0
+                },
+    "results":  [
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "MODE-001",
+                        "message":  "Effective mode (Lite) matches requested mode (Lite)",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found PROJECT.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found DELIVERY.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found RELEASE.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found RAID-log.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found decision-log.md",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found DESIGN/",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "INFO",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Missing optional file RTM.json",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Found source/",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "PLACEHOLDER-001",
+                        "message":  "No placeholder/TODO/TBD markers found",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "TASK-001",
+                        "message":  "Task source is declared",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "SOURCE-002",
+                        "message":  "Source Snapshot section exists",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "SOURCE-001",
+                        "message":  "Requirement lines include source references",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "EVIDENCE-001",
+                        "message":  "Requirement lines include valid evidence status",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "APPROVAL-002",
+                        "message":  "Scope Approved approval is valid",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "APPROVAL-002",
+                        "message":  "Release Approved approval is valid",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "TASK-001",
+                        "message":  "Delivery task source of truth is explicit",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "WORKITEM-001",
+                        "message":  "Delivery work items include mode, strict trigger, reason, approval, review, and evidence fields",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "BLOCKER-001",
+                        "message":  "No open blocker pattern found",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "RELEASE-001",
+                        "message":  "Release rollback is validly waived (change_type=content-only)",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "SENSITIVE-001",
+                        "message":  "No obvious sensitive filenames found in governed files",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "LINK-001",
+                        "message":  "No broken local markdown links found",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "INFO",
+                        "rule_id":  "SOURCE-LINK-001",
+                        "message":  "No broken user-source links found",
+                        "blocking":  true
+                    }
+                ]
+}
+EXIT_CODE=0

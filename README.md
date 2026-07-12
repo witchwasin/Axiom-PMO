@@ -2,7 +2,7 @@
 
 Lightweight PMO operating template for small teams using AI.
 
-Current version: `0.4.0`
+Current version: `0.5.0`
 
 ## What It Does
 
