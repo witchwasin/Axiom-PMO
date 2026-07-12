@@ -105,14 +105,43 @@ function Test-RtmTraceability {
     if (-not $row.test_ref -or ($ReleaseRegistry.TestIds -notcontains $row.test_ref)) {
       Add-Result FAIL "RTM row $rid has a broken test_ref: $($row.test_ref)" "RTM-004"
     }
-    $evidenceOk = $row.evidence_ref -and (-not (Test-PlaceholderValue $row.evidence_ref)) -and (
-      $row.evidence_ref -notmatch '^DEC-\d{3}$' -or ($DecisionIds -contains $row.evidence_ref)
-    )
-    if (-not $evidenceOk) {
-      Add-Result FAIL "RTM row $rid has a broken or missing evidence_ref: $($row.evidence_ref)" "RTM-005"
+    # H3: evidence_ref must be a typed, resolvable reference -- the old check
+    # only rejected malformed DEC-### ids, so any free text that did not look
+    # like a DEC id ("manual-proof", "finished", "checked-by-team") passed.
+    $evidenceRef = "$($row.evidence_ref)"
+    if (-not $evidenceRef -or (Test-PlaceholderValue $evidenceRef)) {
+      Add-Result FAIL "RTM row $rid has a missing evidence_ref" "RTM-005"
+    } else {
+      $ref = Resolve-Reference -Value $evidenceRef -ReferenceTypesConfig $script:referenceTypesConfig -ProjectRoot $Project -DecisionIds $DecisionIds
+      if (-not $ref.Type) {
+        Add-Result FAIL "RTM row $rid has an unrecognized evidence_ref type: $evidenceRef" "RTM-005"
+      } elseif (-not $ref.Resolved) {
+        Add-Result FAIL "RTM row $rid has an unresolvable evidence_ref: $evidenceRef" "RTM-005"
+      }
     }
     if (-not $row.release_ref -or -not $ReleaseRegistry.ReleaseId -or $row.release_ref -ne $ReleaseRegistry.ReleaseId) {
       Add-Result FAIL "RTM row $rid has a broken release_ref: $($row.release_ref)" "RTM-006"
+    }
+
+    # H3: complete the chain -- source_ref, design_ref (file existence), and
+    # status were never checked, so a row could claim a fabricated source,
+    # point design_ref at a missing file, or carry a nonsense status and still
+    # pass "row-by-row" validation.
+    if (-not $row.source_ref -or ($row.source_ref -notmatch $script:sourceRefRegex)) {
+      Add-Result FAIL "RTM row $rid has a missing or malformed source_ref: $($row.source_ref)" "RTM-008"
+    }
+    $designRef = "$($row.design_ref)"
+    if (-not $designRef -or (Test-PlaceholderValue $designRef)) {
+      Add-Result FAIL "RTM row $rid has a missing design_ref" "RTM-009"
+    } else {
+      $designPath = Get-DesignPathFromRef $designRef
+      if (-not $designPath -or -not (Test-Path -LiteralPath (Join-Path $Project $designPath) -PathType Leaf)) {
+        Add-Result FAIL "RTM row $rid design_ref does not resolve to an existing design file: $designRef" "RTM-009"
+      }
+    }
+    $validStatuses = @($script:policyEnums.evidence_statuses)
+    if (-not $row.status -or ($validStatuses -notcontains $row.status)) {
+      Add-Result FAIL "RTM row $rid has an invalid status: $($row.status)" "RTM-010"
     }
   }
 }

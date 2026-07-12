@@ -1,5 +1,5 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-rtm-broken-evidence-ref",
+    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-rtm-freetext-evidence",
     "requested_mode":  "Strict",
     "effective_mode":  "Strict",
     "gate":  "Release",
@@ -170,7 +170,7 @@
                     {
                         "level":  "FAIL",
                         "rule_id":  "RTM-005",
-                        "message":  "RTM row REQ-001 has an unresolvable evidence_ref: DEC-999",
+                        "message":  "RTM row REQ-001 has an unrecognized evidence_ref type: checked-by-team",
                         "blocking":  true
                     },
                     {
