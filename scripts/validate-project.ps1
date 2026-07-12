@@ -34,8 +34,15 @@ $policy = Get-Content -LiteralPath $policyPath -Raw | ConvertFrom-Json
 $policyEnums = $policy.enums
 $sentinelRules = $policy.sentinel_rules
 
+$artifactPolicyPath = Join-Path $repoRoot "pmo-config/artifact-policy.json"
+if (-not (Test-Path -LiteralPath $artifactPolicyPath -PathType Leaf)) {
+  throw "Missing runtime artifact policy config: $artifactPolicyPath"
+}
+$artifactPolicy = Get-Content -LiteralPath $artifactPolicyPath -Raw | ConvertFrom-Json
+
 $pass = 0
 $warn = 0
+$warnBlocking = 0
 $fail = 0
 $messages = New-Object System.Collections.Generic.List[object]
 
@@ -44,17 +51,19 @@ function Add-Result {
     [ValidateSet("PASS", "WARN", "FAIL", "INFO")]
     [string]$Level,
     [string]$Message,
-    [string]$RuleId = "GENERAL-001"
+    [string]$RuleId = "GENERAL-001",
+    [bool]$Blocking = $true
   )
 
   $script:messages.Add([pscustomobject]@{
     level = $Level
     rule_id = $RuleId
     message = $Message
+    blocking = $Blocking
   }) | Out-Null
   switch ($Level) {
     "PASS" { $script:pass++ }
-    "WARN" { $script:warn++ }
+    "WARN" { $script:warn++; if ($Blocking) { $script:warnBlocking++ } }
     "FAIL" { $script:fail++ }
   }
 }
@@ -66,7 +75,7 @@ function Get-RelativePath {
 
 function Test-UserSourcePath {
   param([string]$RelativePath)
-  return ($RelativePath -match '^(source|MOM|REQ|Transcript)[\\/]')
+  return ($RelativePath -match '^(source|MOM|REQ|Transcript|Others)[\\/]')
 }
 
 function Get-TableRowsAfterHeading {
@@ -332,29 +341,97 @@ function Test-Approval {
   Add-Result PASS "$GateName approval is valid" "APPROVAL-002"
 }
 
+function Get-ProjectDefaultMode {
+  param([string]$ProjectRoot)
+  $path = Join-Path $ProjectRoot "PROJECT.md"
+  if (-not (Test-Path -LiteralPath $path)) { return $null }
+  $text = Get-Content -LiteralPath $path -Raw
+  if ($text -match '(?m)^\s*>?\s*Default mode:\s*(.+?)\s*$') {
+    return $Matches[1]
+  }
+  return $null
+}
+
+function Get-DeliveryModeSignals {
+  param([string]$ProjectRoot, $Rank)
+  $result = [pscustomobject]@{ HighestMode = $null; HasStrictTrigger = $false; StrictTriggerItem = $null }
+  $path = Join-Path $ProjectRoot "DELIVERY.md"
+  if (-not (Test-Path -LiteralPath $path)) { return $result }
+  $text = Get-Content -LiteralPath $path -Raw
+  $rows = Get-TableRowsAfterHeading $text '^##\s+Work Items'
+  $highest = 0
+  foreach ($row in $rows) {
+    if ($Rank.ContainsKey($row.Mode) -and $Rank[$row.Mode] -gt $highest) { $highest = $Rank[$row.Mode] }
+    if ($row.'Strict Trigger' -and $row.'Strict Trigger' -ne "none" -and -not $result.HasStrictTrigger) {
+      $result.HasStrictTrigger = $true
+      $result.StrictTriggerItem = $row.ID
+    }
+  }
+  if ($highest -gt 0) {
+    $result.HighestMode = @($Rank.Keys | Where-Object { $Rank[$_] -eq $highest })[0]
+  }
+  return $result
+}
+
+# Effective mode: CLI -Mode may upgrade but never silently downgrade a project.
+# This closes the bypass where `-Mode Lite` on a Strict project skipped every
+# Strict guardrail (RTM, RAID, decision-log, STRICT-002).
+$modeRank = @{ "Lite" = 1; "Standard" = 2; "Strict" = 3 }
+$requestedMode = $Mode
+$projectDefaultModeRaw = Get-ProjectDefaultMode $project
+if ($projectDefaultModeRaw -and -not $modeRank.ContainsKey($projectDefaultModeRaw)) {
+  Add-Result WARN "PROJECT.md Default mode '$projectDefaultModeRaw' is not a recognized mode (Lite/Standard/Strict)" "MODE-002"
+}
+$deliverySignals = Get-DeliveryModeSignals $project $modeRank
+$effectiveMode = $requestedMode
+$effectiveReasons = @()
+if ($projectDefaultModeRaw -and $modeRank.ContainsKey($projectDefaultModeRaw) -and $modeRank[$projectDefaultModeRaw] -gt $modeRank[$effectiveMode]) {
+  $effectiveMode = $projectDefaultModeRaw
+  $effectiveReasons += "PROJECT.md Default mode is $projectDefaultModeRaw"
+}
+if ($deliverySignals.HighestMode -and $modeRank[$deliverySignals.HighestMode] -gt $modeRank[$effectiveMode]) {
+  $effectiveMode = $deliverySignals.HighestMode
+  $effectiveReasons += "highest work item mode is $($deliverySignals.HighestMode)"
+}
+if ($deliverySignals.HasStrictTrigger -and $modeRank["Strict"] -gt $modeRank[$effectiveMode]) {
+  $effectiveMode = "Strict"
+  $effectiveReasons += "work item $($deliverySignals.StrictTriggerItem) has a strict trigger"
+}
+
+if ($modeRank[$effectiveMode] -gt $modeRank[$requestedMode]) {
+  $modeLevel = if ($Gate -eq "Release") { "FAIL" } else { "WARN" }
+  Add-Result $modeLevel "Requested mode $requestedMode cannot be used; effective mode is $effectiveMode ($($effectiveReasons -join '; '))" "MODE-001"
+  if ($deliverySignals.HasStrictTrigger -and $effectiveMode -eq "Strict") {
+    Add-Result INFO "Strict escalation triggered by work item $($deliverySignals.StrictTriggerItem)" "MODE-003"
+  }
+} else {
+  Add-Result PASS "Effective mode ($effectiveMode) matches requested mode ($requestedMode)" "MODE-001"
+}
+$Mode = $effectiveMode
+
 Test-File "PROJECT.md" | Out-Null
 
-if ($Mode -eq "Lite") {
-  Test-File "DELIVERY.md" "optional" | Out-Null
-  Test-File "RELEASE.md" "optional" | Out-Null
-} else {
-  Test-File "DELIVERY.md" | Out-Null
-  Test-File "RELEASE.md" | Out-Null
+# Mode x Gate artifact matrix (pmo-config/artifact-policy.json) drives which
+# artifacts are required at each (effective mode, gate) combination, instead of
+# always requiring Standard/Strict artifacts regardless of gate (e.g. a Standard
+# project at Draft no longer needs RELEASE.md/DELIVERY.md to exist yet).
+$matrixRequired = @()
+$modeMatrix = $artifactPolicy.artifact_matrix.$Mode
+if ($modeMatrix -and $modeMatrix.$Gate) {
+  $matrixRequired = @($modeMatrix.$Gate)
 }
 
+$allTrackedArtifacts = @("DELIVERY.md", "RELEASE.md", "RAID-log.md", "decision-log.md", "DESIGN")
+foreach ($artifact in $allTrackedArtifacts) {
+  $requirement = if ($matrixRequired -contains $artifact) { "required" } else { "optional" }
+  if ($artifact -eq "DESIGN") {
+    Test-Dir "DESIGN" $requirement | Out-Null
+  } else {
+    Test-File $artifact $requirement | Out-Null
+  }
+}
 if ($Mode -eq "Strict") {
-  Test-File "RAID-log.md" | Out-Null
-  Test-File "decision-log.md" | Out-Null
   Test-File "RTM.yaml" "optional" | Out-Null
-} else {
-  Test-File "RAID-log.md" "optional" | Out-Null
-  Test-File "decision-log.md" "optional" | Out-Null
-}
-
-if ($Gate -in @("Design", "Release") -and $Mode -ne "Lite") {
-  Test-Dir "DESIGN" "required" | Out-Null
-} else {
-  Test-Dir "DESIGN" "optional" | Out-Null
 }
 Test-Dir "source" "optional" | Out-Null
 
@@ -657,21 +734,26 @@ $sensitivePatterns = @(
   "Quotation"
 )
 
-$sensitiveHits = @()
+$sensitiveHitsGoverned = @()
+$sensitiveHitsSource = @()
 foreach ($file in $allProjectFiles) {
   $relative = Get-RelativePath $file.FullName
   foreach ($pattern in $sensitivePatterns) {
     if ($relative -match $pattern) {
-      $sensitiveHits += $relative
+      if (Test-UserSourcePath $relative) { $sensitiveHitsSource += $relative } else { $sensitiveHitsGoverned += $relative }
       break
     }
   }
 }
 
-if ($sensitiveHits.Count -eq 0) {
-  Add-Result PASS "No obvious sensitive filenames found" "SENSITIVE-001"
+if ($sensitiveHitsGoverned.Count -eq 0) {
+  Add-Result PASS "No obvious sensitive filenames found in governed files" "SENSITIVE-001"
 } else {
-  Add-Result WARN ("Potential sensitive filenames: " + (($sensitiveHits | Select-Object -First 8) -join ", ")) "SENSITIVE-001"
+  Add-Result WARN ("Potential sensitive filenames: " + (($sensitiveHitsGoverned | Select-Object -First 8) -join ", ")) "SENSITIVE-001" -Blocking $true
+}
+if ($sensitiveHitsSource.Count -gt 0) {
+  # User-owned source cannot be edited/renamed by policy; surface but never block Release.
+  Add-Result WARN ("Potential sensitive filenames in user-owned source (informational, does not block): " + (($sensitiveHitsSource | Select-Object -First 8) -join ", ")) "SENSITIVE-001" -Blocking $false
 }
 
 function Find-BrokenLinks {
@@ -705,25 +787,27 @@ $sourceLinkHits = Find-BrokenLinks $userSourceFiles
 if ($sourceLinkHits.Count -eq 0) {
   Add-Result INFO "No broken user-source links found" "SOURCE-LINK-001"
 } else {
-  $sourceLinkLevel = if ($Gate -eq "Draft") { "INFO" } else { "WARN" }
-  Add-Result $sourceLinkLevel ("Broken user-source links: " + (($sourceLinkHits | Select-Object -First 8) -join ", ")) "SOURCE-LINK-001"
+  # User-owned source cannot be edited by policy; a broken link there is informational only.
+  Add-Result WARN ("Broken user-source links: " + (($sourceLinkHits | Select-Object -First 8) -join ", ")) "SOURCE-LINK-001" -Blocking $false
 }
 
 $exitCode = 0
 if ($fail -gt 0) {
   $exitCode = 1
-} elseif ($FailOnWarning -and $warn -gt 0) {
+} elseif ($FailOnWarning -and $warnBlocking -gt 0) {
   $exitCode = 2
 }
 
 if ($Format -eq "Json") {
   [pscustomobject]@{
     project = $project
-    mode = $Mode
+    requested_mode = $requestedMode
+    effective_mode = $effectiveMode
     gate = $Gate
     summary = [pscustomobject]@{
       pass = $pass
       warn = $warn
+      warn_blocking = $warnBlocking
       fail = $fail
       exit_code = $exitCode
     }
@@ -731,11 +815,17 @@ if ($Format -eq "Json") {
   } | ConvertTo-Json -Depth 6
 } else {
   Write-Host "PMO Project Validation: $project"
-  Write-Host "Mode=$Mode Gate=$Gate"
+  Write-Host "Requested Mode: $requestedMode"
+  Write-Host "Detected Project Mode: $effectiveMode"
+  Write-Host "Effective Mode: $effectiveMode"
+  Write-Host "Gate=$Gate"
   Write-Host ""
-  $messages | ForEach-Object { Write-Host "[$($_.level)] $($_.rule_id) $($_.message)" }
+  $messages | ForEach-Object {
+    $tag = if ($_.level -eq "WARN" -and -not $_.blocking) { " (non-blocking)" } else { "" }
+    Write-Host "[$($_.level)] $($_.rule_id) $($_.message)$tag"
+  }
   Write-Host ""
-  Write-Host "Summary: PASS=$pass WARN=$warn FAIL=$fail"
+  Write-Host "Summary: PASS=$pass WARN=$warn ($warnBlocking blocking) FAIL=$fail"
 }
 
 if ($exitCode -ne 0) {

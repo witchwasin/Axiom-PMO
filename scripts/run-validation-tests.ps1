@@ -21,6 +21,9 @@ $cases = @(
   @{ Name = "html-wireframe-not-flagged"; Path = "tests/fixtures/valid-html-wireframe"; Mode = "Standard"; Gate = "Release"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; Type = "positive" },
   @{ Name = "source-ref-REQ-V1"; Path = "tests/fixtures/valid-source-ref-REQ-V1"; Mode = "Standard"; Gate = "Release"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; Type = "positive" },
   @{ Name = "user-source-placeholders-do-not-fail-release"; Path = "tests/fixtures/valid-user-source-placeholders"; Mode = "Standard"; Gate = "Release"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; Type = "positive" },
+  @{ Name = "others-and-sensitive-source-do-not-fail-release"; Path = "tests/fixtures/valid-source-others-and-sensitive"; Mode = "Standard"; Gate = "Release"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
+  @{ Name = "standard-draft-no-delivery-release-required"; Path = "tests/fixtures/valid-standard-draft-minimal"; Mode = "Standard"; Gate = "Draft"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; Type = "positive" },
+  @{ Name = "strict-scope-no-rtm-required"; Path = "examples/STRICT-HIGH-RISK"; Mode = "Strict"; Gate = "Scope"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
 
   @{ Name = "invalid-no-project"; Path = "tests/fixtures/invalid-no-project"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "STRUCT-001"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "invalid-missing-delivery"; Path = "tests/fixtures/invalid-missing-delivery"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "STRUCT-001"; ExpectedLevel = "FAIL"; Type = "negative" },
@@ -38,6 +41,8 @@ $cases = @(
   @{ Name = "not-required-in-approval"; Path = "tests/fixtures/invalid-not-required-approval"; Mode = "Lite"; Gate = "Release"; ShouldPass = $false; Rule = "APPROVAL-002"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "not-required-in-workitem"; Path = "tests/fixtures/invalid-not-required-workitem"; Mode = "Lite"; Gate = "Release"; ShouldPass = $false; Rule = "WORKITEM-001"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "not-required-in-rollback"; Path = "tests/fixtures/invalid-not-required-rollback"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "RELEASE-001"; ExpectedLevel = "FAIL"; Type = "negative" },
+  @{ Name = "mode-downgrade-project-default"; Path = "examples/STRICT-HIGH-RISK"; Mode = "Lite"; Gate = "Release"; ShouldPass = $false; Rule = "MODE-001"; ExpectedLevel = "FAIL"; Type = "negative" },
+  @{ Name = "mode-downgrade-workitem-escalation"; Path = "tests/fixtures/invalid-mode-downgrade-workitem"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "MODE-001"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "invalid-task-source-conflict"; Path = "tests/fixtures/invalid-task-source-conflict"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "TASK-002"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "invalid-delivery-task-source-missing"; Path = "tests/fixtures/invalid-delivery-task-source-missing"; Mode = "Standard"; Gate = "Scope"; ShouldPass = $false; Rule = "TASK-001"; ExpectedLevel = "WARN"; Type = "negative"; FailOnWarning = $true },
   @{ Name = "invalid-workitem-header-missing"; Path = "tests/fixtures/invalid-workitem-header-missing"; Mode = "Standard"; Gate = "Scope"; ShouldPass = $false; Rule = "WORKITEM-001"; ExpectedLevel = "WARN"; Type = "negative"; FailOnWarning = $true },
