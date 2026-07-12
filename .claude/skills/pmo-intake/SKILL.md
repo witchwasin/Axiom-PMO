@@ -12,13 +12,13 @@ Convert source material into confirmed requirements, assumptions, questions, sco
 Use for new source review, requirement extraction, gap analysis, scope clarification, or source conflict triage.
 
 ## Required Inputs
-`PROJECT.md`, relevant `source/**`, and any user-stated goal. Read only the context set allowed by `CONTEXT-ROUTER.md`.
+`PROJECT.md`, relevant `source/**`, and any user-stated goal. Read only the context set allowed by `CONTEXT-ROUTER.md` and `pmo-config/context-map.json`.
 
 ## Allowed Context
 Default to `PROJECT.md` plus the specific source files needed. Do not bulk-load archived skills or every source file unless the task is an impact analysis or conflict review.
 
 ## Mode Behavior
-Lite captures only essential source, scope, and release approval needs. Standard captures normal requirements and design implications. Strict flags payment, PII, auth, permission, integration, compliance, migration, and public-sector acceptance triggers.
+Use the mode, strict-trigger, evidence-status, and approval enums from `pmo-config/policy.json`; do not repeat or extend them inside the skill. Lite captures only essential source, scope, and release approval needs. Standard captures normal requirements and design implications. Strict escalation follows the configured strict triggers.
 
 ## Execution Steps
 1. Identify confirmed facts, assumptions, and open questions.
@@ -37,7 +37,7 @@ Scope approval is human-owned. AI may draft rows but must not mark approval as g
 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project> -Mode <mode> -Gate Scope`
 
 ## Prohibited Actions
-Do not invent requirements, silently resolve conflicts, push commits, deploy, or approve release.
+Do not invent requirements, bulk-load all source by default, silently resolve conflicts, push commits, deploy, or approve release.
 
 ## Completion Criteria
 Every in-scope requirement has `source_ref`, evidence status, and either confirmed acceptance or an open question.

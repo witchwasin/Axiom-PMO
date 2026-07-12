@@ -12,13 +12,13 @@ Keep git operations reviewable, intentional, and safe.
 Use before commit, push, tag, branch changes, release publication, or when sensitive files may be present.
 
 ## Required Inputs
-Current branch, git status, diff summary, validation output, and human approval state.
+Current branch, git status, diff summary, validation output, human approval state, and git/release permissions from `pmo-config/policy.json`.
 
 ## Allowed Context
 Read git metadata and changed files needed for review. Do not inspect denied secret files.
 
 ## Mode Behavior
-Lite, Standard, and Strict all require human confirmation for commit/push/tag. Strict also requires stronger evidence and release readiness before any release operation.
+Use `pmo-config/policy.json` for git mutation and production release permission requirements. Lite, Standard, and Strict all require human confirmation for commit/push/tag; push requires explicit per-push confirmation.
 
 ## Execution Steps
 1. Confirm branch and remote.
@@ -37,7 +37,7 @@ Commit is local only after per-round diff approval. Push/PR/merge require final 
 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1`
 
 ## Prohibited Actions
-Do not use destructive git commands, force push, bypass permissions, or commit unrelated user changes.
+Do not use destructive git commands, force push, bypass permissions, approve production release, push without explicit per-push confirmation, or commit unrelated user changes.
 
 ## Completion Criteria
 Working tree changes are intentional, tests are green, no sensitive files are included, and human approval is recorded.
