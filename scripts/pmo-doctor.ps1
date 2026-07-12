@@ -11,9 +11,13 @@ $repo = $root.Path
 $policyPath = Join-Path $repo "pmo-config/policy.json"
 $skillManifestPath = Join-Path $repo "pmo-config/skill-manifest.json"
 $validationRulesPath = Join-Path $repo "pmo-config/validation-rules.json"
+$referenceTypesPath = Join-Path $repo "pmo-config/reference-types.json"
+$artifactPolicyPath = Join-Path $repo "pmo-config/artifact-policy.json"
 $policy = $null
 $skillManifest = $null
 $validationRules = $null
+$referenceTypesConfig = $null
+$artifactPolicy = $null
 if (Test-Path -LiteralPath $policyPath -PathType Leaf) {
   $policy = Get-Content -LiteralPath $policyPath -Raw | ConvertFrom-Json
 }
@@ -22,6 +26,12 @@ if (Test-Path -LiteralPath $skillManifestPath -PathType Leaf) {
 }
 if (Test-Path -LiteralPath $validationRulesPath -PathType Leaf) {
   $validationRules = Get-Content -LiteralPath $validationRulesPath -Raw | ConvertFrom-Json
+}
+if (Test-Path -LiteralPath $referenceTypesPath -PathType Leaf) {
+  $referenceTypesConfig = Get-Content -LiteralPath $referenceTypesPath -Raw | ConvertFrom-Json
+}
+if (Test-Path -LiteralPath $artifactPolicyPath -PathType Leaf) {
+  $artifactPolicy = Get-Content -LiteralPath $artifactPolicyPath -Raw | ConvertFrom-Json
 }
 
 $pass = 0
@@ -236,6 +246,33 @@ if ($versionText -eq $changelogFirstVersion -and ($configVersions | Where-Object
   Add-Result PASS "VERSION, CHANGELOG, and JSON config versions match" "DOCTOR-005"
 } else {
   Add-Result FAIL "Version drift: VERSION=$versionText CHANGELOG=$changelogFirstVersion CONFIG=$($configVersions -join ',')" "DOCTOR-005"
+}
+
+# P7.3: every machine-readable config carries schema_version, distinct from
+# the app-release `version` above -- lets the validator warn/fail on a config
+# shape it does not understand instead of silently misreading old fields.
+$supportedSchemaVersion = "1.0"
+$schemaVersionConfigs = [ordered]@{
+  "policy.json" = $policy
+  "artifact-policy.json" = $artifactPolicy
+  "reference-types.json" = $referenceTypesConfig
+  "skill-manifest.json" = $skillManifest
+  "validation-rules.json" = $validationRules
+}
+$schemaVersionProblems = @()
+foreach ($name in $schemaVersionConfigs.Keys) {
+  $cfg = $schemaVersionConfigs[$name]
+  if (-not $cfg) { continue }
+  if (-not $cfg.schema_version) {
+    $schemaVersionProblems += "$name is missing schema_version"
+  } elseif ($cfg.schema_version -ne $supportedSchemaVersion) {
+    $schemaVersionProblems += "$name has unsupported schema_version $($cfg.schema_version) (expected $supportedSchemaVersion)"
+  }
+}
+if ($schemaVersionProblems.Count -eq 0) {
+  Add-Result PASS "All pmo-config/*.json carry a supported schema_version ($supportedSchemaVersion)" "DOCTOR-006"
+} else {
+  Add-Result FAIL ("Config schema_version problems: " + ($schemaVersionProblems -join "; ")) "DOCTOR-006"
 }
 
 $settingsPath = Join-Path $repo ".claude/settings.json"

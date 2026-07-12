@@ -10,7 +10,7 @@ Rule: a phase is "done" only after human diff review + local commit.
 | 2 | RTM.json + reference resolver + approval integrity | done — committed (a7a8428, c838082) |
 | 3 | Release enforcement (completion, QA/security, rollback) | done — committed (8837945) |
 | 4 | Modular refactor (golden-master control) | done — committed (75ff32a) |
-| 5 | Testing upgrade (E2E rebuilt without example copy-over, new negatives, 3rd config-mutation, CI gate wiring) | done except P5.3 PSScriptAnalyzer (not installed on this machine — owner decision needed) — ready to commit |
+| 5 | Testing upgrade (E2E rebuilt without example copy-over, new negatives, 3rd config-mutation, CI gate wiring) | done — committed (2027eed). P5.3 PSScriptAnalyzer explicitly skipped by owner 2026-07-12 (not installed on this machine) |
 | 6 | Context map JSON + skills alignment | done in Track B worktree (`remediation/9plus-v2-codex`) — ready to merge at Phase 8 |
-| 7 | Governance/versioning (§7.4 branch protection: **deferred by owner 2026-07-12**) | 7.4/7.5 done in Track B; 7.1-7.3 pending in Track A |
+| 7 | Governance/versioning (§7.4 branch protection: **deferred by owner 2026-07-12**) | 7.1 (CHANGELOG factual fix) already correct — verified, no action needed. 7.3 (schema_version on all 5 pmo-config/*.json + new DOCTOR-006 rule + 4th config-mutation scenario) done — ready to commit. 7.2 (VERSION bump to 0.5.0) correctly deferred to Phase 8 per plan. 7.4/7.5 done in Track B. |
 | 8 | Final Acceptance Gate | pending |

@@ -1,5 +1,6 @@
 {
   "version": "0.4.0",
+  "schema_version": "1.0",
   "sentinel_rules": {
     "not_required": {
       "allowed_fields": ["Design Ref"],

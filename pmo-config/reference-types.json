@@ -1,5 +1,6 @@
 {
   "version": "0.4.0",
+  "schema_version": "1.0",
   "reference_types": {
     "decision": "^DEC-\\d{3}$",
     "requirement": "^REQ-\\d{3}$",
