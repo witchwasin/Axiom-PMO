@@ -47,8 +47,8 @@
 > ```
 > rollback_required: false
 > change_type: content-only
-> reason: <why rollback is not needed>
-> approver: <name>
+> reason: state why rollback is not needed
+> approver: approver name
 > ```
 
 | Trigger | Owner | Steps | Verification | Evidence Ref |

@@ -56,6 +56,12 @@
                     {
                         "level":  "INFO",
                         "rule_id":  "STRUCT-001",
+                        "message":  "Missing optional file RTM.json",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "INFO",
+                        "rule_id":  "STRUCT-001",
                         "message":  "Missing optional directory source/",
                         "blocking":  true
                     },

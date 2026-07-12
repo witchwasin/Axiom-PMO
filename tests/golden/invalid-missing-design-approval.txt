@@ -54,6 +54,12 @@
                         "blocking":  true
                     },
                     {
+                        "level":  "INFO",
+                        "rule_id":  "STRUCT-001",
+                        "message":  "Missing optional file RTM.json",
+                        "blocking":  true
+                    },
+                    {
                         "level":  "PASS",
                         "rule_id":  "STRUCT-001",
                         "message":  "Found source/",

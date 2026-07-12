@@ -87,7 +87,12 @@ $cases = @(
   @{ Name = "test-evidence-unresolvable"; Path = "tests/fixtures/invalid-test-evidence-unresolvable"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "TEST-EVIDENCE-001"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "review-stage-none-at-release"; Path = "tests/fixtures/invalid-review-stage-none-release"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "REVIEW-001"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "qa-review-missing"; Path = "tests/fixtures/invalid-qa-review-missing"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "QA-REVIEW-001"; ExpectedLevel = "FAIL"; Type = "negative" },
-  @{ Name = "lite-rollback-waiver-valid"; Path = "tests/fixtures/valid-lite-rollback-waiver"; Mode = "Lite"; Gate = "Release"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; Type = "positive" }
+  @{ Name = "lite-rollback-waiver-valid"; Path = "tests/fixtures/valid-lite-rollback-waiver"; Mode = "Lite"; Gate = "Release"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; Type = "positive" },
+  @{ Name = "source-broken-link-non-blocking"; Path = "tests/fixtures/valid-source-broken-link-non-blocking"; Mode = "Standard"; Gate = "Release"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
+
+  @{ Name = "security-review-pending"; Path = "tests/fixtures/invalid-security-review-pending"; Mode = "Strict"; Gate = "Release"; ShouldPass = $false; Rule = "SECURITY-REVIEW-001"; ExpectedLevel = "FAIL"; Type = "negative" },
+  @{ Name = "evidence-file-missing"; Path = "tests/fixtures/invalid-evidence-file-missing"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "TEST-EVIDENCE-001"; ExpectedLevel = "FAIL"; Type = "negative" },
+  @{ Name = "malformed-external-evidence"; Path = "tests/fixtures/invalid-malformed-external-evidence"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "QA-REVIEW-001"; ExpectedLevel = "FAIL"; Type = "negative" }
 )
 
 $doctorCases = @(
