@@ -61,7 +61,7 @@ stop
 if ($Mode -eq "Strict") {
   Copy-Item -LiteralPath (Join-Path $repo "templates/RAID-log.md") -Destination (Join-Path $target "RAID-log.md")
   Copy-Item -LiteralPath (Join-Path $repo "templates/decision-log.md") -Destination (Join-Path $target "decision-log.md")
-  Copy-Item -LiteralPath (Join-Path $repo "templates/RTM.yaml") -Destination (Join-Path $target "RTM.yaml")
+  Copy-Item -LiteralPath (Join-Path $repo "templates/RTM.json") -Destination (Join-Path $target "RTM.json")
 }
 
 Write-Host "Created $Mode project: $target"

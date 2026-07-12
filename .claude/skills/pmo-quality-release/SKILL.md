@@ -18,7 +18,7 @@ Use for QA review, UAT/release gate, rollback review, or close-out summary.
 Use QA/release context only. Read source docs only when evidence conflicts with requirements.
 
 ## Mode Behavior
-Lite does not require `RELEASE.md`, `RAID-log.md`, `decision-log.md`, `DESIGN/`, or `RTM.yaml` by default, but Release Approved is always required. Standard requires release artifact when releasing. Strict requires RTM, RAID, decision log, QA/security review, and rollback evidence.
+Lite does not require `RELEASE.md`, `RAID-log.md`, `decision-log.md`, `DESIGN/`, or `RTM.json` by default, but Release Approved is always required. Standard requires release artifact when releasing. Strict requires RTM, RAID, decision log, QA/security review, and rollback evidence.
 
 ## Execution Steps
 1. Check open blockers.

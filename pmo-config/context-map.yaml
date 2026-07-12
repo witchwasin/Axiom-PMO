@@ -87,7 +87,7 @@ modes:
       - RELEASE.md
       - RAID-log.md
       - decision-log.md
-      - RTM.yaml or traceability section
+      - RTM.json or traceability section
     separate_logs_required: true
 
 strict_triggers:
