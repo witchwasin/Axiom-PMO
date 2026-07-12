@@ -46,13 +46,13 @@
           "max_initial_files": 4
         },
         "qa_release": {
-          "required_context": ["PROJECT.md"],
-          "conditional_context": ["DELIVERY.md"],
+          "required_context": ["PROJECT.md", "DELIVERY.md"],
+          "conditional_context": [],
           "optional_context": ["RELEASE.md", "RAID-log.md", "decision-log.md"],
           "max_initial_files": 4,
           "notes": [
             "Lite release context starts from PROJECT.md.",
-            "DELIVERY.md is conditional when task_source is file or the work item is not fully captured in PROJECT.md.",
+            "DELIVERY.md is required at Lite Release (H1, 2026-07-12): a prose 'work item' mention in PROJECT.md is not parseable evidence and bypassed every release completion check.",
             "RELEASE.md is optional unless the artifact policy or a real release/UAT trigger requires it."
           ]
         }
