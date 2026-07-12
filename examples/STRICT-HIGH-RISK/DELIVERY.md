@@ -11,5 +11,5 @@
 
 | ID | Mode | Strict Trigger | Mode Reason | Mode Approved By | Feature / Deliverable | Requirement Ref | Design Ref | Acceptance Criteria | Test Checklist | Owner | Priority | Status | Review Stage | Evidence Ref | Labels |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| D-001 | Strict | permission | permission, audit | Demo Security Lead | Export approval permission | REQ-001 | DESIGN/FLOW.puml | Non-approver cannot approve export | Happy, exception, role test | Demo Dev | high | Review / Test | security | manual security review | high-risk |
-| D-002 | Strict | permission | audit log | Demo Security Lead | Export audit record | REQ-002 | DESIGN/FLOW.puml | Every approved export writes audit record | Happy, exception | Demo Dev | high | Review / Test | qa | audit evidence | high-risk |
+| D-001 | Strict | permission | permission, audit | Demo Security Lead | Export approval permission | REQ-001 | DESIGN/FLOW.puml | Non-approver cannot approve export | Happy, exception, role test | Demo Dev | high | Done | security | DEC-003 | high-risk |
+| D-002 | Strict | permission | audit log | Demo Security Lead | Export audit record | REQ-002 | DESIGN/FLOW.puml | Every approved export writes audit record | Happy, exception | Demo Dev | high | Done | qa | DEC-003 | high-risk |

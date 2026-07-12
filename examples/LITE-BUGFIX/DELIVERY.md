@@ -11,4 +11,4 @@
 
 | ID | Mode | Strict Trigger | Mode Reason | Mode Approved By | Feature / Deliverable | Requirement Ref | Design Ref | Acceptance Criteria | Test Checklist | Owner | Priority | Status | Review Stage | Evidence Ref | Labels |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| D-001 | Lite | none | typo only | Demo PM | Fix button label | REQ-001 | not needed | Button shows "Send" | Visual check | Demo Dev | low | To Do | none | screenshot after fix |  |
+| D-001 | Lite | none | typo only | Demo PM | Fix button label | REQ-001 | not needed | Button shows "Send" | Visual check | Demo Dev | low | Done | none | screenshot after fix |  |

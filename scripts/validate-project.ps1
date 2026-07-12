@@ -323,6 +323,55 @@ function Get-DesignPathFromRef {
   return ""
 }
 
+function Test-ReviewRow {
+  param(
+    [string]$ReleaseText,
+    [string]$ReviewType,
+    [string]$RuleId,
+    [string]$ApprovalMode,
+    [string[]]$DecisionIds,
+    $ReleaseRegistry
+  )
+
+  $rows = Get-TableRowsAfterHeading $ReleaseText '^##\s+QA\s*/\s*Security Review'
+  $row = $rows | Where-Object { $_.'Review Type' -eq $ReviewType } | Select-Object -First 1
+  if (-not $row) {
+    Add-Result FAIL "$ReviewType review row not found in QA / Security Review table" $RuleId
+    return $false
+  }
+
+  $invalid = @()
+  if ($row.Status -ne "approved") { $invalid += "status" }
+  if (Test-PlaceholderValue $row.Reviewer) { $invalid += "reviewer" }
+  if (Test-PlaceholderValue $row.Role) { $invalid += "role" }
+  if ((Test-PlaceholderValue $row.Date) -or -not (Test-DateValue $row.Date)) { $invalid += "date" }
+  if (Test-PlaceholderValue $row.Evidence) {
+    $invalid += "evidence"
+  } else {
+    $ref = Resolve-Reference -Value $row.Evidence -ReferenceTypesConfig $referenceTypesConfig -ProjectRoot $project -DecisionIds $DecisionIds -TestIds $ReleaseRegistry.TestIds
+    if (-not $ref.Type) { $invalid += "evidence_unrecognized_type" }
+    elseif (-not $ref.Resolved) { $invalid += "evidence_not_found" }
+  }
+
+  if ($invalid.Count -gt 0) {
+    Add-Result FAIL "$ReviewType review row has invalid or placeholder fields: $($invalid -join ', ')" $RuleId
+    return $false
+  }
+
+  $allowedRoles = $policy.approval_roles."$ReviewType Approved"
+  if ($allowedRoles -and (@($allowedRoles) -notcontains $row.Role)) {
+    if ($ApprovalMode -eq "Strict") {
+      Add-Result FAIL "$ReviewType reviewer role '$($row.Role)' is not in the allowed role matrix ($($allowedRoles -join ', '))" $RuleId
+      return $false
+    } else {
+      Add-Result WARN "$ReviewType reviewer role '$($row.Role)' is not in the allowed role matrix ($($allowedRoles -join ', '))" $RuleId -Blocking $true
+    }
+  }
+
+  Add-Result PASS "$ReviewType review is valid" $RuleId
+  return $true
+}
+
 function Test-Approval {
   param(
     [string]$ProjectText,
@@ -681,36 +730,69 @@ if (Test-Path -LiteralPath $raidPath) {
 
 $releaseText = ""
 $releasePath = Join-Path $project "RELEASE.md"
+$releaseRegistry = [pscustomobject]@{ ReleaseId = $null; TestIds = @() }
 if ($Gate -eq "Release" -and (Test-Path -LiteralPath $releasePath)) {
   $releaseText = Get-Content -LiteralPath $releasePath -Raw
-  $rollbackLines = Get-TableLinesAfterHeading $releaseText '^##\s+Structured Rollback Plan'
-  $rollbackDataRows = @()
-  $badRollbackRows = @()
-  if ($rollbackLines.Count -ge 3) {
-    foreach ($line in ($rollbackLines | Select-Object -Skip 2)) {
-      $parts = @($line -split '\|')
-      $cells = @()
-      for ($i = 1; $i -lt ($parts.Count - 1); $i++) {
-        $cells += $parts[$i].Trim()
-      }
-      if ($cells.Count -lt 5) {
-        $badRollbackRows += $line
-        continue
-      }
-      $rollbackDataRows += $line
-      if ((Test-PlaceholderValue $cells[0]) -or
-        (Test-PlaceholderValue $cells[1]) -or
-        (Test-PlaceholderValue $cells[2]) -or
-        (Test-PlaceholderValue $cells[3]) -or
-        (Test-PlaceholderValue $cells[4])) {
-        $badRollbackRows += $line
-      }
+  $releaseRegistry = Get-ReleaseRegistry $releaseText
+
+  # P3.3: structured rollback, with a Lite waiver alternative
+  # (rollback_required: false + change_type + reason + approver) instead of a
+  # full row-by-row plan -- valid only for change types on the config allowlist.
+  $rollbackSectionLines = Get-TableLinesAfterHeading $releaseText '^##\s+Structured Rollback Plan'
+  $waiverMatch = [regex]::Match($releaseText, '(?ms)^##\s+Structured Rollback Plan\s*(.*?)(?=^##\s|\z)')
+  $waiver = $null
+  if ($waiverMatch.Success -and $waiverMatch.Groups[1].Value -match '(?m)^\s*rollback_required:\s*false\s*$') {
+    $section = $waiverMatch.Groups[1].Value
+    $waiver = [pscustomobject]@{
+      ChangeType = if ($section -match '(?m)^\s*change_type:\s*(.+?)\s*$') { $Matches[1] } else { "" }
+      Reason = if ($section -match '(?m)^\s*reason:\s*(.+?)\s*$') { $Matches[1] } else { "" }
+      Approver = if ($section -match '(?m)^\s*approver:\s*(.+?)\s*$') { $Matches[1] } else { "" }
     }
   }
-  if ($rollbackDataRows.Count -gt 0 -and $badRollbackRows.Count -eq 0) {
-    Add-Result PASS "Release includes structured rollback plan" "RELEASE-001"
+
+  if ($waiver) {
+    $waiverRule = $policy.rollback_waiver
+    $waiverAllowedModes = if ($waiverRule) { @($waiverRule.allowed_modes) } else { @() }
+    $waiverAllowedTypes = if ($waiverRule) { @($waiverRule.allowed_change_types) } else { @() }
+    $waiverInvalid = @()
+    if ($waiverAllowedModes -notcontains $Mode) { $waiverInvalid += "mode $Mode is not allowed to waive rollback" }
+    if ($waiverAllowedTypes -notcontains $waiver.ChangeType) { $waiverInvalid += "change_type '$($waiver.ChangeType)' is not on the waiver allowlist" }
+    if (Test-PlaceholderValue $waiver.Reason) { $waiverInvalid += "reason is missing" }
+    if (Test-PlaceholderValue $waiver.Approver) { $waiverInvalid += "approver is missing" }
+    if ($waiverInvalid.Count -eq 0) {
+      Add-Result PASS "Release rollback is validly waived (change_type=$($waiver.ChangeType))" "RELEASE-001"
+    } else {
+      Add-Result FAIL "Release rollback waiver is invalid: $($waiverInvalid -join '; ')" "RELEASE-001"
+    }
   } else {
-    Add-Result FAIL "Release rollback table is missing or has empty rows" "RELEASE-001"
+    $rollbackDataRows = @()
+    $badRollbackRows = @()
+    if ($rollbackSectionLines.Count -ge 3) {
+      foreach ($line in ($rollbackSectionLines | Select-Object -Skip 2)) {
+        $parts = @($line -split '\|')
+        $cells = @()
+        for ($i = 1; $i -lt ($parts.Count - 1); $i++) {
+          $cells += $parts[$i].Trim()
+        }
+        if ($cells.Count -lt 5) {
+          $badRollbackRows += $line
+          continue
+        }
+        $rollbackDataRows += $line
+        if ((Test-PlaceholderValue $cells[0]) -or
+          (Test-PlaceholderValue $cells[1]) -or
+          (Test-PlaceholderValue $cells[2]) -or
+          (Test-PlaceholderValue $cells[3]) -or
+          (Test-PlaceholderValue $cells[4])) {
+          $badRollbackRows += $line
+        }
+      }
+    }
+    if ($rollbackDataRows.Count -gt 0 -and $badRollbackRows.Count -eq 0) {
+      Add-Result PASS "Release includes structured rollback plan" "RELEASE-001"
+    } else {
+      Add-Result FAIL "Release rollback table is missing or has empty rows" "RELEASE-001"
+    }
   }
 
   $scopeMatches = [regex]::Matches($releaseText, '\bD-\d{3}\b')
@@ -721,6 +803,65 @@ if ($Gate -eq "Release" -and (Test-Path -LiteralPath $releasePath)) {
   $missingReleaseRefs = @($missingReleaseRefs | Sort-Object -Unique)
   if ($missingReleaseRefs.Count -gt 0) {
     Add-Result FAIL "Release references missing delivery item(s): $($missingReleaseRefs -join ', ')" "REF-001"
+  }
+
+  # P3.2: structured QA/Security review, replacing the old "the word qa/security
+  # appears somewhere in DELIVERY.md" regex. Lite is exempt (test evidence in
+  # the Test Summary table is sufficient); Standard requires QA; Strict requires
+  # QA and Security.
+  if ($Mode -ne "Lite") {
+    Test-ReviewRow $releaseText "QA" "QA-REVIEW-001" $Mode $decisionIds $releaseRegistry | Out-Null
+    if ($Mode -eq "Strict") {
+      Test-ReviewRow $releaseText "Security" "SECURITY-REVIEW-001" $Mode $decisionIds $releaseRegistry | Out-Null
+    }
+  }
+}
+
+# P3.1: work-item completion at Release. Every in-scope work item must be
+# Done, reviewed, and have resolvable test/evidence proof before Release; the
+# existing "Release Scope" table (Deliverable/Requirement Ref/Included?/Notes)
+# is the exclusion mechanism for items intentionally left out of this release.
+if ($Gate -eq "Release" -and @($workItems).Count -gt 0) {
+  $releaseScopeRows = @()
+  if ($releaseText) {
+    $releaseScopeRows = @(Get-TableRowsAfterHeading $releaseText '^##\s+Release Scope')
+  }
+  foreach ($item in @($workItems)) {
+    $scopeRow = $releaseScopeRows | Where-Object { $_.Deliverable -eq $item.ID } | Select-Object -First 1
+    $included = $true
+    if ($scopeRow) {
+      $included = ($scopeRow.'Included?' -ne "no")
+    } elseif ($releaseScopeRows.Count -gt 0) {
+      Add-Result FAIL "$($item.ID) is not listed in the Release Scope table" "RELEASE-SCOPE-001"
+      continue
+    }
+
+    if (-not $included) {
+      if (Test-PlaceholderValue $scopeRow.Notes) {
+        Add-Result FAIL "$($item.ID) is excluded from release scope but Notes does not state a reason" "RELEASE-SCOPE-001"
+      } else {
+        Add-Result PASS "$($item.ID) is intentionally excluded from release scope" "RELEASE-SCOPE-001"
+      }
+      continue
+    }
+
+    if ($item.Status -ne "Done") {
+      Add-Result FAIL "$($item.ID) is in release scope but Status is '$($item.Status)', not Done" "RELEASE-STATUS-001"
+    }
+    if ($Mode -ne "Lite" -and $item.'Review Stage' -eq "none") {
+      Add-Result FAIL "$($item.ID) is in release scope but has no Review Stage" "REVIEW-001"
+    }
+    if (Test-PlaceholderValue $item.'Test Checklist') {
+      Add-Result FAIL "$($item.ID) is in release scope but Test Checklist is empty" "TEST-EVIDENCE-001"
+    }
+    if ($Mode -ne "Lite") {
+      $itemEvidence = Resolve-Reference -Value $item.'Evidence Ref' -ReferenceTypesConfig $referenceTypesConfig -ProjectRoot $project -DecisionIds $decisionIds -TestIds $releaseRegistry.TestIds
+      if (-not $itemEvidence.Type -or -not $itemEvidence.Resolved) {
+        Add-Result FAIL "$($item.ID) is in release scope but Evidence Ref '$($item.'Evidence Ref')' does not resolve to a real reference" "TEST-EVIDENCE-001"
+      }
+    } elseif (Test-PlaceholderValue $item.'Evidence Ref') {
+      Add-Result FAIL "$($item.ID) is in release scope but Evidence Ref is empty" "TEST-EVIDENCE-001"
+    }
   }
 }
 
@@ -735,19 +876,15 @@ if ($Mode -eq "Strict" -and $Gate -eq "Release") {
   if (-not (Test-Path -LiteralPath (Join-Path $project "decision-log.md") -PathType Leaf)) {
     $strictMissing += "decision-log.md"
   }
-  if (-not $deliveryText -or $deliveryText -notmatch "(?i)\|\s*(qa|security)\s*\|") {
-    $strictMissing += "QA/security review stage"
-  }
-  if (-not $releaseText -or $releaseText -notmatch "(?i)Evidence Ref|manual security review|QA") {
-    $strictMissing += "release verification evidence"
-  }
+  # QA/security review and release verification evidence are now enforced by
+  # the structured QA-REVIEW-001 / SECURITY-REVIEW-001 / TEST-EVIDENCE-001
+  # checks above (real table rows, not "the word qa appears somewhere").
 
   # Row-by-row RTM.json validation: every requirement needs its own complete,
   # resolvable chain (design/delivery/test/evidence/release), not just "the
   # word delivery_ref appears somewhere in the file".
   $rtmPath = Join-Path $project "RTM.json"
   if (Test-Path -LiteralPath $rtmPath -PathType Leaf) {
-    $releaseRegistry = Get-ReleaseRegistry $releaseText
     $rtmRaw = Get-Content -LiteralPath $rtmPath -Raw
     $rtmDoc = $null
     try { $rtmDoc = $rtmRaw | ConvertFrom-Json } catch { $rtmDoc = $null }

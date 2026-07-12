@@ -4,8 +4,10 @@
 
 ## Release Scope
 
-- D-001 Export approval permission
-- D-002 Export audit record
+| Deliverable | Requirement Ref | Included? | Notes |
+|---|---|---|---|
+| D-001 | REQ-001 | yes | |
+| D-002 | REQ-002 | yes | |
 
 ## Test Summary
 
@@ -14,6 +16,13 @@
 | TEST-001 | Role-based access | passed | DEC-003 | Non-approvers cannot approve exports. |
 | TEST-002 | Audit record | passed | DEC-003 | Export actions are recorded. |
 | TEST-003 | Manual security review | passed | DEC-003 | Reviewed by Security Lead. |
+
+## QA / Security Review
+
+| Review Type | Status | Reviewer | Role | Date | Evidence |
+|---|---|---|---|---|---|
+| QA | approved | Demo QA Lead | QA Lead | 2026-07-10 | DEC-003 |
+| Security | approved | Demo Security Lead | Security Reviewer | 2026-07-10 | DEC-003 |
 
 ## Structured Rollback Plan
 

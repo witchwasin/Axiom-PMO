@@ -9,8 +9,7 @@ Plan: `reports/upgrade-plan-9plus.md` (v2 unified)
 - `main` = `origin/main` = `c2c9ee6` ("Post-merge cleanup...")
 - Working tree at branch creation: `M CHANGELOG.md` (factual fix for the
   "main was never affected" error — pre-existing, to be committed in Phase 0),
-  untracked `reports/upgrade-plan-9plus.md` (the plan itself), untracked
-  `tests - Shortcut.lnk` (stray Windows shortcut, not ours, left untouched).
+  untracked `reports/upgrade-plan-9plus.md` (the plan itself).
 
 ## Baseline check results (real runs)
 

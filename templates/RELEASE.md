@@ -26,6 +26,14 @@
 | TEST-002 | Alternative path | pending | | |
 | TEST-003 | Exception path | pending | | |
 
+## QA / Security Review
+
+> Standard requires an approved QA row at Release. Strict also requires an approved Security row. Lite is exempt (Test Summary evidence is sufficient).
+
+| Review Type | Status | Reviewer | Role | Date | Evidence |
+|---|---|---|---|---|---|
+| QA | pending | <reviewer> | QA Lead | YYYY-MM-DD | <evidence ref> |
+
 ## Deployment Notes
 
 - Target environment:
@@ -33,6 +41,15 @@
 - Deploy window:
 
 ## Structured Rollback Plan
+
+> Lite may replace this table with a waiver when the change type is on the
+> config allowlist (`pmo-config/policy.json` `rollback_waiver`):
+> ```
+> rollback_required: false
+> change_type: content-only
+> reason: <why rollback is not needed>
+> approver: <name>
+> ```
 
 | Trigger | Owner | Steps | Verification | Evidence Ref |
 |---|---|---|---|---|
