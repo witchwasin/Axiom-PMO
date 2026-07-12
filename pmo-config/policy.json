@@ -6,6 +6,13 @@
       "allowed_modes": ["Lite"]
     }
   },
+  "approval_roles": {
+    "Scope Approved": ["Product Owner", "Project Owner"],
+    "Design Ready": ["Tech Lead", "Solution Architect"],
+    "Release Approved": ["Product Owner", "Release Manager"],
+    "QA Approved": ["QA Lead"],
+    "Security Approved": ["Security Reviewer", "Tech Lead"]
+  },
   "workflow": {
     "canonical_flow": [
       "source",

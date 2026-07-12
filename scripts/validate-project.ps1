@@ -40,6 +40,13 @@ if (-not (Test-Path -LiteralPath $artifactPolicyPath -PathType Leaf)) {
 }
 $artifactPolicy = Get-Content -LiteralPath $artifactPolicyPath -Raw | ConvertFrom-Json
 
+$referenceTypesPath = Join-Path $repoRoot "pmo-config/reference-types.json"
+if (-not (Test-Path -LiteralPath $referenceTypesPath -PathType Leaf)) {
+  throw "Missing runtime reference-types config: $referenceTypesPath"
+}
+$referenceTypesConfig = Get-Content -LiteralPath $referenceTypesPath -Raw | ConvertFrom-Json
+. (Join-Path $PSScriptRoot "lib/reference-resolver.ps1")
+
 $pass = 0
 $warn = 0
 $warnBlocking = 0
@@ -321,7 +328,8 @@ function Test-Approval {
     [string]$ProjectText,
     [string]$GateName,
     [string[]]$DecisionIds = @(),
-    [bool]$RequireEvidenceExists = $false
+    [bool]$RequireEvidenceExists = $false,
+    [string]$ApprovalMode = "Standard"
   )
 
   $approvalRows = Get-TableRowsAfterHeading $ProjectText '^##\s+Approvals'
@@ -343,11 +351,34 @@ function Test-Approval {
   if (Test-PlaceholderValue $role) { $invalid += "role" }
   if ((Test-PlaceholderValue $date) -or -not (Test-DateValue $date)) { $invalid += "date" }
   if (Test-PlaceholderValue $evidence) { $invalid += "evidence" }
-  if ($RequireEvidenceExists -and $evidence -match '^DEC-\d{3}$' -and ($DecisionIds -notcontains $evidence)) { $invalid += "evidence_not_found" }
+  if ($RequireEvidenceExists -and -not (Test-PlaceholderValue $evidence)) {
+    # Beyond "not empty" -- evidence must be a recognized, typed reference
+    # (DEC-###, ISSUE:n, URL:..., FILE:path that exists, etc.), not arbitrary
+    # prose like "approved-by-email" or "some-proof".
+    $ref = Resolve-Reference -Value $evidence -ReferenceTypesConfig $referenceTypesConfig -ProjectRoot $project -DecisionIds $DecisionIds
+    if (-not $ref.Type) {
+      $invalid += "evidence_unrecognized_type"
+    } elseif (-not $ref.Resolved) {
+      $invalid += "evidence_not_found"
+    }
+  }
 
   if ($invalid.Count -gt 0) {
     Add-Result FAIL "$GateName approval has invalid or placeholder fields: $($invalid -join ', ')" "APPROVAL-002"
     return
+  }
+
+  # Role matrix (pmo-config/policy.json approval_roles): small teams often wear
+  # multiple hats, so a role mismatch is not blocking at Standard -- it is
+  # surfaced but does not fail Release -- and only hard-blocks at Strict.
+  $allowedRoles = $policy.approval_roles.$GateName
+  if ($allowedRoles -and -not (Test-PlaceholderValue $role) -and (@($allowedRoles) -notcontains $role)) {
+    if ($ApprovalMode -eq "Strict") {
+      Add-Result FAIL "$GateName approver role '$role' is not in the allowed role matrix ($($allowedRoles -join ', '))" "APPROVAL-003"
+      return
+    } elseif ($ApprovalMode -ne "Lite") {
+      Add-Result WARN "$GateName approver role '$role' is not in the allowed role matrix ($($allowedRoles -join ', '))" "APPROVAL-003" -Blocking $true
+    }
   }
 
   Add-Result PASS "$GateName approval is valid" "APPROVAL-002"
@@ -533,13 +564,13 @@ if ($projectText) {
 
   $requireDecisionEvidence = ($Mode -ne "Lite")
   if ($Gate -in @("Scope", "Design", "Release")) {
-    Test-Approval $projectText "Scope Approved" $decisionIds $requireDecisionEvidence
+    Test-Approval $projectText "Scope Approved" $decisionIds $requireDecisionEvidence $Mode
   }
   if ($Gate -in @("Design", "Release") -and $Mode -ne "Lite") {
-    Test-Approval $projectText "Design Ready" $decisionIds $requireDecisionEvidence
+    Test-Approval $projectText "Design Ready" $decisionIds $requireDecisionEvidence $Mode
   }
   if ($Gate -eq "Release") {
-    Test-Approval $projectText "Release Approved" $decisionIds $requireDecisionEvidence
+    Test-Approval $projectText "Release Approved" $decisionIds $requireDecisionEvidence $Mode
   }
 
   if ($Mode -ne "Lite" -and $projectSourceIds.Count -gt 0 -and $reqRows.Count -gt 0) {
