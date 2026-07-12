@@ -1,5 +1,5 @@
 param(
-  [string[]]$Files = @("AGENTS.md", "CLAUDE.md", "CONTEXT-ROUTER.md", "pmo-config/context-map.yaml", "pmo-config/policy.json")
+  [string[]]$Files = @("AGENTS.md", "CLAUDE.md", "CONTEXT-ROUTER.md", "pmo-config/context-map.json", "pmo-config/policy.json")
 )
 
 $ErrorActionPreference = "Stop"

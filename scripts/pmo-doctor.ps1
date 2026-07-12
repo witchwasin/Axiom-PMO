@@ -169,7 +169,7 @@ Require-File "TESTING.md"
 Require-File "SECURITY.md"
 Require-File "MIGRATION.md"
 Require-File "CONTEXT-ROUTER.md"
-Require-File "pmo-config/context-map.yaml"
+Require-File "pmo-config/context-map.json"
 Require-File "pmo-config/policy.json"
 Require-File "pmo-config/skill-manifest.json"
 Require-File "pmo-config/validation-rules.json"
@@ -223,8 +223,15 @@ Test-SkillFrontmatter $skillsRoot $activeSkills
 $templateRoot = if ($TemplateRootOverride) { (Resolve-Path -LiteralPath $TemplateRootOverride).Path } else { Join-Path $repo "templates" }
 Test-MarkdownTables $templateRoot
 
-$contextMap = Get-Content -LiteralPath (Join-Path $repo "pmo-config/context-map.yaml") -Raw
-if ($contextMap -match "policy_ref:\s*pmo-config/policy.json" -and $contextMap -match "skill_manifest_ref:\s*pmo-config/skill-manifest.json" -and $contextMap -match "validation_rules_ref:\s*pmo-config/validation-rules.json") {
+$contextMapPath = Join-Path $repo "pmo-config/context-map.json"
+$contextMapConfig = $null
+if (Test-Path -LiteralPath $contextMapPath -PathType Leaf) {
+  $contextMapConfig = Get-Content -LiteralPath $contextMapPath -Raw | ConvertFrom-Json
+}
+if ($contextMapConfig -and
+    $contextMapConfig.config_refs.policy -eq "pmo-config/policy.json" -and
+    $contextMapConfig.config_refs.skill_manifest -eq "pmo-config/skill-manifest.json" -and
+    $contextMapConfig.config_refs.validation_rules -eq "pmo-config/validation-rules.json") {
   Add-Result PASS "Context map references central policy and skill manifest" "DOCTOR-003"
 } else {
   Add-Result FAIL "Context map must reference JSON runtime config files" "DOCTOR-003"
@@ -241,7 +248,7 @@ $changelogText = Get-Content -LiteralPath (Join-Path $repo "CHANGELOG.md") -Raw
 if ($changelogText -match '(?m)^##\s+([^\s]+)\s+-') {
   $changelogFirstVersion = $Matches[1]
 }
-$configVersions = @($policy.version, $skillManifest.version, $validationRules.version) | Where-Object { $_ }
+$configVersions = @($policy.version, $skillManifest.version, $validationRules.version, $contextMapConfig.version) | Where-Object { $_ }
 if ($versionText -eq $changelogFirstVersion -and ($configVersions | Where-Object { $_ -ne $versionText }).Count -eq 0) {
   Add-Result PASS "VERSION, CHANGELOG, and JSON config versions match" "DOCTOR-005"
 } else {
@@ -258,6 +265,7 @@ $schemaVersionConfigs = [ordered]@{
   "reference-types.json" = $referenceTypesConfig
   "skill-manifest.json" = $skillManifest
   "validation-rules.json" = $validationRules
+  "context-map.json" = $contextMapConfig
 }
 $schemaVersionProblems = @()
 foreach ($name in $schemaVersionConfigs.Keys) {
@@ -371,7 +379,12 @@ foreach ($skill in $legacySkillNames) {
   }
 }
 
-$legacyPatterns = @("SystemFlow", "UserFlow", "TaskBreakdown", "Logging every", "log every")
+$legacyPatterns = @("SystemFlow", "UserFlow", "TaskBreakdown")
+# "log every"/"Logging every" needs its own line-level check: a skill saying
+# "Do not ... log every minor AI action ..." is stating the desired
+# prohibition, not committing the legacy over-logging anti-pattern the rule
+# was written to catch, so only flag lines that lack a negation cue.
+$loggingEveryPattern = "Logging every|log every"
 foreach ($skill in $actualSkills) {
   $skillPath = Join-Path $skillsRoot $skill
   $hits = @()
@@ -381,6 +394,11 @@ foreach ($skill in $actualSkills) {
       if ($content -match [regex]::Escape($pattern)) {
         $hits += "$skill/$($file.Name):$pattern"
       }
+    }
+    $loggingLines = @(($content -split "`r?`n") | Where-Object { $_ -match $loggingEveryPattern })
+    $unprohibitedLoggingLines = @($loggingLines | Where-Object { $_ -notmatch "(?i)\b(do not|never|avoid|without)\b" })
+    if ($unprohibitedLoggingLines.Count -gt 0) {
+      $hits += "$skill/$($file.Name):log every"
     }
   }
   if ($hits.Count -gt 0) {
