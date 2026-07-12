@@ -12,13 +12,13 @@ Translate approved scope/design into executable work items and handoff notes.
 Use when creating or reviewing `DELIVERY.md`, sequencing work, assigning owners, or checking task-source consistency.
 
 ## Required Inputs
-`PROJECT.md`, `DELIVERY.md`, and relevant `DESIGN/**` for Standard/Strict or design-impacting Lite work.
+`PROJECT.md`, task source of truth, relevant design context, and the context/artifact contract in `pmo-config/context-map.json` and `pmo-config/artifact-policy.json`.
 
 ## Allowed Context
 Use the context router handoff set. Do not read release artifacts unless the user asks for release readiness.
 
 ## Mode Behavior
-Lite keeps work items minimal and may use `not_required` for non-required design refs. Standard uses full work-item fields. Strict requires trigger reason, approval, review stage, and traceability.
+Use `pmo-config/policy.json` for mode, status, review-stage, task-source, strict-trigger, and sentinel values. Use `pmo-config/artifact-policy.json` to decide whether `DELIVERY.md` is required, conditional, or replaceable by GitHub Issues for the active mode and gate.
 
 ## Execution Steps
 1. Confirm task source of truth: file or GitHub.
@@ -36,7 +36,7 @@ Mode escalation and high-risk work require human confirmation before delivery st
 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project> -Mode <mode> -Gate Scope`
 
 ## Prohibited Actions
-Do not create hidden task systems, duplicate source of truth, or add features outside scope.
+Do not create hidden task systems, duplicate source of truth, hardcode mode/gate matrices, or add features outside scope.
 
 ## Completion Criteria
 Every work item references an existing requirement/business rule and has valid mode, status, and review stage.

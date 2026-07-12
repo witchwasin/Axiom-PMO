@@ -1,0 +1,132 @@
+{
+  "version": "0.4.0",
+  "schema_version": "1.0",
+  "purpose": "Machine-readable context guidance. This is guidance, not enforcement.",
+  "config_refs": {
+    "policy": "pmo-config/policy.json",
+    "artifact_policy": "pmo-config/artifact-policy.json",
+    "validation_rules": "pmo-config/validation-rules.json",
+    "reference_types": "pmo-config/reference-types.json",
+    "skill_manifest": "pmo-config/skill-manifest.json"
+  },
+  "global_rules": {
+    "source_policy": "Read only the smallest relevant source set. Never bulk-load source by default.",
+    "artifact_policy": "Required, conditional, optional, and release-gate artifacts are governed by pmo-config/artifact-policy.json.",
+    "enum_policy": "Modes, gates, statuses, evidence statuses, approval gates, strict triggers, and task sources are governed by pmo-config/policy.json.",
+    "reference_policy": "Reference shape and external-verification handling are governed by pmo-config/reference-types.json.",
+    "approval_policy": "AI may draft approval evidence rows but must not approve scope, design, release, push, deploy, or production actions for humans.",
+    "logging_policy": "Log only meaningful decisions, risks, issues, dependencies, release approvals, or scope changes."
+  },
+  "modes": {
+    "Lite": {
+      "separate_logs_required": false,
+      "intents": {
+        "intake": {
+          "required_context": ["PROJECT.md"],
+          "conditional_context": ["source/**"],
+          "optional_context": ["RAID-log.md", "decision-log.md"],
+          "max_initial_files": 5
+        },
+        "scope": {
+          "required_context": ["PROJECT.md"],
+          "conditional_context": ["source/**"],
+          "optional_context": ["decision-log.md"],
+          "max_initial_files": 3
+        },
+        "flow": {
+          "required_context": ["PROJECT.md"],
+          "conditional_context": ["DESIGN/**", "source/**"],
+          "optional_context": [],
+          "max_initial_files": 4
+        },
+        "handoff": {
+          "required_context": ["PROJECT.md"],
+          "conditional_context": ["DELIVERY.md", "DESIGN/**"],
+          "optional_context": ["RAID-log.md"],
+          "max_initial_files": 4
+        },
+        "qa_release": {
+          "required_context": ["PROJECT.md"],
+          "conditional_context": ["DELIVERY.md"],
+          "optional_context": ["RELEASE.md", "RAID-log.md", "decision-log.md"],
+          "max_initial_files": 4,
+          "notes": [
+            "Lite release context starts from PROJECT.md.",
+            "DELIVERY.md is conditional when task_source is file or the work item is not fully captured in PROJECT.md.",
+            "RELEASE.md is optional unless the artifact policy or a real release/UAT trigger requires it."
+          ]
+        }
+      }
+    },
+    "Standard": {
+      "separate_logs_required": "when meaningful risk or decision exists",
+      "intents": {
+        "intake": {
+          "required_context": ["PROJECT.md"],
+          "conditional_context": ["source/**"],
+          "optional_context": ["RAID-log.md", "decision-log.md"],
+          "max_initial_files": 8
+        },
+        "scope": {
+          "required_context": ["PROJECT.md"],
+          "conditional_context": ["source/**"],
+          "optional_context": ["decision-log.md"],
+          "max_initial_files": 5
+        },
+        "flow": {
+          "required_context": ["PROJECT.md"],
+          "conditional_context": ["DESIGN/**", "source/**"],
+          "optional_context": [],
+          "max_initial_files": 8
+        },
+        "handoff": {
+          "required_context": ["PROJECT.md"],
+          "conditional_context": ["DESIGN/**", "DELIVERY.md"],
+          "optional_context": ["RAID-log.md"],
+          "max_initial_files": 8
+        },
+        "qa_release": {
+          "required_context": ["PROJECT.md"],
+          "conditional_context": ["DELIVERY.md", "RELEASE.md"],
+          "optional_context": ["RAID-log.md", "decision-log.md"],
+          "max_initial_files": 8
+        }
+      }
+    },
+    "Strict": {
+      "separate_logs_required": true,
+      "intents": {
+        "intake": {
+          "required_context": ["PROJECT.md"],
+          "conditional_context": ["source/**"],
+          "optional_context": ["RAID-log.md", "decision-log.md"],
+          "max_initial_files": 12
+        },
+        "scope": {
+          "required_context": ["PROJECT.md"],
+          "conditional_context": ["source/**", "decision-log.md", "RAID-log.md"],
+          "optional_context": [],
+          "max_initial_files": 8
+        },
+        "flow": {
+          "required_context": ["PROJECT.md"],
+          "conditional_context": ["DESIGN/**", "source/**", "decision-log.md"],
+          "optional_context": ["RAID-log.md"],
+          "max_initial_files": 12
+        },
+        "handoff": {
+          "required_context": ["PROJECT.md"],
+          "conditional_context": ["DESIGN/**", "DELIVERY.md", "RAID-log.md", "decision-log.md", "RTM.json"],
+          "optional_context": [],
+          "max_initial_files": 12
+        },
+        "qa_release": {
+          "required_context": ["PROJECT.md"],
+          "conditional_context": ["DELIVERY.md", "RELEASE.md", "RAID-log.md", "decision-log.md", "RTM.json"],
+          "optional_context": [],
+          "max_initial_files": 12
+        }
+      }
+    }
+  }
+}
