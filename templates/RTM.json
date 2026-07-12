@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "project": "<PROJECT-CODE>",
+  "traceability": [
+    {
+      "requirement_id": "REQ-001",
+      "source_ref": "MOM-YYYYMMDD item-1",
+      "design_ref": "DESIGN/FLOW.puml",
+      "delivery_ref": "D-001",
+      "test_ref": "TEST-001",
+      "evidence_ref": "DEC-001",
+      "release_ref": "REL-001",
+      "status": "pending"
+    }
+  ]
+}

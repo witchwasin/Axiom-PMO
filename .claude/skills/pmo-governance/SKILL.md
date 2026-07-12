@@ -12,7 +12,7 @@ Maintain governance consistency without turning Lite projects into heavyweight p
 Use for risk triage, decision logging, RTM checks, approval policy, blocker handling, or Strict-mode escalation.
 
 ## Required Inputs
-`PROJECT.md`, relevant `RAID-log.md`, `decision-log.md`, `RTM.yaml`, and runtime config.
+`PROJECT.md`, relevant `RAID-log.md`, `decision-log.md`, `RTM.json`, and runtime config.
 
 ## Allowed Context
 Read only governance artifacts needed for the gate. Do not load archived skills.

@@ -171,7 +171,7 @@ Require-File "scripts/new-project.ps1"
 Require-File "scripts/update-source-snapshot.ps1"
 Require-File "scripts/measure-context.ps1"
 
-$templateNames = @("PROJECT.md", "DELIVERY.md", "RELEASE.md", "RAID-log.md", "decision-log.md", "RTM.yaml", "WIREFRAME.md")
+$templateNames = @("PROJECT.md", "DELIVERY.md", "RELEASE.md", "RAID-log.md", "decision-log.md", "RTM.json", "WIREFRAME.md")
 foreach ($name in $templateNames) {
   Require-File (Join-Path "templates" $name)
 }

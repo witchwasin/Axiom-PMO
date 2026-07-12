@@ -1,6 +1,7 @@
 # RELEASE - <PROJECT-CODE>
 
 > Use this for UAT, release decision, deployment notes, and closeout.
+> Release ID: REL-001
 
 ## Release Scope
 
@@ -19,11 +20,11 @@
 
 ## Test Summary
 
-| Test Area | Result | Evidence | Notes |
-|---|---|---|---|
-| Happy path | pending | | |
-| Alternative path | pending | | |
-| Exception path | pending | | |
+| ID | Test Area | Result | Evidence | Notes |
+|---|---|---|---|---|
+| TEST-001 | Happy path | pending | | |
+| TEST-002 | Alternative path | pending | | |
+| TEST-003 | Exception path | pending | | |
 
 ## Deployment Notes
 

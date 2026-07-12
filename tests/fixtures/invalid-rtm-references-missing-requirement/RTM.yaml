@@ -1,5 +1,0 @@
-traceability:
-  - requirement_id: REQ-001
-    delivery_ref: D-001
-    test_ref: security-review
-    release_ref: RELEASE.md

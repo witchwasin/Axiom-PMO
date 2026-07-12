@@ -10,7 +10,7 @@ try {
   & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $RepoPath "scripts/new-project.ps1") -ProjectCode "STRICT-E2E" -Mode Strict -OutputRoot $workRoot | Out-Null
   $project = Join-Path $workRoot "STRICT-E2E"
 
-  foreach ($name in @("PROJECT.md", "DELIVERY.md", "RELEASE.md", "RAID-log.md", "decision-log.md", "RTM.yaml")) {
+  foreach ($name in @("PROJECT.md", "DELIVERY.md", "RELEASE.md", "RAID-log.md", "decision-log.md", "RTM.json")) {
     Copy-Item -LiteralPath (Join-Path $RepoPath "examples/STRICT-HIGH-RISK/$name") -Destination (Join-Path $project $name) -Force
   }
   Copy-Item -Path (Join-Path $RepoPath "examples/STRICT-HIGH-RISK/DESIGN/*") -Destination (Join-Path $project "DESIGN") -Recurse -Force

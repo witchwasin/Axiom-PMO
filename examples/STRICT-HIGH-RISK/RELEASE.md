@@ -1,15 +1,19 @@
 # RELEASE - STRICT-HIGH-RISK
 
+> Release ID: REL-001
+
 ## Release Scope
 
 - D-001 Export approval permission
 - D-002 Export audit record
 
-## Verification
+## Test Summary
 
-- Role-based access test completed.
-- Audit record test completed.
-- Manual security review completed.
+| ID | Test Area | Result | Evidence | Notes |
+|---|---|---|---|---|
+| TEST-001 | Role-based access | passed | DEC-003 | Non-approvers cannot approve exports. |
+| TEST-002 | Audit record | passed | DEC-003 | Export actions are recorded. |
+| TEST-003 | Manual security review | passed | DEC-003 | Reviewed by Security Lead. |
 
 ## Structured Rollback Plan
 
