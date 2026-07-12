@@ -1,0 +1,24 @@
+{
+  "version": "0.4.0",
+  "schema_version": "1.0",
+  "artifact_matrix": {
+    "Lite": {
+      "Draft": [],
+      "Scope": [],
+      "Design": [],
+      "Release": []
+    },
+    "Standard": {
+      "Draft": [],
+      "Scope": [],
+      "Design": ["DESIGN"],
+      "Release": ["DELIVERY.md", "RELEASE.md", "DESIGN"]
+    },
+    "Strict": {
+      "Draft": [],
+      "Scope": [],
+      "Design": ["DESIGN"],
+      "Release": ["DELIVERY.md", "RELEASE.md", "DESIGN", "RAID-log.md", "decision-log.md"]
+    }
+  }
+}
