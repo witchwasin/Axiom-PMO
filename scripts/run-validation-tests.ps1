@@ -1,5 +1,12 @@
 param(
-  [string]$RepoPath = "."
+  [string]$RepoPath = ".",
+  # P4 golden-master control: -CaptureGolden writes each case's raw stdout to
+  # $GoldenMasterDir/<case>.txt; -VerifyGolden compares current stdout against
+  # those files byte-for-byte and fails the run on any diff. Used to prove the
+  # Phase 4 modular refactor changes zero observable behavior.
+  [switch]$CaptureGolden,
+  [switch]$VerifyGolden,
+  [string]$GoldenMasterDir = (Join-Path $RepoPath "tests/golden")
 )
 
 $ErrorActionPreference = "Stop"
@@ -101,6 +108,11 @@ Write-Host "PMO Validation Fixture Tests: $repo"
 Write-Host "Matrix: positive=$positive negative=$negative doctor-negative=$doctorNegative total=$($cases.Count + $doctorNegative)"
 Write-Host ""
 
+if ($CaptureGolden -or $VerifyGolden) {
+  New-Item -ItemType Directory -Force -Path $GoldenMasterDir | Out-Null
+}
+$goldenMismatches = @()
+
 foreach ($case in $cases) {
   $projectPath = Join-Path $repo $case.Path
   $args = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $validator, "-ProjectPath", $projectPath, "-Mode", $case.Mode, "-Gate", $case.Gate, "-Format", "Json")
@@ -113,6 +125,21 @@ foreach ($case in $cases) {
   $output = & powershell @args 2>$null
   $nativeExitCode = $LASTEXITCODE
   $ErrorActionPreference = $previousErrorActionPreference
+
+  $rawOutput = ($output | Out-String).TrimEnd() + "`nEXIT_CODE=$nativeExitCode"
+  $goldenFile = Join-Path $GoldenMasterDir "$($case.Name).txt"
+  if ($CaptureGolden) {
+    Set-Content -LiteralPath $goldenFile -Value $rawOutput -NoNewline -Encoding utf8
+  } elseif ($VerifyGolden) {
+    if (-not (Test-Path -LiteralPath $goldenFile)) {
+      $goldenMismatches += "$($case.Name): no golden file recorded"
+    } else {
+      $expected = (Get-Content -LiteralPath $goldenFile -Raw).TrimEnd()
+      if ($expected -ne $rawOutput.TrimEnd()) {
+        $goldenMismatches += "$($case.Name): output differs from golden master"
+      }
+    }
+  }
 
   $actualPass = ($nativeExitCode -eq 0)
   $json = $null
@@ -188,7 +215,20 @@ foreach ($case in $doctorCases) {
 Write-Host ""
 Write-Host "Summary: PASS=$pass FAIL=$fail"
 
-if ($fail -gt 0) {
+if ($CaptureGolden) {
+  Write-Host "Golden master captured: $($cases.Count) case(s) written to $GoldenMasterDir"
+}
+if ($VerifyGolden) {
+  if ($goldenMismatches.Count -gt 0) {
+    Write-Host ""
+    Write-Host "Golden master verification FAILED ($($goldenMismatches.Count) mismatch(es)):"
+    foreach ($m in $goldenMismatches) { Write-Host "  - $m" }
+  } else {
+    Write-Host "Golden master verification: all $($cases.Count) case(s) match byte-for-byte"
+  }
+}
+
+if ($fail -gt 0 -or ($VerifyGolden -and $goldenMismatches.Count -gt 0)) {
   exit 1
 }
 
