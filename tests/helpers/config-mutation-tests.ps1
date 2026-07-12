@@ -63,6 +63,19 @@ try {
     powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tempRepo "scripts/validate-project.ps1") -ProjectPath (Join-Path $tempRepo "tests/fixtures/valid-standard") -Mode Standard -Gate Release
   }
 
+  # P7.3: schema_version mutation -- proves DOCTOR-006 actually reads the
+  # field instead of only checking that it exists once at authoring time.
+  # policy.json still carries the artifact-policy-test's mutation to $policyPath
+  # from further up, but that only touched pmo-config/artifact-policy.json, so
+  # policy.json itself is still the clean, restored copy here.
+  $policy = Get-Content -LiteralPath $policyPath -Raw | ConvertFrom-Json
+  $policy.schema_version = "2.0"
+  $policy | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $policyPath -Encoding utf8
+
+  Invoke-ExpectFailure "schema_version mutation" {
+    powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tempRepo "scripts/pmo-doctor.ps1") -RepoPath $tempRepo
+  }
+
   Write-Host "[PASS] Config mutation tests prove JSON runtime config is source of truth"
 } finally {
   if (Test-Path -LiteralPath $workRoot) {
