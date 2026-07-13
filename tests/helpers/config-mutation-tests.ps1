@@ -110,6 +110,17 @@ try {
     powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tempRepo "scripts/pmo-doctor.ps1") -RepoPath $tempRepo
   }
 
+  # H6: rule catalog mutation -- proves DOCTOR-007 actually reconciles the
+  # catalog against the real emitters instead of just checking the file parses.
+  $rulesPath = Join-Path $tempRepo "pmo-config/validation-rules.json"
+  $rules = Get-Content -LiteralPath $rulesPath -Raw | ConvertFrom-Json
+  $rules.rules.PSObject.Properties.Remove("REF-001")
+  $rules | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $rulesPath -Encoding utf8
+
+  Invoke-ExpectTextRuleFailure "rule catalog mutation" "DOCTOR-007" {
+    powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tempRepo "scripts/pmo-doctor.ps1") -RepoPath $tempRepo
+  }
+
   Write-Host "[PASS] Config mutation tests prove JSON runtime config is source of truth"
 } finally {
   if (Test-Path -LiteralPath $workRoot) {
