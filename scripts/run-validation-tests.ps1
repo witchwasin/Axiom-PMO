@@ -30,6 +30,8 @@ $cases = @(
   @{ Name = "user-source-placeholders-do-not-fail-release"; Path = "tests/fixtures/valid-user-source-placeholders"; Mode = "Standard"; Gate = "Release"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; Type = "positive" },
   @{ Name = "others-and-sensitive-source-do-not-fail-release"; Path = "tests/fixtures/valid-source-others-and-sensitive"; Mode = "Standard"; Gate = "Release"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
   @{ Name = "standard-draft-no-delivery-release-required"; Path = "tests/fixtures/valid-standard-draft-minimal"; Mode = "Standard"; Gate = "Draft"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; Type = "positive" },
+  @{ Name = "github-task-source-waives-delivery"; Path = "tests/fixtures/valid-github-task-source-no-delivery"; Mode = "Standard"; Gate = "Release"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
+  @{ Name = "github-no-repo-still-needs-delivery"; Path = "tests/fixtures/invalid-github-no-repo-needs-delivery"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "STRUCT-001"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "strict-scope-no-rtm-required"; Path = "examples/STRICT-HIGH-RISK"; Mode = "Strict"; Gate = "Scope"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
 
   @{ Name = "invalid-no-project"; Path = "tests/fixtures/invalid-no-project"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "STRUCT-001"; ExpectedLevel = "FAIL"; Type = "negative" },
