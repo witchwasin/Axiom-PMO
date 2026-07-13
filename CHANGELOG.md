@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.5.1 - 2026-07-13
+
+> Round 3 final hardening (`reports/final-hardening-plan.md`), triggered by an
+> independent GPT-5.6 review of merged `0.5.0` scoring 8.4/10 with 5 concrete,
+> reproduced validator bypasses. Branch `hardening/0.5.x`, not yet merged. See
+> `reports/current-acceptance.md` for the close-out report.
+
+### Fixed
+
+- **Lite Release work-item bypass**: `PROJECT.md` merely containing the words "work
+  item" satisfied the Lite Release requirement, leaving `DELIVERY.md` optional and
+  silently skipping every release-completion check. `DELIVERY.md` is now required at
+  Lite Release via the same artifact matrix every other mode uses.
+- **Unverified Test Summary**: a Release could ship with every Test Summary row still
+  `pending` and no evidence. New `TEST-RESULT-001` (must be `passed`, or explicitly
+  skipped with a reason) and `TEST-EVIDENCE-002` (evidence must resolve).
+- **RTM full-chain gaps**: `source_ref`, `design_ref`, and `status` were never checked,
+  and evidence accepted any text that didn't look like a malformed `DEC-###`. New
+  `RTM-008/009/010`; `RTM-005` now uses the typed reference resolver.
+- **Untyped Lite evidence**: Lite approval and work-item evidence accepted any non-empty
+  free text ("approved-by-chat"). Both now resolve through the typed reference
+  resolver; unresolvable evidence is WARN_BLOCKING (blocks `-FailOnWarning`) rather than
+  silently accepted.
+- **GitHub Issues task source**: documented in `AGENTS.md` as an alternative to
+  `DELIVERY.md`, but never implemented. `Task source: github` with a named
+  `github_repository` now waives `DELIVERY.md` at Release with a non-blocking
+  `TASK-003` note; a repo-less `github` declaration still requires `DELIVERY.md`.
+- **Rule catalog drift**: `validation-rules.json` was missing roughly 20 rule ids the
+  scripts actually emit. New `DOCTOR-007` scans every emitter and fails on any rule id
+  missing from the catalog, or any catalog entry never emitted.
+- **CI gaps**: `pmo-checks.yml` ran the check suite but never verified the golden master
+  or exercised fault injection. Both now run on every push/PR.
+
+### Known limitations
+
+- Result JSON schema was not extended with `artifact`/`field`/`item_id` (cosmetic,
+  would force a full golden-master recapture for no functional gain) — explicitly
+  deferred.
+- PSScriptAnalyzer remains skipped (not installed on this machine).
+- This round has not been pushed or opened as a PR yet.
+
 ## 0.5.0 - 2026-07-12
 
 > Round 2 remediation, `reports/upgrade-plan-9plus.md` (v2 unified). Baseline honest

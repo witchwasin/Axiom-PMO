@@ -1,6 +1,6 @@
 # PMO Template Personal
 
-**Current version:** `0.5.0` · see [`CHANGELOG.md`](CHANGELOG.md) for release history.
+**Current version:** `0.5.1` · see [`CHANGELOG.md`](CHANGELOG.md) for release history.
 
 ## What this repo actually is
 
