@@ -17,10 +17,10 @@ $cmds = @(
 $mismatches = @()
 foreach ($c in $cmds) {
   $projectPath = Join-Path $repo $c.Path
-  $args = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $validator, "-ProjectPath", $projectPath, "-Mode", $c.Mode, "-Gate", $c.Gate, "-Format", "Json", "-FailOnWarning")
+  $psArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $validator, "-ProjectPath", $projectPath, "-Mode", $c.Mode, "-Gate", $c.Gate, "-Format", "Json", "-FailOnWarning")
   $prevEAP = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
-  $output = & powershell @args 2>$null
+  $output = & powershell @psArgs 2>$null
   $exitCode = $LASTEXITCODE
   $ErrorActionPreference = $prevEAP
   $raw = ($output | Out-String).TrimEnd() + "`nEXIT_CODE=$exitCode"
