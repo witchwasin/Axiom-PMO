@@ -13,13 +13,11 @@ function Test-DeliveryWorkItems {
   param(
     [string]$Project,
     [string]$DeliveryPath,
-    [string]$Mode,
     [string]$Gate,
     $PolicyEnums,
     [string[]]$ProjectReqIds,
     [string[]]$ProjectBusinessIds,
-    [string]$ProjectTaskSource,
-    [string]$ProjectText
+    [string]$ProjectTaskSource
   )
 
   $deliveryText = $null

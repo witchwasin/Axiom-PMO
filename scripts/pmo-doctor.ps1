@@ -455,8 +455,8 @@ foreach ($file in Get-ChildItem -LiteralPath $repo -Recurse -File -Include *.md 
   if ($relativeFile -match "(^|[\\/])(source|MOM|REQ|Transcript)[\\/]") { continue }
 
   $content = Get-Content -LiteralPath $file.FullName -Raw -ErrorAction SilentlyContinue
-  $matches = [regex]::Matches($content, "\[[^\]]+\]\((?!https?://)([^)#]+)(?:#[^)]+)?\)")
-  foreach ($match in $matches) {
+  $linkMatches = [regex]::Matches($content, "\[[^\]]+\]\((?!https?://)([^)#]+)(?:#[^)]+)?\)")
+  foreach ($match in $linkMatches) {
     $target = $match.Groups[1].Value
     if ($target -match "^\s*$|^mailto:|^<") { continue }
     $base = Split-Path -Parent $file.FullName
