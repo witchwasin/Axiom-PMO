@@ -5,7 +5,7 @@
 ## PI-001: PR #3 CI fails — golden-master fixture file missing on CI checkout
 
 - **Date found:** 2026-07-13
-- **Status:** Open (PR #3 left unmerged, CI red)
+- **Status:** RESOLVED 2026-07-13 in commit `71305b5` (gitignore negation + tracked the fixture placeholder)
 - **PR:** https://github.com/witchwasin/PMO-Template-Personal/pull/3 (branch `hardening/0.5.x`)
 
 ### Symptom
