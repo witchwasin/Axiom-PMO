@@ -1,5 +1,5 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-missing-delivery",
+    "project":  "<REPO_ROOT>\\tests\\fixtures\\invalid-missing-delivery",
     "requested_mode":  "Standard",
     "effective_mode":  "Standard",
     "gate":  "Release",

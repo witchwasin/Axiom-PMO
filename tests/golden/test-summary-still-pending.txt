@@ -1,5 +1,5 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-test-summary-pending",
+    "project":  "<REPO_ROOT>\\tests\\fixtures\\invalid-test-summary-pending",
     "requested_mode":  "Standard",
     "effective_mode":  "Standard",
     "gate":  "Release",

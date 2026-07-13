@@ -1,5 +1,5 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\examples\\STANDARD-FEATURE",
+    "project":  "<REPO_ROOT>\\examples\\STANDARD-FEATURE",
     "requested_mode":  "Standard",
     "effective_mode":  "Standard",
     "gate":  "Release",

@@ -1,5 +1,5 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\examples\\STRICT-HIGH-RISK",
+    "project":  "<REPO_ROOT>\\examples\\STRICT-HIGH-RISK",
     "requested_mode":  "Lite",
     "effective_mode":  "Strict",
     "gate":  "Release",
