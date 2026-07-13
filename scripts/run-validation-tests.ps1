@@ -144,6 +144,13 @@ foreach ($case in $cases) {
   $ErrorActionPreference = $previousErrorActionPreference
 
   $rawOutput = ($output | Out-String).TrimEnd() + "`nEXIT_CODE=$nativeExitCode"
+  # The JSON output embeds the resolved absolute project path, which differs
+  # by checkout location (local clone vs GitHub Actions' D:\a\... runner
+  # path). Strip it to a fixed placeholder so golden masters are portable
+  # across machines. Handle both the raw path and its JSON-escaped (doubled
+  # backslash) form.
+  $repoJsonEscaped = $repo -replace '\\', '\\'
+  $rawOutput = $rawOutput.Replace($repoJsonEscaped, '<REPO_ROOT>').Replace($repo, '<REPO_ROOT>')
   $goldenFile = Join-Path $GoldenMasterDir "$($case.Name).txt"
   if ($CaptureGolden) {
     Set-Content -LiteralPath $goldenFile -Value $rawOutput -NoNewline -Encoding utf8

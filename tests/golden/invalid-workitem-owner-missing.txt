@@ -1,5 +1,5 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-workitem-owner-missing",
+    "project":  "<REPO_ROOT>\\tests\\fixtures\\invalid-workitem-owner-missing",
     "requested_mode":  "Standard",
     "effective_mode":  "Standard",
     "gate":  "Scope",

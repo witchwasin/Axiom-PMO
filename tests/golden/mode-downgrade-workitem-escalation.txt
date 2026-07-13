@@ -1,5 +1,5 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-mode-downgrade-workitem",
+    "project":  "<REPO_ROOT>\\tests\\fixtures\\invalid-mode-downgrade-workitem",
     "requested_mode":  "Standard",
     "effective_mode":  "Strict",
     "gate":  "Release",

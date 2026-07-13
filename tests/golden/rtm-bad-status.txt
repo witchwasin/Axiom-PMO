@@ -1,5 +1,5 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-rtm-bad-status",
+    "project":  "<REPO_ROOT>\\tests\\fixtures\\invalid-rtm-bad-status",
     "requested_mode":  "Strict",
     "effective_mode":  "Strict",
     "gate":  "Release",

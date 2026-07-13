@@ -1,5 +1,5 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\valid-standard-draft-minimal",
+    "project":  "<REPO_ROOT>\\tests\\fixtures\\valid-standard-draft-minimal",
     "requested_mode":  "Standard",
     "effective_mode":  "Standard",
     "gate":  "Draft",

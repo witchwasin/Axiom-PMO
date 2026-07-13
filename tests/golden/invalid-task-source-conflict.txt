@@ -1,5 +1,5 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-task-source-conflict",
+    "project":  "<REPO_ROOT>\\tests\\fixtures\\invalid-task-source-conflict",
     "requested_mode":  "Standard",
     "effective_mode":  "Standard",
     "gate":  "Release",
