@@ -74,7 +74,6 @@ function Get-ProjectFileSets {
 
 function Test-RequiredArtifacts {
   param(
-    [string]$Project,
     [string]$Mode,
     [string]$Gate,
     $ArtifactPolicy,

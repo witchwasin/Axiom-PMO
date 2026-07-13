@@ -4,7 +4,7 @@
 
 > Round 3 final hardening (`reports/final-hardening-plan.md`), triggered by an
 > independent GPT-5.6 review of merged `0.5.0` scoring 8.4/10 with 5 concrete,
-> reproduced validator bypasses. Branch `hardening/0.5.x`, not yet merged. See
+> reproduced validator bypasses. Merged to `main` via PR #3 (`3f794ed`). See
 > `reports/current-acceptance.md` for the close-out report.
 
 ### Fixed
@@ -32,14 +32,27 @@
   missing from the catalog, or any catalog entry never emitted.
 - **CI gaps**: `pmo-checks.yml` ran the check suite but never verified the golden master
   or exercised fault injection. Both now run on every push/PR.
+- **Golden-master not portable across checkouts**: the validator's JSON output embedded
+  the absolute project path, which differs between a local clone and the GitHub Actions
+  runner (`D:\a\...`), so all 86 golden cases mismatched on CI. The path is now
+  normalized to a `<REPO_ROOT>` placeholder before capture/compare (`da8d835`).
+- **Sensitive-source fixture dropped on CI**: `tests/fixtures/valid-source-others-and-
+  sensitive/source/Quotation.xlsx` (a synthetic placeholder) was excluded by the
+  `**/*Quotation*.xlsx` sensitive-file `.gitignore` pattern, so it was absent on CI and
+  the `SENSITIVE-001` golden line disappeared. Added a scoped negation for that one
+  fixture path and tracked the file (`71305b5`).
+- **PSScriptAnalyzer real findings**: ran PSScriptAnalyzer (149 findings, 0 errors) and
+  fixed the 10 genuine ones — auto-variable shadowing (`$args`/`$matches` renamed) and
+  dead function parameters (`Test-DeliveryWorkItems` `$Mode`/`$ProjectText`,
+  `Test-RequiredArtifacts` `$Project`). The rest are by-design (Write-Host console output,
+  the `Add-Result` positional DSL) or false positives (`$script:`-scoped vars the
+  per-file analyzer cannot see, a delegate-required parameter).
 
 ### Known limitations
 
-- Result JSON schema was not extended with `artifact`/`field`/`item_id` (cosmetic,
-  would force a full golden-master recapture for no functional gain) — explicitly
-  deferred.
-- PSScriptAnalyzer remains skipped (not installed on this machine).
-- This round has not been pushed or opened as a PR yet.
+- **Branch protection** remains unavailable on this GitHub free-plan private repo (403 on
+  the protection API) — a platform constraint, documented and accepted.
+- **LICENSE** remains explicitly deferred by the owner.
 
 ## 0.5.0 - 2026-07-12
 

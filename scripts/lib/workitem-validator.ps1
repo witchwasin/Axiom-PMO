@@ -1,6 +1,7 @@
 # DELIVERY.md work-item table validation: header contract, per-item enum and
-# reference checks, and the Lite "must have DELIVERY.md or a Work Item
-# section" structural requirement at Release.
+# reference checks. Since H1, DELIVERY.md is required at Lite Release via the
+# artifact matrix (the old "or a prose Work Item section" escape was the bypass
+# H1 closed), so this module assumes a real table rather than parsing prose.
 
 function Get-DesignPathFromRef {
   param([string]$Value)
@@ -13,13 +14,11 @@ function Test-DeliveryWorkItems {
   param(
     [string]$Project,
     [string]$DeliveryPath,
-    [string]$Mode,
     [string]$Gate,
     $PolicyEnums,
     [string[]]$ProjectReqIds,
     [string[]]$ProjectBusinessIds,
-    [string]$ProjectTaskSource,
-    [string]$ProjectText
+    [string]$ProjectTaskSource
   )
 
   $deliveryText = $null
