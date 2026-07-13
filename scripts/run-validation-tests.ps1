@@ -132,14 +132,14 @@ $goldenMismatches = @()
 
 foreach ($case in $cases) {
   $projectPath = Join-Path $repo $case.Path
-  $args = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $validator, "-ProjectPath", $projectPath, "-Mode", $case.Mode, "-Gate", $case.Gate, "-Format", "Json")
+  $psArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $validator, "-ProjectPath", $projectPath, "-Mode", $case.Mode, "-Gate", $case.Gate, "-Format", "Json")
   if ($case.FailOnWarning) {
-    $args += "-FailOnWarning"
+    $psArgs += "-FailOnWarning"
   }
 
   $previousErrorActionPreference = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
-  $output = & powershell @args 2>$null
+  $output = & powershell @psArgs 2>$null
   $nativeExitCode = $LASTEXITCODE
   $ErrorActionPreference = $previousErrorActionPreference
 
@@ -217,17 +217,17 @@ foreach ($case in $cases) {
 }
 
 foreach ($case in $doctorCases) {
-  $args = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $repo "scripts/pmo-doctor.ps1"), "-RepoPath", $repo)
+  $psArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $repo "scripts/pmo-doctor.ps1"), "-RepoPath", $repo)
   if ($case.SkillRoot) {
-    $args += @("-SkillRootOverride", (Join-Path $repo $case.SkillRoot))
+    $psArgs += @("-SkillRootOverride", (Join-Path $repo $case.SkillRoot))
   }
   if ($case.TemplateRoot) {
-    $args += @("-TemplateRootOverride", (Join-Path $repo $case.TemplateRoot))
+    $psArgs += @("-TemplateRootOverride", (Join-Path $repo $case.TemplateRoot))
   }
 
   $previousErrorActionPreference = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
-  $output = & powershell @args 2>$null
+  $output = & powershell @psArgs 2>$null
   $nativeExitCode = $LASTEXITCODE
   $ErrorActionPreference = $previousErrorActionPreference
   $textOutput = $output | Out-String

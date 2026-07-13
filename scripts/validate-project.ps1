@@ -69,7 +69,7 @@ $Mode = $effectiveMode
 # task source (declared repo) waives the DELIVERY.md requirement -- the board
 # lives on GitHub and is verified there, not by this offline validator.
 $taskSourceIsGithub = Test-GithubTaskSource -Project $project
-Test-RequiredArtifacts -Project $project -Mode $Mode -Gate $Gate -ArtifactPolicy $artifactPolicy -TaskSourceIsGithub $taskSourceIsGithub
+Test-RequiredArtifacts -Mode $Mode -Gate $Gate -ArtifactPolicy $artifactPolicy -TaskSourceIsGithub $taskSourceIsGithub
 
 $fileSets = Get-ProjectFileSets -Project $project
 $allProjectFiles = $fileSets.AllProjectFiles
@@ -92,7 +92,7 @@ if ($projectText) {
 }
 
 $deliveryPath = Join-Path $project "DELIVERY.md"
-$workItemResult = Test-DeliveryWorkItems -Project $project -DeliveryPath $deliveryPath -Mode $Mode -Gate $Gate -PolicyEnums $policyEnums -ProjectReqIds $projectReqIds -ProjectBusinessIds $projectBusinessIds -ProjectTaskSource $projectTaskSource -ProjectText $projectText
+$workItemResult = Test-DeliveryWorkItems -Project $project -DeliveryPath $deliveryPath -Gate $Gate -PolicyEnums $policyEnums -ProjectReqIds $projectReqIds -ProjectBusinessIds $projectBusinessIds -ProjectTaskSource $projectTaskSource
 $workItems = $workItemResult.WorkItems
 $deliveryIds = $workItemResult.DeliveryIds
 
