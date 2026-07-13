@@ -30,6 +30,8 @@ $cases = @(
   @{ Name = "user-source-placeholders-do-not-fail-release"; Path = "tests/fixtures/valid-user-source-placeholders"; Mode = "Standard"; Gate = "Release"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; Type = "positive" },
   @{ Name = "others-and-sensitive-source-do-not-fail-release"; Path = "tests/fixtures/valid-source-others-and-sensitive"; Mode = "Standard"; Gate = "Release"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
   @{ Name = "standard-draft-no-delivery-release-required"; Path = "tests/fixtures/valid-standard-draft-minimal"; Mode = "Standard"; Gate = "Draft"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; Type = "positive" },
+  @{ Name = "github-task-source-waives-delivery"; Path = "tests/fixtures/valid-github-task-source-no-delivery"; Mode = "Standard"; Gate = "Release"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
+  @{ Name = "github-no-repo-still-needs-delivery"; Path = "tests/fixtures/invalid-github-no-repo-needs-delivery"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "STRUCT-001"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "strict-scope-no-rtm-required"; Path = "examples/STRICT-HIGH-RISK"; Mode = "Strict"; Gate = "Scope"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
 
   @{ Name = "invalid-no-project"; Path = "tests/fixtures/invalid-no-project"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "STRUCT-001"; ExpectedLevel = "FAIL"; Type = "negative" },
@@ -48,6 +50,12 @@ $cases = @(
   @{ Name = "invalid-missing-design-approval"; Path = "tests/fixtures/invalid-missing-design-approval"; Mode = "Standard"; Gate = "Design"; ShouldPass = $false; Rule = "APPROVAL-001"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "invalid-missing-release-approval"; Path = "tests/fixtures/invalid-missing-release-approval"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "APPROVAL-001"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "lite-release-missing-approval"; Path = "tests/fixtures/invalid-lite-release-no-approval"; Mode = "Lite"; Gate = "Release"; ShouldPass = $false; Rule = "APPROVAL-001"; ExpectedLevel = "FAIL"; Type = "negative" },
+  @{ Name = "lite-release-no-delivery-workitem-prose"; Path = "tests/fixtures/invalid-lite-release-no-delivery"; Mode = "Lite"; Gate = "Release"; ShouldPass = $false; Rule = "STRUCT-001"; ExpectedLevel = "FAIL"; Type = "negative" },
+  @{ Name = "lite-approval-freetext-evidence-blocks"; Path = "tests/fixtures/invalid-lite-freetext-evidence"; Mode = "Lite"; Gate = "Release"; ShouldPass = $false; Rule = "APPROVAL-002"; ExpectedLevel = "WARN"; Type = "negative"; FailOnWarning = $true },
+  @{ Name = "lite-workitem-freetext-evidence-blocks"; Path = "tests/fixtures/invalid-lite-workitem-freetext-evidence"; Mode = "Lite"; Gate = "Release"; ShouldPass = $false; Rule = "TEST-EVIDENCE-001"; ExpectedLevel = "WARN"; Type = "negative"; FailOnWarning = $true },
+  @{ Name = "test-summary-still-pending"; Path = "tests/fixtures/invalid-test-summary-pending"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "TEST-RESULT-001"; ExpectedLevel = "FAIL"; Type = "negative" },
+  @{ Name = "test-summary-evidence-unresolved"; Path = "tests/fixtures/invalid-test-summary-evidence-unresolved"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "TEST-EVIDENCE-002"; ExpectedLevel = "FAIL"; Type = "negative" },
+  @{ Name = "test-summary-skipped-with-reason"; Path = "tests/fixtures/valid-test-summary-skipped-with-reason"; Mode = "Standard"; Gate = "Release"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; Type = "positive" },
   @{ Name = "not-required-in-approval"; Path = "tests/fixtures/invalid-not-required-approval"; Mode = "Lite"; Gate = "Release"; ShouldPass = $false; Rule = "APPROVAL-002"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "not-required-in-workitem"; Path = "tests/fixtures/invalid-not-required-workitem"; Mode = "Lite"; Gate = "Release"; ShouldPass = $false; Rule = "WORKITEM-001"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "not-required-in-rollback"; Path = "tests/fixtures/invalid-not-required-rollback"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "RELEASE-001"; ExpectedLevel = "FAIL"; Type = "negative" },
@@ -78,6 +86,10 @@ $cases = @(
   @{ Name = "rtm-broken-evidence-ref"; Path = "tests/fixtures/invalid-rtm-broken-evidence-ref"; Mode = "Strict"; Gate = "Release"; ShouldPass = $false; Rule = "RTM-005"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "rtm-broken-release-ref"; Path = "tests/fixtures/invalid-rtm-broken-release-ref"; Mode = "Strict"; Gate = "Release"; ShouldPass = $false; Rule = "RTM-006"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "rtm-orphan-row"; Path = "tests/fixtures/invalid-rtm-orphan-row"; Mode = "Strict"; Gate = "Release"; ShouldPass = $false; Rule = "RTM-007"; ExpectedLevel = "FAIL"; Type = "negative" },
+  @{ Name = "rtm-bad-source-ref"; Path = "tests/fixtures/invalid-rtm-bad-source-ref"; Mode = "Strict"; Gate = "Release"; ShouldPass = $false; Rule = "RTM-008"; ExpectedLevel = "FAIL"; Type = "negative" },
+  @{ Name = "rtm-missing-design-file"; Path = "tests/fixtures/invalid-rtm-missing-design-file"; Mode = "Strict"; Gate = "Release"; ShouldPass = $false; Rule = "RTM-009"; ExpectedLevel = "FAIL"; Type = "negative" },
+  @{ Name = "rtm-bad-status"; Path = "tests/fixtures/invalid-rtm-bad-status"; Mode = "Strict"; Gate = "Release"; ShouldPass = $false; Rule = "RTM-010"; ExpectedLevel = "FAIL"; Type = "negative" },
+  @{ Name = "rtm-freetext-evidence"; Path = "tests/fixtures/invalid-rtm-freetext-evidence"; Mode = "Strict"; Gate = "Release"; ShouldPass = $false; Rule = "RTM-005"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "invalid-broken-link"; Path = "tests/fixtures/invalid-broken-link"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "LINK-001"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "invalid-sensitive-env"; Path = "tests/fixtures/invalid-sensitive-env"; Mode = "Standard"; Gate = "Scope"; ShouldPass = $false; Rule = "SENSITIVE-001"; ExpectedLevel = "WARN"; Type = "negative"; FailOnWarning = $true },
   @{ Name = "invalid-placeholder-release"; Path = "tests/fixtures/invalid-placeholder-release"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "PLACEHOLDER-001"; ExpectedLevel = "FAIL"; Type = "negative" },
@@ -132,6 +144,13 @@ foreach ($case in $cases) {
   $ErrorActionPreference = $previousErrorActionPreference
 
   $rawOutput = ($output | Out-String).TrimEnd() + "`nEXIT_CODE=$nativeExitCode"
+  # The JSON output embeds the resolved absolute project path, which differs
+  # by checkout location (local clone vs GitHub Actions' D:\a\... runner
+  # path). Strip it to a fixed placeholder so golden masters are portable
+  # across machines. Handle both the raw path and its JSON-escaped (doubled
+  # backslash) form.
+  $repoJsonEscaped = $repo -replace '\\', '\\'
+  $rawOutput = $rawOutput.Replace($repoJsonEscaped, '<REPO_ROOT>').Replace($repo, '<REPO_ROOT>')
   $goldenFile = Join-Path $GoldenMasterDir "$($case.Name).txt"
   if ($CaptureGolden) {
     Set-Content -LiteralPath $goldenFile -Value $rawOutput -NoNewline -Encoding utf8
@@ -139,8 +158,13 @@ foreach ($case in $cases) {
     if (-not (Test-Path -LiteralPath $goldenFile)) {
       $goldenMismatches += "$($case.Name): no golden file recorded"
     } else {
-      $expected = (Get-Content -LiteralPath $goldenFile -Raw).TrimEnd()
-      if ($expected -ne $rawOutput.TrimEnd()) {
+      # Compare with normalized line endings: git's text normalization
+      # rewrites the golden files' CRLF/LF mix on every checkout (autocrlf),
+      # so a byte-exact comparison flags every case after a git round-trip
+      # even though the content is identical.
+      $expected = ((Get-Content -LiteralPath $goldenFile -Raw) -replace "`r`n", "`n").TrimEnd()
+      $actual = ($rawOutput -replace "`r`n", "`n").TrimEnd()
+      if ($expected -ne $actual) {
         $goldenMismatches += "$($case.Name): output differs from golden master"
       }
     }

@@ -1,10 +1,10 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-rtm-broken-evidence-ref",
+    "project":  "<REPO_ROOT>\\tests\\fixtures\\invalid-rtm-broken-evidence-ref",
     "requested_mode":  "Strict",
     "effective_mode":  "Strict",
     "gate":  "Release",
     "summary":  {
-                    "pass":  24,
+                    "pass":  25,
                     "warn":  0,
                     "warn_blocking":  0,
                     "fail":  5,
@@ -150,6 +150,12 @@
                         "blocking":  true
                     },
                     {
+                        "level":  "PASS",
+                        "rule_id":  "TEST-EVIDENCE-002",
+                        "message":  "TEST-001 is passed with resolvable evidence",
+                        "blocking":  true
+                    },
+                    {
                         "level":  "FAIL",
                         "rule_id":  "RELEASE-STATUS-001",
                         "message":  "D-001 is in release scope but Status is \u0027Review / Test\u0027, not Done",
@@ -164,7 +170,7 @@
                     {
                         "level":  "FAIL",
                         "rule_id":  "RTM-005",
-                        "message":  "RTM row REQ-001 has a broken or missing evidence_ref: DEC-999",
+                        "message":  "RTM row REQ-001 has an unresolvable evidence_ref: DEC-999",
                         "blocking":  true
                     },
                     {

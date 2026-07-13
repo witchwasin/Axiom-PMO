@@ -1,5 +1,5 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-not-required-workitem",
+    "project":  "<REPO_ROOT>\\tests\\fixtures\\invalid-not-required-workitem",
     "requested_mode":  "Lite",
     "effective_mode":  "Lite",
     "gate":  "Release",

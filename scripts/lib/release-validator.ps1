@@ -166,6 +166,10 @@ function Test-ReleaseArtifact {
     if ($Mode -eq "Strict") {
       Test-ReviewRow $releaseText "Security" "SECURITY-REVIEW-001" $Mode $DecisionIds $releaseRegistry | Out-Null
     }
+    # H2: any row present in the Test Summary table must be genuinely passed
+    # (or explicitly, reasonedly skipped) -- not just an ID the RTM can point
+    # at while the actual result still says "pending".
+    Test-TestSummary -ReleaseRegistry $releaseRegistry -Project $Project -DecisionIds $DecisionIds
   }
 
   return [pscustomobject]@{ ReleaseText = $releaseText; ReleaseRegistry = $releaseRegistry }
@@ -230,6 +234,14 @@ function Test-ReleaseScopeCompletion {
       }
     } elseif (Test-PlaceholderValue $item.'Evidence Ref') {
       Add-Result FAIL "$($item.ID) is in release scope but Evidence Ref is empty" "TEST-EVIDENCE-001"
+    } else {
+      # H4: Lite work-item evidence must resolve as a typed reference too, but
+      # unresolvable Lite evidence is WARN_BLOCKING rather than a hard FAIL --
+      # Lite stays light in artifacts, not in truthfulness.
+      $liteItemEvidence = Resolve-Reference -Value $item.'Evidence Ref' -ReferenceTypesConfig $script:referenceTypesConfig -ProjectRoot $script:project -DecisionIds $DecisionIds -TestIds $ReleaseRegistry.TestIds
+      if (-not $liteItemEvidence.Type -or -not $liteItemEvidence.Resolved) {
+        Add-Result WARN "$($item.ID) Evidence Ref '$($item.'Evidence Ref')' is not a resolvable reference (use DEC-###, ISSUE:n, FILE:path, TEST-###)" "TEST-EVIDENCE-001" -Blocking $true
+      }
     }
   }
 }

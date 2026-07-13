@@ -1,5 +1,5 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\valid-user-source-placeholders",
+    "project":  "<REPO_ROOT>\\tests\\fixtures\\valid-user-source-placeholders",
     "requested_mode":  "Standard",
     "effective_mode":  "Standard",
     "gate":  "Release",

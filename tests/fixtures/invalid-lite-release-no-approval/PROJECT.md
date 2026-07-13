@@ -1,4 +1,4 @@
-# PROJECT - INVALID-LITE-RELEASE-NO-APPROVAL
+﻿# PROJECT - INVALID-LITE-RELEASE-NO-APPROVAL
 
 > Status: release-ready
 > Default mode: Lite
@@ -24,4 +24,4 @@
 
 | Gate | Approval Status | Approver | Role | Date | Evidence |
 |---|---|---|---|---|---|
-| Scope Approved | approved | Fixture PM | Product Owner | 2026-07-10 | ISSUE-122 |
+| Scope Approved | approved | Fixture PM | Product Owner | 2026-07-10 | ISSUE:122 |

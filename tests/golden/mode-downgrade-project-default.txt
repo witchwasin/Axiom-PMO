@@ -1,10 +1,10 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\examples\\STRICT-HIGH-RISK",
+    "project":  "<REPO_ROOT>\\examples\\STRICT-HIGH-RISK",
     "requested_mode":  "Lite",
     "effective_mode":  "Strict",
     "gate":  "Release",
     "summary":  {
-                    "pass":  25,
+                    "pass":  28,
                     "warn":  0,
                     "warn_blocking":  0,
                     "fail":  1,
@@ -153,6 +153,24 @@
                         "level":  "PASS",
                         "rule_id":  "SECURITY-REVIEW-001",
                         "message":  "Security review is valid",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "TEST-EVIDENCE-002",
+                        "message":  "TEST-001 is passed with resolvable evidence",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "TEST-EVIDENCE-002",
+                        "message":  "TEST-002 is passed with resolvable evidence",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "TEST-EVIDENCE-002",
+                        "message":  "TEST-003 is passed with resolvable evidence",
                         "blocking":  true
                     },
                     {

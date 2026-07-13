@@ -1,193 +1,73 @@
 # Current Acceptance Report
 
-Date: 2026-07-11 (merged 2026-07-12)
-Status: **MERGED** — this remediation is complete. `remediation/9plus` was merged into
-`main` via [PR #1](https://github.com/witchwasin/PMO-Template-Personal/pull/1) as merge
-commit `ac1d42e`, then deleted (fully contained in `main`, nothing lost). All content
-below is the historical record of how that state was reached and verified.
-Pre-remediation baseline: `37c919b`
-Final merged commit on `main`: `ac1d42e`
+Date: 2026-07-13
+Status: **NOT YET MERGED** — work is on branch `hardening/0.5.x`, not pushed. This
+supersedes `reports/archive/acceptance-0.4.0.md` (the prior round's record, now
+historical).
 
-## Final Gate Status
+Baseline for this round: GPT-5.6 independent review of merged `0.5.0` (`main` @
+`9bb18b8`), scored **8.4/10**, with 5 concrete, reproducible validator bypasses. Every
+finding was independently re-verified against the source before any fix started (see
+`reports/final-hardening-plan.md`).
 
-Part 4 Final Acceptance Gate passed locally, then remotely: opening PR #1 triggered
-`PMO Checks` CI for the first time, which caught a real CRLF regex bug invisible to the
-local working copy (see CHANGELOG "Fixed"). Fixed, confirmed green, then merged.
+## What this round fixed
 
-**Update (2026-07-12):** The repository owner reviewed the branch-protection recommendation
-below — including the note that it also guards against an AI agent pushing directly to
-`main` (not only human collaborators) — and made an explicit, informed decision to
-**waive it**. Rationale: this is currently a private, single-maintainer repository not
-shared with anyone. This is a deliberate, resolved decision, not an open task. It can be
-revisited at any time (e.g., before adding collaborators or making the repo public) at
-no cost to prior work.
+| ID | Bypass | Fix | Commit |
+|---|---|---|---|
+| H1 | Lite Release passed with no `DELIVERY.md` if `PROJECT.md` merely contained the words "work item" | `DELIVERY.md` now required at Lite Release via the artifact matrix, same mechanism as every other mode | `9c11084` |
+| H2 | Release shipped with all Test Summary rows still `pending` and no evidence | New `TEST-RESULT-001` (must be `passed` or reasoned-skip) / `TEST-EVIDENCE-002` (evidence must resolve) | `9ba7e1b` |
+| H3 | RTM checked delivery/test/release refs but not `source_ref`, `design_ref`, `status`, or typed evidence | New `RTM-008/009/010`; `RTM-005` now uses the typed reference resolver | `2f9e651` |
+| H4 | Lite approval/work-item evidence accepted any non-empty text ("approved-by-chat") | Both now resolve via the typed reference resolver; unresolvable is WARN_BLOCKING, not silent | `7cc68e2` |
+| H5 | Docs claimed GitHub Issues could replace `DELIVERY.md`; runtime always required it | `Task source: github` + a named repo now waives `DELIVERY.md` with a `TASK-003` non-blocking note | `58e6161` |
+| H6 | Rule catalog and CI gate incomplete | `validation-rules.json` reconciled against every emitted rule id; new `DOCTOR-007` enforces it stays reconciled; CI now runs golden-master verification and fault injection on every push/PR | this commit |
 
-Because `main` is not configured to require the `PMO Checks` status, the plan's own
-floor condition "CI not a required check on main" is **not met**, by owner choice. Per
-R3.10, this keeps the score annotated rather than an unconditional 9+ claim — see
-Final Score below.
+All 5 of GPT-5.6's reproduced bypasses were closed with a paired negative fixture that
+proves the old payload now fails, plus a positive fixture where relevant proving the
+legitimate case still passes.
 
-Recommended settings, retained here for reference if reinstated later:
+## Test evidence (real run, this branch)
 
-- require pull request before merge
-- require the `PMO Checks` status check
-- block direct push to `main`
-- require at least one approval
-- disallow force push
+- `scripts/pmo-doctor.ps1` — PASS, 0 FAIL (52 checks, including the two new `DOCTOR-006`
+  schema_version and `DOCTOR-007` rule-catalog-completeness rules).
+- `scripts/run-validation-tests.ps1` — full positive/negative fixture matrix, 0 FAIL.
+- `tests/helpers/config-mutation-tests.ps1` — 5 scenarios (policy enum, skill manifest,
+  artifact-policy, schema_version, rule catalog), each asserting the *specific* expected
+  rule id fired, not just a non-zero exit code.
+- `scripts/run-all-checks.ps1` — green end to end, including all 3 generator-to-Release
+  E2E runs (Lite/Standard/Strict) on real `new-project.ps1` output, no example copy-over.
+- Golden master (`tests/golden/`) — verified byte-for-byte after every change in this
+  round; every diff was reviewed and was either additive (a new fixture) or an
+  intentional, confirmed-benign message-wording change (unchanged FAIL count).
+- CI (`.github/workflows/pmo-checks.yml`) now runs three gates on every push/PR: the
+  full check suite, `-VerifyGolden`, and an inverted fault-injection assertion (proves
+  `run-all-checks.ps1` actually propagates a child failure instead of swallowing it).
 
-## Version Before / After
+## Known limitations (explicit, not hidden)
 
-| Item | Before Final Gate | After Final Gate |
-|---|---|---|
-| `VERSION` | `0.4.0-stable-candidate` | `0.4.0-stable-candidate` |
-| top `CHANGELOG.md` version | `0.4.0-stable-candidate` | `0.4.0-stable-candidate` |
+- **Result JSON schema** (`{level, rule_id, artifact, field, item_id, message}` per the
+  original plan) was not extended with `artifact`/`field`/`item_id`. The current schema
+  (`level, rule_id, message, blocking`) is sufficient for every existing consumer; adding
+  the fields is cosmetic (does not change what is enforced) and would force recapturing
+  the entire golden-master suite for no functional gain. Deferred by explicit owner
+  decision (2026-07-13, time-constrained round) rather than done partially.
+- **PSScriptAnalyzer** (P5.3, prior round) remains explicitly skipped — not installed on
+  this machine.
+- **Remote CI / PR review for this round** have not run yet — nothing has been pushed.
+  This is a separate, explicit decision the owner has not yet made (per `AGENTS.md` rule
+  10, push requires per-push confirmation).
+- **Branch protection** remains a platform constraint on this GitHub free-plan private
+  repo (403 on the protection API), documented and accepted in the prior round.
+- **LICENSE** remains explicitly deferred by the owner.
 
-No version bump was made in Part 4 because this gate only added/adjusted acceptance-test evidence and the close-out report.
+## Score
 
-**Post-merge update (2026-07-12):** after PR #1 merged and the repo was independently
-re-verified end-to-end, `VERSION` was bumped from `0.4.0-stable-candidate` to `0.4.0`
-(along with `CHANGELOG.md` and the three `pmo-config/*.json` version fields, kept
-consistent per `DOCTOR-005`). The table above reflects the state as of Final Gate; the
-repo's current `VERSION` is `0.4.0`.
+No formal recomputation of GPT-5.6's §9 rubric was done for this round (that reviewer's
+own anchors say 9.0-9.4 requires "no open P0, reference integrity real, no known
+bypass" — all five of that reviewer's own named P0s are now closed, with real regression
+control, not test-count claims). A fresh external review after this round pushes and
+opens a PR would be the honest way to confirm a number; this report does not claim one.
 
-## Files Created / Modified / Moved
+## Sign-off
 
-Created:
-
-- `tests/helpers/config-mutation-tests.ps1`
-
-Modified:
-
-- `reports/current-acceptance.md`
-- `tests/fixtures/invalid-part2-matrix/RELEASE.md`
-- `tests/fixtures/invalid-empty-rtm/DELIVERY.md`
-- `tests/fixtures/invalid-rtm-references-missing-requirement/DELIVERY.md`
-
-Moved:
-
-- none
-
-## Commands + Exit Codes
-
-| Command | Exit | Result |
-|---|---:|---|
-| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1` | 0 | `PASS=48 WARN=0 FAIL=0` |
-| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1` | 0 | matrix `PASS=53 FAIL=0` |
-| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1` | 0 | doctor, matrix, config mutation, Lite/Standard/Strict examples, and E2E all passed |
-| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -TestChildScript tests/helpers/exit-1.ps1` | 1 | expected fail; fault injection is not swallowed |
-| `powershell -NoProfile -ExecutionPolicy Bypass -File tests/helpers/config-mutation-tests.ps1 -RepoPath D:\GitHub\PMO-Template-Personal` | 0 | JSON runtime config proved as source of truth |
-
-Targeted gate checks also passed:
-
-| Check | Result |
-|---|---|
-| TODO / placeholder in `source/` | does not fail Release gate |
-| TODO / placeholder in governed files | fails Release gate |
-| fabricated `REQ`, `DEC`, and `D` references | fail reference/evidence validation |
-| empty RTM | fails |
-| RTM referencing missing requirement | fails |
-| empty rollback row | fails |
-| `WIREFRAME.html` | passes without false-positive placeholder errors |
-| Lite minimal Release | passes with `Release Approved`, no `RELEASE.md`, no QA, no RTM, no RAID |
-
-## Test Summary
-
-Framework doctor:
-
-- active skills: exactly 7
-- `DOCTOR-SKILL-001`: PASS
-- `TABLE-001`: PASS
-- fake echo hooks: none found
-- permission checks: PASS
-- local markdown links: PASS
-
-Validation matrix:
-
-- positive cases: 12
-- negative cases: 36
-- doctor-negative cases: 5
-- total: 53
-- result: `PASS=53 FAIL=0`
-
-Run-all gate:
-
-- Lite E2E: PASS
-- Standard E2E: PASS
-- Strict E2E: PASS
-- final result: PASS
-
-CI / repository controls:
-
-- `.github/workflows/pmo-checks.yml` exists and is covered by local `run-all-checks.ps1` parity, including the config mutation regression check. Confirmed running and green on PR #1 (`PMO Checks`, run `29162625972`).
-- Branch protection on `main` was explicitly waived by the repository owner (2026-07-12) — private, single-maintainer repo. Not an open task; see § Final Gate Status above.
-
-## Before / After Metrics
-
-| Area | Before remediation | After Final Gate |
-|---|---:|---:|
-| Overall practical readiness | about `7.5 / 10` | `9.03 / 10.00 -- branch protection waived by owner (private, single-maintainer repo)` |
-| Validation matrix size | 38 cases after early runtime hotfix | 53 cases |
-| Framework doctor result | not final-gate clean | `PASS=48 WARN=0 FAIL=0` |
-| Runtime modes | Lite / Standard / Strict defined | Lite / Standard / Strict validated with examples and E2E |
-| Config source of truth | partly document-driven | JSON config mutation-tested as runtime source of truth |
-| Release approval | inconsistent Lite exemption found | all modes require valid `Release Approved` |
-
-## Final Score
-
-Decision score uses the exact 8 dimensions and weights from `reports/remediation-plan.md` section `R3.10`.
-
-| Dimension | Weight | Score | Weighted |
-|---|---:|---:|---:|
-| Architecture & Workflow Fit | 15% | 9.2 | 1.38 |
-| AI Runtime Fit | 10% | 9.0 | 0.90 |
-| Context Discipline | 10% | 9.1 | 0.91 |
-| Validator Correctness | 20% | 9.1 | 1.82 |
-| Templates & Examples | 10% | 9.0 | 0.90 |
-| Active Skills Quality | 15% | 8.8 | 1.32 |
-| Tooling, CI & Release Gate | 10% | 9.0 | 0.90 |
-| Traceability & Governance | 10% | 9.0 | 0.90 |
-
-Formula:
-
-`Final Score = SUM(dimension score * dimension weight) = 9.03 / 10.00`
-
-Public claim should remain:
-
-`9.03 / 10.00 -- branch protection waived by owner (private, single-maintainer repo)`
-
-## Known Limitations + Remaining Risks
-
-- Round 2 branch-protection decision (2026-07-12): GitHub branch protection and
-  rulesets are blocked by the current platform plan for this private repository.
-  The repository owner deferred option (A) make the repo public and option (B)
-  upgrade the plan, and selected option (C) for this remediation round: PR workflow,
-  CI checks, and explicit per-push human confirmation are the compensating controls.
-  This is recorded as a platform constraint with compensating control, not an
-  unresolved omission.
-- Round 2 LICENSE decision (2026-07-12): the repository owner explicitly deferred
-  adding any LICENSE for now. No LICENSE file or proprietary notice is added in this
-  round; the item is intentionally deferred and should not be scored as an accidental
-  omission.
-- Branch protection on `main` is explicitly waived by owner decision (private, single-maintainer repo, 2026-07-12); can be reinstated any time before the repo is shared or made public.
-- Remote GitHub Actions was re-queried after opening PR #1: first run failed on a real CRLF regex bug in `PERMISSION-007` (only reproducible via a fresh checkout, not the local working copy); fixed and confirmed green on the second run (`29162625972`).
-- The accepted process violation remains recorded in `reports/process-violation.md`; future commit/push work must be reviewed before push.
-- `.claude/settings.json` guardrails depend on the AI runtime honoring those settings.
-
-## Git Status + Diff Summary
-
-Working tree after Final Gate is intentionally not committed.
-
-Changed files:
-
-- `reports/current-acceptance.md`
-- `tests/fixtures/invalid-part2-matrix/RELEASE.md`
-- `tests/fixtures/invalid-empty-rtm/DELIVERY.md`
-- `tests/fixtures/invalid-rtm-references-missing-requirement/DELIVERY.md`
-- `tests/helpers/config-mutation-tests.ps1`
-
-Diff purpose:
-
-- add config mutation proof helper
-- wire config mutation proof into `run-all-checks.ps1`, which is the CI entry point
-- tighten negative fixtures used by Final Gate reference-integrity checks
-- record the Final Acceptance close-out report
+Local branch `hardening/0.5.x`, working tree state as of this commit. No push, no PR,
+no merge has happened for this round yet — pending explicit owner decision.

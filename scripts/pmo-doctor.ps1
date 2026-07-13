@@ -283,6 +283,47 @@ if ($schemaVersionProblems.Count -eq 0) {
   Add-Result FAIL ("Config schema_version problems: " + ($schemaVersionProblems -join "; ")) "DOCTOR-006"
 }
 
+# DOCTOR-007 (H6): the rule catalog (validation-rules.json) must be complete
+# and have no dead entries. Scan the actual emitters -- validate-project.ps1,
+# scripts/lib/*.ps1, pmo-doctor.ps1 -- for every rule id passed to Add-Result
+# (directly, via Test-ReviewRow's rule-id argument, or as an Add-Result/$RuleId
+# default) and reconcile that set against the catalog both ways. Example
+# project codes (STRICT-HIGH-RISK, etc.) live on skill/registry lines, not
+# emitter lines, so they are not mistaken for rule ids.
+$emitterFiles = @()
+$emitterFiles += Join-Path $repo "scripts/validate-project.ps1"
+$emitterFiles += Join-Path $repo "scripts/pmo-doctor.ps1"
+$libDir = Join-Path $repo "scripts/lib"
+if (Test-Path -LiteralPath $libDir -PathType Container) {
+  $emitterFiles += @(Get-ChildItem -LiteralPath $libDir -Filter *.ps1 -File | ForEach-Object { $_.FullName })
+}
+$emittedRuleIds = New-Object System.Collections.Generic.HashSet[string]
+foreach ($file in $emitterFiles) {
+  if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { continue }
+  foreach ($line in (Get-Content -LiteralPath $file)) {
+    if ($line -notmatch 'Add-Result|Test-ReviewRow|\$RuleId\s*=') { continue }
+    foreach ($m in [regex]::Matches($line, '"([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)"')) {
+      [void]$emittedRuleIds.Add($m.Groups[1].Value)
+    }
+  }
+}
+$catalogRuleIds = @()
+if ($validationRules -and $validationRules.rules) {
+  $catalogRuleIds = @($validationRules.rules.PSObject.Properties.Name)
+}
+$missingFromCatalog = @($emittedRuleIds | Where-Object { $catalogRuleIds -notcontains $_ } | Sort-Object)
+$deadCatalogEntries = @($catalogRuleIds | Where-Object { -not $emittedRuleIds.Contains($_) } | Sort-Object)
+if ($missingFromCatalog.Count -eq 0 -and $deadCatalogEntries.Count -eq 0) {
+  Add-Result PASS "Validation rule catalog matches the rule ids emitted by the scripts" "DOCTOR-007"
+} else {
+  if ($missingFromCatalog.Count -gt 0) {
+    Add-Result FAIL ("Rule ids emitted but missing from validation-rules.json: " + ($missingFromCatalog -join ", ")) "DOCTOR-007"
+  }
+  if ($deadCatalogEntries.Count -gt 0) {
+    Add-Result FAIL ("Dead catalog entries (in validation-rules.json but never emitted): " + ($deadCatalogEntries -join ", ")) "DOCTOR-007"
+  }
+}
+
 $settingsPath = Join-Path $repo ".claude/settings.json"
 if (Test-Path -LiteralPath $settingsPath) {
   $settings = Get-Content -LiteralPath $settingsPath -Raw

@@ -1,5 +1,5 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-part2-matrix",
+    "project":  "<REPO_ROOT>\\tests\\fixtures\\invalid-part2-matrix",
     "requested_mode":  "Standard",
     "effective_mode":  "Standard",
     "gate":  "Release",
