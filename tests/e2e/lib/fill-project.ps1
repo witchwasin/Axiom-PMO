@@ -48,6 +48,13 @@ function Set-E2EProjectContent {
   $text = $text -replace '<owner>', "E2E PM"
   $text = $text -replace '<approver name>', "E2E Approver"
   $text = $text -replace '(?m)^\| (Scope Approved|Design Ready|Release Approved) \| pending', '| $1 | approved'
+  # Lite gets no decision-log, so its approval evidence must be a typed ref that
+  # resolves without one (H4). Swap the template's DEC-00N approval evidence for
+  # an externally-verified ISSUE ref; Standard/Strict keep DEC refs, which their
+  # generated decision-log resolves.
+  if ($Mode -eq "Lite") {
+    $text = $text -replace '(\| (?:Scope Approved|Design Ready|Release Approved) \| approved \|[^|]*\|[^|]*\|[^|]*\| )DEC-00(\d) \|', '$1ISSUE:10$2 |'
+  }
   Set-Content -LiteralPath $projectFile -Value $text -Encoding utf8 -NoNewline
 
   # --- DELIVERY.md ---
@@ -57,7 +64,10 @@ function Set-E2EProjectContent {
   $reviewStage = if ($Mode -eq "Lite") { "none" } else { "qa" }
   $strictTrigger = if ($Mode -eq "Strict") { "permission" } else { "none" }
   $designRef = if ($Mode -eq "Lite") { "not_required" } else { "DESIGN/FLOW.puml" }
-  $row = "| D-001 | $Mode | $strictTrigger | E2E fixture work item | E2E PM | E2E feature | REQ-001 | $designRef | Happy path completes | Happy path | E2E Dev | high | Done | $reviewStage | DEC-003 | e2e |"
+  # Lite work-item evidence must resolve without a decision-log (H4); use a
+  # typed ISSUE ref. Standard/Strict use DEC-003 which their decision-log resolves.
+  $workItemEvidence = if ($Mode -eq "Lite") { "ISSUE:123" } else { "DEC-003" }
+  $row = "| D-001 | $Mode | $strictTrigger | E2E fixture work item | E2E PM | E2E feature | REQ-001 | $designRef | Happy path completes | Happy path | E2E Dev | high | Done | $reviewStage | $workItemEvidence | e2e |"
   # Literal (non-regex) replacement text: escape $ for -replace's own group syntax.
   $rowLiteral = $row.Replace('$', '$$')
   $text = $text -replace '(?m)^\| D-001 \|.*\|\s*$', $rowLiteral

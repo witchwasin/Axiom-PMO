@@ -1,4 +1,4 @@
-# PROJECT - INVALID-LITE-RELEASE-NO-DELIVERY
+﻿# PROJECT - INVALID-LITE-RELEASE-NO-DELIVERY
 
 > Status: release-approved
 > Default mode: Lite
@@ -10,7 +10,7 @@
 
 The only work item for this fix is captured informally in chat; no separate
 delivery file was created. (This sentence intentionally contains the words
-"work item" — it used to satisfy the old substring escape hatch and bypass
+"work item" -- it used to satisfy the old substring escape hatch and bypass
 every release completion check.)
 
 ## Source Snapshot
@@ -31,5 +31,5 @@ every release completion check.)
 
 | Gate | Approval Status | Approver | Role | Date | Evidence |
 |---|---|---|---|---|---|
-| Scope Approved | approved | Fixture PM | Product Owner | 2026-07-10 | ISSUE-122 |
-| Release Approved | approved | Fixture PM | Product Owner | 2026-07-10 | ISSUE-123 |
+| Scope Approved | approved | Fixture PM | Product Owner | 2026-07-10 | ISSUE:122 |
+| Release Approved | approved | Fixture PM | Product Owner | 2026-07-10 | ISSUE:123 |

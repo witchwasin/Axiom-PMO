@@ -54,6 +54,20 @@ function Test-Approval {
     return
   }
 
+  # H4: Lite skips the hard typed-evidence FAIL above ($RequireEvidenceExists
+  # is false for Lite), but its evidence must still be a checkable reference,
+  # not unverifiable prose like "approved-by-chat". Unrecognized/unresolvable
+  # Lite evidence is WARN_BLOCKING -- surfaced and blocks -FailOnWarning,
+  # without forcing a hard FAIL -- exactly what P2.2 specified.
+  if (-not $RequireEvidenceExists -and -not (Test-PlaceholderValue $evidence)) {
+    $liteRef = Resolve-Reference -Value $evidence -ReferenceTypesConfig $script:referenceTypesConfig -ProjectRoot $script:project -DecisionIds $DecisionIds
+    if (-not $liteRef.Type -or -not $liteRef.Resolved) {
+      Add-Result WARN "$GateName approval evidence '$evidence' is not a resolvable reference (use DEC-###, ISSUE:n, FILE:path, URL:...)" "APPROVAL-002" -Blocking $true
+      Add-Result PASS "$GateName approval is valid" "APPROVAL-002"
+      return
+    }
+  }
+
   # Role matrix (pmo-config/policy.json approval_roles): small teams often wear
   # multiple hats, so a role mismatch is not blocking at Standard -- it is
   # surfaced but does not fail Release -- and only hard-blocks at Strict.
