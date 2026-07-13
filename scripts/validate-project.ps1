@@ -65,8 +65,11 @@ $modeResult = Resolve-EffectiveMode -Project $project -RequestedMode $Mode -Gate
 $effectiveMode = $modeResult.EffectiveMode
 $Mode = $effectiveMode
 
-# Mode x Gate artifact matrix drives which artifacts must exist yet.
-Test-RequiredArtifacts -Project $project -Mode $Mode -Gate $Gate -ArtifactPolicy $artifactPolicy
+# Mode x Gate artifact matrix drives which artifacts must exist yet. A GitHub
+# task source (declared repo) waives the DELIVERY.md requirement -- the board
+# lives on GitHub and is verified there, not by this offline validator.
+$taskSourceIsGithub = Test-GithubTaskSource -Project $project
+Test-RequiredArtifacts -Project $project -Mode $Mode -Gate $Gate -ArtifactPolicy $artifactPolicy -TaskSourceIsGithub $taskSourceIsGithub
 
 $fileSets = Get-ProjectFileSets -Project $project
 $allProjectFiles = $fileSets.AllProjectFiles

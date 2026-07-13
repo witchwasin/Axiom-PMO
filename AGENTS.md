@@ -93,7 +93,7 @@ Use labels for detail: `blocked`, `needs-client`, `bug`, `high-risk`, `ready-to-
 4. Do not add features outside scope. If something seems missing, flag it as an open question or gap.
 5. Every important requirement, decision, risk, flow, or test claim needs a structured `source_ref`.
 6. Evidence must be marked as `verified`, `supported`, `inferred`, `missing`, or `conflict`. `inferred`, `missing`, and `conflict` require review.
-7. Use one source of truth for tasks: either `DELIVERY.md` or GitHub Issues. Declare it in `PROJECT.md` and `DELIVERY.md`; do not keep both as competing task boards.
+7. Use one source of truth for tasks: either `DELIVERY.md` or GitHub Issues. Declare it in `PROJECT.md` and `DELIVERY.md`; do not keep both as competing task boards. To use GitHub Issues, set `Task source: github` in `PROJECT.md` and fill `github_repository:` with the repo; validation then waives the `DELIVERY.md` requirement and records a non-blocking `TASK-003` note that the board state cannot be verified offline (verify it on GitHub / in CI).
 8. Log only meaningful changes: requirement change, scope change, business decision, design approval, release approval, high-risk issue.
 9. Treat `source/`, `MOM/`, `REQ/`, `Transcript/`, and `Others/` as user-owned inputs. Do not edit, create, or delete source files unless the user explicitly asks.
 10. AI must not push, deploy, approve production, or approve business scope by itself. Commit requires explicit user instruction; push and production release require human confirmation.
