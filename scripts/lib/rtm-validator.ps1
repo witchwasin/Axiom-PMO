@@ -5,14 +5,55 @@
 
 function Get-ReleaseRegistry {
   param([string]$ReleaseText)
-  $result = [pscustomobject]@{ ReleaseId = $null; TestIds = @() }
+  $result = [pscustomobject]@{ ReleaseId = $null; TestIds = @(); TestRows = @() }
   if (-not $ReleaseText) { return $result }
   if ($ReleaseText -match '(?m)^\s*>?\s*Release ID:\s*(REL-\d{3})\s*$') {
     $result.ReleaseId = $Matches[1]
   }
-  $testRows = Get-TableRowsAfterHeading $ReleaseText '^##\s+Test Summary'
-  $result.TestIds = @($testRows | Where-Object { $_.ID } | ForEach-Object { $_.ID.Trim() } | Where-Object { $_ -match '^TEST-\d{3}$' })
+  $testRows = @(Get-TableRowsAfterHeading $ReleaseText '^##\s+Test Summary')
+  $result.TestRows = @($testRows | Where-Object { $_.ID -match '^TEST-\d{3}$' })
+  $result.TestIds = @($result.TestRows | ForEach-Object { $_.ID.Trim() })
   return $result
+}
+
+function Test-TestSummary {
+  # H2: a Test Summary row that still says "pending" (or is blank/failed) must
+  # not let a Release pass just because a TEST-### id exists somewhere in the
+  # table -- Get-ReleaseRegistry used to collect only ids, never Result or
+  # Evidence, so an all-pending Test Summary was indistinguishable from an
+  # all-passed one to every other check. "skipped" is allowed only with a
+  # real reason in Notes (same shape as the Lite rollback waiver).
+  param(
+    $ReleaseRegistry,
+    [string]$Project,
+    [string[]]$DecisionIds
+  )
+
+  foreach ($row in @($ReleaseRegistry.TestRows)) {
+    $result = "$($row.Result)".Trim().ToLowerInvariant()
+    if ($result -eq "skipped") {
+      if (Test-PlaceholderValue $row.Notes) {
+        Add-Result FAIL "$($row.ID) is marked skipped but Notes does not state a reason" "TEST-RESULT-001"
+      } else {
+        Add-Result PASS "$($row.ID) is validly skipped (reason recorded)" "TEST-RESULT-001"
+      }
+      continue
+    }
+    if ($result -ne "passed") {
+      Add-Result FAIL "$($row.ID) has Result '$($row.Result)', expected passed (or skipped with a reason in Notes)" "TEST-RESULT-001"
+      continue
+    }
+    if (Test-PlaceholderValue $row.Evidence) {
+      Add-Result FAIL "$($row.ID) is passed but Evidence is empty" "TEST-EVIDENCE-002"
+      continue
+    }
+    $ref = Resolve-Reference -Value $row.Evidence -ReferenceTypesConfig $script:referenceTypesConfig -ProjectRoot $Project -DecisionIds $DecisionIds
+    if (-not $ref.Type -or -not $ref.Resolved) {
+      Add-Result FAIL "$($row.ID) is passed but Evidence '$($row.Evidence)' does not resolve to a real reference" "TEST-EVIDENCE-002"
+    } else {
+      Add-Result PASS "$($row.ID) is passed with resolvable evidence" "TEST-EVIDENCE-002"
+    }
+  }
 }
 
 function Test-RtmTraceability {
@@ -64,14 +105,43 @@ function Test-RtmTraceability {
     if (-not $row.test_ref -or ($ReleaseRegistry.TestIds -notcontains $row.test_ref)) {
       Add-Result FAIL "RTM row $rid has a broken test_ref: $($row.test_ref)" "RTM-004"
     }
-    $evidenceOk = $row.evidence_ref -and (-not (Test-PlaceholderValue $row.evidence_ref)) -and (
-      $row.evidence_ref -notmatch '^DEC-\d{3}$' -or ($DecisionIds -contains $row.evidence_ref)
-    )
-    if (-not $evidenceOk) {
-      Add-Result FAIL "RTM row $rid has a broken or missing evidence_ref: $($row.evidence_ref)" "RTM-005"
+    # H3: evidence_ref must be a typed, resolvable reference -- the old check
+    # only rejected malformed DEC-### ids, so any free text that did not look
+    # like a DEC id ("manual-proof", "finished", "checked-by-team") passed.
+    $evidenceRef = "$($row.evidence_ref)"
+    if (-not $evidenceRef -or (Test-PlaceholderValue $evidenceRef)) {
+      Add-Result FAIL "RTM row $rid has a missing evidence_ref" "RTM-005"
+    } else {
+      $ref = Resolve-Reference -Value $evidenceRef -ReferenceTypesConfig $script:referenceTypesConfig -ProjectRoot $Project -DecisionIds $DecisionIds
+      if (-not $ref.Type) {
+        Add-Result FAIL "RTM row $rid has an unrecognized evidence_ref type: $evidenceRef" "RTM-005"
+      } elseif (-not $ref.Resolved) {
+        Add-Result FAIL "RTM row $rid has an unresolvable evidence_ref: $evidenceRef" "RTM-005"
+      }
     }
     if (-not $row.release_ref -or -not $ReleaseRegistry.ReleaseId -or $row.release_ref -ne $ReleaseRegistry.ReleaseId) {
       Add-Result FAIL "RTM row $rid has a broken release_ref: $($row.release_ref)" "RTM-006"
+    }
+
+    # H3: complete the chain -- source_ref, design_ref (file existence), and
+    # status were never checked, so a row could claim a fabricated source,
+    # point design_ref at a missing file, or carry a nonsense status and still
+    # pass "row-by-row" validation.
+    if (-not $row.source_ref -or ($row.source_ref -notmatch $script:sourceRefRegex)) {
+      Add-Result FAIL "RTM row $rid has a missing or malformed source_ref: $($row.source_ref)" "RTM-008"
+    }
+    $designRef = "$($row.design_ref)"
+    if (-not $designRef -or (Test-PlaceholderValue $designRef)) {
+      Add-Result FAIL "RTM row $rid has a missing design_ref" "RTM-009"
+    } else {
+      $designPath = Get-DesignPathFromRef $designRef
+      if (-not $designPath -or -not (Test-Path -LiteralPath (Join-Path $Project $designPath) -PathType Leaf)) {
+        Add-Result FAIL "RTM row $rid design_ref does not resolve to an existing design file: $designRef" "RTM-009"
+      }
+    }
+    $validStatuses = @($script:policyEnums.evidence_statuses)
+    if (-not $row.status -or ($validStatuses -notcontains $row.status)) {
+      Add-Result FAIL "RTM row $rid has an invalid status: $($row.status)" "RTM-010"
     }
   }
 }

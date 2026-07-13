@@ -1,5 +1,5 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-test-evidence-unresolvable",
+    "project":  "<REPO_ROOT>\\tests\\fixtures\\invalid-test-evidence-unresolvable",
     "requested_mode":  "Standard",
     "effective_mode":  "Standard",
     "gate":  "Release",

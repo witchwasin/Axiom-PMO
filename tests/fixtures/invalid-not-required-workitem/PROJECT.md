@@ -1,4 +1,4 @@
-# PROJECT - INVALID-NOT-REQUIRED-WORKITEM
+﻿# PROJECT - INVALID-NOT-REQUIRED-WORKITEM
 
 > Status: release-approved
 > Default mode: Lite
@@ -24,5 +24,5 @@
 
 | Gate | Approval Status | Approver | Role | Date | Evidence |
 |---|---|---|---|---|---|
-| Scope Approved | approved | Fixture PM | Product Owner | 2026-07-10 | ISSUE-122 |
-| Release Approved | approved | Fixture PM | Product Owner | 2026-07-10 | ISSUE-123 |
+| Scope Approved | approved | Fixture PM | Product Owner | 2026-07-10 | ISSUE:122 |
+| Release Approved | approved | Fixture PM | Product Owner | 2026-07-10 | ISSUE:123 |

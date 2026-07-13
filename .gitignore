@@ -84,6 +84,11 @@ id_ed25519
 **/*Quotation*.xlsx
 **/*Quotation*.pdf
 
+# Test fixture exception: synthetic 29-byte placeholder, not a real spreadsheet.
+# The sensitive-source fixture must ship this file so CI checkouts can prove
+# SENSITIVE-001 fires on user-owned source without blocking release (PI-001).
+!tests/fixtures/valid-source-others-and-sensitive/source/Quotation.xlsx
+
 # ==========================
 # Playwright MCP (temp snapshots)
 # ==========================

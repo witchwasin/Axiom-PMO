@@ -1,5 +1,5 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-workitem-header-missing",
+    "project":  "<REPO_ROOT>\\tests\\fixtures\\invalid-workitem-header-missing",
     "requested_mode":  "Standard",
     "effective_mode":  "Standard",
     "gate":  "Scope",

@@ -1,5 +1,5 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\invalid-empty-rtm",
+    "project":  "<REPO_ROOT>\\tests\\fixtures\\invalid-empty-rtm",
     "requested_mode":  "Strict",
     "effective_mode":  "Strict",
     "gate":  "Release",

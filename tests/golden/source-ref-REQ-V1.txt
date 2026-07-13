@@ -1,5 +1,5 @@
 ﻿{
-    "project":  "D:\\GitHub\\PMO-Template-Personal\\tests\\fixtures\\valid-source-ref-REQ-V1",
+    "project":  "<REPO_ROOT>\\tests\\fixtures\\valid-source-ref-REQ-V1",
     "requested_mode":  "Standard",
     "effective_mode":  "Standard",
     "gate":  "Release",

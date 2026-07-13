@@ -17,3 +17,22 @@ jobs:
         shell: powershell
         run: |
           powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\run-all-checks.ps1 -RepoPath .
+
+      - name: Verify golden master
+        shell: powershell
+        run: |
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\run-validation-tests.ps1 -RepoPath . -VerifyGolden
+
+      - name: Verify fault injection propagates as a failure
+        shell: powershell
+        run: |
+          # -TestChildScript deliberately fails first, so run-all-checks.ps1
+          # must exit non-zero here -- if it exits 0, the aggregator is
+          # silently swallowing a child failure. Invert the assertion.
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\run-all-checks.ps1 -RepoPath . -TestChildScript tests\helpers\exit-1.ps1
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "FAULT INJECTION DID NOT PROPAGATE: run-all-checks.ps1 exited 0 with a failing -TestChildScript"
+            exit 1
+          }
+          Write-Host "Fault injection correctly propagated as exit $LASTEXITCODE"
+          exit 0

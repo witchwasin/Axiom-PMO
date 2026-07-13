@@ -93,11 +93,13 @@ function Test-DeliveryWorkItems {
     }
   }
 
-  if ($Mode -eq "Lite" -and $Gate -eq "Release") {
-    if (-not (Test-Path -LiteralPath $DeliveryPath) -and $ProjectText -notmatch '(?i)work item') {
-      Add-Result FAIL "Lite release requires DELIVERY.md or a Work Item section in PROJECT.md" "STRUCT-001"
-    }
-  }
+  # H1: Lite Release now requires DELIVERY.md via the artifact matrix
+  # (pmo-config/artifact-policy.json), like every other mode. The previous
+  # escape hatch here accepted any PROJECT.md merely *containing the words*
+  # "work item" — which left $workItems empty and silently skipped every
+  # Release completion check (RELEASE-STATUS-001 / TEST-EVIDENCE-001 /
+  # REVIEW-001). A one-file DELIVERY.md is not heavy for Lite; an
+  # unparseable work-item claim is not evidence.
 
   return [pscustomobject]@{
     DeliveryText = $deliveryText
