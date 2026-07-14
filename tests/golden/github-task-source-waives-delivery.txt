@@ -4,7 +4,7 @@
     "effective_mode":  "Standard",
     "gate":  "Release",
     "summary":  {
-                    "pass":  20,
+                    "pass":  22,
                     "warn":  1,
                     "warn_blocking":  0,
                     "fail":  0,
@@ -135,6 +135,18 @@
                         "level":  "PASS",
                         "rule_id":  "QA-REVIEW-001",
                         "message":  "QA review is valid",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "TEST-EVIDENCE-002",
+                        "message":  "TEST-001 is passed with resolvable evidence",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "TEST-SUMMARY-001",
+                        "message":  "Release includes at least one Test Summary row",
                         "blocking":  true
                     },
                     {

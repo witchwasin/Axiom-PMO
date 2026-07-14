@@ -95,7 +95,7 @@ pmo-config/                                runtime policy as JSON: enums, artifa
                                             source of truth the scripts read, not a hardcoded fallback
 .claude/skills/                            the 7 active AI skills (one per workflow stage — see below)
 .claude-archive/                           43 older/experimental skills, kept for reference, not loaded by default
-tests/                                     79 fixture cases + golden-master snapshots + generator-to-release
+tests/                                     90 fixture cases + golden-master snapshots + generator-to-release
                                             end-to-end tests + config-mutation tests that prove the config
                                             files are real, not decorative
 docs/                                      per-mode process guides and legacy UML diagrams
@@ -161,7 +161,7 @@ proving its own scripts, configs, and skills are internally consistent:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1        # framework health (structure, config, skills, permissions)
-powershell -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1  # 79-case positive/negative fixture matrix
+powershell -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1  # 90-case positive/negative fixture matrix
 powershell -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1    # everything above + config-mutation + end-to-end tests
 ```
 

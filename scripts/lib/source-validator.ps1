@@ -128,6 +128,7 @@ function Test-ProjectSourceSection {
     ProjectReqIds = $projectReqIds
     ProjectBusinessIds = $projectBusinessIds
     ProjectTaskSource = $projectTaskSource
+    ProjectSourceIds = $projectSourceIds
   }
 }
 
