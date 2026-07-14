@@ -286,10 +286,21 @@ but must be disclosed and human-reviewed.
 
 ## Roadmap
 
-- Deeper, tested execution-framework bridges (automated import of execution-result
-  evidence — interoperability Levels 3–4 are currently documented, not automated).
-- Verified cross-platform support (`pwsh` on Linux/macOS is currently experimental).
-- Additional worked integration examples.
+The productization roadmap is tracked in [`ROADMAP.md`](ROADMAP.md). It is the
+current roadmap of record for turning Axiom-PMO from a governance framework into
+a developer workflow tool for AI-assisted software delivery.
+
+Near-term priorities are:
+
+- public trust plus a three-minute demo;
+- structured developer diagnostics and a stable JSON result schema;
+- a thin local CLI before any public npm package;
+- a GitHub Action that reports governance failures directly in pull requests;
+- one complete Superpowers bridge before broader ecosystem expansion.
+
+The roadmap is intended to be reviewed weekly. Suitable community issues,
+integration requests, and developer feedback may be accepted into the roadmap
+when they strengthen the product direction without weakening governance.
 
 ## License
 
