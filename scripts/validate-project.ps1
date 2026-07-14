@@ -84,11 +84,13 @@ $projectText = Get-ProjectText
 $projectReqIds = @()
 $projectBusinessIds = @()
 $projectTaskSource = $null
+$projectSourceIds = @()
 if ($projectText) {
   $sourceResult = Test-ProjectSourceSection -ProjectText $projectText -Mode $Mode -Gate $Gate -SourceRefRegex $sourceRefRegex -PolicyEnums $policyEnums -DecisionIds $decisionIds
   $projectReqIds = $sourceResult.ProjectReqIds
   $projectBusinessIds = $sourceResult.ProjectBusinessIds
   $projectTaskSource = $sourceResult.ProjectTaskSource
+  $projectSourceIds = $sourceResult.ProjectSourceIds
 }
 
 $deliveryPath = Join-Path $project "DELIVERY.md"
@@ -104,7 +106,7 @@ $releaseRegistry = $releaseResult.ReleaseRegistry
 
 Test-ReleaseScopeCompletion -WorkItems $workItems -ReleaseText $releaseText -Mode $Mode -Gate $Gate -DecisionIds $decisionIds -ReleaseRegistry $releaseRegistry
 
-Test-StrictReleaseGuardrails -Project $project -Mode $Mode -Gate $Gate -ProjectReqIds $projectReqIds -DeliveryIds $deliveryIds -DecisionIds $decisionIds -ReleaseRegistry $releaseRegistry
+Test-StrictReleaseGuardrails -Project $project -Mode $Mode -Gate $Gate -ProjectReqIds $projectReqIds -DeliveryIds $deliveryIds -DecisionIds $decisionIds -ReleaseRegistry $releaseRegistry -ProjectSourceIds $projectSourceIds
 
 Test-SensitiveFilenames -AllProjectFiles $allProjectFiles
 

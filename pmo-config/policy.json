@@ -64,6 +64,10 @@
     "allowed_modes": ["Lite"],
     "allowed_change_types": ["content-only", "documentation-only", "config-only"]
   },
+  "test_waiver": {
+    "allowed_modes": ["Standard"],
+    "allowed_change_types": ["content-only", "documentation-only", "config-only"]
+  },
   "table_schemas": {
     "approval_table": {
       "columns": ["Gate", "Approval Status", "Approver", "Role", "Date", "Evidence"]

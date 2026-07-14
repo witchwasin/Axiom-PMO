@@ -169,7 +169,56 @@ function Test-ReleaseArtifact {
     # H2: any row present in the Test Summary table must be genuinely passed
     # (or explicitly, reasonedly skipped) -- not just an ID the RTM can point
     # at while the actual result still says "pending".
-    Test-TestSummary -ReleaseRegistry $releaseRegistry -Project $Project -DecisionIds $DecisionIds
+    Test-TestSummary -ReleaseRegistry $releaseRegistry -Project $Project -DecisionIds $DecisionIds -Mode $Mode
+
+    # Micro-hardening: H2 only checked that *existing* rows were genuinely
+    # passed/skipped, so a Release with zero Test Summary rows sailed through
+    # with nothing to check -- a Standard/Strict Release could ship with no
+    # test evidence at all. Require at least one row, or a structured waiver
+    # (same shape as the Lite rollback waiver) restricted to Standard, since
+    # Strict must always show real test evidence.
+    $testWaiverMatch = [regex]::Match($releaseText, '(?ms)^##\s+Test Summary\s*(.*?)(?=^##\s|\z)')
+    $testWaiver = $null
+    if ($testWaiverMatch.Success -and $testWaiverMatch.Groups[1].Value -match '(?m)^\s*test_required:\s*false\s*$') {
+      $section = $testWaiverMatch.Groups[1].Value
+      $testWaiver = [pscustomobject]@{
+        Reason = if ($section -match '(?m)^\s*reason:\s*(.+?)\s*$') { $Matches[1] } else { "" }
+        ApprovedBy = if ($section -match '(?m)^\s*approved_by:\s*(.+?)\s*$') { $Matches[1] } else { "" }
+        Evidence = if ($section -match '(?m)^\s*evidence:\s*(.+?)\s*$') { $Matches[1] } else { "" }
+      }
+    }
+
+    if (@($releaseRegistry.TestRows).Count -eq 0) {
+      if ($testWaiver) {
+        $testWaiverRule = $script:policy.test_waiver
+        $testWaiverAllowedModes = if ($testWaiverRule) { @($testWaiverRule.allowed_modes) } else { @() }
+        $testWaiverInvalid = @()
+        if ($testWaiverAllowedModes -notcontains $Mode) { $testWaiverInvalid += "mode $Mode is not allowed to waive testing" }
+        if (Test-PlaceholderValue $testWaiver.Reason) { $testWaiverInvalid += "reason is missing" }
+        if (Test-PlaceholderValue $testWaiver.ApprovedBy) { $testWaiverInvalid += "approved_by is missing" }
+        if (Test-PlaceholderValue $testWaiver.Evidence) {
+          $testWaiverInvalid += "evidence is missing"
+        } else {
+          $testWaiverRef = Resolve-Reference -Value $testWaiver.Evidence -ReferenceTypesConfig $script:referenceTypesConfig -ProjectRoot $script:project -DecisionIds $DecisionIds
+          if (-not $testWaiverRef.Type -or -not $testWaiverRef.Resolved) { $testWaiverInvalid += "evidence does not resolve" }
+        }
+        if ($testWaiverInvalid.Count -eq 0) {
+          Add-Result PASS "Release testing is validly waived (reason recorded)" "TEST-SUMMARY-001"
+        } else {
+          Add-Result FAIL "Release test waiver is invalid: $($testWaiverInvalid -join '; ')" "TEST-SUMMARY-001"
+        }
+      } else {
+        Add-Result FAIL "$Mode Release requires at least one Test Summary row (or a valid test_required: false waiver)" "TEST-SUMMARY-001"
+      }
+    } else {
+      Add-Result PASS "Release includes at least one Test Summary row" "TEST-SUMMARY-001"
+      if ($Mode -eq "Strict") {
+        $passedRows = @($releaseRegistry.TestRows | Where-Object { "$($_.Result)".Trim().ToLowerInvariant() -eq "passed" })
+        if ($passedRows.Count -eq 0) {
+          Add-Result FAIL "Strict release cannot have every Test Summary row skipped; at least one row must be passed" "TEST-SUMMARY-001"
+        }
+      }
+    }
   }
 
   return [pscustomobject]@{ ReleaseText = $releaseText; ReleaseRegistry = $releaseRegistry }
@@ -254,7 +303,8 @@ function Test-StrictReleaseGuardrails {
     [string[]]$ProjectReqIds,
     [string[]]$DeliveryIds,
     [string[]]$DecisionIds,
-    $ReleaseRegistry
+    $ReleaseRegistry,
+    [string[]]$ProjectSourceIds
   )
 
   if (-not ($Mode -eq "Strict" -and $Gate -eq "Release")) { return }
@@ -273,7 +323,7 @@ function Test-StrictReleaseGuardrails {
   # the structured QA-REVIEW-001 / SECURITY-REVIEW-001 / TEST-EVIDENCE-001
   # checks above (real table rows, not "the word qa appears somewhere").
 
-  Test-RtmTraceability -Project $Project -ProjectReqIds $ProjectReqIds -DeliveryIds $DeliveryIds -DecisionIds $DecisionIds -ReleaseRegistry $ReleaseRegistry
+  Test-RtmTraceability -Project $Project -ProjectReqIds $ProjectReqIds -DeliveryIds $DeliveryIds -DecisionIds $DecisionIds -ReleaseRegistry $ReleaseRegistry -ProjectSourceIds $ProjectSourceIds
 
   if ($strictMissing.Count -gt 0) {
     Add-Result FAIL "Strict release is missing required guardrails: $($strictMissing -join ', ')" "STRICT-002"
