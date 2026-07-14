@@ -4,7 +4,7 @@
     "effective_mode":  "Strict",
     "gate":  "Release",
     "summary":  {
-                    "pass":  25,
+                    "pass":  26,
                     "warn":  0,
                     "warn_blocking":  0,
                     "fail":  9,
@@ -165,6 +165,12 @@
                         "level":  "PASS",
                         "rule_id":  "TEST-EVIDENCE-002",
                         "message":  "TEST-001 is passed with resolvable evidence",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "PASS",
+                        "rule_id":  "TEST-SUMMARY-001",
+                        "message":  "Release includes at least one Test Summary row",
                         "blocking":  true
                     },
                     {

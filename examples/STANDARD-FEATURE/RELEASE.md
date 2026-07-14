@@ -12,6 +12,13 @@
 - Happy path: move ticket across statuses.
 - Exception path: block Done when review notes are missing.
 
+## Test Summary
+
+| ID | Test Area | Result | Evidence | Notes |
+|---|---|---|---|---|
+| TEST-001 | Move ticket across statuses (happy path) | passed | DEC-003 | |
+| TEST-002 | Block Done when review notes are missing (exception path) | passed | DEC-003 | |
+
 ## QA / Security Review
 
 | Review Type | Status | Reviewer | Role | Date | Evidence |
