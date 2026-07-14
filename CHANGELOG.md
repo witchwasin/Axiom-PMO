@@ -1,10 +1,57 @@
 # Changelog
 
+## 1.0.0 - 2026-07-14
+
+First public release, published as **Axiom-PMO — The Anti-Hallucination
+Framework for AI Agents**. This release rebrands the project from its private
+working name and prepares it for open-source use. The deterministic validation
+engine, anti-hallucination controls, risk-adaptive modes, and test suite are
+unchanged in behavior; every enforced check that passed before this release
+still passes.
+
+### Added
+
+- **Public identity as a governance control plane.** New positioning: Axiom-PMO
+  is the source of truth for requirements, scope, risk, evidence policy, and
+  release authority, designed to operate *alongside* AI execution frameworks
+  (Superpowers, BMAD, spec-kit, OpenSpec, custom Claude Code setups) rather than
+  replacing them.
+- **MIT `LICENSE`.**
+- **`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, issue templates, and a pull-request
+  template** that encode the "do not weaken governance" and "disclose
+  AI-assisted changes" expectations.
+- **Case study** (`case-studies/unauthorized-git-mutation.md`) — a sanitized
+  account of the unauthorized-git-mutation incident that motivated the git
+  authority controls, kept as a regression lesson.
+- **Interoperability documentation** (`docs/integrations/`) describing a Level
+  0–4 coexistence model and an authority-precedence order, plus an
+  **experimental** generic execution-contract and result schema under
+  `integrations/superpowers/` (not wired into the validator runtime).
+- **Concept, architecture, governance, and tutorial docs** under `docs/`.
+- **Cross-platform helpers**: a `Makefile` and `scripts/check.sh` /
+  `scripts/check.cmd` wrappers around the PowerShell reference implementation
+  (Linux/macOS via `pwsh` is labeled experimental), plus a non-destructive
+  `scripts/prepare-public-release.ps1`.
+
+### Changed
+
+- Product identity, README, and user-facing script/diagram labels now read
+  **Axiom-PMO**. The `pmo-` domain prefix on skills, config, scripts, and rule
+  ids is retained as a stable, generic identifier.
+- **Example golden snapshots are now checkout-portable.**
+  `tests/golden/capture-examples.ps1` normalizes the resolved repository path to
+  a `<REPO_ROOT>` placeholder (mirroring `run-validation-tests.ps1`), and the
+  three example snapshots were regenerated so they verify on any clone. No
+  validator rule or severity changed.
+- Internal remediation reports were sanitized and archived; the changelog
+  history below was scrubbed of private repository identifiers and internal
+  references.
+
 ## 0.5.1 - 2026-07-13
 
 > Round 3 final hardening (`reports/final-hardening-plan.md`), triggered by an
-> independent GPT-5.6 review of merged `0.5.0` scoring 8.4/10 with 5 concrete,
-> reproduced validator bypasses. Merged to `main` via PR #3 (`3f794ed`). See
+> independent an independent reviewer review of merged `0.5.0` scoring 8.4/10 with 5 concrete,
+> reproduced validator bypasses. Merged to `main` via a pull request. See
 > `reports/current-acceptance.md` for the close-out report.
 
 ### Fixed
@@ -34,13 +81,13 @@
   or exercised fault injection. Both now run on every push/PR.
 - **Golden-master not portable across checkouts**: the validator's JSON output embedded
   the absolute project path, which differs between a local clone and the GitHub Actions
-  runner (`D:\a\...`), so all 86 golden cases mismatched on CI. The path is now
-  normalized to a `<REPO_ROOT>` placeholder before capture/compare (`da8d835`).
+  runner (`<ci-path>`), so all 86 golden cases mismatched on CI. The path is now
+  normalized to a `<REPO_ROOT>` placeholder before capture/compare (`<commit>`).
 - **Sensitive-source fixture dropped on CI**: `tests/fixtures/valid-source-others-and-
   sensitive/source/Quotation.xlsx` (a synthetic placeholder) was excluded by the
   `**/*Quotation*.xlsx` sensitive-file `.gitignore` pattern, so it was absent on CI and
   the `SENSITIVE-001` golden line disappeared. Added a scoped negation for that one
-  fixture path and tracked the file (`71305b5`).
+  fixture path and tracked the file (`<commit>`).
 - **PSScriptAnalyzer real findings**: ran PSScriptAnalyzer (149 findings, 0 errors) and
   fixed the 10 genuine ones — auto-variable shadowing (`$args`/`$matches` renamed) and
   dead function parameters (`Test-DeliveryWorkItems` `$Mode`/`$ProjectText`,
@@ -50,9 +97,9 @@
 
 ### Known limitations
 
-- **Branch protection** remains unavailable on this GitHub free-plan private repo (403 on
+- **Branch protection** was unavailable on the repository at this point (403 on
   the protection API) — a platform constraint, documented and accepted.
-- **LICENSE** remains explicitly deferred by the owner.
+- **LICENSE** remains deferred.
 
 ## 0.5.0 - 2026-07-12
 
@@ -126,18 +173,18 @@
 
 ### Governance
 
-- Branch protection: confirmed 403 on GitHub free-plan private repos (platform
+- Branch protection: confirmed 403 on the repository (platform
   constraint, not a policy waiver). Recorded as option (C): PR workflow + CI + explicit
   per-push human confirmation are the compensating controls.
-- LICENSE: owner explicitly deferred adding one for now (2026-07-12) — recorded as an
+- LICENSE: deferred adding one for now (2026-07-12) — recorded as an
   intentional decision, not an omission.
-- P5.3 (PSScriptAnalyzer static analysis) explicitly skipped by owner decision
+- P5.3 (PSScriptAnalyzer static analysis) explicitly skipped by decision
   (2026-07-12) — not installed on this machine.
 
 ## 0.4.0 - 2026-07-10 (updated through 2026-07-12)
 
 > The entries below span the full remediation covered by `reports/remediation-plan.md`
-> (v3) and merged via PR #1 (`ac1d42e`). `VERSION` was bumped from
+> (v3) and merged via a pull request. `VERSION` was bumped from
 > `0.4.0-stable-candidate` to `0.4.0` on 2026-07-12, once this state was independently
 > verified end-to-end and merged rather than self-reported. See
 > `reports/current-acceptance.md` for the full close-out report and score (`9.03/10.00`).
@@ -180,7 +227,7 @@
 - `PERMISSION-007` (`.gitignore` sensitive-pattern check) used a `(?m)^pattern$` regex
   that silently failed on CRLF line endings — invisible locally (mixed line endings in
   the working copy) but caused every required pattern to report as missing on a clean
-  CI checkout. Found via the first real CI run on PR #1; fixed with `\r?` and confirmed
+  CI checkout. Found via the first real CI run on a pull request; fixed with `\r?` and confirmed
   against both CRLF and LF input.
 
 ### Changed
@@ -192,12 +239,13 @@
 - Moved `reports/baseline.md`, `reports/patch-manifest.md`, and
   `reports/final-acceptance.md` to `reports/archive/` (all three superseded by
   `reports/remediation-plan.md` and `reports/current-acceptance.md`).
-- Branch protection on `main` was evaluated and explicitly waived by the repository
-  owner for now (private, single-maintainer repo) — documented as a resolved decision,
-  not an open task, in `reports/process-violation.md` and `reports/current-acceptance.md`.
+- Branch protection on `main` was evaluated and explicitly waived for now
+  (a single-maintainer repository) — documented as a resolved decision,
+  not an open task, in `reports/archive/process-violation.md` and
+  `reports/archive/current-acceptance.md`.
 - Two process violations (unreviewed commit+push during the remediation) were logged
   and resolved with disposition in `reports/process-violation.md`. The first violation
-  pushed `37c919b` directly to `origin/main` (later accepted as the remediation
+  pushed `<commit>` directly to `origin/main` (later accepted as the remediation
   baseline); the second only affected the `remediation/9plus` working branch and never
   touched `main`.
 

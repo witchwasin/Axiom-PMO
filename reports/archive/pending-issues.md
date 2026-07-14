@@ -5,8 +5,8 @@
 ## PI-001: PR #3 CI fails — golden-master fixture file missing on CI checkout
 
 - **Date found:** 2026-07-13
-- **Status:** RESOLVED 2026-07-13 in commit `71305b5` (gitignore negation + tracked the fixture placeholder)
-- **PR:** https://github.com/witchwasin/PMO-Template-Personal/pull/3 (branch `hardening/0.5.x`)
+- **Status:** RESOLVED 2026-07-13 in commit `<commit>` (gitignore negation + tracked the fixture placeholder)
+- **PR:** the repository pull request (branch `hardening/0.5.x`)
 
 ### Symptom
 
@@ -30,7 +30,7 @@ The file itself is a synthetic 29-byte ASCII placeholder ("fake spreadsheet
 placeholder"), not a real spreadsheet — the fixture's purpose is to prove that
 sensitive-looking files in user-owned source do not block release.
 
-### Fix already identified (not applied — owner deferred)
+### Fix already identified (not applied — deferred)
 
 1. Append a scoped negation to `.gitignore` (must come after the `**/*Quotation*.xlsx` pattern):
    ```
@@ -48,8 +48,8 @@ sensitive-looking files in user-owned source do not block release.
 
 - First CI failure on PR #3 (86/86 mismatches) was a different bug: the validator's
   JSON output embeds the absolute repo path, which differs between local clones and
-  GitHub runners. Fixed in commit `da8d835` (`<REPO_ROOT>` placeholder normalization).
-- After `da8d835`, CI improved to 85/86 matching; this fixture-file issue is the
+  GitHub runners. Fixed in commit `<commit>` (`<REPO_ROOT>` placeholder normalization).
+- After `<commit>`, CI improved to 85/86 matching; this fixture-file issue is the
   only remaining failure.
 - All checks pass locally (full suite PASS=29 WARN=0 FAIL=0, golden 86/86,
   doctor PASS=52) because the untracked file exists on the local machine.

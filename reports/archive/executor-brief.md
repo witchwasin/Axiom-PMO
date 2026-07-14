@@ -7,7 +7,7 @@
 ## A. คำสั่งตั้งต้น (ก๊อปวางให้ AI ตัวอื่นได้เลย)
 
 ```text
-คุณคือ Executor / Lead Maintainer ของ repo `PMO-Template-Personal`
+คุณคือ Executor / Lead Maintainer ของ repo `Axiom-PMO`
 ภารกิจ: ทำตาม `reports/remediation-plan.md` (v3) เพื่อยกคะแนน framework จาก ~7.5 → 9.0+ อย่างมีหลักฐาน
 
 อ่านก่อนเริ่ม (บังคับ):

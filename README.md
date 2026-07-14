@@ -1,185 +1,299 @@
-# PMO Template Personal
+<!-- markdownlint-disable MD033 MD041 -->
+<div align="center">
 
-**Current version:** `0.5.1` · see [`CHANGELOG.md`](CHANGELOG.md) for release history.
+# Axiom-PMO
 
-## What this repo actually is
+### The Anti-Hallucination Framework for AI Agents
 
-This is **not a software project**. It doesn't ship an app, a service, or a
-library you `import`. It's an **operating template** — a set of documents,
-folder conventions, config files, and PowerShell validation scripts — that
-tells an AI coding agent (Claude, Codex, Cursor, Copilot, or similar) *how to
-run project management for a small team*, and then **mechanically checks**
-that the AI actually followed the rules instead of trusting its self-report.
+A deterministic governance layer that keeps AI coding agents inside **verified
+requirements, approved scope, traceable evidence, and human-controlled release
+gates.**
 
-Think of it as: "a PMO's SOP binder, written so an AI can follow it, with a
-linter that catches the AI when it skips steps."
+<sub>Version <code>1.0.0</code> · MIT License · Windows PowerShell reference implementation (Linux/macOS via <code>pwsh</code>, experimental)</sub>
 
-### The problem this solves
+</div>
 
-Left alone, an AI agent doing PM work tends to:
-- invent requirements, acceptance criteria, or approvals that were never
-  actually given,
-- skip traceability between "what the client asked for" and "what got
-  built and tested,"
-- produce inconsistent documents from project to project,
-- or claim a release is "ready" without real evidence.
+---
 
-This repo constrains that by making every important claim
-(a requirement, a design decision, a test result, an approval) carry a
-**source reference** and an **evidence status**, and by running those claims
-through a **validator script** that fails the build if something is missing,
-placeholder text, or unresolvable — the same way a linter fails a pull
-request. Nothing here is enforced by asking the AI nicely; it's enforced by
-`scripts/validate-project.ps1` exiting non-zero.
+> **AI agents can write code. They should not invent the project.**
 
-### Who it's for
+AI coding frameworks help agents build faster. Axiom-PMO exists to make sure
+they build the *right* thing — from requirements that trace back to real source
+material, within a scope a human approved, with evidence for every claim, and
+with releases that no agent can authorize on its own.
 
-Small teams (roughly ≤10 people) who want AI-assisted project delivery —
-from a meeting transcript, through requirements and design, to a release —
-without either (a) zero structure and made-up documentation, or (b)
-enterprise-PMO paperwork that's too heavy for a 3-person team. The whole
-template is built around choosing the **lightest process that still
-controls the actual risk** of a given piece of work.
+Axiom-PMO is **not** an execution framework and does not try to replace one. It
+is the **governance control plane** those frameworks can operate inside.
 
-## The workflow
+---
 
-Every project this template manages follows the same pipeline:
+## The problem
 
+Left unconstrained, an AI agent doing project or delivery work tends to:
+
+- **invent** requirements, acceptance criteria, actors, or approvals that were
+  never actually given;
+- **silently expand scope** — adding "helpful" features nobody asked for;
+- **claim evidence** ("tests pass", "QA approved") that it generated itself and
+  that no one verified;
+- **lose traceability** between what a stakeholder asked for and what was built
+  and tested; and
+- **cross authority boundaries** — committing, pushing, or "releasing" without a
+  human ever saying yes.
+
+A prompt that politely asks the agent not to do these things is not a control.
+Axiom-PMO turns each of them into a **machine-verifiable contract** enforced by a
+validator that exits non-zero when the contract is broken — the same way a
+linter fails a pull request.
+
+> See [`case-studies/unauthorized-git-mutation.md`](case-studies/unauthorized-git-mutation.md)
+> — *"The Agent That Shipped Without Permission"* — for the incident that shaped
+> these controls. The code may have been fine. The authorization was part of the
+> specification, and it was missing.
+
+## What Axiom-PMO does
+
+Every important claim — a requirement, a design decision, a test result, an
+approval — must carry a **source reference** and an **evidence status**
+(`verified`, `supported`, `inferred`, `missing`, or `conflict`). Those claims
+are then run through a **deterministic PowerShell validator** that fails the gate
+if something is missing, placeholder text, unresolvable, or unapproved. Nothing
+is enforced by asking the agent nicely.
+
+- **Source-of-truth protection** — `source/` inputs are user-owned; the agent
+  never edits, creates, or deletes them.
+- **Requirement traceability** — source → requirement → design → delivery →
+  test → evidence → release, checked row by row (full chain in Strict mode via
+  `RTM.json`).
+- **Risk-adaptive modes** — Lite / Standard / Strict decide *how much* process
+  is required for a given piece of work.
+- **Human authority boundaries** — the agent may recommend the next gate but may
+  not approve its own work, and may not commit, push, tag, deploy, or approve a
+  release by itself.
+
+## Architecture: control plane + execution plane
+
+Axiom-PMO governs *what and why*; an execution framework handles *how*. Output
+from the execution framework is **candidate evidence**, not automatically trusted
+truth — Axiom-PMO validates it before it becomes release-ready.
+
+```mermaid
+flowchart TD
+    H["Human / PM / Product Owner"] --> A
+    subgraph A["Axiom-PMO — Governance & Control Plane"]
+        A1["Source-of-truth protection"]
+        A2["Requirement traceability"]
+        A3["Lite / Standard / Strict modes"]
+        A4["Scope & design approval"]
+        A5["Evidence requirements"]
+        A6["QA / security / release gates"]
+        A7["Human authority boundaries"]
+    end
+    A -->|"Approved execution contract"| E
+    subgraph E["AI Execution Framework"]
+        E1["Superpowers / BMAD / spec-kit /<br/>OpenSpec / custom Claude Code"]
+        E2["Planning · TDD · Implementation<br/>Code review · Verification"]
+    end
+    E -->|"Candidate result + evidence"| V
+    subgraph V["Axiom-PMO Validation"]
+        V1["Scope compliance"]
+        V2["Evidence verification"]
+        V3["Traceability update"]
+        V4["QA / security review"]
+        V5["Human release approval"]
+    end
+    V -->|"Release readiness"| H
 ```
-Source → Requirement → Design → Delivery → Build Review → QA → Release
-```
 
-- **Source**: meeting notes, transcripts, requirement docs the client/team
-  actually gave you (lives in `source/`, never edited or invented by the AI).
-- **Requirement**: atomic, testable statements extracted from source, each
-  tagged with where it came from and how solid the evidence is.
-- **Design**: flow/UX/wireframe artifacts, only produced when the work
-  actually needs them.
-- **Delivery**: work items with owners, acceptance criteria, and a declared
-  task source of truth (this repo's `DELIVERY.md` or GitHub Issues — never
-  both at once).
-- **Build Review / QA**: evidence that the work was actually reviewed and
-  tested, in a real table the validator parses row by row — not a checkbox
-  that says "done."
-- **Release**: nothing ships without recorded approval, a real rollback
-  plan (or an explicit, policy-allowed waiver), and — for regulated or
-  high-risk work — full requirement-to-release traceability.
+**Responsibility split**
+
+| Axiom-PMO owns | An execution framework owns |
+|---|---|
+| Source, requirements, scope, risk | Implementation planning |
+| Approvals and evidence policy | TDD and coding |
+| Release authority | Code review and engineering verification |
+
+The execution framework **may not** change approved scope, alter acceptance
+criteria without a change request, downgrade risk mode, mark QA/security/release
+approved, or deploy without human permission.
+
+## Works alongside your AI framework
+
+Axiom-PMO is framework-agnostic. It defines *what may be built and when it is
+safe to release*; your execution framework defines *how it gets built*.
+
+| Capability | Axiom-PMO | Execution frameworks (Superpowers / BMAD / spec-kit / OpenSpec) |
+|---|---|---|
+| Requirement & scope governance | Primary | Limited / partial |
+| Human approval gates | Strong | Limited / partial |
+| Source-ownership boundary | Strong | Not primary |
+| Machine-tested process rules | Strong | Engineering / workflow / spec-focused |
+| Release evidence governance | Strong | Verification-focused |
+| Planning · TDD · implementation | Delegated | Strong |
+| Governance control plane | Primary | Not primary |
+
+> Axiom-PMO does not attempt to replace these frameworks. It provides the
+> governance layer they can operate inside. Individual elements here have prior
+> art; the differentiation is combining risk-adaptive PM governance, source
+> protection, human authority boundaries, full-chain traceability, and
+> deterministic validation into one lightweight control plane for small
+> AI-assisted teams.
+
+See [`docs/integrations/overview.md`](docs/integrations/overview.md) for the
+Level 0–4 interoperability model and authority-precedence order.
 
 ## The three modes
 
-Every project (and every individual work item inside a project) declares a
-mode. The mode decides how much process is *required*, not how much is
-*allowed* — you can always do more.
+Every project — and every individual work item inside it — declares a mode. The
+mode decides how much process is *required*, not how much is *allowed*.
 
 | Mode | Use for | What's required |
 |---|---|---|
-| **Lite** | Small, low-risk fixes and clarifications | `PROJECT.md`, one delivery item, acceptance criteria, a test note. Nothing else unless the work needs it. |
-| **Standard** | Normal feature delivery | `PROJECT.md`, a design artifact if there's a flow/UI, `DELIVERY.md` or GitHub Issue, a real test checklist, QA sign-off at release. |
-| **Strict** | Payment, PII, auth, permissions, external integrations, compliance, production data migration, or anything else on the trigger list in `AGENTS.md` | Everything Standard requires, plus full source references on every claim, a RAID log, a decision log, a requirement-to-release traceability matrix (`RTM.json`), and QA **and** security sign-off. |
+| **Lite** | Small, low-risk fixes and clarifications | `PROJECT.md`, one delivery item, acceptance criteria, a test note. |
+| **Standard** | Normal feature delivery | Above, plus a design artifact when there's a flow/UI, `DELIVERY.md` or GitHub Issues, a real test checklist, QA sign-off at release. |
+| **Strict** | Payment, PII, auth, permissions, external integrations, compliance, production data migration, or any other trigger in [`AGENTS.md`](AGENTS.md) | Everything Standard requires, plus full source references on every claim, a RAID log, a decision log, a requirement-to-release traceability matrix (`RTM.json`), and QA **and** security sign-off. |
 
-A project can never be silently downgraded — if a work item is tagged with
-a Strict trigger, the validator forces the whole project's effective mode
-to Strict even if you pass `-Mode Lite` on the command line.
+A project can never be silently downgraded: if a work item carries a Strict
+trigger, the validator forces the whole project's effective mode to Strict even
+if you pass `-Mode Lite` on the command line.
 
-## Repo layout — what's where and why
+## Quick start
 
-```
-AGENTS.md, CLAUDE.md, CONTEXT-ROUTER.md   AI behavior rules and routing (read these first if you're an agent)
-TESTING.md, SECURITY.md, MIGRATION.md     how to run the test suite, security rules, moving from a legacy layout
-templates/                                blank PROJECT.md / DELIVERY.md / RELEASE.md / etc. for a brand-new project
-examples/                                 4 fully worked example projects (Lite, Standard, Strict, and a demo)
-scripts/                                  the validator, the framework "doctor," the project generator
-  scripts/lib/                              the validator's 11 modules (config, parsing, per-rule checks, output)
-pmo-config/                                runtime policy as JSON: enums, artifact requirements per mode/gate,
-                                            reference-type regexes, the active skill list — this is the actual
-                                            source of truth the scripts read, not a hardcoded fallback
-.claude/skills/                            the 7 active AI skills (one per workflow stage — see below)
-.claude-archive/                           43 older/experimental skills, kept for reference, not loaded by default
-tests/                                     90 fixture cases + golden-master snapshots + generator-to-release
-                                            end-to-end tests + config-mutation tests that prove the config
-                                            files are real, not decorative
-docs/                                      per-mode process guides and legacy UML diagrams
-reports/                                   the audit trail of this template's own quality work — baseline
-                                            scores, remediation plans, and what was found and fixed each round
+Requires PowerShell (Windows PowerShell 5.1 or PowerShell 7 / `pwsh`).
+
+```powershell
+# 1. Generate a new project skeleton (mode-aware)
+powershell -ExecutionPolicy Bypass -File scripts/new-project.ps1 -ProjectCode P02-MYPROJECT -Mode Standard
+
+# 2. Put real source under source/MOM, source/REQ, source/Transcript
+#    (user-owned; the agent never edits these)
+
+# 3. Fill PROJECT.md from source — every requirement needs a
+#    source_ref and an evidence_status
+
+# 4. Validate before every gate
+powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 `
+  -ProjectPath projects/P02-MYPROJECT -Mode Standard -Gate Release -FailOnWarning
 ```
 
-A **project** built with this template (e.g. `projects/P01-ABC/`, or one of
-the `examples/`) looks like:
+Or start from a worked example: [`examples/LITE-BUGFIX`](examples/LITE-BUGFIX),
+[`examples/STANDARD-FEATURE`](examples/STANDARD-FEATURE),
+[`examples/STRICT-HIGH-RISK`](examples/STRICT-HIGH-RISK), or the fuller
+[`examples/P01-DEMO`](examples/P01-DEMO).
+
+On Linux/macOS or with `make` installed, the same checks are available through
+convenience wrappers (experimental — they call the PowerShell reference
+implementation via `pwsh`):
+
+```bash
+make check      # doctor + validation + mutation + e2e
+./scripts/check.sh   # equivalent wrapper
+```
+
+## Validate the framework itself
+
+Beyond validating individual *projects*, Axiom-PMO validates *itself* — proving
+its scripts, configs, and skills are internally consistent:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1            # framework health
+powershell -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1  # positive/negative fixture matrix + golden master
+powershell -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1        # everything + config-mutation + end-to-end
+```
+
+The test suite includes a positive/negative fixture matrix, byte-for-byte golden
+masters, config-mutation tests (which prove the JSON policy files are load-bearing,
+not decorative), and generator-to-release end-to-end flows. See
+[`TESTING.md`](TESTING.md).
+
+## Repository layout
 
 ```
-PROJECT.md          scope, requirements, approvals — the source of truth for "what" and "why"
-source/              client-owned inputs (MOM, REQ, Transcript, Others) — never edited by the AI
-DESIGN/              flow diagrams, wireframes (Standard/Strict, when there's a UI or flow)
-DELIVERY.md          work items — the source of truth for "who's building what," unless GitHub Issues is used
-RELEASE.md           release scope, test summary, QA/security review, rollback plan, release approval
-RAID-log.md          risks/assumptions/issues/dependencies (Strict, or when something meaningful exists)
-decision-log.md      logged decisions (Strict, or when something meaningful exists)
-RTM.json             requirement → design → delivery → test → evidence → release traceability (Strict)
+AGENTS.md, CLAUDE.md, CONTEXT-ROUTER.md   Agent behavior rules and routing (read first if you're an agent)
+TESTING.md, SECURITY.md, MIGRATION.md     Test tooling, security rules, legacy-layout migration
+templates/                                Blank PROJECT.md / DELIVERY.md / RELEASE.md / RTM.json / etc.
+examples/                                 Worked example projects (Lite, Standard, Strict, and a demo)
+scripts/                                  The validator, framework doctor, and project generator
+  scripts/lib/                              The validator's modules (config, parsing, per-rule checks, output)
+pmo-config/                               Runtime policy as JSON — the source of truth the scripts read
+.claude/skills/                           The 7 active AI skills (one per workflow stage)
+docs/                                     Concepts, architecture, governance, integrations, tutorials, per-mode guides
+integrations/                             Experimental execution-contract schemas (framework interop)
+case-studies/                             Governance lessons (e.g. the unauthorized-git-mutation incident)
+tests/                                    Fixture matrix + golden masters + config-mutation + end-to-end tests
+reports/                                  Public release baseline and sanitized project-history archive
+```
+
+A project built with this template looks like:
+
+```
+PROJECT.md          Scope, requirements, approvals — the "what" and "why"
+source/             Client-owned inputs (MOM, REQ, Transcript, Others) — never edited by the AI
+DESIGN/             Flow diagrams, wireframes (Standard/Strict, when there's a UI or flow)
+DELIVERY.md         Work items — the "who's building what", unless GitHub Issues is the declared source
+RELEASE.md          Release scope, test summary, QA/security review, rollback plan, release approval
+RAID-log.md         Risks/assumptions/issues/dependencies (Strict, or when meaningful)
+decision-log.md     Logged decisions (Strict, or when meaningful)
+RTM.json            Requirement → design → delivery → test → evidence → release traceability (Strict)
 ```
 
 ## The AI skill system
 
-An AI agent using this template loads only the skill relevant to the task at
-hand — never all of them at once, to keep context small and focused:
+An agent loads only the skill relevant to the task at hand — never all of them —
+to keep context small and focused. `CLAUDE.md` routes user intent to the right
+skill and mode.
 
 | Skill | Stage |
 |---|---|
 | `pmo-intake` | Turning source material into scoped, referenced requirements |
 | `pmo-design` | Flow, UX, wireframes, design-ready acceptance criteria |
 | `pmo-delivery` | Delivery planning, handoff, task-source-of-truth, sequencing |
-| `pmo-build-review` | Build completion evidence, code review readiness |
+| `pmo-build-review` | Build completion evidence, code-review readiness |
 | `pmo-quality-release` | QA evidence, release readiness, rollback review |
 | `pmo-governance` | RAID, decisions, traceability, risk, Strict-mode guardrails |
 | `pmo-git-safety` | Branch/diff/sensitive-file checks before commit, push, or tag |
 
-`CLAUDE.md` is the router that maps what a user is asking for to which skill
-and which mode to load.
-
-## Getting started
-
-1. Copy `templates/` into a new folder (e.g. `projects/P01-ABC/`), or start
-   from the closest example (`examples/LITE-BUGFIX`,
-   `examples/STANDARD-FEATURE`, `examples/STRICT-HIGH-RISK`) — or generate a
-   fresh skeleton:
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File scripts/new-project.ps1 -ProjectCode P02-MYPROJECT -Mode Standard
-   ```
-2. Put real source material under `source/MOM/`, `source/REQ/`,
-   `source/Transcript/`.
-3. Fill in `PROJECT.md` from that source — every requirement needs a
-   `source_ref` and an `evidence_status`.
-4. Choose a mode per work item in `DELIVERY.md`.
-5. Validate before every gate:
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project-folder> -Mode Standard -Gate Release -FailOnWarning
-   ```
-
-## Validating the template itself
-
-Besides validating individual *projects*, the template validates *itself* —
-proving its own scripts, configs, and skills are internally consistent:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1        # framework health (structure, config, skills, permissions)
-powershell -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1  # 90-case positive/negative fixture matrix
-powershell -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1    # everything above + config-mutation + end-to-end tests
-```
-
-See [`TESTING.md`](TESTING.md) for the full test-tooling breakdown (golden
-master, config mutation, generator-to-release E2E).
-
-## AI guardrails (the non-negotiables)
+## Human authority model
 
 - The AI never invents requirements, actors, dates, or approvals.
-- Every important claim is tagged `Confirmed`, `Assumption`, or
-  `Open Question`, and every requirement/decision/test/release claim needs a
-  `source_ref` and an `evidence_status`.
-- `source/`, `MOM/`, `REQ/`, `Transcript/`, `Others/` are user-owned — the AI
-  never edits, creates, or deletes files there.
-- The AI never commits, pushes, tags, deploys, or approves a production
-  release or business scope by itself — those require explicit human
-  confirmation every time, not a standing permission.
+- Every important claim is tagged `Confirmed`, `Assumption`, or `Open Question`,
+  and carries a `source_ref` and an `evidence_status`.
+- `source/`, `MOM/`, `REQ/`, `Transcript/`, `Others/` are user-owned — never
+  edited, created, or deleted by the AI.
+- The AI never commits, pushes, tags, deploys, or approves a production release
+  or business scope by itself. Those require explicit human confirmation every
+  time — not a standing permission.
 
-Full rules: [`AGENTS.md`](AGENTS.md). Security-specific rules:
-[`SECURITY.md`](SECURITY.md). Moving from a legacy PM folder structure into
-this template: [`MIGRATION.md`](MIGRATION.md).
+Full rules: [`AGENTS.md`](AGENTS.md). Security specifics: [`SECURITY.md`](SECURITY.md).
+
+## Security
+
+Sensitive source (PII, financial data, customer-confidential data) stays local
+and triggers Strict mode. The framework does a sensitive-file pre-check, not a
+full secret scan. Report vulnerabilities per [`SECURITY.md`](SECURITY.md).
+
+## Contributing
+
+Contributions are welcome — especially validation rules, fixtures, and
+interoperability docs. The one hard rule: **do not weaken governance to make
+tests pass.** See [`CONTRIBUTING.md`](CONTRIBUTING.md) and
+[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). AI-assisted contributions are welcome
+but must be disclosed and human-reviewed.
+
+## Roadmap
+
+- Deeper, tested execution-framework bridges (automated import of execution-result
+  evidence — interoperability Levels 3–4 are currently documented, not automated).
+- Verified cross-platform support (`pwsh` on Linux/macOS is currently experimental).
+- Additional worked integration examples.
+
+## License
+
+[MIT](LICENSE) © 2026 WITCHWASIN K.
+
+## Project status
+
+Version `1.0.0` — first public release. The validation engine and governance
+model are stable; interoperability automation is on the roadmap. Migrating from
+the previous private layout? See
+[`docs/migration/from-pmo-template-personal.md`](docs/migration/from-pmo-template-personal.md).

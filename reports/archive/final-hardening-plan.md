@@ -1,7 +1,7 @@
 # Final Hardening Plan (Round 3 — one short round, then stop)
 
 Date: 2026-07-12
-Trigger: GPT-5.6 independent review of merged `0.5.0` (`main` @ `9bb18b8`) —
+Trigger: an independent reviewer independent review of merged `0.5.0` (`main` @ `<commit>`) —
 verdict 8.4/10. **Every finding was re-verified against the actual source in
 this repo before entering this plan; all confirmed real.** Target: close the
 5 named gaps, re-verify, publish a real 0.5.x acceptance — then stop.
@@ -138,7 +138,7 @@ runtime at the end.
 Move `reports/current-acceptance.md` (the 0.4.0 report) to
 `reports/archive/acceptance-0.4.0.md`. Write a new
 `reports/current-acceptance.md` for this round: final SHA, the §9 rubric
-actually computed with per-dimension justification, GPT-5.6's 8.4 recorded
+actually computed with per-dimension justification, an independent reviewer's 8.4 recorded
 as the round's opening baseline, remote CI run URL, PR link. README link
 then points at a document that is true.
 

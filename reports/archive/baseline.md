@@ -5,7 +5,7 @@
 > `reports/current-acceptance.md`. Kept for historical reference only.
 
 Date: 2026-07-10  
-Repo: `PMO-Template-Personal`  
+Repo: `Axiom-PMO`  
 Baseline version: `0.3.0-lite-ai-guardrails`
 
 ## Git Status
@@ -14,7 +14,7 @@ Baseline version: `0.3.0-lite-ai-guardrails`
 - Remote tracking: `origin/main`
 - Working tree at baseline: clean
 - Latest commit at baseline: `cf28023 Add versioned mode examples`
-- Known local warning: Git cannot access `C:\Users\teera/.config/git/ignore`; this does not affect repository validation.
+- Known local warning: Git cannot access `<home>/.config/git/ignore`; this does not affect repository validation.
 
 ## Active Skills
 
@@ -47,8 +47,8 @@ Notes:
 Commands run:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1 -RepoPath D:\GitHub\PMO-Template-Personal
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1 -RepoPath D:\GitHub\PMO-Template-Personal
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1 -RepoPath <local-repo>
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1 -RepoPath <local-repo>
 ```
 
 Results:

@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 $root = Resolve-Path -LiteralPath $RepoPath
 $repo = $root.Path
 
-Write-Host "Running PMO framework checks for $repo"
+Write-Host "Running Axiom-PMO framework checks for $repo"
 Write-Host ""
 
 function Invoke-Check {
@@ -42,4 +42,4 @@ Invoke-Check "e2e-standard" { powershell -NoProfile -ExecutionPolicy Bypass -Fil
 Invoke-Check "e2e-strict" { powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/e2e/strict.ps1") -RepoPath $repo }
 
 Write-Host ""
-Write-Host "All PMO framework checks completed."
+Write-Host "All Axiom-PMO framework checks completed."

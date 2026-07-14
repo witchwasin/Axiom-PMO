@@ -1,0 +1,50 @@
+name: Bug report
+description: Report a defect in the validator, doctor, tests, or docs
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please do **not** include private data — local
+        paths, personal handles, secrets, or customer material.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The exact command(s) you ran and the observed output.
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Axiom-PMO version
+      description: Value from the VERSION file.
+    validations:
+      required: true
+  - type: dropdown
+    id: powershell
+    attributes:
+      label: PowerShell environment
+      options:
+        - Windows PowerShell 5.1
+        - PowerShell 7 (Windows)
+        - pwsh (Linux/macOS, experimental)
+        - Other / unsure
+    validations:
+      required: true
+  - type: checkboxes
+    id: hygiene
+    attributes:
+      label: Confirmation
+      options:
+        - label: This report contains no private data (paths, handles, secrets, customer material).
+          required: true

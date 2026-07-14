@@ -1,12 +1,12 @@
 # Upgrade Baseline (Round 2: 8.3 → 9+)
 
 Date: 2026-07-12
-Branch created: `remediation/9plus-v2` (from `main` @ `c2c9ee6`)
+Branch created: `remediation/9plus-v2` (from `main` @ `<commit>`)
 Plan: `reports/upgrade-plan-9plus.md` (v2 unified)
 
 ## Git state at baseline
 
-- `main` = `origin/main` = `c2c9ee6` ("Post-merge cleanup...")
+- `main` = `origin/main` = `<commit>` ("Post-merge cleanup...")
 - Working tree at branch creation: `M CHANGELOG.md` (factual fix for the
   "main was never affected" error — pre-existing, to be committed in Phase 0),
   untracked `reports/upgrade-plan-9plus.md` (the plan itself).
@@ -27,7 +27,7 @@ Plan: `reports/upgrade-plan-9plus.md` (v2 unified)
 
 ## Honest score at baseline
 
-**8.3/10** (GPT-5.6 independent static review, endorsed after all its P0 findings
+**8.3/10** (an independent reviewer independent static review, endorsed after all its P0 findings
 were reproduced live — see plan header). Known-open P0s at baseline:
 P1.1 `not_required` bypass · P1.3 CLI mode downgrade · P1.4 gate-blind artifact
 requirements · P2.1 RTM template/validator schema mismatch · P5.2 E2E example

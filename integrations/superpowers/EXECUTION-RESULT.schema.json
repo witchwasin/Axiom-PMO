@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://axiom-pmo/integrations/execution-result.schema.json",
+  "title": "Axiom-PMO Execution Result (experimental)",
+  "description": "Structured result an AI execution framework returns for an approved work item. Candidate evidence only; must be validated before any Axiom-PMO artifact is updated.",
+  "type": "object",
+  "required": ["contract_version", "work_item_id", "execution_status", "recommended_next_gate"],
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": { "type": "string" },
+    "work_item_id": { "type": "string" },
+    "execution_status": {
+      "type": "string",
+      "enum": ["completed", "partial", "blocked", "failed"]
+    },
+    "changed_files": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "result"],
+        "properties": {
+          "name": { "type": "string" },
+          "result": { "type": "string", "enum": ["passed", "failed", "skipped"] },
+          "evidence": { "type": "string" }
+        }
+      }
+    },
+    "reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "result"],
+        "properties": {
+          "type": { "type": "string" },
+          "result": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "acceptance_criteria_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["criterion", "met"],
+        "properties": {
+          "criterion": { "type": "string" },
+          "met": { "type": "boolean" },
+          "evidence": { "type": "string" }
+        }
+      }
+    },
+    "deviations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "unresolved_issues": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "candidate_evidence": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "recommended_next_gate": {
+      "type": "string",
+      "enum": ["QA", "Security", "Release", "Rework", "Human-Review"]
+    }
+  }
+}

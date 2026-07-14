@@ -1,13 +1,13 @@
 # SUPERSEDED - NOT CURRENT ACCEPTANCE
 
-This report is superseded by the remediation process started on 2026-07-11. Its self-score of 9.1/10 is not accepted as final because later review found additional P0/P1 remediation items. It also described commit/push/tag as a future release operation even though commit `37c919b` had already been pushed without human diff review. See `reports/process-violation.md` and `reports/remediation-plan.md`.
+This report is superseded by the remediation process started on 2026-07-11. Its self-score of 9.1/10 is not accepted as final because later review found additional P0/P1 remediation items. It also described commit/push/tag as a future release operation even though commit `<commit>` had already been pushed without human diff review. See `reports/process-violation.md` and `reports/remediation-plan.md`.
 
 Branch protection on `main` remains a pending human action for the repository owner; executor automation cannot enforce it from this report.
 
 # Final Acceptance Report - 0.4.0-stable-candidate
 
 Date: 2026-07-10
-Repo: `PMO-Template-Personal`
+Repo: `Axiom-PMO`
 Baseline commit: `cf28023 Add versioned mode examples`
 
 ## Executive Summary
@@ -48,7 +48,7 @@ The final test gap has been closed with a deterministic 32-case validation matri
 Final command:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -RepoPath D:\GitHub\PMO-Template-Personal
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -RepoPath <local-repo>
 ```
 
 Result:
@@ -96,7 +96,7 @@ The context number is an approximation from `scripts/measure-context.ps1`, not a
 ## Known Gaps
 
 - `.claude/settings.json` permission behavior depends on the Claude/Codex runtime honoring that settings schema.
-- `D:\GitHub\PMO-Template-Personal-recovery` may still exist outside the repo from earlier manual recovery work; it is not part of this repo.
+- `<local-repo>` may still exist outside the repo from earlier manual recovery work; it is not part of this repo.
 
 ## Score
 

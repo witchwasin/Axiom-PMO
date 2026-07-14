@@ -1,4 +1,4 @@
-# PMO-Template-Personal — Remediation Plan (7.5 → 9.0+)
+# Axiom-PMO — Remediation Plan (7.5 → 9.0+)
 
 > Handoff spec for the next executor (human or AI). Every finding below was **verified against the live repo** with real PowerShell + git runs on 2026-07-11. Do not re-derive; act.
 > Target: close all P0 + P1 so the 9.0+ claim is defensible. Current honest score: **~7.5/10**. The `reports/final-acceptance.md` self-score of **9.1 is NOT accepted**.
@@ -26,7 +26,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1
 
 ## 1. IMMEDIATE — resolve the unauthorized commit/push (human decision required)
 
-**Fact:** the prior patch was committed as `37c919b "Stabilize PMO template guardrails"` **and pushed to `origin/main`** (`github.com/witchwasin/PMO-Template-Personal`) without approval. `HEAD == origin/main == 37c919b`, 0 ahead. This violated the "no commit/push before review" rule, and `reports/final-acceptance.md:88` mis-states it as deferred.
+**Fact:** the prior patch was committed as `37c919b "Stabilize PMO template guardrails"` **and pushed to `origin/main`** (`the repository`) without approval. `HEAD == origin/main == 37c919b`, 0 ahead. This violated the "no commit/push before review" rule, and `reports/final-acceptance.md:88` mis-states it as deferred.
 
 **Recommended default (human must confirm before executing):**
 ```yaml
@@ -263,7 +263,7 @@ Add all E2E to `run-all-checks.ps1` so they are part of the gate.
 - Guidance: **complete and concise — cap ~1,500 words per skill.** Do not restore the old bloat, and do not pad to hit a length.
 
 ### R3.7 — Kill documentation drift
-- (Supersede banner on `final-acceptance.md` is already done in R1.7.) Move remaining superseded reports (`PMO-Template-Personal_Final-Review.md` — says 8.6, references `0.3.0`) to `reports/archive/` with a "Superseded" banner; `README.md` links only `reports/current-acceptance.md` (created after Final Gate). Add a doctor check that `VERSION` == the top CHANGELOG version == any version stamped in config/README (they currently match by luck, not by check).
+- (Supersede banner on `final-acceptance.md` is already done in R1.7.) Move remaining superseded reports (`Axiom-PMO_Final-Review.md` — says 8.6, references `0.3.0`) to `reports/archive/` with a "Superseded" banner; `README.md` links only `reports/current-acceptance.md` (created after Final Gate). Add a doctor check that `VERSION` == the top CHANGELOG version == any version stamped in config/README (they currently match by luck, not by check).
 
 ### R3.8 — Commit protocol (single branch, per-round local commits)
 - Work on one branch: `remediation/9plus`. Per round: run tests → human reviews diff → human approves → **local commit allowed** (no push). After Round 3 + Final Gate: human reviews total history → final approval → push branch → open PR → CI green → merge after approval. This avoids an unreviewable mega-diff while still honoring "no push before review".
@@ -327,6 +327,6 @@ Confirmed on 2026-07-11 via real runs and file reads:
 - `pmo-doctor.ps1`: active skills hardcoded (l.82); no VERSION/CHANGELOG equality check.
 - `update-source-snapshot.ps1`: prints only, never writes PROJECT.md.
 - `.gitignore`: no `.env`/`*.pem`/`*.key`/secret patterns; stale `P13-RR-EWALLET`, `P*/SystemFlow/PDF_*/`.
-- Git: `37c919b` committed **and pushed** to `origin/main` without approval.
+- Git: `<commit>` committed **and pushed** to `origin/main` without approval.
 
 Expected trajectory: Round 1 → ~8.5, Round 2 → ~8.9–9.1, Round 3 → ~9.1–9.3.

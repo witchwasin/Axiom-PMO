@@ -1,5 +1,5 @@
-@startuml
-title PMO-WF-E: QA Repo + PMO Template Workflow
+﻿@startuml
+title PMO-WF-E: QA Repo + Axiom-PMO Workflow
 
 skinparam BackgroundColor #FAFAFA
 skinparam DefaultFontName "Sarabun"
@@ -12,45 +12,45 @@ skinparam SwimlaneTitleFontColor white
 skinparam SwimlaneBorderColor #424242
 skinparam ConditionEndStyle diamond
 
-|#90CAF9|PMO Template|
+|#90CAF9|Axiom-PMO|
 start
 
-:**Step 1:** PM สร้าง Card
-ระบุ Happy / Alt / Exception;
+:**Step 1:** PM à¸ªà¸£à¹‰à¸²à¸‡ Card
+à¸£à¸°à¸šà¸¸ Happy / Alt / Exception;
 
 :**Step 2:** PM Assign QA
-1 Card = 1 คน;
+1 Card = 1 à¸„à¸™;
 
 ---
 
 |#F48FB1|QA|
 
-:**Step 3:** อ่าน Card
-จาก PMO TaskBoard;
+:**Step 3:** à¸­à¹ˆà¸²à¸™ Card
+à¸ˆà¸²à¸ PMO TaskBoard;
 
-:**Step 4:** เปิด VS Code
-เข้า PROJECT-QA repo;
+:**Step 4:** à¹€à¸›à¸´à¸” VS Code
+à¹€à¸‚à¹‰à¸² PROJECT-QA repo;
 
 ---
 
 |#FFE082|PROJECT-QA Repo|
 
-:**Step 5:** เขียน test case
+:**Step 5:** à¹€à¸‚à¸µà¸¢à¸™ test case
 markdown (.md);
 
-:**Step 6:** เขียน Playwright
+:**Step 6:** à¹€à¸‚à¸µà¸¢à¸™ Playwright
 script (.spec.ts);
 
-:**Step 7:** Push ขึ้น main
-CI auto: sync TC ไป Lark
-+ สร้าง PR ไป PMO;
+:**Step 7:** Push à¸‚à¸¶à¹‰à¸™ main
+CI auto: sync TC à¹„à¸› Lark
++ à¸ªà¸£à¹‰à¸²à¸‡ PR à¹„à¸› PMO;
 
 ---
 
-|#90CAF9|PMO Template|
+|#90CAF9|Axiom-PMO|
 
 :**Step 8:** PM Review PR
-(CI สร้างมาอัตโนมัติ);
+(CI à¸ªà¸£à¹‰à¸²à¸‡à¸¡à¸²à¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´);
 
 if (Approve?) then (Yes)
 
@@ -60,21 +60,21 @@ if (Approve?) then (Yes)
 
   |#FFE082|PROJECT-QA Repo|
 
-  :**Step 10:** QA รัน test
+  :**Step 10:** QA à¸£à¸±à¸™ test
   pnpm test;
 
-  :**Step 11:** ผล + evidence
-  เก็บ local ก่อน;
+  :**Step 11:** à¸œà¸¥ + evidence
+  à¹€à¸à¹‡à¸š local à¸à¹ˆà¸­à¸™;
 
-  :**Step 12:** QA รัน sync-lark
-  Results + Evidence ไป Lark;
+  :**Step 12:** QA à¸£à¸±à¸™ sync-lark
+  Results + Evidence à¹„à¸› Lark;
 
   ---
 
-  |#90CAF9|PMO Template|
+  |#90CAF9|Axiom-PMO|
 
-  :**Step 13:** PM ดูผล Lark
-  + อัพเดท Card ใน PMO;
+  :**Step 13:** PM à¸”à¸¹à¸œà¸¥ Lark
+  + à¸­à¸±à¸žà¹€à¸”à¸— Card à¹ƒà¸™ PMO;
 
   if (Pass?) then (Yes)
 
@@ -84,8 +84,8 @@ if (Approve?) then (Yes)
 
   else (Fail)
 
-    :**Step 15:** สร้าง Bug Card
-    ส่งกลับ Dev แก้;
+    :**Step 15:** à¸ªà¸£à¹‰à¸²à¸‡ Bug Card
+    à¸ªà¹ˆà¸‡à¸à¸¥à¸±à¸š Dev à¹à¸à¹‰;
 
     detach
 
@@ -95,12 +95,12 @@ else (Reject)
 
   |#F48FB1|QA|
 
-  :**Step 8.1:** แก้ตาม comment;
+  :**Step 8.1:** à¹à¸à¹‰à¸•à¸²à¸¡ comment;
 
   |#FFE082|PROJECT-QA Repo|
 
-  :**Step 8.2:** Push แก้ไข
-  CI สร้าง PR ใหม่อัตโนมัติ;
+  :**Step 8.2:** Push à¹à¸à¹‰à¹„à¸‚
+  CI à¸ªà¸£à¹‰à¸²à¸‡ PR à¹ƒà¸«à¸¡à¹ˆà¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´;
 
   detach
 

@@ -1,0 +1,50 @@
+name: Integration request
+description: Request or propose interoperability with an AI execution framework
+title: "[integration]: "
+labels: ["integration"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Axiom-PMO is a governance control plane that operates alongside AI
+        execution frameworks. See
+        [docs/integrations/overview.md](../../docs/integrations/overview.md)
+        for the Level 0–4 interoperability model.
+  - type: input
+    id: framework
+    attributes:
+      label: Framework / tool
+      description: e.g. Superpowers, BMAD, spec-kit, OpenSpec, a custom Claude Code setup.
+    validations:
+      required: true
+  - type: dropdown
+    id: level
+    attributes:
+      label: Interoperability level requested
+      options:
+        - "Level 0 — Coexistence"
+        - "Level 1 — Policy awareness"
+        - "Level 2 — Execution contract"
+        - "Level 3 — Evidence return"
+        - "Level 4 — Automated bridge"
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What should the integration do?
+      description: >
+        Describe the desired behavior at the contract/architecture level. Please
+        do not assume undocumented behavior of the other framework — link its
+        public docs where possible.
+    validations:
+      required: true
+  - type: textarea
+    id: authority
+    attributes:
+      label: Authority boundaries
+      description: >
+        Confirm the integration keeps scope, approvals, and release authority
+        with Axiom-PMO and does not let the execution framework self-approve.
+    validations:
+      required: false

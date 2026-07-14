@@ -2,11 +2,11 @@
 
 Date: 2026-07-11 (merged 2026-07-12)
 Status: **MERGED** — this remediation is complete. `remediation/9plus` was merged into
-`main` via [PR #1](https://github.com/witchwasin/PMO-Template-Personal/pull/1) as merge
-commit `ac1d42e`, then deleted (fully contained in `main`, nothing lost). All content
+`main` via a pull request as merge
+commit `<commit>`, then deleted (fully contained in `main`, nothing lost). All content
 below is the historical record of how that state was reached and verified.
-Pre-remediation baseline: `37c919b`
-Final merged commit on `main`: `ac1d42e`
+Pre-remediation baseline: `<commit>`
+Final merged commit on `main`: `<commit>`
 
 ## Final Gate Status
 
@@ -75,7 +75,7 @@ Moved:
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1` | 0 | matrix `PASS=53 FAIL=0` |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1` | 0 | doctor, matrix, config mutation, Lite/Standard/Strict examples, and E2E all passed |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -TestChildScript tests/helpers/exit-1.ps1` | 1 | expected fail; fault injection is not swallowed |
-| `powershell -NoProfile -ExecutionPolicy Bypass -File tests/helpers/config-mutation-tests.ps1 -RepoPath D:\GitHub\PMO-Template-Personal` | 0 | JSON runtime config proved as source of truth |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File tests/helpers/config-mutation-tests.ps1 -RepoPath <local-repo>` | 0 | JSON runtime config proved as source of truth |
 
 Targeted gate checks also passed:
 
@@ -118,7 +118,7 @@ Run-all gate:
 
 CI / repository controls:
 
-- `.github/workflows/pmo-checks.yml` exists and is covered by local `run-all-checks.ps1` parity, including the config mutation regression check. Confirmed running and green on PR #1 (`PMO Checks`, run `29162625972`).
+- `.github/workflows/pmo-checks.yml` exists and is covered by local `run-all-checks.ps1` parity, including the config mutation regression check. Confirmed running and green on PR #1 (`PMO Checks`, run `<ci-run-id>`).
 - Branch protection on `main` was explicitly waived by the repository owner (2026-07-12) — private, single-maintainer repo. Not an open task; see § Final Gate Status above.
 
 ## Before / After Metrics
@@ -159,17 +159,17 @@ Public claim should remain:
 
 - Round 2 branch-protection decision (2026-07-12): GitHub branch protection and
   rulesets are blocked by the current platform plan for this private repository.
-  The repository owner deferred option (A) make the repo public and option (B)
+  The repository deferred option (A) make the repo public and option (B)
   upgrade the plan, and selected option (C) for this remediation round: PR workflow,
   CI checks, and explicit per-push human confirmation are the compensating controls.
   This is recorded as a platform constraint with compensating control, not an
   unresolved omission.
-- Round 2 LICENSE decision (2026-07-12): the repository owner explicitly deferred
+- Round 2 LICENSE decision (2026-07-12): the repository deferred
   adding any LICENSE for now. No LICENSE file or proprietary notice is added in this
   round; the item is intentionally deferred and should not be scored as an accidental
   omission.
 - Branch protection on `main` is explicitly waived by owner decision (private, single-maintainer repo, 2026-07-12); can be reinstated any time before the repo is shared or made public.
-- Remote GitHub Actions was re-queried after opening PR #1: first run failed on a real CRLF regex bug in `PERMISSION-007` (only reproducible via a fresh checkout, not the local working copy); fixed and confirmed green on the second run (`29162625972`).
+- Remote GitHub Actions was re-queried after opening PR #1: first run failed on a real CRLF regex bug in `PERMISSION-007` (only reproducible via a fresh checkout, not the local working copy); fixed and confirmed green on the second run (`<ci-run-id>`).
 - The accepted process violation remains recorded in `reports/process-violation.md`; future commit/push work must be reviewed before push.
 - `.claude/settings.json` guardrails depend on the AI runtime honoring those settings.
 

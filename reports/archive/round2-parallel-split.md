@@ -39,10 +39,10 @@ Sequential, no parallelism inside the track (golden-master safety requires it):
 ## Track B — Codex (separate worktree/branch)
 
 ```powershell
-git worktree add ..\PMO-Template-Personal-codex remediation/9plus-v2-codex
+git worktree add ..\Axiom-PMO-codex remediation/9plus-v2-codex
 ```
 
-Codex works only inside `..\PMO-Template-Personal-codex`, commits locally on
+Codex works only inside `..\Axiom-PMO-codex`, commits locally on
 `remediation/9plus-v2-codex`, **never pushes, never touches `remediation/9plus-v2`
 directly**. Scope:
 
@@ -58,7 +58,7 @@ directly**. Scope:
 3. **Phase 7.5** — LICENSE: **owner decision recorded (2026-07-12): no LICENSE
    for now, revisit later if needed.** Codex does not add a LICENSE file or a
    "Proprietary — all rights reserved" line; just note in `current-acceptance.md`
-   that LICENSE was explicitly deferred by the owner, not omitted by accident,
+   that LICENSE was explicitly deferred, not omitted by accident,
    so `Floors` scoring doesn't misread it as a gap.
 
 Same non-negotiable rules as every other executor round: never edit `source/`,

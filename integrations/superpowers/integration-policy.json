@@ -1,0 +1,47 @@
+{
+  "policy_version": "1.0",
+  "status": "experimental",
+  "description": "Authority boundaries a bridge between Axiom-PMO and an AI execution framework must enforce. Documentation only; not read by the validator runtime.",
+  "evidence": {
+    "execution_output_is": "candidate",
+    "requires_validation_before_promotion": true,
+    "self_generated_evidence_auto_trusted": false
+  },
+  "execution_framework_may": [
+    "clarify_implementation_details",
+    "identify_technical_risks",
+    "propose_alternatives",
+    "decompose_approved_work_item",
+    "create_tests",
+    "produce_candidate_evidence"
+  ],
+  "execution_framework_may_not": [
+    "change_approved_scope",
+    "modify_acceptance_criteria_without_change_request",
+    "downgrade_risk_mode",
+    "mark_qa_approved",
+    "mark_security_approved",
+    "mark_release_approved",
+    "deploy_without_human_permission",
+    "auto_trust_self_generated_evidence"
+  ],
+  "git_authority_defaults": {
+    "create_branch": true,
+    "commit": false,
+    "push": false,
+    "merge": false,
+    "deploy": false,
+    "note": "Only what the execution contract explicitly grants; commit/push/merge/deploy require human confirmation."
+  },
+  "conflict_resolution": {
+    "on_conflict": "choose_more_restrictive_rule",
+    "must_not": ["expand_scope", "weaken_evidence", "grant_extra_git_authority"],
+    "unresolved": "escalate_to_human_and_record_as_decision_or_open_question"
+  },
+  "blocking_conditions": [
+    "any_deviation_present",
+    "any_unresolved_issue_present",
+    "acceptance_criteria_not_met",
+    "required_test_not_passed_without_reason"
+  ]
+}

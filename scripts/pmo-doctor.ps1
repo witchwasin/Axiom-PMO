@@ -473,7 +473,7 @@ if ($links.Count -eq 0) {
   Add-Result WARN ("Broken local links: " + (($links | Select-Object -First 8) -join ", "))
 }
 
-Write-Host "PMO Framework Doctor: $repo"
+Write-Host "Axiom-PMO Framework Doctor: $repo"
 Write-Host ""
 $messages | ForEach-Object { Write-Host "[$($_.level)] $($_.rule_id) $($_.message)" }
 Write-Host ""
