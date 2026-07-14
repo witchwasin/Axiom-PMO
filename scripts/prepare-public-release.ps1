@@ -4,10 +4,10 @@
   Non-destructive public-release readiness check for Axiom-PMO.
 
 .DESCRIPTION
-  Verifies version consistency, scans for the old product name outside approved
-  locations and for private identifiers/paths, and (optionally) runs the check
-  suite. It NEVER commits, pushes, tags, merges, or deploys. At the end it PRINTS
-  the git commands a human can review and run to publish the release.
+  Verifies version consistency, runs the public hygiene guard, and optionally
+  runs the check suite. It NEVER commits, pushes, tags, merges, or deploys. At
+  the end it PRINTS the git commands a human can review and run to publish the
+  release.
 
 .PARAMETER RepoPath
   Repository root. Defaults to the parent of this script's directory.
@@ -51,64 +51,17 @@ if ($allVersions.Count -eq 1) {
   Write-Host "FAIL: version drift ($($allVersions -join ' / '))"
 }
 
-# --- Old product name outside approved locations -----------------------------
-Section "Old-name audit"
-$trackedFiles = & git -C $repo ls-files
-$oldName = "PMO-Template" + "-Personal"   # constructed so this script is not a self-hit
-$allowedOldName = @(
-  "docs/migration/from-pmo-template-personal.md",
-  "CHANGELOG.md",
-  "scripts/prepare-public-release.ps1"
-)
-$oldNameHits = @()
-foreach ($f in $trackedFiles) {
-  if ($allowedOldName -contains $f) { continue }
-  $full = Join-Path $repo $f
-  if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { continue }
-  # Case-sensitive: the product identity is exactly "PMO-Template-Personal".
-  # The lowercase migration-doc filename (from-pmo-template-personal.md) is an
-  # approved reference and must not be flagged.
-  if (Select-String -LiteralPath $full -SimpleMatch -CaseSensitive -Pattern $oldName -Quiet -ErrorAction SilentlyContinue) {
-    $oldNameHits += $f
-  }
-}
-if ($oldNameHits.Count -eq 0) {
-  Write-Host "OK: no '$oldName' outside approved migration/changelog locations"
-} else {
-  $problems += "Old product name found in: $($oldNameHits -join ', ')"
-  Write-Host "FAIL: old product name in $($oldNameHits.Count) file(s): $($oldNameHits -join ', ')"
-}
-
-# --- Private identifiers / local paths ---------------------------------------
-Section "Privacy audit"
-$privatePatterns = @(
-  'witch' + 'wasin',
-  'C:\\Users\\' + 'teera',
-  'D:\\GitHub\\' + 'PMO-Template-Personal'
-)
-$selfExclude = @("scripts/prepare-public-release.ps1")
-$privHits = @()
-foreach ($f in $trackedFiles) {
-  if ($selfExclude -contains $f) { continue }
-  $full = Join-Path $repo $f
-  if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { continue }
-  foreach ($pat in $privatePatterns) {
-    if (Select-String -LiteralPath $full -Pattern $pat -Quiet -ErrorAction SilentlyContinue) {
-      $privHits += "$f (pattern: $pat)"
-      break
-    }
-  }
-}
-if ($privHits.Count -eq 0) {
-  Write-Host "OK: no private handles/local paths in tracked files"
-} else {
-  $problems += "Private data found in: $($privHits -join '; ')"
-  Write-Host "FAIL: private data in: $($privHits -join '; ')"
+# --- Public hygiene ----------------------------------------------------------
+Section "Public hygiene"
+& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/check-public-hygiene.ps1") -RepoPath $repo
+$hygieneCode = $LASTEXITCODE
+if ($hygieneCode -ne 0) {
+  $problems += "Public hygiene check failed (exit $hygieneCode)"
 }
 
 # --- Working tree status (informational) -------------------------------------
 Section "Working tree"
-$status = & git -C $repo status --porcelain
+$status = & git -C $repo -c core.excludesFile= status --porcelain
 if ([string]::IsNullOrWhiteSpace($status)) {
   Write-Host "Clean working tree."
 } else {

@@ -20,6 +20,9 @@ ehthumbs.db
 # ==========================
 .claude/settings.local.json
 
+# Codex local support files
+.agents/
+
 # ==========================
 # Word / Excel / PowerPoint Temp & Lock Files
 # ==========================

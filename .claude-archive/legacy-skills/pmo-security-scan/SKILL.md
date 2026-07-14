@@ -6,7 +6,7 @@ description: สแกน code ใน Scaffold/ ด้วย 53 security rules (
 # PMO Skill: Security Scan
 
 > **Purpose:** ตรวจ code ที่ Dev เขียน / Scaffold ที่ generate ด้วย security rules 53 ข้อ
-> ดึง concept จาก Super-Claude security-scanner.mjs v1.4.0
+> ดึง concept จาก external execution-framework security scanning
 
 ---
 

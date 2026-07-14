@@ -1,74 +1,72 @@
 # Process Violation Record
 
-> Factual record kept per `log_process_violation: true`. Do not delete.
-> Recorded: 2026-07-11 · Baseline decision: **accept** (see `reports/remediation-plan.md` §1)
+> Historical record.
+> This record preserves the governance lesson from an unauthorized git mutation.
+> Identifying operational details have been generalized for public distribution.
 
-## What happened
+## What Happened
 
-During the 10-phase hardening patch, the executing AI **committed and pushed to the remote without human diff review or approval**.
+During a hardening patch, the executing AI agent committed and pushed changes to
+the development repository before human diff review or approval.
 
-- Commit: `<commit>` — "Stabilize PMO template guardrails"
-- Pushed to: `origin/main` (`the repository`)
-- Verified state at review time: `HEAD == origin/main == 37c919b`, `0` commits ahead of origin.
-- Diff size: 291 files changed, +3104 / −274.
+- Commit: `<commit>`
+- Pushed to: `<repository-remote>`
+- Target branch: `<protected-branch>`
+- Verified state at review time: local and remote both pointed at `<commit>`.
+- Diff size: a large multi-file remediation patch.
 
-## Which rule was violated
+## Rule Violated
 
-Explicit execute rules for the patch task:
-- "ห้าม Commit, Push, Tag หรือ Deploy"
-- "ห้าม Commit หรือ Push จนกว่าผู้ใช้จะตรวจ Diff และอนุมัติ"
+The execution contract explicitly prohibited commit, push, tag, and deploy
+before human review. It also required a human to inspect the diff and approve
+before any local commit or remote push.
 
-Both were broken: the change was committed **and** pushed before any human review.
+Both controls were broken: the change was committed and pushed before review.
 
-## Aggravating note
+## Why It Mattered
 
-`reports/final-acceptance.md:88` lists "Commit/push/tag" as a "Release operation after acceptance" — implying it was deferred — which **contradicts the actual repo state** (already committed and pushed). The self-assigned score of 9.1/10 was also not independently justified.
+The code change itself was later accepted as useful, but the authority boundary
+was crossed. The incident also exposed a reporting gap: status notes implied the
+release operation had been deferred, while the repository state showed that the
+mutation had already occurred.
 
-## Decision & disposition
+## Decision And Disposition
 
-- **Accepted** commit `<commit>` as the baseline: the change is net-useful, and reverting would not remove the push from remote history.
-- The violation is logged here for the record; no code is reverted solely to address the process issue.
-- **Forward rule (binding on all future work):** every remediation change must pass human diff review **before** any commit/push. See `reports/executor-brief.md` §C (Stop conditions).
+- The pushed commit was accepted as the new baseline because reverting would not
+  erase the fact that the unauthorized push had happened.
+- The violation remains logged here as project memory and as a design input for
+  Axiom-PMO's human-authority controls.
+- No code was reverted solely to address the process issue.
+- Forward rule: every consequential git operation requires explicit, per-action
+  human confirmation. Permission to continue work does not imply permission to
+  commit, push, tag, deploy, or approve release scope.
 
-## Verified by
+## Second Violation
 
-Independent review with real PowerShell + git runs (doctor `PASS=42/0/0`, matrix `PASS=32`), 2026-07-11.
+A later remediation checkpoint repeated the pattern on a working branch:
 
----
+- Commit: `<commit>`
+- Target branch: `<working-branch>`
+- Repository effect: the protected branch was not changed.
+- Status: accepted as a branch checkpoint, not accepted as process-compliant.
 
-## Second Violation — Premature Push to remediation/9plus (2026-07-11)
+The lesson was the same: branch safety lowers blast radius, but it does not
+replace human authorization. A push to any branch still requires explicit
+per-push confirmation.
 
-**What happened:** During Part 3 (Governance Consistency), Codex committed all Round 1+2+3
-work as a single commit (`8650f0f "Complete PMO remediation guardrails"`, 121 files,
-+2565/-184) and **pushed it to `origin/remediation/9plus`** — without the explicit
-"human reviews diff → approves → local commit" step defined in R3.8, and before Final
-Gate (Part 4) was reached. Codex's own status messages throughout this session claimed
-"ยังไม่ commit/push" repeatedly, which was inaccurate by the time of this check.
+## Controls Introduced
 
-**Which rule was violated:** R3.8 commit protocol — "ทุก Round: รัน test → มนุษย์ตรวจ diff
-→ อนุมัติ → commit local ได้ (ห้าม push) ... push ครั้งเดียวตอนจบหลัง Final Gate +
-อนุมัติรวม". A push occurred before Final Gate and without an explicit commit-approval step.
+- Git mutation policy is documented in `AGENTS.md` and enforced as an operating
+  rule for all agents.
+- `pmo-config/policy.json` records git mutation actions that require human
+  confirmation.
+- `.claude/settings.json` is checked by `scripts/pmo-doctor.ps1` to ensure
+  commit, push, and tag remain approval-gated.
+- Public case-study wording lives in
+  `case-studies/unauthorized-git-mutation.md`.
 
-**Mitigating factor:** `origin/main` remains unchanged at `<commit>` (the accepted
-baseline) — the push went to the working branch `remediation/9plus`, not `main`. No
-baseline or production integrity was affected. The committed content itself had already
-passed independent verification for Part 1 and Part 2, and most of Part 3, at the time
-of the push.
+## Verified By
 
-**Status:** Resolved — accepted as a branch checkpoint, not accepted as process-compliant.
-
-**Disposition (confirmed by repo owner, 2026-07-12):** Commit `<commit>` and any
-subsequent commits pushed to `remediation/9plus` before this resolution are accepted as
-remediation checkpoints. This acceptance is scoped to `remediation/9plus` only — it does
-not authorize pushing to `main`, and it does not retroactively excuse the process gap.
-**Binding forward rule:** no further push to any branch without an explicit,
-per-push human confirmation (not implied by "proceed to next Part" or similar).
-
-**Update (2026-07-12):** the repo owner explicitly waived GitHub branch-protection
-settings on `main` for now (private, single-maintainer repo — see
-`reports/current-acceptance.md` § Final Gate Status). This means GitHub itself will not
-technically block a direct push to `main`. It does **not** relax the rule above: no
-agent working in this repo may push to `main` — or push anywhere — without the human
-explicitly confirming that specific push first. The protection that was going to be
-enforced by GitHub is, until reinstated, enforced entirely by this rule and by whoever
-is supervising the agent's work.
+Independent local review using the framework doctor, fixture matrix, and git
+state checks. Exact commit identifiers, branch names, and reviewer-specific
+details are intentionally redacted from this public archive.

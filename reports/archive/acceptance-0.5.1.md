@@ -1,14 +1,17 @@
-# Current Acceptance Report
+# Acceptance Report 0.5.1
+
+> Historical record.
+> This report describes the pre-1.0.0 development state.
+> Current public-release status is documented in `../public-release-baseline.md`
+> and `../../docs/releases/v1.0.0.md`.
 
 Date: 2026-07-14
-Status: **MERGED** — Round 3 hardening merged to `main` via PR #3 (merge commit
-`<commit>`, 2026-07-13); branch `hardening/0.5.x` deleted. This supersedes
-`reports/archive/acceptance-0.4.0.md` (the prior round's record, now historical).
+Status: **MERGED** — the hardening round for version 0.5.1 was merged to the
+main development line. This supersedes `acceptance-0.4.0.md`.
 
-Baseline for this round: an independent reviewer independent review of merged `0.5.0` (`main` @
-`<commit>`), scored **8.4/10**, with 5 concrete, reproducible validator bypasses. Every
-finding was independently re-verified against the source before any fix started (see
-`reports/final-hardening-plan.md`).
+Baseline for this round: an independent review of merged `0.5.0` found five
+concrete, reproducible validator bypasses. Every finding was re-verified against
+the source before any fix started. See `final-hardening-plan.md`.
 
 ## What this round fixed
 
@@ -32,7 +35,8 @@ legitimate case still passes.
 | All 86 golden cases mismatched on CI, passed locally | Validator JSON embedded the absolute project path, which differs between a local clone and the GitHub runner (`<ci-path>`) | Normalize the repo root to a `<REPO_ROOT>` placeholder before capture/compare (`<commit>`) |
 | 1 golden case (`others-and-sensitive-source-do-not-fail-release`) mismatched on CI | The `Quotation.xlsx` fixture placeholder was excluded by the `**/*Quotation*.xlsx` sensitive `.gitignore` pattern, so it was absent on CI and the `SENSITIVE-001` line disappeared | Scoped `.gitignore` negation for that one fixture path + tracked the file (`<commit>`) |
 
-Both were logged in `reports/pending-issues.md` (PI-001) and are marked resolved there.
+Both were logged in `ci-golden-fixture-postmortem.md` and are marked resolved
+there.
 
 ## Post-merge cleanup
 
@@ -56,25 +60,23 @@ Both were logged in `reports/pending-issues.md` (PI-001) and are marked resolved
   E2E runs (Lite/Standard/Strict) on real `new-project.ps1` output, no example copy-over.
 - Golden master (`tests/golden/`) — verified byte-for-byte, 86/86, after every change
   including the PSScriptAnalyzer cleanup (signature changes did not alter any output).
-- CI (`.github/workflows/pmo-checks.yml`) green on PR #3: full check suite, `-VerifyGolden`,
+- CI (`.github/workflows/pmo-checks.yml`) green for the merge: full check suite, `-VerifyGolden`,
   and an inverted fault-injection assertion.
 
 ## Known limitations (explicit, not hidden)
 
-- **Branch protection** remains a platform constraint on this GitHub free-plan private
-  repo (403 on the protection API), documented and accepted in the prior round.
-- **LICENSE** remains explicitly deferred.
+- Branch-protection enforcement was a platform constraint during this historical
+  round. The public 1.0.0 release documents the current project state.
+- License state changed after this historical round; the public repository now
+  ships with an MIT license.
 
 ## Score
 
-No formal recomputation of an independent reviewer's §9 rubric was done. That reviewer's own anchors say
-9.0-9.4 requires "no open P0, reference integrity real, no known bypass" — all five of
-that reviewer's named P0s are now closed with real regression control (not test-count
-claims), merged to `main`, and green on remote CI. A fresh external review would be the
-honest way to confirm a number; this report does not claim one.
+No formal recomputation of the review rubric was done. All five named high-risk
+findings were closed with regression coverage and green CI. A fresh external
+review would be required to assign a new score; this report does not claim one.
 
 ## Sign-off
 
-Merged to `main` via PR #3 (`<commit>`) on 2026-07-13, CI green. The PSScriptAnalyzer
-cleanup is a follow-up on branch `chore/psanalyzer-cleanup`, pending its own push/PR
-decision by the owner.
+Merged to the main development line on 2026-07-13 with CI green. Follow-up static
+analysis cleanup was handled separately.

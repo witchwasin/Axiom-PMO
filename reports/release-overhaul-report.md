@@ -71,7 +71,7 @@ mutation was performed.
 
 Sanitization was scripted with explicit UTF-8 I/O (Thai text and em-dashes
 preserved; verified no mojibake). Removed tokens: private repo URLs/PR links, the
-owner handle, the local username, `D:\…`/`C:\Users\…` paths, CI runner paths,
+owner handle, the local username, `<local-drive>\…` paths, CI runner paths,
 commit SHAs, CI run ids, an independent-reviewer name, and "owner deferred"
 phrasing.
 

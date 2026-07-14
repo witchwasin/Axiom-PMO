@@ -6,7 +6,7 @@ description: Coordinate PM/Dev/QA agents แบบ Pipeline Pattern — auto-rou
 # PMO Skill: Team Orchestrator
 
 > **Purpose:** ยกระดับ PM-Dev-QA loop (WF-A/B/C) ให้เป็น automated pipeline
-> ดึง concept จาก Super-Claude agent coordination patterns
+> ดึง concept จาก external execution-framework agent coordination patterns
 
 ---
 

@@ -1,4 +1,4 @@
-name: PMO Checks
+name: Axiom-PMO Checks
 
 on:
   pull_request:
@@ -17,6 +17,11 @@ jobs:
         shell: powershell
         run: |
           powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\run-all-checks.ps1 -RepoPath .
+
+      - name: Run public hygiene checks
+        shell: powershell
+        run: |
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\check-public-hygiene.ps1 -RepoPath .
 
       - name: Verify golden master
         shell: powershell

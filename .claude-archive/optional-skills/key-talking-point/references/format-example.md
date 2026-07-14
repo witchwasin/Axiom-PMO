@@ -15,7 +15,7 @@ Use this as a quick sanity check to verify your output matches the correct forma
 
 <span style="color:#1565C0">**สวัสดีครับทุกท่าน ยินดีต้อนรับเข้าสู่การอบรมเรื่อง Supply Chain 4.0**</span> <span style="color:#C62828">**(ซัพพลายเชน โฟร์พอยท์โอ)**</span> <span style="color:#1565C0">**Digital Supply Chain Management**</span> <span style="color:#C62828">**(ดิจิทัล ซัพพลายเชน แมเนจเมนท์)**</span> <span style="color:#1565C0">**ครับ**</span>
 
-<span style="color:#1565C0">**ผม วิชญ์วศินต์ เขียวธง จาก Infinity Platform วันนี้เรามีเวลา 3 ชั่วโมงเต็ม ตั้งแต่ 9 โมงจนถึงเที่ยงตรงครับ**</span>
+<span style="color:#1565C0">**ผม วิทยากรจากองค์กรตัวอย่าง วันนี้เรามีเวลา 3 ชั่วโมงเต็ม ตั้งแต่ 9 โมงจนถึงเที่ยงตรงครับ**</span>
 
 ---
 
