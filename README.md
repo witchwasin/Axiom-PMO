@@ -9,6 +9,10 @@ A deterministic governance layer that keeps AI coding agents inside **verified
 requirements, approved scope, traceable evidence, and human-controlled release
 gates.**
 
+[![PMO Checks](https://github.com/witchwasin/Axiom-PMO/actions/workflows/pmo-checks.yml/badge.svg)](https://github.com/witchwasin/Axiom-PMO/actions/workflows/pmo-checks.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](CHANGELOG.md)
+
 <sub>Version <code>1.0.0</code> · MIT License · Windows PowerShell reference implementation (Linux/macOS via <code>pwsh</code>, experimental)</sub>
 
 </div>
