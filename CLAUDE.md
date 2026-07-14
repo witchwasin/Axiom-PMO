@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# PMO Template - Entry Point & Router
+# Axiom-PMO - Entry Point & Router
 
 > Behavioral rules live in `AGENTS.md`.
 > Context loading rules live in `CONTEXT-ROUTER.md`.

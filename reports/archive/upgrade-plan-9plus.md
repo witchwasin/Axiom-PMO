@@ -1,15 +1,15 @@
 # Upgrade Plan v2 (Unified): 8.3 → 9+
 
-> Merges my verified-findings plan with GPT-5.6's engineering plan. Every P0 was
+> Merges my verified-findings plan with an independent reviewer's engineering plan. Every P0 was
 > **reproduced live** on this machine (real PowerShell) before entering this plan.
-> Baseline honest score: **8.3/10** (GPT-5.6's published independent verdict — its later
+> Baseline honest score: **8.3/10** (an independent reviewer's published independent verdict — its later
 > "7.8" figure was unexplained and is not used). Target: **≥9.0 on the rubric in §9,
 > with no floor violated.**
 >
 > Owner decisions already made (2026-07-12):
 > - **Phase 4 full modular refactor: APPROVED** (11 lib modules; regression risk accepted,
 >   mitigated by the golden-master control in Phase 4).
-> - **Branch protection (§7.4): owner DEFERRED the (A)/(B)/(C) decision (2026-07-12)
+> - **Branch protection (§7.4): deferred the (A)/(B)/(C) decision (2026-07-12)
 >   after learning it is 403-blocked on free-plan private repos. Until resolved, score
 >   claims are stated per option (C): "9.x (branch protection unavailable on current
 >   GitHub plan; compensating controls documented)". Phases 0–6 proceed regardless.**
@@ -18,7 +18,7 @@
 
 ## 1. Objective
 
-Take `PMO-Template-Personal` from Strong Stable Candidate (8.3) to a provable 9+:
+Take `Axiom-PMO` from Strong Stable Candidate (8.3) to a provable 9+:
 no known validator bypasses, real reference integrity, per-row traceability,
 release-completeness enforcement, modular maintainable validator, and CI-enforced gates.
 
@@ -262,7 +262,7 @@ Any child failure → master non-zero (already fixed; keep covered by fault inje
 ## Phase 7 — Governance, versioning, hygiene
 
 ### 7.1 CHANGELOG factual error — already fixed in working tree
-("main was never affected by either" → violation #1 DID push `37c919b` to main).
+("main was never affected by either" → violation #1 DID push `<commit>` to main).
 Include in this round's first commit.
 
 ### 7.2 Versioning
@@ -369,7 +369,7 @@ remaining risks · computed score per §9 · git status + diff summary · CI URL
 ## Executor prompt (copy-paste)
 
 ```text
-คุณคือ Executor ของ repo PMO-Template-Personal
+คุณคือ Executor ของ repo Axiom-PMO
 ภารกิจ: ทำตาม reports/upgrade-plan-9plus.md (v2 unified) ทุก Phase (0→8) เพื่อยกคะแนน 8.3 → 9+
 อ่านก่อน: reports/upgrade-plan-9plus.md, reports/remediation-plan.md (บริบทรอบก่อน),
   reports/process-violation.md (กฎ push), scripts/validate-project.ps1, scripts/pmo-doctor.ps1

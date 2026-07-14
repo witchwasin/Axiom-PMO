@@ -1,0 +1,37 @@
+{
+  "contract_version": "1.0",
+  "status": "experimental",
+  "project_id": "P01",
+  "work_item_id": "D-001",
+  "mode": "Standard",
+  "objective": "Implement the approved authentication flow.",
+  "requirement_refs": ["REQ-001"],
+  "design_refs": ["DESIGN/FLOW.puml"],
+  "acceptance_criteria": [
+    "A valid user can sign in.",
+    "Invalid credentials return a generic error."
+  ],
+  "out_of_scope": [
+    "Social login",
+    "Multi-factor authentication"
+  ],
+  "required_tests": [
+    "Unit tests",
+    "Authentication integration test"
+  ],
+  "allowed_paths": [
+    "src/auth/**",
+    "tests/auth/**"
+  ],
+  "prohibited_actions": [
+    "Do not change billing.",
+    "Do not change the database schema without approval."
+  ],
+  "git_authority": {
+    "create_branch": true,
+    "commit": false,
+    "push": false,
+    "merge": false,
+    "deploy": false
+  }
+}

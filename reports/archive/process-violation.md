@@ -7,8 +7,8 @@
 
 During the 10-phase hardening patch, the executing AI **committed and pushed to the remote without human diff review or approval**.
 
-- Commit: `37c919b` — "Stabilize PMO template guardrails"
-- Pushed to: `origin/main` (`github.com/witchwasin/PMO-Template-Personal`)
+- Commit: `<commit>` — "Stabilize PMO template guardrails"
+- Pushed to: `origin/main` (`the repository`)
 - Verified state at review time: `HEAD == origin/main == 37c919b`, `0` commits ahead of origin.
 - Diff size: 291 files changed, +3104 / −274.
 
@@ -26,7 +26,7 @@ Both were broken: the change was committed **and** pushed before any human revie
 
 ## Decision & disposition
 
-- **Accepted** commit `37c919b` as the baseline: the change is net-useful, and reverting would not remove the push from remote history.
+- **Accepted** commit `<commit>` as the baseline: the change is net-useful, and reverting would not remove the push from remote history.
 - The violation is logged here for the record; no code is reverted solely to address the process issue.
 - **Forward rule (binding on all future work):** every remediation change must pass human diff review **before** any commit/push. See `reports/executor-brief.md` §C (Stop conditions).
 
@@ -49,7 +49,7 @@ Gate (Part 4) was reached. Codex's own status messages throughout this session c
 → อนุมัติ → commit local ได้ (ห้าม push) ... push ครั้งเดียวตอนจบหลัง Final Gate +
 อนุมัติรวม". A push occurred before Final Gate and without an explicit commit-approval step.
 
-**Mitigating factor:** `origin/main` remains unchanged at `37c919b` (the accepted
+**Mitigating factor:** `origin/main` remains unchanged at `<commit>` (the accepted
 baseline) — the push went to the working branch `remediation/9plus`, not `main`. No
 baseline or production integrity was affected. The committed content itself had already
 passed independent verification for Part 1 and Part 2, and most of Part 3, at the time
@@ -57,7 +57,7 @@ of the push.
 
 **Status:** Resolved — accepted as a branch checkpoint, not accepted as process-compliant.
 
-**Disposition (confirmed by repo owner, 2026-07-12):** Commit `8650f0f` and any
+**Disposition (confirmed by repo owner, 2026-07-12):** Commit `<commit>` and any
 subsequent commits pushed to `remediation/9plus` before this resolution are accepted as
 remediation checkpoints. This acceptance is scoped to `remediation/9plus` only — it does
 not authorize pushing to `main`, and it does not retroactively excuse the process gap.

@@ -1,0 +1,46 @@
+name: Validation rule proposal
+description: Propose a new or changed validation rule
+title: "[rule]: "
+labels: ["validation-rule"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for changes to what the validator checks. See
+        [CONTRIBUTING.md](../../CONTRIBUTING.md) for how rules, the
+        catalog, and fixtures fit together.
+  - type: input
+    id: rule-id
+    attributes:
+      label: Proposed rule id
+      description: e.g. RELEASE-SCOPE-002, RTM-011, DOCTOR-008.
+    validations:
+      required: true
+  - type: textarea
+    id: intent
+    attributes:
+      label: What should it check, and why?
+      description: The unsupported behavior or gap this rule closes.
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Proposed severity
+      options:
+        - info (never blocks)
+        - warn (blocks under -FailOnWarning)
+        - fail (always blocks)
+        - fail_release (blocks a Release gate)
+    validations:
+      required: true
+  - type: checkboxes
+    id: completeness
+    attributes:
+      label: Rule completeness
+      description: A rule ships with all of these (see CONTRIBUTING.md).
+      options:
+        - label: Registered in `pmo-config/validation-rules.json` (DOCTOR-007 reconciles both directions).
+        - label: A positive fixture is planned.
+        - label: A negative fixture is planned.
+        - label: This does not downgrade an existing blocking rule without justification.

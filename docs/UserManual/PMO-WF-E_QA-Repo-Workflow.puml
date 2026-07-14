@@ -1,5 +1,5 @@
-@startuml
-title PMO-WF-E: QA Repo + PMO Template Workflow (Final)
+﻿@startuml
+title PMO-WF-E: QA Repo + Axiom-PMO Workflow (Final)
 
 skinparam BackgroundColor #FAFAFA
 skinparam DefaultFontName "Sarabun"
@@ -14,116 +14,116 @@ skinparam SwimlaneTitleFontColor white
 skinparam SwimlaneBorderColor #424242
 skinparam ConditionEndStyle diamond
 
-|#90CAF9|PMO Template|
+|#90CAF9|Axiom-PMO|
 start
 
 note right
-**ระบบที่เกี่ยวข้อง 4 ระบบ**
-1. PMO Template = Card + PR Review
+**à¸£à¸°à¸šà¸šà¸—à¸µà¹ˆà¹€à¸à¸µà¹ˆà¸¢à¸§à¸‚à¹‰à¸­à¸‡ 4 à¸£à¸°à¸šà¸š**
+1. Axiom-PMO = Card + PR Review
 2. PROJECT-QA Repo = TC .md + .spec.ts + CI
 3. Lark Base = TC + Results + Evidence
-4. Dev Repo = code จริง
+4. Dev Repo = code à¸ˆà¸£à¸´à¸‡
 end note
 
-:**Step 1:** PM สร้าง Card
-ระบุ Happy / Alt / Exception;
+:**Step 1:** PM à¸ªà¸£à¹‰à¸²à¸‡ Card
+à¸£à¸°à¸šà¸¸ Happy / Alt / Exception;
 
 note right
-**Card ระบุ:**
-- Module ที่ต้อง test
-- Test cases 3 ระดับ
-- URL ที่ต้องเปิด
-- ผลที่คาดหวัง
+**Card à¸£à¸°à¸šà¸¸:**
+- Module à¸—à¸µà¹ˆà¸•à¹‰à¸­à¸‡ test
+- Test cases 3 à¸£à¸°à¸”à¸±à¸š
+- URL à¸—à¸µà¹ˆà¸•à¹‰à¸­à¸‡à¹€à¸›à¸´à¸”
+- à¸œà¸¥à¸—à¸µà¹ˆà¸„à¸²à¸”à¸«à¸§à¸±à¸‡
 end note
 
 :**Step 2:** PM Assign QA
-1 Card = 1 คน;
+1 Card = 1 à¸„à¸™;
 
 note right
-**กฎ No Duplicate (D057)**
-ห้าม assign Card เดียวกัน
-ให้ 2 คนซ้ำ
-แบม/บอล แบ่ง module กัน
+**à¸à¸Ž No Duplicate (D057)**
+à¸«à¹‰à¸²à¸¡ assign Card à¹€à¸”à¸µà¸¢à¸§à¸à¸±à¸™
+à¹ƒà¸«à¹‰ 2 à¸„à¸™à¸‹à¹‰à¸³
+à¹à¸šà¸¡/à¸šà¸­à¸¥ à¹à¸šà¹ˆà¸‡ module à¸à¸±à¸™
 end note
 
 ---
 
 |#F48FB1|QA|
 
-:**Step 3:** อ่าน Card
-จาก PMO TaskBoard;
+:**Step 3:** à¸­à¹ˆà¸²à¸™ Card
+à¸ˆà¸²à¸ PMO TaskBoard;
 
-:**Step 4:** เปิด VS Code
-เข้า PROJECT-QA repo;
+:**Step 4:** à¹€à¸›à¸´à¸” VS Code
+à¹€à¸‚à¹‰à¸² PROJECT-QA repo;
 
 note right
-QA จะอยู่ใน PROJECT-QA repo
-ตั้งแต่ Step 4 จนจบ
-ไม่ต้องย้ายไปที่อื่น
+QA à¸ˆà¸°à¸­à¸¢à¸¹à¹ˆà¹ƒà¸™ PROJECT-QA repo
+à¸•à¸±à¹‰à¸‡à¹à¸•à¹ˆ Step 4 à¸ˆà¸™à¸ˆà¸š
+à¹„à¸¡à¹ˆà¸•à¹‰à¸­à¸‡à¸¢à¹‰à¸²à¸¢à¹„à¸›à¸—à¸µà¹ˆà¸­à¸·à¹ˆà¸™
 end note
 
 ---
 
 |#FFE082|PROJECT-QA Repo|
 
-:**Step 5:** เขียน test case
+:**Step 5:** à¹€à¸‚à¸µà¸¢à¸™ test case
 markdown (.md);
 
 note right
-**ไฟล์:** test-cases/bof/TC-*.md
+**à¹„à¸Ÿà¸¥à¹Œ:** test-cases/bof/TC-*.md
 **Pattern:**
-1. เข้าหน้า /novels
-2. รอโหลด networkidle
-3. มองหาปุ่ม "Review"
-4. คลิก แล้วรอ modal
-5. ตรวจ img[alt="ID Card"]
-6. คาดหวัง naturalWidth > 0
+1. à¹€à¸‚à¹‰à¸²à¸«à¸™à¹‰à¸² /novels
+2. à¸£à¸­à¹‚à¸«à¸¥à¸” networkidle
+3. à¸¡à¸­à¸‡à¸«à¸²à¸›à¸¸à¹ˆà¸¡ "Review"
+4. à¸„à¸¥à¸´à¸ à¹à¸¥à¹‰à¸§à¸£à¸­ modal
+5. à¸•à¸£à¸§à¸ˆ img[alt="ID Card"]
+6. à¸„à¸²à¸”à¸«à¸§à¸±à¸‡ naturalWidth > 0
 
-.md = บอกว่า test อะไร (WHAT)
+.md = à¸šà¸­à¸à¸§à¹ˆà¸² test à¸­à¸°à¹„à¸£ (WHAT)
 end note
 
-:**Step 6:** เขียน Playwright
+:**Step 6:** à¹€à¸‚à¸µà¸¢à¸™ Playwright
 script (.spec.ts);
 
 note right
-**ไฟล์:** tests/bof/*.spec.ts
-.spec.ts = บอกว่า test ยังไง (HOW)
-ต้องเขียนทั้ง .md + .spec.ts
+**à¹„à¸Ÿà¸¥à¹Œ:** tests/bof/*.spec.ts
+.spec.ts = à¸šà¸­à¸à¸§à¹ˆà¸² test à¸¢à¸±à¸‡à¹„à¸‡ (HOW)
+à¸•à¹‰à¸­à¸‡à¹€à¸‚à¸µà¸¢à¸™à¸—à¸±à¹‰à¸‡ .md + .spec.ts
 end note
 
-:**Step 7:** Push ทั้ง
-.md + .spec.ts ขึ้น main;
+:**Step 7:** Push à¸—à¸±à¹‰à¸‡
+.md + .spec.ts à¸‚à¸¶à¹‰à¸™ main;
 
 note right
-**Push to main จะ trigger CI อัตโนมัติ**
-(sync-qa.yml) ทำ 3 อย่าง:
-1. sync-tc: TC .md ไป Lark Base
-2. pr-pmo: สร้าง PR ไป PMO อัตโนมัติ
-3. check-bof: ตรวจ coverage กับ code
+**Push to main à¸ˆà¸° trigger CI à¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´**
+(sync-qa.yml) à¸—à¸³ 3 à¸­à¸¢à¹ˆà¸²à¸‡:
+1. sync-tc: TC .md à¹„à¸› Lark Base
+2. pr-pmo: à¸ªà¸£à¹‰à¸²à¸‡ PR à¹„à¸› PMO à¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´
+3. check-bof: à¸•à¸£à¸§à¸ˆ coverage à¸à¸±à¸š code
 
-**QA ไม่ต้องสร้าง PR เอง**
-CI ทำให้หมด
+**QA à¹„à¸¡à¹ˆà¸•à¹‰à¸­à¸‡à¸ªà¸£à¹‰à¸²à¸‡ PR à¹€à¸­à¸‡**
+CI à¸—à¸³à¹ƒà¸«à¹‰à¸«à¸¡à¸”
 end note
 
 ---
 
-|#90CAF9|PMO Template|
+|#90CAF9|Axiom-PMO|
 
 :**Step 8:** PM Review PR
-(CI สร้างมาอัตโนมัติ)
-ตรวจ test case ครบไหม
-ถูก scope ไหม;
+(CI à¸ªà¸£à¹‰à¸²à¸‡à¸¡à¸²à¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´)
+à¸•à¸£à¸§à¸ˆ test case à¸„à¸£à¸šà¹„à¸«à¸¡
+à¸–à¸¹à¸ scope à¹„à¸«à¸¡;
 
 note right
-**PM ตรวจ WHAT to test:**
-- ครบทุก Card ที่ assign
-- Steps ละเอียดพอ
-- Scope ถูก P03=BoF / P18=Reader
-- ไม่ซ้ำกับ TC ที่มีอยู่
-**PM ไม่ได้ตรวจ .spec.ts**
+**PM à¸•à¸£à¸§à¸ˆ WHAT to test:**
+- à¸„à¸£à¸šà¸—à¸¸à¸ Card à¸—à¸µà¹ˆ assign
+- Steps à¸¥à¸°à¹€à¸­à¸µà¸¢à¸”à¸žà¸­
+- Scope à¸–à¸¹à¸ P03=BoF / P18=Reader
+- à¹„à¸¡à¹ˆà¸‹à¹‰à¸³à¸à¸±à¸š TC à¸—à¸µà¹ˆà¸¡à¸µà¸­à¸¢à¸¹à¹ˆ
+**PM à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¸•à¸£à¸§à¸ˆ .spec.ts**
 
-**PR สร้างอัตโนมัติโดย CI**
-ส่งเฉพาะ .md ไป PMO
+**PR à¸ªà¸£à¹‰à¸²à¸‡à¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´à¹‚à¸”à¸¢ CI**
+à¸ªà¹ˆà¸‡à¹€à¸‰à¸žà¸²à¸° .md à¹„à¸› PMO
 P03: P03-PROJECT-BoF/TestCases/
 P18: P18-PROJECT-Reader/TestCases/
 end note
@@ -133,71 +133,71 @@ if (Approve?) then (Yes)
   :**Step 9:** Merge PR;
 
   note right
-  **TC markdown อยู่ 3 ที่แล้ว:**
-  1. PROJECT-QA repo (ต้นทาง)
-  2. PMO Template (copy ผ่าน PR)
-  3. Lark Base (CI sync-tc อัตโนมัติ)
+  **TC markdown à¸­à¸¢à¸¹à¹ˆ 3 à¸—à¸µà¹ˆà¹à¸¥à¹‰à¸§:**
+  1. PROJECT-QA repo (à¸•à¹‰à¸™à¸—à¸²à¸‡)
+  2. Axiom-PMO (copy à¸œà¹ˆà¸²à¸™ PR)
+  3. Lark Base (CI sync-tc à¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´)
   end note
 
   ---
 
   |#FFE082|PROJECT-QA Repo|
 
-  :**Step 10:** QA รัน test
+  :**Step 10:** QA à¸£à¸±à¸™ test
   pnpm test;
 
   note right
   **Playwright config:**
-  - screenshot: on (ทุก test)
+  - screenshot: on (à¸—à¸¸à¸ test)
   - video: on
   - trace: on-first-retry
-  - timeout: 60 วินาที
+  - timeout: 60 à¸§à¸´à¸™à¸²à¸—à¸µ
   - retries: 1 (local) / 2 (CI)
   end note
 
-  :**Step 11:** ผล + evidence
-  เก็บ local ก่อน;
+  :**Step 11:** à¸œà¸¥ + evidence
+  à¹€à¸à¹‡à¸š local à¸à¹ˆà¸­à¸™;
 
   note right
-  **ผลเก็บที่ไหน:**
-  test-results/ = ผล Pass/Fail
+  **à¸œà¸¥à¹€à¸à¹‡à¸šà¸—à¸µà¹ˆà¹„à¸«à¸™:**
+  test-results/ = à¸œà¸¥ Pass/Fail
   reports/run-*/evidence/ = screenshots
-  แยกตาม success/fail/improvement/skip
-  **ทั้งหมด gitignored**
-  อยู่เครื่อง QA เท่านั้น
+  à¹à¸¢à¸à¸•à¸²à¸¡ success/fail/improvement/skip
+  **à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” gitignored**
+  à¸­à¸¢à¸¹à¹ˆà¹€à¸„à¸£à¸·à¹ˆà¸­à¸‡ QA à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™
   end note
 
-  :**Step 12:** QA รัน sync-lark
+  :**Step 12:** QA à¸£à¸±à¸™ sync-lark
   push Results + Evidence
-  ขึ้น Lark Base;
+  à¸‚à¸¶à¹‰à¸™ Lark Base;
 
   note right
-  **sync-lark (lark-sync.ts) ทำ 5 อย่าง:**
-  1. ลบ Results + Runs เก่าทิ้ง
-  2. อ่าน TC markdown ดึง Steps
-  3. อ่าน test-results/ ดึง Pass/Fail
-  4. อัปโหลด screenshots ไป Lark Drive
-  5. สร้าง Test Run record (branch+commit)
+  **sync-lark (lark-sync.ts) à¸—à¸³ 5 à¸­à¸¢à¹ˆà¸²à¸‡:**
+  1. à¸¥à¸š Results + Runs à¹€à¸à¹ˆà¸²à¸—à¸´à¹‰à¸‡
+  2. à¸­à¹ˆà¸²à¸™ TC markdown à¸”à¸¶à¸‡ Steps
+  3. à¸­à¹ˆà¸²à¸™ test-results/ à¸”à¸¶à¸‡ Pass/Fail
+  4. à¸­à¸±à¸›à¹‚à¸«à¸¥à¸” screenshots à¹„à¸› Lark Drive
+  5. à¸ªà¸£à¹‰à¸²à¸‡ Test Run record (branch+commit)
 
-  **ปัจจุบัน: manual** (pnpm run sync-lark)
-  **อนาคต: auto** (คุณโฟนวางแผนไว้)
+  **à¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™: manual** (pnpm run sync-lark)
+  **à¸­à¸™à¸²à¸„à¸•: auto** (à¸„à¸¸à¸“à¹‚à¸Ÿà¸™à¸§à¸²à¸‡à¹à¸œà¸™à¹„à¸§à¹‰)
 
-  **Lark Base เก็บแค่รอบล่าสุด**
-  ประวัติรอบก่อนถูกลบ
+  **Lark Base à¹€à¸à¹‡à¸šà¹à¸„à¹ˆà¸£à¸­à¸šà¸¥à¹ˆà¸²à¸ªà¸¸à¸”**
+  à¸›à¸£à¸°à¸§à¸±à¸•à¸´à¸£à¸­à¸šà¸à¹ˆà¸­à¸™à¸–à¸¹à¸à¸¥à¸š
   end note
 
   ---
 
-  |#90CAF9|PMO Template|
+  |#90CAF9|Axiom-PMO|
 
-  :**Step 13:** PM ดูผล Lark
-  + อัพเดท Card ใน PMO;
+  :**Step 13:** PM à¸”à¸¹à¸œà¸¥ Lark
+  + à¸­à¸±à¸žà¹€à¸”à¸— Card à¹ƒà¸™ PMO;
 
   note right
-  **PM ต้องอัพเดท 2 ที่:**
-  1. Lark Base = ผล test อยู่แล้ว
-  2. PMO TaskBoard = อัพเดท Card
-     status เป็น QA Passed / Failed
+  **PM à¸•à¹‰à¸­à¸‡à¸­à¸±à¸žà¹€à¸”à¸— 2 à¸—à¸µà¹ˆ:**
+  1. Lark Base = à¸œà¸¥ test à¸­à¸¢à¸¹à¹ˆà¹à¸¥à¹‰à¸§
+  2. PMO TaskBoard = à¸­à¸±à¸žà¹€à¸”à¸— Card
+     status à¹€à¸›à¹‡à¸™ QA Passed / Failed
   end note
 
   if (Pass?) then (Yes)
@@ -208,15 +208,15 @@ if (Approve?) then (Yes)
 
   else (Fail)
 
-    :**Step 15:** สร้าง Bug Card
-    ส่งกลับ Dev แก้;
+    :**Step 15:** à¸ªà¸£à¹‰à¸²à¸‡ Bug Card
+    à¸ªà¹ˆà¸‡à¸à¸¥à¸±à¸š Dev à¹à¸à¹‰;
 
     note right
-    **Loop กลับ Dev:**
-    Dev แก้ Bug ใน Dev Repo
-    แล้ว QA test ใหม่
-    วนจนกว่าจะ Pass
-    กลับไป Step 10
+    **Loop à¸à¸¥à¸±à¸š Dev:**
+    Dev à¹à¸à¹‰ Bug à¹ƒà¸™ Dev Repo
+    à¹à¸¥à¹‰à¸§ QA test à¹ƒà¸«à¸¡à¹ˆ
+    à¸§à¸™à¸ˆà¸™à¸à¸§à¹ˆà¸²à¸ˆà¸° Pass
+    à¸à¸¥à¸±à¸šà¹„à¸› Step 10
     end note
 
     detach
@@ -227,15 +227,15 @@ else (Reject)
 
   |#F48FB1|QA|
 
-  :**Step 8.1:** แก้ test case
-  ทั้ง .md + .spec.ts
-  ตาม comment ของ PM;
+  :**Step 8.1:** à¹à¸à¹‰ test case
+  à¸—à¸±à¹‰à¸‡ .md + .spec.ts
+  à¸•à¸²à¸¡ comment à¸‚à¸­à¸‡ PM;
 
   |#FFE082|PROJECT-QA Repo|
 
-  :**Step 8.2:** Push แก้ไข
-  CI จะสร้าง PR ใหม่อัตโนมัติ
-  กลับไป Step 8;
+  :**Step 8.2:** Push à¹à¸à¹‰à¹„à¸‚
+  CI à¸ˆà¸°à¸ªà¸£à¹‰à¸²à¸‡ PR à¹ƒà¸«à¸¡à¹ˆà¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´
+  à¸à¸¥à¸±à¸šà¹„à¸› Step 8;
 
   detach
 

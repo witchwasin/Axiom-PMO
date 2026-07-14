@@ -1,4 +1,4 @@
-# PMO Template - Agent Behavioral Guide
+# Axiom-PMO - Agent Behavioral Guide
 
 > Shared rules for Claude, Codex, Cursor, Copilot, and other AI agents.
 > Keep this file short. Detailed methods live in `.claude/skills/` and are loaded on demand.

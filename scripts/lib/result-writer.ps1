@@ -70,7 +70,7 @@ function Write-ValidationOutput {
       results = $Messages
     } | ConvertTo-Json -Depth 6
   } else {
-    Write-Host "PMO Project Validation: $Project"
+    Write-Host "Axiom-PMO Project Validation: $Project"
     Write-Host "Requested Mode: $RequestedMode"
     Write-Host "Detected Project Mode: $EffectiveMode"
     Write-Host "Effective Mode: $EffectiveMode"

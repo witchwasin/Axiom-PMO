@@ -1,7 +1,7 @@
-# รายงานภาพรวม PMO-Template-Personal
+# รายงานภาพรวม Axiom-PMO
 
 วันที่จัดทำ: 10 กรกฎาคม 2026  
-Repo: `D:\GitHub\PMO-Template-Personal`  
+Repo: `<local-repo>`  
 เป้าหมายของ repo: ทำให้ PMO / Project Delivery Template ใช้งานจริงกับทีมเล็กได้ง่ายขึ้น โดยยังคุมคุณภาพงานและการใช้ AI ได้ดี
 
 ---
@@ -416,7 +416,7 @@ AI ห้าม approve production เอง และต้องแยก:
 
 - `validate-project.ps1` ผ่าน
 - `pmo-doctor.ps1` ผ่าน
-- path แบบ `D:\GitHub\PMO-Template-Personal` ใช้งานได้
+- path แบบ `<local-repo>` ใช้งานได้
 - script ใช้ `-LiteralPath` หลายจุด จึงเหมาะกับ Windows path
 
 ข้อควรระวัง:

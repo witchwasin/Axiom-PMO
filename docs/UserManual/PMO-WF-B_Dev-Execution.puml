@@ -1,5 +1,5 @@
-@startuml
-title Module WF-B: PMO Collaboration — Dev Execution Phase [Ref: PMO Workflow v2.2.1]
+﻿@startuml
+title Module WF-B: PMO Collaboration â€” Dev Execution Phase [Ref: PMO Workflow v2.2.1]
 
 ' Lark Rule 8: Skinparam Layout Block
 skinparam BackgroundColor #FAFAFA
@@ -24,105 +24,105 @@ skinparam ConditionEndStyle hline
 |#A5D6A7|Dev|
 start
 note right
-**→ ต่อจาก:** Module WF-A Step 13
-**Context:** PM assign Card พร้อม
-Module + Test Cases แล้ว
+**â†’ à¸•à¹ˆà¸­à¸ˆà¸²à¸:** Module WF-A Step 13
+**Context:** PM assign Card à¸žà¸£à¹‰à¸­à¸¡
+Module + Test Cases à¹à¸¥à¹‰à¸§
 end note
 
-' --- Setup: Dev เปิด 2 VS Code ---
+' --- Setup: Dev à¹€à¸›à¸´à¸” 2 VS Code ---
 :**14.** Clone PMO Repo
-เปิด VS Code Window 1;
+à¹€à¸›à¸´à¸” VS Code Window 1;
 
-:**15.** เปิด Dev Repo
-(Code ของตัวเอง)
+:**15.** à¹€à¸›à¸´à¸” Dev Repo
+(Code à¸‚à¸­à¸‡à¸•à¸±à¸§à¹€à¸­à¸‡)
 VS Code Window 2;
 note right
-**Dev ทำงานกับ 2 Repo:**
+**Dev à¸—à¸³à¸‡à¸²à¸™à¸à¸±à¸š 2 Repo:**
 - Window 1: PMO Repo
-  (ดู Flow + คุย AI)
+  (à¸”à¸¹ Flow + à¸„à¸¸à¸¢ AI)
 - Window 2: Dev Repo
-  (เขียน Code)
+  (à¹€à¸‚à¸µà¸¢à¸™ Code)
 end note
 
-' --- Dev ถาม AI ---
-:**16.** [PMO Repo] เปิด Terminal
-ถาม AI: "งานรอบนี้ทำอะไร?";
+' --- Dev à¸–à¸²à¸¡ AI ---
+:**16.** [PMO Repo] à¹€à¸›à¸´à¸” Terminal
+à¸–à¸²à¸¡ AI: "à¸‡à¸²à¸™à¸£à¸­à¸šà¸™à¸µà¹‰à¸—à¸³à¸­à¸°à¹„à¸£?";
 
 |#FFF3E0|PMO AI|
-:**17.** AI อ่าน TaskBoard
-ตอบกลับ:
-- Card ที่ assign ให้
-- SystemFlow ที่เกี่ยวข้อง
-- Test Cases ที่ต้องผ่าน
+:**17.** AI à¸­à¹ˆà¸²à¸™ TaskBoard
+à¸•à¸­à¸šà¸à¸¥à¸±à¸š:
+- Card à¸—à¸µà¹ˆ assign à¹ƒà¸«à¹‰
+- SystemFlow à¸—à¸µà¹ˆà¹€à¸à¸µà¹ˆà¸¢à¸§à¸‚à¹‰à¸­à¸‡
+- Test Cases à¸—à¸µà¹ˆà¸•à¹‰à¸­à¸‡à¸œà¹ˆà¸²à¸™
 - Deadline;
 
-' --- Dev เขียน Code ---
+' --- Dev à¹€à¸‚à¸µà¸¢à¸™ Code ---
 |#A5D6A7|Dev|
-:**18.** [Dev Repo] เขียน Code
-ตาม SystemFlow;
+:**18.** [Dev Repo] à¹€à¸‚à¸µà¸¢à¸™ Code
+à¸•à¸²à¸¡ SystemFlow;
 
-:**19.** รัน Test ในเครื่อง
-ตรวจ Happy + Alt + Exception;
+:**19.** à¸£à¸±à¸™ Test à¹ƒà¸™à¹€à¸„à¸£à¸·à¹ˆà¸­à¸‡
+à¸•à¸£à¸§à¸ˆ Happy + Alt + Exception;
 
-' --- Dev รายงานกลับ PMO ---
-:**20.** [PMO Repo] บอก AI:
-"Module X ทำเสร็จแล้ว";
+' --- Dev à¸£à¸²à¸¢à¸‡à¸²à¸™à¸à¸¥à¸±à¸š PMO ---
+:**20.** [PMO Repo] à¸šà¸­à¸ AI:
+"Module X à¸—à¸³à¹€à¸ªà¸£à¹‡à¸ˆà¹à¸¥à¹‰à¸§";
 note right
-**Dev รายงานให้ AI:**
-- Module ที่ทำเสร็จ
+**Dev à¸£à¸²à¸¢à¸‡à¸²à¸™à¹ƒà¸«à¹‰ AI:**
+- Module à¸—à¸µà¹ˆà¸—à¸³à¹€à¸ªà¸£à¹‡à¸ˆ
 - Branch Name / Commit
-- ผล Test: Happy x/x,
+- à¸œà¸¥ Test: Happy x/x,
   Alt x/x, Exc x/x
 end note
 
 |#FFF3E0|PMO AI|
-:**21.** AI ตรวจสอบ:
-- เทียบ Code กับ SystemFlow
-- ตรวจ Test Coverage
-- ให้ Feedback;
+:**21.** AI à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸š:
+- à¹€à¸—à¸µà¸¢à¸š Code à¸à¸±à¸š SystemFlow
+- à¸•à¸£à¸§à¸ˆ Test Coverage
+- à¹ƒà¸«à¹‰ Feedback;
 
-if (AI Review ผ่าน?) then (Pass)
+if (AI Review à¸œà¹ˆà¸²à¸™?) then (Pass)
 
   |#A5D6A7|Dev|
-  :**22.** บอก AI:
-  "อัพเดท PM ให้หน่อย";
+  :**22.** à¸šà¸­à¸ AI:
+  "à¸­à¸±à¸žà¹€à¸”à¸— PM à¹ƒà¸«à¹‰à¸«à¸™à¹ˆà¸­à¸¢";
 
   |#FFF3E0|PMO AI|
-  :**23.** AI อัพเดทอัตโนมัติ:
+  :**23.** AI à¸­à¸±à¸žà¹€à¸”à¸—à¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´:
   - TaskBoard Status = Dev Done
   - Traceability Matrix
   - Activity Log;
 
-  :**24.** AI สร้าง Handoff Document
-  ส่งต่อ context ให้ QA;
+  :**24.** AI à¸ªà¸£à¹‰à¸²à¸‡ Handoff Document
+  à¸ªà¹ˆà¸‡à¸•à¹ˆà¸­ context à¹ƒà¸«à¹‰ QA;
   note right
   **Handoff Document:**
   - Module scope + SystemFlow ref
-  - Test Cases ที่ต้อง test
+  - Test Cases à¸—à¸µà¹ˆà¸•à¹‰à¸­à¸‡ test
   - Dev branch + setup instructions
   - Known issues / limitations
-  QA ได้ context ครบ ไม่ต้องถามซ้ำ
+  QA à¹„à¸”à¹‰ context à¸„à¸£à¸š à¹„à¸¡à¹ˆà¸•à¹‰à¸­à¸‡à¸–à¸²à¸¡à¸‹à¹‰à¸³
   end note
 
   |#A5D6A7|Dev|
-  :**25.** Push ใน Dev Repo
-  (ให้ QA เข้าถึง Code ได้);
+  :**25.** Push à¹ƒà¸™ Dev Repo
+  (à¹ƒà¸«à¹‰ QA à¹€à¸‚à¹‰à¸²à¸–à¸¶à¸‡ Code à¹„à¸”à¹‰);
 
   note right
-  **→ ต่อที่:** Module WF-C Step 26
-  **Context:** Dev Done รอ QA test
+  **â†’ à¸•à¹ˆà¸­à¸—à¸µà¹ˆ:** Module WF-C Step 26
+  **Context:** Dev Done à¸£à¸­ QA test
   end note
   stop
 
-else (ต้องแก้)
+else (à¸•à¹‰à¸­à¸‡à¹à¸à¹‰)
 
   |#A5D6A7|Dev|
-  :**21a.** รับ Feedback จาก AI
-  กลับไปแก้ Code;
+  :**21a.** à¸£à¸±à¸š Feedback à¸ˆà¸²à¸ AI
+  à¸à¸¥à¸±à¸šà¹„à¸›à¹à¸à¹‰ Code;
   note right
-  **Loop:** กลับไป Step 19
-  แก้ Code → Test → รายงาน AI
-  วนจนกว่า AI Review จะผ่าน
+  **Loop:** à¸à¸¥à¸±à¸šà¹„à¸› Step 19
+  à¹à¸à¹‰ Code â†’ Test â†’ à¸£à¸²à¸¢à¸‡à¸²à¸™ AI
+  à¸§à¸™à¸ˆà¸™à¸à¸§à¹ˆà¸² AI Review à¸ˆà¸°à¸œà¹ˆà¸²à¸™
   end note
   detach
 

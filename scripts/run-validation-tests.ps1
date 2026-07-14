@@ -125,7 +125,7 @@ $positive = @($cases | Where-Object { $_.Type -eq "positive" }).Count
 $negative = @($cases | Where-Object { $_.Type -eq "negative" }).Count
 $doctorNegative = @($doctorCases).Count
 
-Write-Host "PMO Validation Fixture Tests: $repo"
+Write-Host "Axiom-PMO Validation Fixture Tests: $repo"
 Write-Host "Matrix: positive=$positive negative=$negative doctor-negative=$doctorNegative total=$($cases.Count + $doctorNegative)"
 Write-Host ""
 

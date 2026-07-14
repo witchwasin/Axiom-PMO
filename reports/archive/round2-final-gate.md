@@ -2,7 +2,7 @@
 
 Date: 2026-07-12
 Branch: `remediation/9plus-v2` (not pushed)
-Merge commit: `015aed0` (Track B `187d3c3` merged into Track A)
+Merge commit: `<commit>` (Track B `<commit>` merged into Track A)
 Baseline: 8.3/10 (`reports/upgrade-plan-9plus.md` v2 unified)
 
 Checklist below follows `reports/upgrade-plan-9plus.md` §"Phase 8 — Final
@@ -75,7 +75,7 @@ tests/golden/ (70 fixture cases + 3 example commands = 74) -> byte-identical
 `scripts/run-all-checks.ps1` (calls all of the above in sequence) exits 0.
 
 **Not done:** PSScriptAnalyzer static analysis (P5.3) — module is not
-installed on this machine; owner explicitly deferred it on 2026-07-12 rather
+installed on this machine; deferred it on 2026-07-12 rather
 than have me pull an unreviewed package from the PowerShell Gallery
 unsupervised. This is a known, recorded gap, not a silent omission.
 
@@ -88,7 +88,7 @@ anywhere in `scripts/lib/*.ps1` or the test harness.
 | Item | Status |
 |---|---|
 | §7.4 branch-protection decision recorded and applied | done — `reports/current-acceptance.md`, option (C) platform constraint |
-| LICENSE decision recorded | done — explicitly deferred by owner, not omitted |
+| LICENSE decision recorded | done — explicitly deferred, not omitted |
 | `VERSION` = `0.5.0`, matches `CHANGELOG.md` top entry, `README.md`, all 6 `pmo-config/*.json` | done — `DOCTOR-005` PASS |
 | Working tree clean before this report | to be confirmed after this round's commit |
 | Two prior process violations still resolved (unaffected by Round 2) | yes — `reports/process-violation.md` unchanged |

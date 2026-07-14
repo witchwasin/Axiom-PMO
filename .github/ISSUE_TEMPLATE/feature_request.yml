@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest a capability or improvement
+title: "[feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What are you trying to do, and what makes it hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What you would like Axiom-PMO to do.
+    validations:
+      required: true
+  - type: textarea
+    id: governance
+    attributes:
+      label: Governance impact
+      description: >
+        Does this affect a rule, a policy, an approval gate, evidence
+        requirements, or human/git authority? How does it avoid weakening
+        governance?
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false

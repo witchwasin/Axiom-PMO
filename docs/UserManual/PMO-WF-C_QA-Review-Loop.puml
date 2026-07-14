@@ -1,5 +1,5 @@
-@startuml
-title Module WF-C: PMO Collaboration — QA and Review Loop [Ref: PMO Workflow v2.2.1]
+﻿@startuml
+title Module WF-C: PMO Collaboration â€” QA and Review Loop [Ref: PMO Workflow v2.2.1]
 
 ' Lark Rule 8: Skinparam Layout Block
 skinparam BackgroundColor #FAFAFA
@@ -24,31 +24,31 @@ skinparam ConditionEndStyle hline
 |#FFF3E0|PMO AI|
 start
 note right
-**→ ต่อจาก:** Module WF-B Step 25
+**â†’ à¸•à¹ˆà¸­à¸ˆà¸²à¸:** Module WF-B Step 25
 **Context:** Dev Done + Handoff Document
 end note
 
-:**26.** AI อัพเดท Card Status
-เปลี่ยนเป็น "QA Testing";
+:**26.** AI à¸­à¸±à¸žà¹€à¸”à¸— Card Status
+à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¹€à¸›à¹‡à¸™ "QA Testing";
 
-:**27.** แจ้ง QA ว่ามีงานรอ Test
-ระบุ Module + Dev Branch
+:**27.** à¹à¸ˆà¹‰à¸‡ QA à¸§à¹ˆà¸²à¸¡à¸µà¸‡à¸²à¸™à¸£à¸­ Test
+à¸£à¸°à¸šà¸¸ Module + Dev Branch
 + Handoff Document;
 
-' --- QA เขียน Test Cases ---
+' --- QA à¹€à¸‚à¸µà¸¢à¸™ Test Cases ---
 |#F48FB1|QA|
-:**28.** เปิด PROJECT-QA Repo
-เขียน Test Cases ตาม Card;
+:**28.** à¹€à¸›à¸´à¸” PROJECT-QA Repo
+à¹€à¸‚à¸µà¸¢à¸™ Test Cases à¸•à¸²à¸¡ Card;
 note right
 **AI-Assisted Testing (D057):**
-QA ใช้ VS Code + Claude Code
-- เขียน TC ใน PROJECT-QA repo
-- สั่ง AI รัน test (Playwright)
-- AI สรุปผล Pass/Fail
+QA à¹ƒà¸Šà¹‰ VS Code + Claude Code
+- à¹€à¸‚à¸µà¸¢à¸™ TC à¹ƒà¸™ PROJECT-QA repo
+- à¸ªà¸±à¹ˆà¸‡ AI à¸£à¸±à¸™ test (Playwright)
+- AI à¸ªà¸£à¸¸à¸›à¸œà¸¥ Pass/Fail
 end note
 
 :**29.** Push TC + Create PR
-ส่งมา PMO Template;
+à¸ªà¹ˆà¸‡à¸¡à¸² Axiom-PMO;
 
 ' --- PM Review TC ---
 |#E8F0FE|PM|
@@ -58,27 +58,27 @@ if (Approve PR?) then (Yes)
 
   |#E8F0FE|PM|
   :**31.** Merge PR
-  เข้า PMO Template;
+  à¹€à¸‚à¹‰à¸² Axiom-PMO;
 
-  ' --- QA รัน Test ---
+  ' --- QA à¸£à¸±à¸™ Test ---
   |#F48FB1|QA|
-  :**32.** รัน Test ผ่าน
+  :**32.** à¸£à¸±à¸™ Test à¸œà¹ˆà¸²à¸™
   Playwright CLI / MCP
-  ตาม TC ที่ merge แล้ว;
+  à¸•à¸²à¸¡ TC à¸—à¸µà¹ˆ merge à¹à¸¥à¹‰à¸§;
   note right
-  **Test ตาม Card:**
-  - Happy Case: x/x ผ่าน
-  - Alternative Case: x/x ผ่าน
-  - Exception Flow: x/x ผ่าน
+  **Test à¸•à¸²à¸¡ Card:**
+  - Happy Case: x/x à¸œà¹ˆà¸²à¸™
+  - Alternative Case: x/x à¸œà¹ˆà¸²à¸™
+  - Exception Flow: x/x à¸œà¹ˆà¸²à¸™
   end note
 
-  :**33.** Push ผลเข้า
+  :**33.** Push à¸œà¸¥à¹€à¸‚à¹‰à¸²
   PROJECT-QA Repo
   + PMO TaskBoard;
 
-  ' --- AI บันทึกผล ---
+  ' --- AI à¸šà¸±à¸™à¸—à¸¶à¸à¸œà¸¥ ---
   |#FFF3E0|PMO AI|
-  :**34.** AI บันทึกอัตโนมัติ:
+  :**34.** AI à¸šà¸±à¸™à¸—à¸¶à¸à¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´:
   - QA Report (Pass/Fail)
   - Traceability Matrix
   - Activity Log;
@@ -86,23 +86,23 @@ if (Approve PR?) then (Yes)
 else (Reject)
 
   |#F48FB1|QA|
-  :**30a.** แก้ TC ตาม comment;
+  :**30a.** à¹à¸à¹‰ TC à¸•à¸²à¸¡ comment;
   note right
-  **Loop:** กลับไป Step 29
-  แก้ TC → Push PR ใหม่
+  **Loop:** à¸à¸¥à¸±à¸šà¹„à¸› Step 29
+  à¹à¸à¹‰ TC â†’ Push PR à¹ƒà¸«à¸¡à¹ˆ
   end note
   detach
 
 endif
 
-' --- PM Review ผล ---
+' --- PM Review à¸œà¸¥ ---
 |#E8F0FE|PM|
-:**35.** ดูผลใน TaskBoard
+:**35.** à¸”à¸¹à¸œà¸¥à¹ƒà¸™ TaskBoard
 + PROJECT-QA Repo;
 
-if (Test ผ่าน?) then (Pass)
+if (Test à¸œà¹ˆà¸²à¸™?) then (Pass)
 
-  :**36.** นำเสนอ Client Review;
+  :**36.** à¸™à¸³à¹€à¸ªà¸™à¸­ Client Review;
 
   |#FCE4EC|Client|
   :**37.** Review + Approve;
@@ -110,28 +110,28 @@ if (Test ผ่าน?) then (Pass)
   if (Client Approve?) then (Approve)
 
     |#FFF3E0|PMO AI|
-    :**37a.** AI อัพเดท:
+    :**37a.** AI à¸­à¸±à¸žà¹€à¸”à¸—:
     - Card Status = Done
     - Traceability Matrix
     - Activity Log
-    - ปิด Card สมบูรณ์;
+    - à¸›à¸´à¸” Card à¸ªà¸¡à¸šà¸¹à¸£à¸“à¹Œ;
     stop
 
-  else (ต้องแก้ไข)
+  else (à¸•à¹‰à¸­à¸‡à¹à¸à¹‰à¹„à¸‚)
 
     |#E8F0FE|PM|
-    :**37b.** สรุป Feedback
-    จาก Client;
+    :**37b.** à¸ªà¸£à¸¸à¸› Feedback
+    à¸ˆà¸²à¸ Client;
 
     |#FFF3E0|PMO AI|
-    :**37c.** AI อัพเดท:
+    :**37c.** AI à¸­à¸±à¸žà¹€à¸”à¸—:
     - Card = Revision Required
-    - สร้าง Revision Note
-    - แจ้ง Dev;
+    - à¸ªà¸£à¹‰à¸²à¸‡ Revision Note
+    - à¹à¸ˆà¹‰à¸‡ Dev;
     note right
-    **Loop:** กลับไป WF-B Step 18
-    Dev แก้ → AI Review
-    → QA Test → Client Review
+    **Loop:** à¸à¸¥à¸±à¸šà¹„à¸› WF-B Step 18
+    Dev à¹à¸à¹‰ â†’ AI Review
+    â†’ QA Test â†’ Client Review
     end note
     detach
 
@@ -141,18 +141,18 @@ else (Fail)
 
   |#E8F0FE|PM|
   :**35a.** Reopen Card
-  หรือ ออก Card ใหม่
-  (ถ้า bug คนละ scope);
+  à¸«à¸£à¸·à¸­ à¸­à¸­à¸ Card à¹ƒà¸«à¸¡à¹ˆ
+  (à¸–à¹‰à¸² bug à¸„à¸™à¸¥à¸° scope);
 
   |#FFF3E0|PMO AI|
-  :**35b.** AI อัพเดท:
+  :**35b.** AI à¸­à¸±à¸žà¹€à¸”à¸—:
   - Card = Revision Required
-  - สร้าง Revision Note
-  - แจ้ง Dev;
+  - à¸ªà¸£à¹‰à¸²à¸‡ Revision Note
+  - à¹à¸ˆà¹‰à¸‡ Dev;
   note right
-  **Loop:** กลับไป WF-B Step 18
-  Dev แก้ → AI Review
-  → QA Test ใหม่
+  **Loop:** à¸à¸¥à¸±à¸šà¹„à¸› WF-B Step 18
+  Dev à¹à¸à¹‰ â†’ AI Review
+  â†’ QA Test à¹ƒà¸«à¸¡à¹ˆ
   end note
   detach
 

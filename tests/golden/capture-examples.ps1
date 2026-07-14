@@ -24,6 +24,13 @@ foreach ($c in $cmds) {
   $exitCode = $LASTEXITCODE
   $ErrorActionPreference = $prevEAP
   $raw = ($output | Out-String).TrimEnd() + "`nEXIT_CODE=$exitCode"
+  # The JSON output embeds the resolved absolute project path, which differs by
+  # checkout location (local clone vs a CI runner path). Strip it to a fixed
+  # placeholder so these example goldens are portable across machines. Handle
+  # both the raw path and its JSON-escaped (doubled backslash) form -- same
+  # normalization scripts/run-validation-tests.ps1 applies to its golden masters.
+  $repoJsonEscaped = $repo -replace '\\', '\\'
+  $raw = $raw.Replace($repoJsonEscaped, '<REPO_ROOT>').Replace($repo, '<REPO_ROOT>')
   $file = Join-Path $goldenDir "$($c.Name).txt"
   if ($Verify) {
     if (-not (Test-Path -LiteralPath $file)) {
