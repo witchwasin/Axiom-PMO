@@ -26,7 +26,8 @@ function Test-TestSummary {
   param(
     $ReleaseRegistry,
     [string]$Project,
-    [string[]]$DecisionIds
+    [string[]]$DecisionIds,
+    [string]$Mode
   )
 
   foreach ($row in @($ReleaseRegistry.TestRows)) {
@@ -34,9 +35,23 @@ function Test-TestSummary {
     if ($result -eq "skipped") {
       if (Test-PlaceholderValue $row.Notes) {
         Add-Result FAIL "$($row.ID) is marked skipped but Notes does not state a reason" "TEST-RESULT-001"
-      } else {
-        Add-Result PASS "$($row.ID) is validly skipped (reason recorded)" "TEST-RESULT-001"
+        continue
       }
+      # Micro-hardening: a Notes string alone ("not applicable") was enough to
+      # skip a Strict test with no independent proof anyone signed off on that
+      # -- Strict now needs the same resolvable Evidence a passed row would.
+      if ($Mode -eq "Strict") {
+        if (Test-PlaceholderValue $row.Evidence) {
+          Add-Result FAIL "$($row.ID) is marked skipped but Strict requires resolvable Evidence, not just a Notes reason" "TEST-RESULT-001"
+          continue
+        }
+        $skipRef = Resolve-Reference -Value $row.Evidence -ReferenceTypesConfig $script:referenceTypesConfig -ProjectRoot $Project -DecisionIds $DecisionIds
+        if (-not $skipRef.Type -or -not $skipRef.Resolved) {
+          Add-Result FAIL "$($row.ID) is marked skipped but Evidence '$($row.Evidence)' does not resolve to a real reference" "TEST-RESULT-001"
+          continue
+        }
+      }
+      Add-Result PASS "$($row.ID) is validly skipped (reason recorded)" "TEST-RESULT-001"
       continue
     }
     if ($result -ne "passed") {
@@ -62,7 +77,8 @@ function Test-RtmTraceability {
     [string[]]$ProjectReqIds,
     [string[]]$DeliveryIds,
     [string[]]$DecisionIds,
-    $ReleaseRegistry
+    $ReleaseRegistry,
+    [string[]]$ProjectSourceIds
   )
 
   $rtmPath = Join-Path $Project "RTM.json"
@@ -129,6 +145,16 @@ function Test-RtmTraceability {
     # pass "row-by-row" validation.
     if (-not $row.source_ref -or ($row.source_ref -notmatch $script:sourceRefRegex)) {
       Add-Result FAIL "RTM row $rid has a missing or malformed source_ref: $($row.source_ref)" "RTM-008"
+    } elseif ($ProjectSourceIds -and @($ProjectSourceIds).Count -gt 0) {
+      # Micro-hardening: the format check above lets a well-shaped but
+      # fabricated id through (e.g. "REQ-20991231 row 999"); cross-check
+      # against the Source IDs PROJECT.md's own Source Snapshot/Inventory
+      # actually declares, same as PROJECT.md's own requirement rows already
+      # are (Test-ProjectSourceSection, REF-001).
+      $sourceIdMatch = [regex]::Match($row.source_ref, '(MOM|REQ|TR)-\d{8}')
+      if ($sourceIdMatch.Success -and (@($ProjectSourceIds) -notcontains $sourceIdMatch.Value)) {
+        Add-Result FAIL "RTM row $rid source_ref '$($row.source_ref)' does not exist in PROJECT.md's Source Snapshot/Inventory" "RTM-008"
+      }
     }
     $designRef = "$($row.design_ref)"
     if (-not $designRef -or (Test-PlaceholderValue $designRef)) {

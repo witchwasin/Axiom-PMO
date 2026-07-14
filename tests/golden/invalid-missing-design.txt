@@ -7,7 +7,7 @@
                     "pass":  21,
                     "warn":  0,
                     "warn_blocking":  0,
-                    "fail":  5,
+                    "fail":  6,
                     "exit_code":  1
                 },
     "results":  [
@@ -147,6 +147,12 @@
                         "level":  "FAIL",
                         "rule_id":  "QA-REVIEW-001",
                         "message":  "QA review row not found in QA / Security Review table",
+                        "blocking":  true
+                    },
+                    {
+                        "level":  "FAIL",
+                        "rule_id":  "TEST-SUMMARY-001",
+                        "message":  "Standard Release requires at least one Test Summary row (or a valid test_required: false waiver)",
                         "blocking":  true
                     },
                     {
