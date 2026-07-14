@@ -1,0 +1,65 @@
+{
+  "version": "1.0.0",
+  "schema_version": "1.0",
+  "allowed_matches": [
+    {
+      "pattern": "PMO-Template-Personal",
+      "paths": [
+        "CHANGELOG.md",
+        "docs/migration/from-pmo-template-personal.md",
+        "reports/release-overhaul-report.md",
+        "scripts/check-public-hygiene.ps1",
+        "scripts/prepare-public-release.ps1",
+        "pmo-config/public-hygiene-allowlist.json"
+      ],
+      "reason": "Intentional migration and public-release history reference."
+    },
+    {
+      "pattern": "D:\\\\GitHub\\\\PMO-Template-Personal",
+      "paths": [
+        "scripts/prepare-public-release.ps1"
+      ],
+      "reason": "Constructed self-audit pattern in the non-destructive release readiness script."
+    },
+    {
+      "pattern": "remediation/9plus",
+      "paths": [
+        "reports/archive/acceptance-0.4.0.md",
+        "reports/archive/executor-brief.md",
+        "reports/archive/remediation-plan.md",
+        "reports/archive/round2-final-gate.md",
+        "reports/archive/round2-parallel-split.md",
+        "reports/archive/upgrade-baseline.md",
+        "reports/archive/upgrade-manifest.md",
+        "reports/archive/upgrade-plan-9plus.md"
+      ],
+      "reason": "Historical archive entries retained as pre-1.0.0 development evidence."
+    },
+    {
+      "pattern": "hardening/0.5",
+      "paths": [
+        "reports/archive/final-hardening-plan.md"
+      ],
+      "reason": "Historical archive entry retained as pre-1.0.0 development evidence."
+    },
+    {
+      "pattern": "37c919b",
+      "paths": [
+        "reports/archive/executor-brief.md",
+        "reports/archive/remediation-plan.md"
+      ],
+      "reason": "Historical archive entries retained as pre-1.0.0 development evidence."
+    },
+    {
+      "pattern": "Quotation.xlsx",
+      "paths": [
+        ".gitignore",
+        "CHANGELOG.md",
+        "CONTRIBUTING.md",
+        "reports/archive/ci-golden-fixture-postmortem.md",
+        "tests/golden/others-and-sensitive-source-do-not-fail-release.txt"
+      ],
+      "reason": "Synthetic sensitive-source fixture name used to prove validator behavior."
+    }
+  ]
+}

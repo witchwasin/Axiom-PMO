@@ -6,7 +6,7 @@ description: Pre/Post execution validation + Phase Gate enforcement — ป้�
 # PMO Skill: Quality Gate
 
 > **Purpose:** Enforce quality at every step — ไม่มี output ไหนออกไปโดยไม่ผ่าน gate
-> ดึง concept จาก PRIVATE-PROJECT-005 quality-gate.mjs + ปรับให้เข้ากับ PMO 8-step pipeline
+> ดึง concept จาก external execution-framework quality gates + ปรับให้เข้ากับ PMO 8-step pipeline
 
 ---
 
