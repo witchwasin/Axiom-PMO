@@ -70,6 +70,22 @@ Or, with `make`: `make check`. Everything must exit 0 before you open a PR.
    gate. Prefer the least severe level that still controls the risk — but do not
    downgrade an existing blocking rule without a documented reason.
 
+### Line endings are part of the contract
+
+`.gitattributes` marks `*.md`, `*.puml`, `*.csv`, and `*.json` as text, so a
+Windows checkout has CRLF and a Linux or macOS checkout has LF. Two consequences
+that have already caused a red CI leg:
+
+- **Never anchor `(?m)$` against raw file content** without tolerating a
+  carriage return. .NET matches `$` immediately before `\n` and never before the
+  `\r` of a `\r\n` pair, so `^<[^>\r\n]+>$` silently matches nothing on
+  Windows. Write `\r?$`, or `\s*$`, or split on `"\r?\n"` first and match the
+  lines.
+- **Anything hashed must normalize line endings first**, or the same content
+  produces different digests on different platforms.
+
+`tests/helpers/line-ending-tests.ps1` asserts both properties. Run `make eol`.
+
 ### Rules must not guess
 
 A rule may check that a declaration is present, complete, resolvable, and

@@ -224,7 +224,13 @@ function Set-E2EHandoffContent {
 
     # Everything else in this template is prose guidance in angle brackets.
     # One deterministic sentence keeps the section non-empty and placeholder-free.
-    $text = [regex]::Replace($text, '(?m)^<[^>\r\n]+>$', "Specified deterministically by the E2E fixture.")
+    #
+    # The trailing \r? is load-bearing. .gitattributes marks *.md as text, so a
+    # Windows checkout gives this template CRLF line endings, and .NET's (?m)$
+    # anchor matches only immediately before \n -- never before the \r of a
+    # \r\n pair. Without it the pattern matched nothing on Windows, every prose
+    # placeholder survived, and the generated project failed its own gate.
+    $text = [regex]::Replace($text, '(?m)^<[^>\r\n]+>[ \t]*\r?$', "Specified deterministically by the E2E fixture.")
     Set-Content -LiteralPath $specFile -Value $text -Encoding utf8 -NoNewline
   }
 
