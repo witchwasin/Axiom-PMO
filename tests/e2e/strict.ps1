@@ -4,12 +4,20 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "../../scripts/lib/pwsh-host.ps1")
+
+$pwshExe = Get-PowerShellHost
+if (-not $pwshExe) {
+  Write-Host (Get-PowerShellHostMissingMessage)
+  exit 127
+}
+
 . (Join-Path $PSScriptRoot "lib/fill-project.ps1")
 
 $workRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("pmo e2e strict " + [guid]::NewGuid().ToString("N"))
 try {
   New-Item -ItemType Directory -Force -Path $workRoot | Out-Null
-  & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $RepoPath "scripts/new-project.ps1") -ProjectCode "STRICT-E2E" -Mode Strict -OutputRoot $workRoot | Out-Null
+  & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $RepoPath "scripts/new-project.ps1") -ProjectCode "STRICT-E2E" -Mode Strict -OutputRoot $workRoot | Out-Null
   if ($LASTEXITCODE -ne 0) { throw "Strict E2E: new-project.ps1 failed with exit $LASTEXITCODE" }
   $project = Join-Path $workRoot "STRICT-E2E"
 
@@ -20,14 +28,14 @@ try {
   Set-E2EProjectContent -ProjectPath $project -Mode Strict -ProjectCode "STRICT-E2E"
 
   foreach ($gate in @("Draft", "Scope", "Design")) {
-    $output = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $RepoPath "scripts/validate-project.ps1") -ProjectPath $project -Mode Strict -Gate $gate -FailOnWarning
+    $output = & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $RepoPath "scripts/validate-project.ps1") -ProjectPath $project -Mode Strict -Gate $gate -FailOnWarning
     if ($LASTEXITCODE -ne 0) {
       $output | Write-Host
       throw "Strict E2E failed validation at Gate=$gate"
     }
   }
 
-  $output = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $RepoPath "scripts/validate-project.ps1") -ProjectPath $project -Mode Strict -Gate Release -FailOnWarning
+  $output = & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $RepoPath "scripts/validate-project.ps1") -ProjectPath $project -Mode Strict -Gate Release -FailOnWarning
   if ($LASTEXITCODE -ne 0) {
     $output | Write-Host
     throw "Strict E2E failed validation at Gate=Release"

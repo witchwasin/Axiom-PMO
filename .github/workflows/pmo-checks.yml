@@ -13,6 +13,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # The thin CLI (cli/axiom.mjs) is the only part of the framework that is
+      # not PowerShell. Pinning Node here means run-all-checks.ps1 runs its CLI
+      # tests instead of reporting them as skipped.
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Run PMO framework checks
         shell: powershell
         run: |
@@ -41,3 +49,34 @@ jobs:
           }
           Write-Host "Fault injection correctly propagated as exit $LASTEXITCODE"
           exit 0
+
+  # Linux/macOS execution via PowerShell 7 is EXPERIMENTAL. This leg exists to
+  # produce evidence for that claim rather than assertions about it, and is
+  # deliberately non-blocking: Windows PowerShell 5.1 above stays the supported
+  # reference platform. Promote it to a required leg only once it has a track
+  # record, not because it happens to be green today.
+  pmo-checks-linux-experimental:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run PMO framework checks under pwsh
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -RepoPath .
+
+      # Golden masters are stored in a form independent of the PowerShell host's
+      # JSON pretty-printer (see scripts/lib/golden-normalizer.ps1). This step is
+      # what proves it: the same files must verify under pwsh 7 here and under
+      # Windows PowerShell 5.1 in the job above.
+      - name: Verify golden master under pwsh
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1 -RepoPath . -VerifyGolden

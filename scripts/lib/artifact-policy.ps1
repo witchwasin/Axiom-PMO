@@ -99,10 +99,21 @@ function Test-RequiredArtifacts {
   # of going through the same Mode x Gate matrix as every other artifact --
   # caught by a config-mutation test that added RTM.json to a mode's Release
   # requirement and found the validator never actually enforced it.
-  $allTrackedArtifacts = @("DELIVERY.md", "RELEASE.md", "RAID-log.md", "decision-log.md", "DESIGN", "RTM.json")
+  # HANDOFF.md / DESIGN/BUILD-SPEC.md join the same matrix rather than getting
+  # their own presence check inside the handoff validator: keeping one list
+  # means a mode/gate cell in artifact-policy.json is the only place that
+  # decides whether an artifact is required, and the config-mutation test
+  # covers the new cells for free.
+  $allTrackedArtifacts = @("DELIVERY.md", "RELEASE.md", "RAID-log.md", "decision-log.md", "DESIGN", "RTM.json", "HANDOFF.md", "DESIGN/BUILD-SPEC.md")
   foreach ($artifact in $allTrackedArtifacts) {
     $requirement = if ($matrixRequired -contains $artifact) { "required" } else { "optional" }
     if ($artifact -eq "DELIVERY.md" -and $deliveryOptionalViaGithub) { $requirement = "optional" }
+    # Only report on handoff artifacts when the matrix actually asks for them.
+    # A Standard project validated at Release must not start emitting
+    # "Missing optional file HANDOFF.md" it never saw in v1.0.
+    if (($artifact -eq "HANDOFF.md" -or $artifact -eq "DESIGN/BUILD-SPEC.md") -and $requirement -eq "optional") {
+      continue
+    }
     if ($artifact -eq "DESIGN") {
       Test-Dir "DESIGN" $requirement | Out-Null
     } else {

@@ -21,6 +21,14 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+. (Join-Path $PSScriptRoot "lib/pwsh-host.ps1")
+
+$pwshExe = Get-PowerShellHost
+if (-not $pwshExe) {
+  Write-Host (Get-PowerShellHostMissingMessage)
+  exit 127
+}
 if (-not $RepoPath) { $RepoPath = Join-Path $PSScriptRoot ".." }
 $repo = (Resolve-Path -LiteralPath $RepoPath).Path
 $expectedTag = "v1.0.0"
@@ -53,7 +61,7 @@ if ($allVersions.Count -eq 1) {
 
 # --- Public hygiene ----------------------------------------------------------
 Section "Public hygiene"
-& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/check-public-hygiene.ps1") -RepoPath $repo
+& $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/check-public-hygiene.ps1") -RepoPath $repo
 $hygieneCode = $LASTEXITCODE
 if ($hygieneCode -ne 0) {
   $problems += "Public hygiene check failed (exit $hygieneCode)"
@@ -79,7 +87,7 @@ if ($RunSuite) {
     @{ n = "example-goldens"; f = "tests/golden/capture-examples.ps1"; a = @("-Verify") }
   )
   foreach ($s in $suite) {
-    & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo $s.f) @($s.a) | Out-Null
+    & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo $s.f) @($s.a) | Out-Null
     $code = $LASTEXITCODE
     if ($code -ne 0) { $problems += "Check '$($s.n)' failed (exit $code)" }
     Write-Host ("{0}: exit {1}" -f $s.n, $code)

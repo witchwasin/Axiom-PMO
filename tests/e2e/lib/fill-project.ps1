@@ -10,7 +10,7 @@ function Set-E2EProjectContent {
     [Parameter(Mandatory = $true)][string]$ProjectPath,
     [Parameter(Mandatory = $true)][ValidateSet("Lite", "Standard", "Strict")][string]$Mode,
     [Parameter(Mandatory = $true)][string]$ProjectCode,
-    [string]$Today = (Get-Date -Format "yyyy-MM-dd")
+    [string]$Today = (Get-Date).ToString("yyyy-MM-dd", [Globalization.CultureInfo]::InvariantCulture)
   )
 
   $momId = "MOM-20260710"
@@ -160,4 +160,110 @@ function Set-E2EProjectContent {
   New-Item -ItemType Directory -Force -Path (Join-Path $ProjectPath "source/REQ") | Out-Null
   "# MOM $Today`n`nTODO: attach recording." | Set-Content -LiteralPath (Join-Path $ProjectPath "source/MOM/mom.md") -Encoding utf8 -NoNewline
   "# REQ notes`n`nSee $momId item-1." | Set-Content -LiteralPath (Join-Path $ProjectPath "source/REQ/req.md") -Encoding utf8 -NoNewline
+}
+
+# P1.1 (v1.1): deterministic filler for the handoff artifacts that
+# scripts/new-project.ps1 -IncludeHandoff generates. Same principle as
+# Set-E2EProjectContent: fill the real templates rather than copying a curated
+# example over them, so the E2E run actually proves the
+# template -> generator -> Handoff gate contract holds.
+function Set-E2EHandoffContent {
+  param(
+    [Parameter(Mandatory = $true)][string]$ProjectPath,
+    [Parameter(Mandatory = $true)][ValidateSet("Lite", "Standard", "Strict")][string]$Mode,
+    [Parameter(Mandatory = $true)][string]$ProjectCode,
+    [string]$Today = (Get-Date).ToString("yyyy-MM-dd", [Globalization.CultureInfo]::InvariantCulture)
+  )
+
+  $handoffFile = Join-Path $ProjectPath "HANDOFF.md"
+  $text = Get-Content -LiteralPath $handoffFile -Raw
+
+  $text = $text -replace '- Handoff Owner: <Name \(Role\)>', "- Handoff Owner: E2E Delivery Lead"
+  $text = $text -replace '- Named Integrator: <Name \(Role\)>', "- Named Integrator: E2E Senior Engineer"
+
+  $text = $text -replace '\| <what it is> \| <D-001> \| <why it matters to the target milestone> \| <Name> \|',
+    "| E2E feature | D-001 | Proves the generated project reaches the Handoff gate | E2E Dev |"
+  $text = $text -replace '\| <what it is> \| <deferred / do-not-build> \| <why> \| <DEC-001> \|',
+    "| Second E2E feature | deferred | Out of this fixture slice | DEC-002 |"
+  $text = $text -replace '\| <constraint> \| <technical / commercial / legal / operational> \| <MOM-20260101 item 3> \|',
+    "| Fixture must validate offline | technical | MOM-20260710 item-1 |"
+  $text = $text -replace '\| 1 \| <D-001> \| none \| <Name> \| <shared prerequisite> \|',
+    "| 1 | D-001 | none | E2E Dev | Only work item in the fixture |"
+  $text = $text -replace '(?m)^\| 2 \| <D-002> \| <D-001> \| <Name> \| <consumer> \|\r?\n', ""
+  $text = $text -replace '\| <dev / demo / pilot> \| <device, OS, browser and version> \| <how it is served: localhost, HTTPS via proxy, packaged app> \| <DEC-001> \|',
+    "| demo | Desktop Chrome 126 | Served over HTTPS from the fixture host | DEC-002 |"
+  $text = $text -replace '\| Demo Date \| <YYYY-MM-DD> \|', "| Demo Date | $Today |"
+  $text = $text -replace '\| Demo Device \| <the actual hardware it runs on> \|', "| Demo Device | Fixture desktop, Chrome 126 |"
+  $text = $text -replace '\| Integrator \| <Name> \|', "| Integrator | E2E Senior Engineer |"
+  $text = $text -replace '\| Capacity \| <person-days available before the date> \|', "| Capacity | 1 person-day |"
+  $text = $text -replace '\| Reset Path \| <how to return to a clean demo state, and how long it takes> \|',
+    "| Reset Path | Regenerate the fixture project; takes under a minute |"
+  $text = $text -replace '\| Degraded Path \| <what is shown if the primary path fails live> \|',
+    "| Degraded Path | Show the recorded validator output instead |"
+  $text = $text -replace '\| <criterion> \| <how it is verified> \| <Name> \|',
+    "| Handoff gate passes | scripts/validate-project.ps1 -Gate Handoff | E2E Dev |"
+  $text = $text -replace '\| OA-001 \| <what is unresolved> \| <Name> \| <before_demo> \| <open> \|',
+    "| OA-001 | Confirm the fixture host is reachable | E2E Delivery Lead | before_demo | open |"
+  $text = $text -replace '<nothing / list>', "nothing"
+  Set-Content -LiteralPath $handoffFile -Value $text -Encoding utf8 -NoNewline
+
+  if ($Mode -ne "Lite") {
+    $specFile = Join-Path $ProjectPath "DESIGN/BUILD-SPEC.md"
+    $text = Get-Content -LiteralPath $specFile -Raw
+
+    # Tables first: their cells carry enum values the generic sweep below
+    # would flatten into prose.
+    $text = $text -replace '\| <rear camera / offline read / file export> \| <AC-002> \| <how it is actually served> \| <DEC-001> \|',
+      "| Local file read | AC-001 | Same-origin fetch over HTTPS | DEC-002 |"
+    $text = $text -replace '\| <Part> \| <quantity_on_hand> \| <integer> \| <pieces> \| <1 per part per location> \| <>= 0> \|',
+      "| Record | count | integer | items | 1 per record | >= 0 |"
+    $text = $text -replace '\| <element> \| <yes / no> \| <DEC-001 or .not applicable.> \| <DEC-002 or .retained with the record.> \|',
+      "| Record identifier | no | not applicable | retained with the record |"
+    $text = $text -replace '\| AC-001 \| <REQ-001> \| <Given \.\.\., when \.\.\., then \.\.\.> \| <automated> \| <seed name> \| <how to reset> \|',
+      "| AC-001 | REQ-001 | Given a seeded record, when it is read, then the count is returned | automated | e2e-seed | Regenerate the fixture |"
+
+    # Everything else in this template is prose guidance in angle brackets.
+    # One deterministic sentence keeps the section non-empty and placeholder-free.
+    $text = [regex]::Replace($text, '(?m)^<[^>\r\n]+>$', "Specified deterministically by the E2E fixture.")
+    Set-Content -LiteralPath $specFile -Value $text -Encoding utf8 -NoNewline
+  }
+
+  # Both digests, computed after every other artifact is final -- exactly what a
+  # real reviewer does with scripts/handoff-digest.ps1. Computing them earlier
+  # would record a review of files this function is about to rewrite.
+  $reviewFile = Join-Path $ProjectPath "HANDOFF-REVIEW.json"
+  $projectText = Get-Content -LiteralPath (Join-Path $ProjectPath "PROJECT.md") -Raw
+  $digest = Get-SourceSnapshotDigest -ProjectText $projectText
+  $repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "../../..")).Path
+  $handoffPolicy = (Get-Content -LiteralPath (Join-Path $repoRoot "pmo-config/handoff-policy.json") -Raw | ConvertFrom-Json)
+  $inputDigest = Get-ReviewInputDigest -Project $ProjectPath -HandoffPolicy $handoffPolicy
+
+  $lensIds = @(
+    "value_and_scope_slice", "capability_lifecycle", "data_cardinality_and_units",
+    "state_transitions_and_rollback", "concurrency_and_idempotency", "dependencies_and_build_order",
+    "ownership_and_capacity", "acceptance_seed_reachability", "automated_manual_test_split",
+    "privacy_and_data_classification", "environment_and_device_constraints",
+    "demo_startup_reset_and_recovery"
+  )
+  $review = [pscustomobject]@{
+    schema_version = "1.0"
+    project_code = $ProjectCode
+    reviewed_at = $Today
+    reviewer_kind = "ai"
+    reviewer = "e2e fixture"
+    handoff_target = "demo"
+    source_snapshot = [pscustomobject]@{
+      source_ids = @("MOM-20260710", "REQ-20260710")
+      digest = $digest
+    }
+    review_inputs = [pscustomobject]@{ digest = $inputDigest }
+    lenses = @($lensIds | ForEach-Object { [pscustomobject]@{ lens = $_; status = "reviewed" } })
+    findings = @()
+    recommendation = [pscustomobject]@{
+      ready_to_start_development = $true
+      ready_to_demo = $true
+      notes = "E2E fixture: no findings raised."
+    }
+  }
+  ($review | ConvertTo-Json -Depth 8) | Set-Content -LiteralPath $reviewFile -Encoding utf8 -NoNewline
 }

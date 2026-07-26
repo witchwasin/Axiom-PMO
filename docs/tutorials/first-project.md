@@ -13,6 +13,11 @@ This scaffolds a mode-aware project from `templates/`. Standard adds `DESIGN/`
 and `RELEASE.md`; Strict also adds `RAID-log.md`, `decision-log.md`, and
 `RTM.json`.
 
+Add `-IncludeHandoff -Target demo` to also scaffold `HANDOFF.md`,
+`DESIGN/BUILD-SPEC.md`, and `HANDOFF-REVIEW.json`. The scaffold deliberately
+**fails** the Handoff gate until you fill it in — a generator that produced a
+passing handoff would be manufacturing evidence.
+
 ## 2. Add source material
 
 Put the real inputs under `source/`:
@@ -41,6 +46,10 @@ Strict automatically.
 
 ## 5. Validate before each gate
 
+```text
+Draft -> Scope -> Design -> Handoff -> Release
+```
+
 ```powershell
 # Scope gate
 powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 `
@@ -54,10 +63,35 @@ powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 `
 A non-zero exit means something is missing, placeholder, unresolvable, or
 unapproved. Fix the artifact — do not weaken the check.
 
-## 6. Study a worked example
+## 6. Before handing work to a developer
 
-Compare against [`examples/STANDARD-FEATURE`](../../examples/STANDARD-FEATURE) or,
-for a high-risk project with an RTM,
-[`examples/STRICT-HIGH-RISK`](../../examples/STRICT-HIGH-RISK).
+The gates above prove the governance is complete. They do not prove a developer
+can start. That is what the `Handoff` gate is for:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 `
+  -ProjectPath projects/P02-DEMO -Mode Standard -Gate Handoff
+
+powershell -ExecutionPolicy Bypass -File scripts/assess-handoff.ps1 `
+  -ProjectPath projects/P02-DEMO -Mode Standard
+```
+
+It reuses your existing `Design Ready` approval and adds no new sign-off. The
+assessment reports readiness per stage rather than as one boolean, because
+"ready to build" and "ready to demo" are different questions:
+
+```text
+Verdict: READY TO BUILD, NOT READY TO DEMO
+```
+
+See [handoff readiness](../concepts/handoff-readiness.md) and the walkthrough in
+[three-day demo handoff](../guides/three-day-demo-handoff.md).
+
+## 7. Study a worked example
+
+Compare against [`examples/STANDARD-FEATURE`](../../examples/STANDARD-FEATURE),
+[`examples/HANDOFF-DEMO`](../../examples/HANDOFF-DEMO) for a demo handoff, or
+[`examples/STRICT-HIGH-RISK`](../../examples/STRICT-HIGH-RISK) for a high-risk
+project with an RTM.
 
 Next: [using Axiom-PMO with an AI agent](using-with-an-ai-agent.md).

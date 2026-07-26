@@ -24,6 +24,8 @@ Source-backed Intake -> Risk Review -> Design + Acceptance Criteria -> Separate 
 - `DELIVERY.md` or GitHub Issues with acceptance criteria and test checklist
 - `RAID-log.md`
 - `decision-log.md`
+- `HANDOFF.md`, `DESIGN/BUILD-SPEC.md`, and `HANDOFF-REVIEW.json` when the work
+  is handed to a developer
 - `RELEASE.md` with rollback notes
 
 ## AI Guardrails
@@ -32,6 +34,10 @@ Source-backed Intake -> Risk Review -> Design + Acceptance Criteria -> Separate 
 - Inferred, missing, or conflicting evidence must show `evidence_status` and be reviewed by a human.
 - If the source does not support a claim, mark it as open question or gap.
 - AI must not approve scope, release, deployment, or production readiness.
+- A semantic handoff review is candidate evidence, never an approval. At Strict,
+  a missing or stale review is a **failure**, not a warning, and an AI may not
+  close findings about privacy classification or environment constraints — those
+  need a named human and a decision record.
 
 ## Human Verification
 
@@ -49,3 +55,8 @@ Check at minimum:
 - No unresolved blocker before release.
 - Release approval is logged in `decision-log.md`.
 - `scripts/validate-project.ps1 -Release` passes.
+- Before a developer handoff: `-Gate Handoff` passes, every declared sensitive
+  data element carries a classification and retention decision (`HANDOFF-011`),
+  every declared runtime capability has a resolved serving model
+  (`HANDOFF-012`), and `HANDOFF-REVIEW.json` is present and current
+  (`HANDOFF-010`).

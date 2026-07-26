@@ -13,11 +13,15 @@ $skillManifestPath = Join-Path $repo "pmo-config/skill-manifest.json"
 $validationRulesPath = Join-Path $repo "pmo-config/validation-rules.json"
 $referenceTypesPath = Join-Path $repo "pmo-config/reference-types.json"
 $artifactPolicyPath = Join-Path $repo "pmo-config/artifact-policy.json"
+$handoffPolicyPath = Join-Path $repo "pmo-config/handoff-policy.json"
+$diagnosticsSchemaPath = Join-Path $repo "pmo-config/diagnostics-schema.json"
 $policy = $null
 $skillManifest = $null
 $validationRules = $null
 $referenceTypesConfig = $null
 $artifactPolicy = $null
+$handoffPolicy = $null
+$diagnosticsSchema = $null
 if (Test-Path -LiteralPath $policyPath -PathType Leaf) {
   $policy = Get-Content -LiteralPath $policyPath -Raw | ConvertFrom-Json
 }
@@ -32,6 +36,12 @@ if (Test-Path -LiteralPath $referenceTypesPath -PathType Leaf) {
 }
 if (Test-Path -LiteralPath $artifactPolicyPath -PathType Leaf) {
   $artifactPolicy = Get-Content -LiteralPath $artifactPolicyPath -Raw | ConvertFrom-Json
+}
+if (Test-Path -LiteralPath $handoffPolicyPath -PathType Leaf) {
+  $handoffPolicy = Get-Content -LiteralPath $handoffPolicyPath -Raw | ConvertFrom-Json
+}
+if (Test-Path -LiteralPath $diagnosticsSchemaPath -PathType Leaf) {
+  $diagnosticsSchema = Get-Content -LiteralPath $diagnosticsSchemaPath -Raw | ConvertFrom-Json
 }
 
 $pass = 0
@@ -209,8 +219,8 @@ if (Test-Path -LiteralPath $skillsRoot -PathType Container) {
   $actualSkills = @(Get-ChildItem -LiteralPath $skillsRoot -Directory | Select-Object -ExpandProperty Name)
 }
 
-$missingActive = $activeSkills | Where-Object { $actualSkills -notcontains $_ }
-$extraActive = $actualSkills | Where-Object { $activeSkills -notcontains $_ }
+$missingActive = @($activeSkills | Where-Object { $actualSkills -notcontains $_ })
+$extraActive = @($actualSkills | Where-Object { $activeSkills -notcontains $_ })
 if ($missingActive.Count -eq 0 -and $extraActive.Count -eq 0) {
   Add-Result PASS "Active skill runtime contains exactly 7 skills" "DOCTOR-001"
 } else {
@@ -248,7 +258,7 @@ $changelogText = Get-Content -LiteralPath (Join-Path $repo "CHANGELOG.md") -Raw
 if ($changelogText -match '(?m)^##\s+([^\s]+)\s+-') {
   $changelogFirstVersion = $Matches[1]
 }
-$configVersions = @($policy.version, $skillManifest.version, $validationRules.version, $contextMapConfig.version) | Where-Object { $_ }
+$configVersions = @($policy.version, $skillManifest.version, $validationRules.version, $contextMapConfig.version, $handoffPolicy.version, $diagnosticsSchema.version) | Where-Object { $_ }
 if ($versionText -eq $changelogFirstVersion -and ($configVersions | Where-Object { $_ -ne $versionText }).Count -eq 0) {
   Add-Result PASS "VERSION, CHANGELOG, and JSON config versions match" "DOCTOR-005"
 } else {
@@ -266,6 +276,8 @@ $schemaVersionConfigs = [ordered]@{
   "skill-manifest.json" = $skillManifest
   "validation-rules.json" = $validationRules
   "context-map.json" = $contextMapConfig
+  "handoff-policy.json" = $handoffPolicy
+  "diagnostics-schema.json" = $diagnosticsSchema
 }
 $schemaVersionProblems = @()
 foreach ($name in $schemaVersionConfigs.Keys) {
@@ -322,6 +334,47 @@ if ($missingFromCatalog.Count -eq 0 -and $deadCatalogEntries.Count -eq 0) {
   if ($deadCatalogEntries.Count -gt 0) {
     Add-Result FAIL ("Dead catalog entries (in validation-rules.json but never emitted): " + ($deadCatalogEntries -join ", ")) "DOCTOR-007"
   }
+}
+
+# DOCTOR-008: every rule that can produce an actionable diagnostic must carry
+# remediation text. A FAIL that says only what broke, with no "here is what to
+# do", is the failure mode this whole diagnostics contract exists to prevent.
+# INFO-only rules are exempt: they never render a suggestion.
+$actionableSeverities = @("fail", "fail_release", "warn")
+$rulesWithoutSuggestion = @()
+if ($validationRules -and $validationRules.rules) {
+  foreach ($prop in $validationRules.rules.PSObject.Properties) {
+    $entry = $prop.Value
+    if ($actionableSeverities -notcontains [string]$entry.severity) { continue }
+    if ([string]::IsNullOrWhiteSpace([string]$entry.suggestion)) {
+      $rulesWithoutSuggestion += $prop.Name
+    }
+  }
+}
+if ($rulesWithoutSuggestion.Count -eq 0) {
+  Add-Result PASS "Every fail/warn rule in the catalog carries a suggestion" "DOCTOR-008"
+} else {
+  Add-Result FAIL ("Rules missing a suggestion: " + (($rulesWithoutSuggestion | Sort-Object) -join ", ")) "DOCTOR-008"
+}
+
+# DOCTOR-009: a documentation_url must never 404. The catalog stores a
+# repo-relative path; the emitted URL is that path joined to
+# documentation_base_url, so if the file is absent every diagnostic for that
+# rule advertises a dead link.
+$rulesWithBrokenDocs = @()
+if ($validationRules -and $validationRules.rules) {
+  foreach ($prop in $validationRules.rules.PSObject.Properties) {
+    $docPath = [string]$prop.Value.documentation
+    if ([string]::IsNullOrWhiteSpace($docPath)) { continue }
+    if (-not (Test-Path -LiteralPath (Join-Path $repo $docPath) -PathType Leaf)) {
+      $rulesWithBrokenDocs += "$($prop.Name) -> $docPath"
+    }
+  }
+}
+if ($rulesWithBrokenDocs.Count -eq 0) {
+  Add-Result PASS "Every rule documentation path resolves to a file" "DOCTOR-009"
+} else {
+  Add-Result FAIL ("Rules with unresolvable documentation: " + (($rulesWithBrokenDocs | Sort-Object) -join ", ")) "DOCTOR-009"
 }
 
 $settingsPath = Join-Path $repo ".claude/settings.json"

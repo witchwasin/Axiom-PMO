@@ -25,6 +25,28 @@ framework's own documentation for its mechanics.
 Output from an execution framework is **candidate evidence**, not automatically
 trusted truth. Axiom-PMO validates it before it becomes release-ready.
 
+The same rule applies to Axiom-PMO's own AI-produced output. A semantic handoff
+review recorded in `HANDOFF-REVIEW.json` is candidate evidence too: the
+deterministic validator checks that it exists, covers every lens, has an owner
+per finding, and is current — never that its conclusions were right. See
+[handoff readiness](../concepts/handoff-readiness.md).
+
+## The handoff boundary
+
+The `Handoff` gate is where the two planes meet, and it is deliberately drawn on
+Axiom-PMO's side of the line:
+
+| Axiom-PMO answers | The execution framework answers |
+|---|---|
+| Is the contract complete enough to act on? | How will it be implemented? |
+| What is built now, what is deferred, in what order? | What is the coding plan for step 1? |
+| Who owns each stream, and what blocks which stage? | Which tests are written first? |
+| Which capabilities and data elements have decisions? | How is the code structured? |
+
+`HANDOFF.md` and `DESIGN/BUILD-SPEC.md` are the input an execution framework
+should read before planning. They state what must be true of the result; they do
+not state how to get there.
+
 ## The compatibility levels
 
 Interoperability is described as a ladder. Higher levels build on lower ones.

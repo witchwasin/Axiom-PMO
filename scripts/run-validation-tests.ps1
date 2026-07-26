@@ -11,9 +11,18 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "lib/pwsh-host.ps1")
+. (Join-Path $PSScriptRoot "lib/golden-normalizer.ps1")
+
 $root = Resolve-Path -LiteralPath $RepoPath
 $repo = $root.Path
 $validator = Join-Path $repo "scripts/validate-project.ps1"
+
+$pwshExe = Get-PowerShellHost
+if (-not $pwshExe) {
+  Write-Host (Get-PowerShellHostMissingMessage)
+  exit 127
+}
 
 $cases = @(
   @{ Name = "example-lite-bugfix-scope"; Path = "examples/LITE-BUGFIX"; Mode = "Lite"; Gate = "Scope"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; Type = "positive" },
@@ -108,7 +117,67 @@ $cases = @(
 
   @{ Name = "security-review-pending"; Path = "tests/fixtures/invalid-security-review-pending"; Mode = "Strict"; Gate = "Release"; ShouldPass = $false; Rule = "SECURITY-REVIEW-001"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "evidence-file-missing"; Path = "tests/fixtures/invalid-evidence-file-missing"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "TEST-EVIDENCE-001"; ExpectedLevel = "FAIL"; Type = "negative" },
-  @{ Name = "malformed-external-evidence"; Path = "tests/fixtures/invalid-malformed-external-evidence"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "QA-REVIEW-001"; ExpectedLevel = "FAIL"; Type = "negative" }
+  @{ Name = "malformed-external-evidence"; Path = "tests/fixtures/invalid-malformed-external-evidence"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "QA-REVIEW-001"; ExpectedLevel = "FAIL"; Type = "negative" },
+
+  # -- Handoff gate (v1.1) -----------------------------------------------------
+  # Positive cases first. The Design case is load-bearing: it proves that adding
+  # the Handoff gate did not retro-apply handoff requirements to the gates that
+  # existed in v1.0.
+  @{ Name = "handoff-demo-standard"; Path = "examples/HANDOFF-DEMO"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
+  @{ Name = "handoff-demo-design-gate-unaffected"; Path = "examples/HANDOFF-DEMO"; Mode = "Standard"; Gate = "Design"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
+  @{ Name = "handoff-demo-scope-gate-unaffected"; Path = "examples/HANDOFF-DEMO"; Mode = "Standard"; Gate = "Scope"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
+  @{ Name = "valid-handoff-lite"; Path = "tests/fixtures/valid-handoff-lite"; Mode = "Lite"; Gate = "Handoff"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
+  @{ Name = "valid-handoff-strict"; Path = "tests/fixtures/valid-handoff-strict"; Mode = "Strict"; Gate = "Handoff"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
+  # Passes the gate with an open action still outstanding. The gate is right to
+  # pass it -- the contract is complete -- and the assessment is what has to
+  # report that the demo is still blocked. See handoff-assessment-tests.ps1.
+  @{ Name = "valid-handoff-action-blocks-demo"; Path = "tests/fixtures/valid-handoff-action-blocks-demo"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
+
+  @{ Name = "handoff-missing"; Path = "tests/fixtures/invalid-handoff-missing"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-001"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @("STRUCT-001", "LINK-001") },
+  @{ Name = "handoff-missing-buildspec"; Path = "tests/fixtures/invalid-handoff-missing-buildspec"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-001"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @("STRUCT-001", "LINK-001", "REF-001") },
+  @{ Name = "handoff-metadata-incomplete"; Path = "tests/fixtures/invalid-handoff-metadata-incomplete"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-001"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-scope-incomplete"; Path = "tests/fixtures/invalid-handoff-scope-incomplete"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-002"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-scope-unresolved-ref"; Path = "tests/fixtures/invalid-handoff-scope-unresolved-ref"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-002"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @("HANDOFF-004") },
+  @{ Name = "handoff-generic-owner"; Path = "tests/fixtures/invalid-handoff-generic-owner"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-003"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-workitem-generic-owner"; Path = "tests/fixtures/invalid-handoff-workitem-generic-owner"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-003"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-lite-generic-owner-warns"; Path = "tests/fixtures/invalid-handoff-lite-generic-owner"; Mode = "Lite"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-003"; ExpectedLevel = "WARN"; Type = "negative"; FailOnWarning = $true; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-dependency-missing"; Path = "tests/fixtures/invalid-handoff-dependency-missing"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-004"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-sequence-inverted"; Path = "tests/fixtures/invalid-handoff-sequence-inverted"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-004"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-sequence-blank-depends"; Path = "tests/fixtures/invalid-handoff-sequence-blank-depends"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-004"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-buildspec-section-missing"; Path = "tests/fixtures/invalid-handoff-buildspec-section-missing"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-005"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-buildspec-waiver-no-rationale"; Path = "tests/fixtures/invalid-handoff-buildspec-waiver-no-rationale"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-005"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-buildspec-waiver-not-allowed"; Path = "tests/fixtures/invalid-handoff-buildspec-waiver-not-allowed"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-005"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-acceptance-no-execution"; Path = "tests/fixtures/invalid-handoff-acceptance-no-execution"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-006"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-acceptance-no-fixture"; Path = "tests/fixtures/invalid-handoff-acceptance-no-fixture"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-007"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-demo-no-integrator"; Path = "tests/fixtures/invalid-handoff-demo-no-integrator"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-008"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-demo-no-reset"; Path = "tests/fixtures/invalid-handoff-demo-no-reset"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-008"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-action-no-owner"; Path = "tests/fixtures/invalid-handoff-action-no-owner"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-009"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-action-no-blocking-point"; Path = "tests/fixtures/invalid-handoff-action-no-blocking-point"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-009"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-review-missing"; Path = "tests/fixtures/invalid-handoff-review-missing"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-010"; ExpectedLevel = "WARN"; Type = "negative"; FailOnWarning = $true; AllowedSecondaryRules = @("LINK-001") },
+  @{ Name = "handoff-review-stale"; Path = "tests/fixtures/invalid-handoff-review-stale"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-010"; ExpectedLevel = "WARN"; Type = "negative"; FailOnWarning = $true; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-review-unknown-lens"; Path = "tests/fixtures/invalid-handoff-review-unknown-lens"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-010"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-review-finding-no-owner"; Path = "tests/fixtures/invalid-handoff-review-finding-no-owner"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-010"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-review-open-critical-warns"; Path = "tests/fixtures/invalid-handoff-review-open-critical"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-010"; ExpectedLevel = "WARN"; Type = "negative"; FailOnWarning = $true; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-sensitive-no-decision"; Path = "tests/fixtures/invalid-handoff-sensitive-no-decision"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-011"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-capability-unresolved"; Path = "tests/fixtures/invalid-handoff-capability-unresolved"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-012"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-environment-unresolved"; Path = "tests/fixtures/invalid-handoff-environment-unresolved"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-012"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+
+  # -- Closure authority, freshness, and reference resolution -----------------
+  # These are the checks that stop the gate reporting "ready" on evidence that
+  # was never actually produced: a finding closed by whoever felt like closing
+  # it, a review that no longer describes the artifacts, or a reference that
+  # points at nothing.
+  @{ Name = "handoff-ai-closed-human-lens"; Path = "tests/fixtures/invalid-handoff-ai-closed-human-lens"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-010"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-accepted-risk-no-decision"; Path = "tests/fixtures/invalid-handoff-accepted-risk-no-decision"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-010"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-closed-unresolvable-decision"; Path = "tests/fixtures/invalid-handoff-closed-unresolvable-decision"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-010"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-review-stale-inputs"; Path = "tests/fixtures/invalid-handoff-review-stale-inputs"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-010"; ExpectedLevel = "WARN"; Type = "negative"; FailOnWarning = $true; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-review-no-input-digest"; Path = "tests/fixtures/invalid-handoff-review-no-input-digest"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-010"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-acceptance-unresolved-requirement"; Path = "tests/fixtures/invalid-handoff-acceptance-unresolved-requirement"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-006"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-sensitive-freetext-decision"; Path = "tests/fixtures/invalid-handoff-sensitive-freetext-decision"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-011"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-environment-freetext-decision"; Path = "tests/fixtures/invalid-handoff-environment-freetext-decision"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-012"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-mode-mismatch"; Path = "tests/fixtures/invalid-handoff-mode-mismatch"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-001"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-horizon-not-a-date"; Path = "tests/fixtures/invalid-handoff-horizon-not-a-date"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-001"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-buildspec-ref-missing"; Path = "tests/fixtures/invalid-handoff-buildspec-ref-missing"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-001"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() }
 )
 
 $doctorCases = @(
@@ -143,7 +212,7 @@ foreach ($case in $cases) {
 
   $previousErrorActionPreference = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
-  $output = & powershell @psArgs 2>$null
+  $output = & $pwshExe @psArgs 2>$null
   $nativeExitCode = $LASTEXITCODE
   $ErrorActionPreference = $previousErrorActionPreference
 
@@ -157,18 +226,22 @@ foreach ($case in $cases) {
   $rawOutput = $rawOutput.Replace($repoJsonEscaped, '<REPO_ROOT>').Replace($repo, '<REPO_ROOT>')
   $goldenFile = Join-Path $GoldenMasterDir "$($case.Name).txt"
   if ($CaptureGolden) {
-    Set-Content -LiteralPath $goldenFile -Value $rawOutput -NoNewline -Encoding utf8
+    # Store the canonical form, not the capturing host's pretty-printer output.
+    # A golden captured on Windows PowerShell 5.1 and one captured on pwsh 7
+    # are then byte-identical, so re-capturing on either platform produces a
+    # reviewable diff instead of rewriting all 90 files.
+    Set-Content -LiteralPath $goldenFile -Value (Get-CanonicalGoldenText -Text $rawOutput) -NoNewline -Encoding utf8
   } elseif ($VerifyGolden) {
     if (-not (Test-Path -LiteralPath $goldenFile)) {
       $goldenMismatches += "$($case.Name): no golden file recorded"
     } else {
-      # Compare with normalized line endings: git's text normalization
-      # rewrites the golden files' CRLF/LF mix on every checkout (autocrlf),
-      # so a byte-exact comparison flags every case after a git round-trip
-      # even though the content is identical.
-      $expected = ((Get-Content -LiteralPath $goldenFile -Raw) -replace "`r`n", "`n").TrimEnd()
-      $actual = ($rawOutput -replace "`r`n", "`n").TrimEnd()
-      if ($expected -ne $actual) {
+      # Compare canonically (see scripts/lib/golden-normalizer.ps1): git's text
+      # normalization rewrites CRLF/LF on every checkout, and the JSON
+      # pretty-printer differs between Windows PowerShell 5.1 and pwsh 7. Rule
+      # ids, levels, blocking flags, messages, counters, and the exit code are
+      # all still compared exactly.
+      $expected = Get-Content -LiteralPath $goldenFile -Raw
+      if (-not (Test-GoldenMatch -Expected $expected -Actual $rawOutput)) {
         $goldenMismatches += "$($case.Name): output differs from golden master"
       }
     }
@@ -188,7 +261,11 @@ foreach ($case in $cases) {
     $matchingRules = @($json.results | Where-Object { $_.rule_id -eq $case.Rule -and $_.level -eq $case.ExpectedLevel })
     $ruleOk = ($matchingRules.Count -gt 0)
 
-    if ($case.AllowedSecondaryRules -or $case.ForbiddenRules) {
+    # ContainsKey, not truthiness: an explicitly-supplied empty
+    # AllowedSecondaryRules means "this fixture must fire nothing else", and
+    # @() is falsy in PowerShell, so testing the value would silently turn the
+    # strictest possible assertion into no assertion at all.
+    if ($case.ContainsKey('AllowedSecondaryRules') -or $case.ContainsKey('ForbiddenRules')) {
       $primaryAndAllowed = @($case.Rule)
       if ($case.AllowedSecondaryRules) {
         $primaryAndAllowed += @($case.AllowedSecondaryRules)
@@ -231,7 +308,7 @@ foreach ($case in $doctorCases) {
 
   $previousErrorActionPreference = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
-  $output = & powershell @psArgs 2>$null
+  $output = & $pwshExe @psArgs 2>$null
   $nativeExitCode = $LASTEXITCODE
   $ErrorActionPreference = $previousErrorActionPreference
   $textOutput = $output | Out-String
@@ -257,7 +334,7 @@ if ($VerifyGolden) {
     Write-Host "Golden master verification FAILED ($($goldenMismatches.Count) mismatch(es)):"
     foreach ($m in $goldenMismatches) { Write-Host "  - $m" }
   } else {
-    Write-Host "Golden master verification: all $($cases.Count) case(s) match byte-for-byte"
+    Write-Host "Golden master verification: all $($cases.Count) case(s) match (canonical comparison)"
   }
 }
 

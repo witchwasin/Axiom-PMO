@@ -10,6 +10,11 @@ Legacy folders can be mapped into the lightweight structure:
 | `UserFlow/`, `SystemFlow/`, `UseCase/` | `DESIGN/` |
 | `Wireframe/` | `DESIGN/WIREFRAME.md` or `.html` |
 | `TaskBreakdown/` | `DELIVERY.md` or GitHub Issues |
+| *(no legacy equivalent)* | `HANDOFF.md`, `DESIGN/BUILD-SPEC.md` |
+
+The last row is the point of 1.1: no legacy artifact answered "can a developer
+start on Monday?", which is why that question kept being answered in a meeting
+instead of in a document. See [artifact map](docs/guides/artifact-map.md).
 
 ## Skill Runtime Migration
 
@@ -31,3 +36,35 @@ The active runtime now uses only the 7 skills listed in `pmo-config/skill-manife
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project-path> -Mode Standard -Gate Release
 ```
+
+## From 1.0 to 1.1
+
+**Nothing is required.** A project that does not request the `Handoff` gate
+validates exactly as it did in 1.0, and the only change a JSON consumer sees is
+additive fields on each diagnostic.
+
+To adopt the gate on an existing project:
+
+1. Copy `templates/HANDOFF.md` into the project root and fill the metadata block
+   (target, horizon, handoff owner, named integrator).
+2. For Standard/Strict, copy `templates/BUILD-SPEC.md` to
+   `DESIGN/BUILD-SPEC.md`. Each section declares `Status: specified` or
+   `not_required` with a written rationale — a blank section is never valid.
+3. Record a semantic review in `HANDOFF-REVIEW.json`. Get the freshness digest
+   with `scripts/handoff-digest.ps1 -ProjectPath <project>`.
+4. Run the gate and the assessment:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project-path> -Mode Standard -Gate Handoff
+powershell -ExecutionPolicy Bypass -File scripts/assess-handoff.ps1 -ProjectPath <project-path> -Mode Standard
+```
+
+The gate adds no new human approval — it reuses the `Design Ready` row already in
+`PROJECT.md`. See [handoff readiness](docs/concepts/handoff-readiness.md).
+
+### For consumers of the JSON output
+
+`level`, `rule_id`, `message`, and `blocking` are unchanged. Six fields were
+added; ignore the ones you do not use. Fields that do not apply are `null`, never
+absent. The contract and its deprecation policy are in
+[`docs/reference/diagnostics-contract.md`](docs/reference/diagnostics-contract.md).
