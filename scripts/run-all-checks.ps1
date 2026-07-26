@@ -30,6 +30,15 @@ function Invoke-Check {
   if ($exitCode -ne 0) {
     Write-Host ""
     Write-Host "Check failed: $Name exit $exitCode"
+    # This aggregator runs a dozen checks inside a single CI step, so a bare
+    # "Process completed with exit code 1" annotation says nothing about which
+    # one broke -- and downloading the job log needs repository admin rights
+    # that a contributor reading a failed PR does not have. A workflow-command
+    # annotation puts the failing check's name on the run summary, where anyone
+    # can see it.
+    if ($env:GITHUB_ACTIONS -eq "true") {
+      Write-Host "::error title=Axiom-PMO check failed::$Name exited $exitCode"
+    }
     exit $exitCode
   }
 }
