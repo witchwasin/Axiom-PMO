@@ -170,6 +170,34 @@ function Resolve-LeadingReference {
   return [bool]$result.Resolved
 }
 
+# Decider recorded against a decision-log row, or $null when the row does not
+# exist. The column name varies a little across template generations, so the
+# last non-empty cell that is not the id, date, or rationale is used as a
+# fallback only when no explicit decider column is present.
+function Get-DecisionDecider {
+  param([string]$DecisionId)
+
+  $path = Join-Path $script:project "decision-log.md"
+  if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return $null }
+
+  $rows = @(Get-TableRowsAfterHeading (Get-Content -LiteralPath $path -Raw) '^#\s+Decision Log')
+  if ($rows.Count -eq 0) {
+    $rows = @(Get-TableRowsAfterHeading (Get-Content -LiteralPath $path -Raw) '^##?\s+')
+  }
+  foreach ($row in $rows) {
+    if ("$($row.ID)".Trim() -ne $DecisionId) { continue }
+    foreach ($column in @("Decided By", "Owner", "Approved By", "Decider")) {
+      $prop = $row.PSObject.Properties[$column]
+      if ($prop -and -not [string]::IsNullOrWhiteSpace("$($prop.Value)")) {
+        return "$($prop.Value)".Trim()
+      }
+    }
+    # The row exists but names nobody.
+    return ""
+  }
+  return $null
+}
+
 function Test-HandoffReadiness {
   param(
     [string]$Project,
@@ -754,14 +782,32 @@ function Test-BuildSpecDataInventory {
   if ($rows.Count -eq 0) { return }
 
   $yesValues = @($HandoffPolicy.sensitive_data.declared_yes_values)
+  $noValues = @($HandoffPolicy.sensitive_data.declared_no_values)
+  $requireExplicit = [bool]$HandoffPolicy.sensitive_data.requires_explicit_declaration
   $problems = 0
   foreach ($row in $rows) {
     $element = "$($row.'Data Element')".Trim()
     $declared = "$($row.'Contains Sensitive Data')".Trim().ToLowerInvariant()
     $isSensitive = $false
+    $isNotSensitive = $false
     foreach ($value in $yesValues) {
       if ($declared -eq ([string]$value).ToLowerInvariant()) { $isSensitive = $true }
     }
+    foreach ($value in $noValues) {
+      if ($declared -eq ([string]$value).ToLowerInvariant()) { $isNotSensitive = $true }
+    }
+
+    # "maybe", "unclear", or blank is an *undeclared* classification, not a
+    # negative one. Treating anything-that-is-not-yes as no let a row opt out
+    # of this rule by being vague -- the exact move a data inventory exists to
+    # prevent. The author still decides; the validator only insists that they do.
+    if ($requireExplicit -and -not $isSensitive -and -not $isNotSensitive) {
+      Add-Result FAIL "Data element '$element' does not declare whether it contains sensitive data (expected one of: $((@($yesValues) + @($noValues)) -join ', '))" "HANDOFF-011" $true `
+        -Artifact "DESIGN/BUILD-SPEC.md" -ItemId $element -Field "Contains Sensitive Data"
+      $problems++
+      continue
+    }
+
     # The author's own declaration is the trigger. The validator does not read
     # the element's name and decide for itself whether it is sensitive.
     if (-not $isSensitive) { continue }
@@ -942,6 +988,25 @@ function Test-HandoffSemanticReview {
         $problems += "$id is '$status' under lens '$lens', which only a human may close -- an AI reviewer must leave it open and name the person who decides"
       } elseif ($aiClosable -notcontains $status) {
         $problems += "$id is '$status', which an AI reviewer may not set (allowed: $($aiClosable -join ', '))"
+      }
+    }
+
+    # reviewer_kind is a self-declaration, and no offline validator can prove
+    # who typed a JSON field. What can be checked is whether the closure is
+    # anchored to a governed artifact a person is accountable for: a human-only
+    # finding must cite a DEC-### that exists in decision-log.md with a named
+    # decider. Writing "human" in reviewer_kind buys nothing on its own.
+    if ($humanOnlyLenses -contains $lens -and $closure.human_only_requires_decision_log_entry) {
+      if ($decisionRef -notmatch '(DEC-\d{3})') {
+        $problems += "$id is '$status' under human-only lens '$lens' and cites no decision-log entry -- closure there must reference a DEC-### somebody signed"
+      } else {
+        $decisionId = $Matches[1]
+        $decider = Get-DecisionDecider -DecisionId $decisionId
+        if ($null -eq $decider) {
+          $problems += "$id cites $decisionId, which is not a row in decision-log.md"
+        } elseif (Test-GenericOwner -Value $decider -OwnerPolicy $HandoffPolicy.owner_policy) {
+          $problems += "$id closes a human-only lens against $decisionId, whose decider is '$decider' rather than a named person"
+        }
       }
     }
   }

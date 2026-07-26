@@ -1,0 +1,27 @@
+@startuml
+title HANDOFF-DEMO - Scan and adjust stock
+
+|Workshop user|
+start
+:Open the part lookup page;
+:Scan the code on the part label;
+|System|
+if (Code matches a part?) then (yes)
+  :Show the part and its on-hand count;
+else (no)
+  :Show "part not found" and offer manual entry;
+  stop
+endif
+|Workshop user|
+:Choose consume or receive;
+:Enter a whole number of pieces;
+|System|
+if (Would the result go below zero?) then (yes)
+  :Reject and keep the previous count;
+  stop
+else (no)
+  :Apply the movement and record who and when;
+endif
+:Show the updated on-hand count;
+stop
+@enduml

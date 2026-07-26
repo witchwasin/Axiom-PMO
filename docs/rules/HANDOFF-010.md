@@ -39,6 +39,14 @@ Configured in `pmo-config/handoff-policy.json` under `semantic_review.closure_po
 
 The intended workflow is that an AI drafts the review and a human signs it. When a human has closed the findings only they could close, the file's `reviewer_kind` is `human` and `reviewer` names them — see `examples/HANDOFF-DEMO/HANDOFF-REVIEW.json`. An AI-authored review that closes a privacy finding on its own authority fails this rule, which is the point: a rule an agent can talk its way past is not a control.
 
+### `reviewer_kind` is an attestation, not proof
+
+No offline validator can prove who typed a JSON field. Claiming otherwise would be exactly the false assurance this framework exists to prevent, so the check does not rest on that word alone.
+
+What is actually enforced: a finding closed under a **human-only lens** must cite a `DEC-###` that exists in `decision-log.md` **with a named decider**. That anchors the closure to a governed artifact a person is accountable for. Writing `"reviewer_kind": "human"` in a file buys nothing on its own — the decision row has to exist, and its `Decided By` cannot be `TBD` or a team name.
+
+This is a real limit, stated plainly: the control makes an unattributed closure *traceable to a document*, not *provably human*. Signed commits or a reviewed pull request are what make it provable, and both live outside this validator.
+
 ## Two digests, not one
 
 A review goes stale two different ways:

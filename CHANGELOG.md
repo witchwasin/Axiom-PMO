@@ -142,6 +142,25 @@ fields on the JSON diagnostic.
   tighten.** `@()` is falsy in PowerShell, so a fixture declaring "this must
   fire nothing else" asserted nothing at all. The runner now tests for key
   presence, and every handoff negative fixture genuinely isolates its rule.
+- **The release helper suggested the previous release's tag.**
+  `scripts/prepare-public-release.ps1` hardcoded `v1.0.0`; it now derives the
+  tag and commit message from `VERSION`. A helper that names a stale version
+  reads as authoritative, and the version it prints is the one that gets typed.
+- **A vague privacy declaration bypassed `HANDOFF-011`.** Anything that was not
+  a recognised "yes" was treated as "no", so a `Contains Sensitive Data` cell
+  reading `maybe` skipped the classification requirement entirely. An
+  unrecognised value is now an *undeclared* classification and fails. The
+  validator still never decides what is sensitive — it insists the author does.
+- **A blocked demo could still score 100/100.** Open actions blocked a stage
+  verdict without costing score, so the report printed a perfect number
+  directly above `Ready to Demo: NO`. Open actions now cost points in the
+  dimension their blocking point belongs to.
+- **Human-only closure rested on a self-declared `reviewer_kind`.** Writing
+  `"human"` in the review was enough to close a privacy finding. Closure under
+  a human-only lens now requires a `DEC-###` that exists in `decision-log.md`
+  with a named decider. This makes the closure traceable to a governed
+  artifact, not provably human — a limit now stated in the release notes rather
+  than implied away.
 
 ### Changed
 

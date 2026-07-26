@@ -199,6 +199,29 @@ try {
     & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tempRepo "scripts/validate-project.ps1") -ProjectPath (Join-Path $tempRepo "examples/HANDOFF-DEMO") -Mode Standard -Gate Handoff -Format Json
   }
 
+  # Turning the explicit-declaration requirement off must let a vague
+  # classification through again -- proving the knob, not the code, decides.
+  Copy-Item -LiteralPath (Join-Path $RepoPath "pmo-config/handoff-policy.json") -Destination $handoffPolicyPath -Force
+  $handoffPolicy = Get-Content -LiteralPath $handoffPolicyPath -Raw | ConvertFrom-Json
+  $handoffPolicy.sensitive_data.declared_no_values = @($handoffPolicy.sensitive_data.declared_no_values) + "yes"
+  $handoffPolicy | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $handoffPolicyPath -Encoding utf8
+
+  Invoke-ExpectJsonRuleFailure "handoff sensitive-declaration mutation" "HANDOFF-011" {
+    & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tempRepo "scripts/validate-project.ps1") -ProjectPath (Join-Path $tempRepo "tests/fixtures/invalid-handoff-sensitive-undeclared") -Mode Standard -Gate Handoff -Format Json
+  }
+
+  # Adding a lens to human_only_close_lenses must start requiring a signed
+  # decision behind closures under it.
+  Copy-Item -LiteralPath (Join-Path $RepoPath "pmo-config/handoff-policy.json") -Destination $handoffPolicyPath -Force
+  $handoffPolicy = Get-Content -LiteralPath $handoffPolicyPath -Raw | ConvertFrom-Json
+  $handoffPolicy.semantic_review.closure_policy.human_only_close_lenses =
+    @($handoffPolicy.semantic_review.closure_policy.human_only_close_lenses) + "capability_lifecycle"
+  $handoffPolicy | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $handoffPolicyPath -Encoding utf8
+
+  Invoke-ExpectJsonRuleFailure "handoff human-only-lens mutation" "HANDOFF-010" {
+    & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tempRepo "scripts/validate-project.ps1") -ProjectPath (Join-Path $tempRepo "tests/fixtures/invalid-handoff-human-closure-generic-decider") -Mode Standard -Gate Handoff -Format Json
+  }
+
   Write-Host "[PASS] Config mutation tests prove JSON runtime config is source of truth"
 } finally {
   if (Test-Path -LiteralPath $workRoot) {

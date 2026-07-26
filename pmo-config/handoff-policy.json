@@ -62,7 +62,10 @@
         "environment_and_device_constraints"
       ],
       "statuses_requiring_decision_ref": ["resolved", "accepted_risk", "deferred"],
-      "note": "Any status other than open is a claim that someone decided something. That claim needs a resolvable decision reference. Accepting a risk or deferring work is a human judgement in every mode; an AI reviewer may additionally never close a finding under a human-only lens, whatever the decision reference says."
+      "human_only_requires_decision_log_entry": true,
+      "reviewer_kind_is_attestation": true,
+      "note": "Any status other than open is a claim that someone decided something. That claim needs a resolvable decision reference. Accepting a risk or deferring work is a human judgement in every mode; an AI reviewer may additionally never close a finding under a human-only lens, whatever the decision reference says.",
+      "attestation_note": "reviewer_kind is a self-declaration. No offline validator can prove who typed a JSON field, and pretending otherwise would be the same false assurance this framework exists to prevent. What IS enforced: a finding closed under a human-only lens must cite a DEC-### that exists in decision-log.md with a named decider. That makes the closure traceable to a governed artifact a person is accountable for, rather than to a word in a file."
     },
     "freshness": {
       "mode": "dual_digest",
@@ -192,8 +195,10 @@
     "declared_yes_values": ["yes", "true", "y"],
     "declared_no_values": ["no", "false", "n"],
     "requires_decision_when_declared_sensitive": true,
+    "requires_explicit_declaration": true,
     "rule": "HANDOFF-011",
-    "note": "The validator never infers sensitivity from a domain word. It reads the 'Contains Sensitive Data' column the author wrote. If that column says yes, a Classification Decision reference must exist."
+    "note": "The validator never infers sensitivity from a domain word. It reads the 'Contains Sensitive Data' column the author wrote. If that column says yes, a Classification Decision reference must exist.",
+    "undeclared_note": "A value that is neither a yes nor a no -- blank, 'maybe', 'unclear', 'probably not' -- is an undeclared classification, not a negative one. Treating it as no let a row opt out of HANDOFF-011 by being vague, which is the opposite of what a data inventory is for. The author must decide; the validator still never decides for them."
   },
 
   "environment_capabilities": {
@@ -221,6 +226,18 @@
       "major": 4,
       "minor": 2,
       "info": 0
+    },
+    "open_action_penalty": {
+      "$comment": "Points deducted per OPEN row in HANDOFF.md Open Actions, charged to the dimension its blocking point belongs to. Without this a project could block its own demo and still score 100/100 -- a number that contradicts the verdict printed above it is worse than no number.",
+      "points": 4
+    },
+    "blocking_point_dimension_map": {
+      "before_build": "dependency_owner_capacity",
+      "before_integration": "dependency_owner_capacity",
+      "before_demo": "demo_operational_readiness",
+      "before_uat": "demo_operational_readiness",
+      "before_release": "demo_operational_readiness",
+      "non_blocking": null
     },
     "lens_dimension_map": {
       "value_and_scope_slice": "source_scope_integrity",

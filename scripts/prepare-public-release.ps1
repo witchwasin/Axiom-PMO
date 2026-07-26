@@ -31,7 +31,11 @@ if (-not $pwshExe) {
 }
 if (-not $RepoPath) { $RepoPath = Join-Path $PSScriptRoot ".." }
 $repo = (Resolve-Path -LiteralPath $RepoPath).Path
-$expectedTag = "v1.0.0"
+# Derived from VERSION, never hardcoded. A release helper that suggests a tag
+# from a previous release is worse than one that suggests none: it reads as
+# authoritative, and the version it names is the one that gets typed.
+$releaseVersion = (Get-Content -LiteralPath (Join-Path $repo "VERSION") -Raw).Trim()
+$expectedTag = "v$releaseVersion"
 
 $problems = @()
 $notes = @()
@@ -109,8 +113,8 @@ Section "Release commands (review and run manually -- this script runs none of t
 git status
 git diff --check
 git add .
-git commit -m "release: publish Axiom-PMO 1.0.0"
-git tag -a $expectedTag -m "Axiom-PMO 1.0.0"
+git commit -m "release: publish Axiom-PMO $releaseVersion"
+git tag -a $expectedTag -m "Axiom-PMO $releaseVersion"
 git push origin <release-branch>
 git push origin $expectedTag
 "@ | Write-Host

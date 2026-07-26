@@ -9,12 +9,12 @@
 
 ## What this rule checks
 
-In the `### Security, Privacy and Data Inventory` table, every row whose `Contains Sensitive Data` column says yes must also carry:
+In the `### Security, Privacy and Data Inventory` table:
 
-- a `Classification Decision`
-- a `Retention Decision`
+1. Every row **declares** whether it contains sensitive data. A value that is neither a yes nor a no — blank, `maybe`, `unclear`, `probably not` — is an *undeclared* classification, not a negative one, and fails. Treating vagueness as "no" would let any row opt out of this rule by being imprecise, which is the opposite of what a data inventory is for.
+2. Every row declared sensitive carries a `Classification Decision` and a `Retention Decision`, each leading with a resolvable reference.
 
-Neither may be blank or a placeholder.
+The accepted yes/no vocabularies are in `pmo-config/handoff-policy.json` under `sensitive_data`.
 
 ## Why it blocks
 
@@ -24,7 +24,7 @@ Declaring the inventory forces the two statements onto the same table, where the
 
 ## What the validator never does
 
-**It does not decide what is sensitive.** It reads the `Contains Sensitive Data` column that the author wrote. A row called "vehicle photo" marked `no` does not fail this rule, because deciding whether a photograph of a vehicle constitutes personal data is a legal judgement about a specific jurisdiction and a specific use - not something a regex can settle.
+**It does not decide what is sensitive.** It reads the `Contains Sensitive Data` column that the author wrote. It insists that the column contains an answer; it never supplies one. A row called "vehicle photo" marked `no` does not fail this rule, because deciding whether a photograph of a vehicle constitutes personal data is a legal judgement about a specific jurisdiction and a specific use - not something a regex can settle.
 
 Challenging that declaration is the `privacy_and_data_classification` review lens, and the resulting finding needs a human to close it.
 

@@ -275,6 +275,23 @@ foreach ($finding in $openFindings) {
   $dimensionScores[$dimensionId] = [Math]::Max(0, [int]$dimensionScores[$dimensionId] - $penalty)
 }
 
+# An open action costs points too. Blocking a stage without moving the score
+# produced the contradiction "Ready to Demo: NO" printed directly above
+# "Score: 100 / 100" -- a number that disagrees with the verdict above it is
+# worse than no number, because the number is what gets pasted into a status
+# report. Charged to the dimension its blocking point belongs to.
+$blockingDimensionMap = $scorePolicy.blocking_point_dimension_map
+$actionPenalty = [int]$scorePolicy.open_action_penalty.points
+foreach ($action in @($allBlockers | Where-Object { $_.origin -eq "open_action" })) {
+    $pointProp = $blockingDimensionMap.PSObject.Properties["$($action.blocking_point)"]
+    if (-not $pointProp) { continue }
+    $dimensionId = [string]$pointProp.Value
+    # non_blocking maps to null: tracked, blocks nothing, costs nothing.
+    if ([string]::IsNullOrWhiteSpace($dimensionId)) { continue }
+    if (-not $dimensionScores.Contains($dimensionId)) { continue }
+    $dimensionScores[$dimensionId] = [Math]::Max(0, [int]$dimensionScores[$dimensionId] - $actionPenalty)
+}
+
 $rawScore = 0
 foreach ($value in $dimensionScores.Values) { $rawScore += [int]$value }
 
