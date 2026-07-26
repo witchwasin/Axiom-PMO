@@ -10,7 +10,7 @@ hardcoded fallback: if the config is missing, it fails rather than guessing.
 | `validate-project.ps1` | Orchestrator: loads config, resolves effective mode, runs each validator module, aggregates results, writes Text/JSON, sets the exit code. |
 | `pmo-doctor.ps1` | Validates the framework *itself*: required files, skill runtime, version/schema consistency, rule-catalog completeness, permissions, links, table integrity. |
 | `run-validation-tests.ps1` | Positive/negative fixture matrix + golden-master engine. |
-| `run-all-checks.ps1` | Aggregates doctor, fixtures, config-mutation, diagnostics-contract, handoff-assessment, demo smoke, example validations, end-to-end tests, and the CLI tests. |
+| `run-all-checks.ps1` | Aggregates doctor, fixtures **with golden verification**, example goldens, config-mutation, diagnostics-contract, line-endings, handoff-assessment, demo smoke, example validations, end-to-end tests, and the CLI tests. One pass: verifying goldens separately would re-run the whole fixture matrix. |
 | `new-project.ps1` | Mode-aware project generator (`-IncludeHandoff` adds the handoff scaffolding). |
 | `assess-handoff.ps1` | Runs the Handoff gate and reports readiness per stage, with a capped score. Reporting only — it is not a gate. |
 | `handoff-digest.ps1` | Prints a project's Source Snapshot digest, which `HANDOFF-REVIEW.json` records for freshness. |

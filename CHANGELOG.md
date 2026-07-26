@@ -18,8 +18,21 @@
   The exposure is a project started by copying another, which is exactly what a
   filled-in handoff sheet invites.
 
+### Changed
+
+- **CI runs the fixture matrix once instead of twice.** Golden verification was
+  a separate workflow step that re-executed all 148 fixture cases — the most
+  expensive thing the suite does — for output `run-all-checks` had just
+  produced. It now happens inside that single pass. Measured at ~2.5 minutes
+  saved per CI run, and the saving grows with every fixture added. No coverage
+  was removed: golden drift still fails the suite, verified by reverting a
+  golden file and confirming the failure.
+
 ### Fixed
 
+- **The example goldens were verified nowhere.** Not in `run-all-checks`, not in
+  the workflow. `tests/golden/capture-examples.ps1 -Verify` is now part of the
+  suite, so the worked examples in the README are held to their recorded output.
 - **`demo/broken-project` and `demo/fixed-project` named the wrong project.**
   Both were copied from `examples/HANDOFF-DEMO` with only their headings
   renamed, so their handoff artifacts still said `HANDOFF-DEMO`. Found by

@@ -21,6 +21,8 @@ jobs:
         with:
           node-version: '20'
 
+      # run-all-checks verifies the golden masters as part of the fixture run;
+      # a separate verification step would re-execute all 148 cases for nothing.
       - name: Run PMO framework checks
         shell: powershell
         run: |
@@ -30,11 +32,6 @@ jobs:
         shell: powershell
         run: |
           powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\check-public-hygiene.ps1 -RepoPath .
-
-      - name: Verify golden master
-        shell: powershell
-        run: |
-          powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\run-validation-tests.ps1 -RepoPath . -VerifyGolden
 
       - name: Verify fault injection propagates as a failure
         shell: powershell
@@ -67,16 +64,11 @@ jobs:
         with:
           node-version: '20'
 
+      # Golden masters are stored in a form independent of the PowerShell host's
+      # JSON pretty-printer (see scripts/lib/golden-normalizer.ps1). This leg is
+      # what proves it: run-all-checks verifies the same golden files here under
+      # pwsh 7 that the Windows PowerShell 5.1 job verifies above.
       - name: Run PMO framework checks under pwsh
         shell: pwsh
         run: |
           pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -RepoPath .
-
-      # Golden masters are stored in a form independent of the PowerShell host's
-      # JSON pretty-printer (see scripts/lib/golden-normalizer.ps1). This step is
-      # what proves it: the same files must verify under pwsh 7 here and under
-      # Windows PowerShell 5.1 in the job above.
-      - name: Verify golden master under pwsh
-        shell: pwsh
-        run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1 -RepoPath . -VerifyGolden

@@ -90,6 +90,12 @@ capture or diff every fixture case's stdout against `tests/golden/`. Run
 `scripts/lib/*.ps1` — any diff is a behavior change and must be reviewed, not
 silently re-captured.
 
+`run-all-checks.ps1` already passes `-VerifyGolden`, and separately verifies the
+example goldens. Both happen inside the single fixture pass on purpose: running
+the matrix is the most expensive thing this suite does, and verifying goldens
+re-executes every case, so doing it as a second step doubles the cost for no
+extra coverage.
+
 Comparison is canonical, not byte-exact: `scripts/lib/golden-normalizer.ps1`
 folds away the UTF-8 BOM, line endings, JSON indentation, numeric character
 escapes, and path separators, because none of those are part of the diagnostic
