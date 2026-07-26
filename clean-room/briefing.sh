@@ -1,0 +1,40 @@
+# Printed on login. Kept short: a long briefing is itself a hint, and hints are
+# what this environment exists to avoid giving.
+
+cat <<'BRIEF'
+
+  Axiom-PMO clean-room walkthrough  (issue #8)
+
+  You are a stranger to this project. Do not read the source to work out what
+  a command should have done -- if the documentation did not tell you, that is
+  the finding.
+
+  Start here:
+
+      git clone https://github.com/witchwasin/Axiom-PMO.git
+      cd Axiom-PMO
+      less README.md
+
+  Then follow the README from the top. Write down every point where it was
+  wrong, incomplete, assumed knowledge you did not have, or needed a step it
+  did not mention. Small friction counts; it is what a first-time reader
+  actually hits.
+
+  Note which prerequisite mode you are in:
+
+BRIEF
+
+if [ "${AXIOM_PREREQS:-none}" = "documented" ]; then
+  echo "      PREREQS=documented -- PowerShell and Node are already installed."
+  echo "      You are testing the usage instructions, not the install ones."
+else
+  echo "      PREREQS=none -- nothing is installed but git and curl."
+  echo "      You are testing whether the docs can get you running at all."
+fi
+
+cat <<'BRIEF'
+
+  This is Linux. Windows PowerShell 5.1 is the reference platform, so a clean
+  walk here does NOT close the Windows half of issue #8. Say which one you did.
+
+BRIEF
