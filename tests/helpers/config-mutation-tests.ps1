@@ -222,6 +222,32 @@ try {
     & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tempRepo "scripts/validate-project.ps1") -ProjectPath (Join-Path $tempRepo "tests/fixtures/invalid-handoff-human-closure-generic-decider") -Mode Standard -Gate Handoff -Format Json
   }
 
+  # Renaming a declared column must make the previously-valid example fail:
+  # proves the header assertion reads the policy rather than a hardcoded list.
+  Copy-Item -LiteralPath (Join-Path $RepoPath "pmo-config/handoff-policy.json") -Destination $handoffPolicyPath -Force
+  $handoffPolicy = Get-Content -LiteralPath $handoffPolicyPath -Raw | ConvertFrom-Json
+  foreach ($section in $handoffPolicy.handoff_document.sections) {
+    if ($section.heading -eq "Open Actions") { $section.columns = @("Action ID", "Description", "Owner", "Blocks", "Status") }
+  }
+  $handoffPolicy | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $handoffPolicyPath -Encoding utf8
+
+  Invoke-ExpectJsonRuleFailure "handoff table-header mutation" "HANDOFF-013" {
+    & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tempRepo "scripts/validate-project.ps1") -ProjectPath (Join-Path $tempRepo "examples/HANDOFF-DEMO") -Mode Standard -Gate Handoff -Format Json
+  }
+
+  # Pointing project identity at a field the artifacts do not agree on must fail:
+  # proves the cross-check list is config, not code.
+  Copy-Item -LiteralPath (Join-Path $RepoPath "pmo-config/handoff-policy.json") -Destination $handoffPolicyPath -Force
+  $handoffPolicy = Get-Content -LiteralPath $handoffPolicyPath -Raw | ConvertFrom-Json
+  $handoffPolicy.project_identity.cross_checked =
+    @($handoffPolicy.project_identity.cross_checked) +
+    ([pscustomobject]@{ artifact = "HANDOFF.md"; field = "Handoff Target"; kind = "metadata" })
+  $handoffPolicy | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $handoffPolicyPath -Encoding utf8
+
+  Invoke-ExpectJsonRuleFailure "handoff project-identity mutation" "HANDOFF-014" {
+    & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tempRepo "scripts/validate-project.ps1") -ProjectPath (Join-Path $tempRepo "examples/HANDOFF-DEMO") -Mode Standard -Gate Handoff -Format Json
+  }
+
   Write-Host "[PASS] Config mutation tests prove JSON runtime config is source of truth"
 } finally {
   if (Test-Path -LiteralPath $workRoot) {

@@ -184,7 +184,18 @@ $cases = @(
   # without producing the evidence it claims to require.
   @{ Name = "handoff-sensitive-undeclared"; Path = "tests/fixtures/invalid-handoff-sensitive-undeclared"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-011"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
   @{ Name = "handoff-human-closure-generic-decider"; Path = "tests/fixtures/invalid-handoff-human-closure-generic-decider"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-010"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
-  @{ Name = "handoff-human-closure-no-decision-log"; Path = "tests/fixtures/invalid-handoff-human-closure-no-decision-log"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-010"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() }
+  @{ Name = "handoff-human-closure-no-decision-log"; Path = "tests/fixtures/invalid-handoff-human-closure-no-decision-log"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-010"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+
+  # -- Table headers and project identity (issues #6, #7) ----------------------
+  # The two header cases deliberately allow one downstream rule. That secondary
+  # finding IS the symptom HANDOFF-013 exists to explain: cells are read by
+  # column name, so a renamed header makes a filled-in value read as empty and
+  # some other rule complains about it. Asserting both proves the pair.
+  @{ Name = "handoff-header-renamed"; Path = "tests/fixtures/invalid-handoff-header-renamed"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-013"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @("HANDOFF-009") },
+  @{ Name = "handoff-header-reordered"; Path = "tests/fixtures/invalid-handoff-header-reordered"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-013"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @("HANDOFF-004") },
+  @{ Name = "handoff-header-buildspec"; Path = "tests/fixtures/invalid-handoff-header-buildspec"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-013"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-project-mismatch"; Path = "tests/fixtures/invalid-handoff-project-mismatch"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-014"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-review-project-mismatch"; Path = "tests/fixtures/invalid-handoff-review-project-mismatch"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-014"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() }
 )
 
 $doctorCases = @(

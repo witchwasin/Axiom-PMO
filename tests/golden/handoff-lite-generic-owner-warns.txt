@@ -5,7 +5,7 @@
 "effective_mode": "Lite",
 "gate": "Handoff",
 "summary": {
-"pass": 21,
+"pass": 23,
 "warn": 1,
 "warn_blocking": 1,
 "fail": 0,
@@ -242,6 +242,18 @@
 },
 {
 "schema_version": "1.1",
+"level": "PASS",
+"rule_id": "HANDOFF-014",
+"message": "Handoff artifacts agree with PROJECT.md on the project code",
+"blocking": true,
+"artifact": null,
+"item_id": null,
+"field": null,
+"suggestion": null,
+"documentation_url": null
+},
+{
+"schema_version": "1.1",
 "level": "WARN",
 "rule_id": "HANDOFF-003",
 "message": "Build Now item 'Export respects the active filter' has no named owner",
@@ -293,6 +305,18 @@
 "level": "PASS",
 "rule_id": "HANDOFF-012",
 "message": "Environment and device matrix declares a resolved serving model for every environment",
+"blocking": true,
+"artifact": null,
+"item_id": null,
+"field": null,
+"suggestion": null,
+"documentation_url": null
+},
+{
+"schema_version": "1.1",
+"level": "PASS",
+"rule_id": "HANDOFF-013",
+"message": "Every governed table header matches the columns the policy declares",
 "blocking": true,
 "artifact": null,
 "item_id": null,

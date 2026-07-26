@@ -36,7 +36,7 @@ So the work splits:
 
 ### Layer 1 — deterministic validation
 
-Checks what is provable from the artifacts. `scripts/validate-project.ps1 -Gate Handoff`, rules `HANDOFF-001` to `HANDOFF-012`.
+Checks what is provable from the artifacts. `scripts/validate-project.ps1 -Gate Handoff`, rules `HANDOFF-001` to `HANDOFF-014`.
 
 It can prove that a build sequence declares a dependency scheduled after its consumer. It can prove that a row the author marked "contains sensitive data" has no classification decision. It can prove that an acceptance case has no seed strategy, that a work item has no named owner, that a declared capability has no serving model.
 

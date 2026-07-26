@@ -5,87 +5,429 @@
   "documentation_note": "A rule's `documentation` value is a repo-relative path. pmo-doctor DOCTOR-009 fails when the file does not exist, so a rule can never advertise a dead link. Rules without a `documentation` entry emit documentation_url: null.",
   "suggestion_note": "`suggestion` is the default remediation text attached to every WARN/FAIL diagnostic for that rule (see scripts/lib/result-writer.ps1). It must say what to do, not restate what went wrong, and must never quote artifact content. pmo-doctor DOCTOR-008 requires one on every rule that can fail or warn.",
   "rules": {
-    "GENERAL-001": { "severity": "info", "description": "Fallback rule id for results emitted without an explicit rule.", "suggestion": "Give this check an explicit rule id in the emitting script so it can be documented and suppressed independently." },
-    "STRUCT-001": { "severity": "fail", "description": "Required project file or directory is missing.", "suggestion": "Create the artifact, or move the project to a mode/gate that does not require it. The Mode x Gate matrix lives in pmo-config/artifact-policy.json." },
-    "PLACEHOLDER-001": { "severity": "fail_release", "description": "Placeholder, TODO, or TBD remains at release gate.", "suggestion": "Replace the placeholder with a real value, or remove the row. Release artifacts must not ship template text." },
-    "SOURCE-001": { "severity": "fail_release", "description": "Requirement is missing source reference.", "suggestion": "Add a source_ref pointing at the MOM, REQ, or transcript row the requirement came from. If no source exists, record it as an open question instead of a requirement." },
-    "SOURCE-002": { "severity": "warn", "description": "Source Snapshot is missing or does not show sync time.", "suggestion": "Run scripts/update-source-snapshot.ps1 to regenerate the Source Snapshot table from the files in source/." },
-    "SOURCE-003": { "severity": "fail", "description": "Requirement IDs are duplicated.", "suggestion": "Give each requirement a unique REQ-### id. Duplicated ids break traceability from RTM and DELIVERY back to PROJECT." },
-    "SOURCE-LINK-001": { "severity": "warn", "description": "Broken links in user-owned source files are informational or warning only.", "suggestion": "User-owned source is not edited by the framework. Ask the document owner to fix the link, or ignore it if the target is intentionally external." },
-    "REF-001": { "severity": "fail_release", "description": "Requirement, source, design, decision, or release references do not resolve.", "suggestion": "Point the reference at an id that exists, or add the missing row. Every id referenced must be declared somewhere in the project." },
-    "ENUM-001": { "severity": "fail_release", "description": "Work item mode, status, review stage, or evidence enum is invalid.", "suggestion": "Use one of the values declared in pmo-config/policy.json enums. Free text is not accepted in an enum column." },
-    "EVIDENCE-001": { "severity": "fail_release", "description": "Requirement is missing evidence status or uses an invalid evidence status.", "suggestion": "Set evidence status to verified, supported, inferred, missing, or conflict. inferred, missing, and conflict require review before release." },
-    "MODE-001": { "severity": "fail_release", "description": "Requested mode cannot downgrade the effective mode (FAIL at Release, WARN otherwise).", "suggestion": "Re-run with the project's own mode or higher. Downgrading Strict requires PM or Tech Lead approval recorded in the decision log, not a CLI flag." },
-    "MODE-002": { "severity": "warn", "description": "PROJECT.md declares an unrecognized default mode.", "suggestion": "Set 'Default mode:' in PROJECT.md to Lite, Standard, or Strict." },
-    "MODE-003": { "severity": "info", "description": "Strict escalation triggered by a work item's strict trigger.", "suggestion": "No action needed. The work item declared a strict trigger, so the project was escalated automatically." },
-    "APPROVAL-001": { "severity": "fail", "description": "Approval row is missing or incomplete.", "suggestion": "Add the approval row for this gate with approver, role, date, and resolvable evidence. An AI must not fill this in on a human's behalf." },
-    "APPROVAL-002": { "severity": "fail", "description": "Approval contains placeholder, invalid date, missing role, or unresolvable evidence (WARN_BLOCKING for Lite free-text evidence).", "suggestion": "Use a real ISO date and evidence that resolves to a decision id, file, or tracked link. Free text like 'approved by email' is not evidence." },
-    "APPROVAL-003": { "severity": "warn", "description": "Approver role is not in the allowed role matrix (WARN_BLOCKING at Standard, FAIL at Strict).", "suggestion": "Have the gate approved by a role listed in pmo-config/policy.json approval_roles, or extend that matrix through a recorded decision." },
-    "TASK-001": { "severity": "warn", "description": "Task source of truth is missing or invalid.", "suggestion": "Declare 'Task source: file' or 'Task source: github' in PROJECT.md so there is exactly one work-item board." },
-    "TASK-002": { "severity": "fail", "description": "PROJECT.md and DELIVERY.md task source of truth conflict.", "suggestion": "Make PROJECT.md and DELIVERY.md agree on one task source. Two competing boards means neither is authoritative." },
-    "TASK-003": { "severity": "warn", "description": "GitHub task source: DELIVERY.md absent, work-item board not verifiable offline (non-blocking).", "suggestion": "Verify work-item completion on the GitHub board or in CI. This offline validator cannot read GitHub Issues." },
-    "WORKITEM-001": { "severity": "warn", "description": "Work item is missing required governance fields or the header contract.", "suggestion": "Fill every column of the Work Items table. The required column set is pmo-config/policy.json table_schemas.delivery_work_items." },
-    "STRICT-001": { "severity": "fail_release", "description": "Strict trigger exists but work item is not Strict.", "suggestion": "Set the work item's Mode to Strict, or remove the strict trigger if it was recorded in error. An AI must not downgrade a strict trigger." },
-    "STRICT-002": { "severity": "fail", "description": "Strict release is missing RTM, RAID, or decision-log guardrails.", "suggestion": "Add RTM.json, RAID-log.md, and decision-log.md. Strict release requires full traceability, not just passing tests." },
-    "BLOCKER-001": { "severity": "fail_release", "description": "Open blocker exists during release validation.", "suggestion": "Close the blocker in RAID-log.md, or record an accepted-risk decision that explains why release proceeds anyway." },
-    "RELEASE-001": { "severity": "fail_release", "description": "Release rollback plan is missing, unstructured, or has an invalid Lite waiver.", "suggestion": "Add a structured Rollback Plan table with trigger, steps, and owner. A waiver is only valid for Lite content-only changes." },
-    "RELEASE-STATUS-001": { "severity": "fail", "description": "A release-scope work item is not Done.", "suggestion": "Finish the work item, or remove it from Release Scope with a stated reason." },
-    "RELEASE-SCOPE-001": { "severity": "fail", "description": "A work item is not listed in the Release Scope table, or is excluded without a reason.", "suggestion": "List every work item in the Release Scope table and mark it included or excluded with a reason." },
-    "REVIEW-001": { "severity": "fail", "description": "A release-scope work item (Standard/Strict) has no review stage.", "suggestion": "Set Review Stage to code, qa, business, or security for each released work item." },
-    "TEST-RESULT-001": { "severity": "fail", "description": "A Test Summary row is not passed (or skipped without a reason; Strict also requires resolvable skip evidence).", "suggestion": "Make the test pass, or record it as skipped with a reason. Do not delete a failing row to make the gate green." },
-    "TEST-SUMMARY-001": { "severity": "fail", "description": "Standard/Strict Release has no Test Summary row and no valid test_required:false waiver, or (Strict) every row is skipped.", "suggestion": "Add at least one executed test row to RELEASE.md, or declare a test waiver that policy allows for this mode and change type." },
-    "TEST-EVIDENCE-001": { "severity": "fail", "description": "A release-scope work item's test checklist or evidence is missing or unresolvable (WARN_BLOCKING for Lite).", "suggestion": "Point Evidence Ref at a file, test id, or tracked link that exists. A description of the evidence is not the evidence." },
-    "TEST-EVIDENCE-002": { "severity": "fail", "description": "A passed Test Summary row has missing or unresolvable evidence.", "suggestion": "Attach resolvable evidence to every passed test row, or mark the row skipped with a reason." },
-    "QA-REVIEW-001": { "severity": "fail", "description": "QA review row is missing or invalid at Release (Standard/Strict).", "suggestion": "Add a QA review row with reviewer, role, date, and resolvable evidence." },
-    "SECURITY-REVIEW-001": { "severity": "fail", "description": "Security review row is missing or invalid at Strict Release.", "suggestion": "Add a security review row approved by a Security Reviewer or Tech Lead before a Strict release." },
-    "RTM-001": { "severity": "fail", "description": "Strict RTM.json is empty, invalid, or missing schema_version/traceability.", "suggestion": "Generate RTM.json from templates/RTM.json and fill one row per requirement." },
-    "RTM-002": { "severity": "fail", "description": "RTM is missing a requirement declared in PROJECT.md.", "suggestion": "Add an RTM row for every requirement in PROJECT.md In Scope." },
-    "RTM-003": { "severity": "fail", "description": "RTM row has a broken delivery_ref.", "suggestion": "Point delivery_ref at a work item id that exists in DELIVERY.md." },
-    "RTM-004": { "severity": "fail", "description": "RTM row has a broken test_ref.", "suggestion": "Point test_ref at a test id that exists in RELEASE.md's Test Summary." },
-    "RTM-005": { "severity": "fail", "description": "RTM row has a missing or unresolvable evidence_ref.", "suggestion": "Point evidence_ref at a resolvable file, decision, or tracked link." },
-    "RTM-006": { "severity": "fail", "description": "RTM row has a broken release_ref.", "suggestion": "Point release_ref at the release id declared in RELEASE.md." },
-    "RTM-007": { "severity": "fail", "description": "RTM row is an orphan or duplicate (requirement not in PROJECT.md, or repeated).", "suggestion": "Remove the orphan row, or add the requirement to PROJECT.md. One RTM row per requirement." },
-    "RTM-008": { "severity": "fail", "description": "RTM row has a missing or malformed source_ref.", "suggestion": "Use a source id that appears in PROJECT.md's Source Snapshot and matches a pattern in policy.json source_ref_patterns." },
-    "RTM-009": { "severity": "fail", "description": "RTM row design_ref does not resolve to an existing design file.", "suggestion": "Point design_ref at a file that exists under DESIGN/." },
-    "RTM-010": { "severity": "fail", "description": "RTM row has an invalid status (not an evidence-status enum value).", "suggestion": "Set status to verified, supported, inferred, missing, or conflict." },
-    "LINK-001": { "severity": "fail_release", "description": "Local markdown link is broken.", "suggestion": "Fix the relative path, or remove the link. Governed artifacts must not link to files that do not exist." },
-    "SENSITIVE-001": { "severity": "warn", "description": "Potential sensitive file detected by pre-check.", "suggestion": "Move the file out of the project, or confirm explicitly that it is safe to commit. Never commit credentials or customer data." },
-
-    "HANDOFF-001": { "severity": "fail", "description": "A required handoff artifact is missing or its metadata contract is incomplete.", "suggestion": "Create HANDOFF.md from templates/HANDOFF.md and fill the metadata block: target, horizon, handoff owner, named integrator, and build-spec reference.", "documentation": "docs/rules/HANDOFF-001.md" },
-    "HANDOFF-002": { "severity": "fail", "description": "The Build Now / Deferred / Do Not Build scope contract is incomplete.", "suggestion": "State what is built now, what is deliberately deferred, and what must not be built. Write 'none' explicitly when a bucket is empty; a blank section is silence, not a decision.", "documentation": "docs/rules/HANDOFF-002.md" },
-    "HANDOFF-003": { "severity": "fail", "description": "A work item, prerequisite, or handoff role has no named owner.", "suggestion": "Replace the generic token with a named person. 'Dev Team' and 'TBD' do not tell anyone who starts on Monday. Generic tokens are configured in pmo-config/handoff-policy.json owner_policy.", "documentation": "docs/rules/HANDOFF-003.md" },
-    "HANDOFF-004": { "severity": "fail", "description": "The dependency or build sequence is incomplete, unresolvable, or ordered so a prerequisite is built after its consumer.", "suggestion": "Give every Build Now item a step, declare its dependencies (or 'none'), and move shared prerequisites to an earlier step than the items that consume them.", "documentation": "docs/rules/HANDOFF-004.md" },
-    "HANDOFF-005": { "severity": "fail", "description": "A required BUILD-SPEC section is missing, empty, or waived without a permitted rationale.", "suggestion": "Fill the section, or mark it 'Status: not_required' with a written rationale where policy allows a waiver. Blank is never a valid answer.", "documentation": "docs/rules/HANDOFF-005.md" },
-    "HANDOFF-006": { "severity": "fail", "description": "An acceptance case has no automated/manual execution classification.", "suggestion": "Mark each acceptance case automated, manual, or exploratory so the team knows what CI covers and what a person has to run.", "documentation": "docs/rules/HANDOFF-006.md" },
-    "HANDOFF-007": { "severity": "fail", "description": "An acceptance case has no seed, fixture, or reset strategy.", "suggestion": "State the data each case starts from and how to reset it. A case that cannot be reached from the declared seed data cannot be demonstrated.", "documentation": "docs/rules/HANDOFF-007.md" },
-    "HANDOFF-008": { "severity": "fail", "description": "A demo or pilot milestone lacks device, integrator, capacity, or reset path.", "suggestion": "Name the demo device, the person integrating the streams, the available capacity, and the reset path before the demo date.", "documentation": "docs/rules/HANDOFF-008.md" },
-    "HANDOFF-009": { "severity": "fail", "description": "An open action has no owner or no blocking point.", "suggestion": "Give every open action an owner and say which stage it blocks: before_build, before_integration, before_demo, before_uat, before_release, or non_blocking.", "documentation": "docs/rules/HANDOFF-009.md" },
-    "HANDOFF-010": { "severity": "fail", "description": "The semantic handoff review is missing, incomplete, or stale.", "suggestion": "Run the pmo-delivery handoff_review intent and record the result in HANDOFF-REVIEW.json. Re-run it whenever the Source Snapshot changes; a review only speaks for the sources it saw.", "documentation": "docs/rules/HANDOFF-010.md" },
-    "HANDOFF-011": { "severity": "fail", "description": "A data element declared as sensitive has no classification or retention decision.", "suggestion": "Record a classification and retention decision for the element, then reference the decision id. The validator reads your own 'Contains Sensitive Data' declaration; it never guesses which data is sensitive.", "documentation": "docs/rules/HANDOFF-011.md" },
-    "HANDOFF-012": { "severity": "fail", "description": "A declared device or runtime capability has no resolved serving model or environment decision.", "suggestion": "Decide how the capability will actually be served and record it. The validator reads the capabilities you declared; it never infers that a feature needs a camera or HTTPS.", "documentation": "docs/rules/HANDOFF-012.md" },
-
-    "DOCTOR-000": { "severity": "fail", "description": "Fallback rule id for framework doctor results, and broken doctor-scanned local links.", "suggestion": "Fix the reported path or give the check an explicit rule id." },
-    "DOCTOR-001": { "severity": "fail", "description": "Active skill runtime does not match skill manifest.", "suggestion": "Align .claude/skills/ with pmo-config/skill-manifest.json. Archived skills belong in .claude-archive/." },
-    "DOCTOR-002": { "severity": "fail", "description": "Router references archived legacy skill.", "suggestion": "Update CLAUDE.md and CONTEXT-ROUTER.md to reference only the active skills in the manifest." },
-    "DOCTOR-003": { "severity": "fail", "description": "Context map does not reference JSON runtime config.", "suggestion": "Point pmo-config/context-map.json config_refs at policy.json, skill-manifest.json, and validation-rules.json." },
-    "DOCTOR-004": { "severity": "fail", "description": "Active skill contains legacy rule references.", "suggestion": "Remove references to retired rule ids from the active SKILL.md files." },
-    "DOCTOR-005": { "severity": "fail", "description": "Version metadata is inconsistent across VERSION, CHANGELOG, and config.", "suggestion": "Bump VERSION, the CHANGELOG's newest heading, and every pmo-config version field together." },
-    "DOCTOR-006": { "severity": "fail", "description": "A pmo-config/*.json file is missing or has an unsupported schema_version.", "suggestion": "Add or correct schema_version in the reported config file." },
-    "DOCTOR-007": { "severity": "fail", "description": "A runtime rule id is missing from this catalog, or a catalog entry is never emitted.", "suggestion": "Add the missing rule to validation-rules.json, or delete the dead catalog entry. The catalog and the emitters must match exactly." },
-    "DOCTOR-008": { "severity": "fail", "description": "A rule that can fail or warn has no suggestion text in the catalog.", "suggestion": "Add a `suggestion` to the reported rule. Every actionable diagnostic must tell the reader how to fix it, not only what broke." },
-    "DOCTOR-009": { "severity": "fail", "description": "A rule's documentation path does not resolve to a file in the repository.", "suggestion": "Create the referenced docs/rules/*.md page, or remove the `documentation` key so the rule emits documentation_url: null instead of a dead link." },
-    "DOCTOR-STRUCT": { "severity": "fail", "description": "A required framework structural file or directory is missing.", "suggestion": "Restore the missing framework file. Structure is defined in scripts/pmo-doctor.ps1." },
-    "DOCTOR-EXAMPLE": { "severity": "fail", "description": "A required example project is missing.", "suggestion": "Restore the example project under examples/." },
-    "DOCTOR-HOOK": { "severity": "fail", "description": "Fake PMO echo hooks still exist in settings.", "suggestion": "Remove echo-only hooks from .claude/settings.json and use scripts/validate-project.ps1 for real validation." },
-    "DOCTOR-SKILL-001": { "severity": "fail", "description": "Active skill SKILL.md frontmatter is missing, incomplete, or mismatched.", "suggestion": "Give the SKILL.md YAML frontmatter with name and description, and make name match the directory." },
-    "TABLE-001": { "severity": "fail", "description": "Markdown table column counts do not match the header.", "suggestion": "Make every row have the same number of pipe-separated cells as the header row." },
-    "PERMISSION-000": { "severity": "fail", "description": ".claude/settings.json does not parse as JSON.", "suggestion": "Fix the JSON syntax in .claude/settings.json." },
-    "PERMISSION-001": { "severity": "fail", "description": "Dangerous git mutation is allowed by default.", "suggestion": "Remove git push/commit/tag from permissions.allow. These must be human-confirmed, not pre-approved." },
-    "PERMISSION-002": { "severity": "fail", "description": "A required allowlisted framework command is not permitted.", "suggestion": "Add the framework's own validation commands to permissions.allow so checks can run without prompting." },
-    "PERMISSION-003": { "severity": "fail", "description": "git commit/push/tag is not gated behind an ask rule.", "suggestion": "Add git commit/push/tag to permissions.ask." },
-    "PERMISSION-004": { "severity": "fail", "description": "Common secret and private-key paths are not denied.", "suggestion": "Add .env, *.pem, *.key, and id_rsa style paths to permissions.deny." },
-    "PERMISSION-005": { "severity": "fail", "description": "Bypass-permissions mode is not disabled.", "suggestion": "Set disableBypassPermissionsMode in .claude/settings.json. Autonomy must never mean bypassing the permission layer." },
-    "PERMISSION-006": { "severity": "fail", "description": "External web search requires human approval.", "suggestion": "Add WebSearch to permissions.ask so source material is never sent outward without a human decision." },
-    "PERMISSION-007": { "severity": "fail", "description": "Sensitive ignore patterns are too broad, stale, or missing.", "suggestion": "Use precise .gitignore patterns for sensitive files instead of broad wildcards that hide governed artifacts." }
+    "GENERAL-001": {
+      "severity": "info",
+      "description": "Fallback rule id for results emitted without an explicit rule.",
+      "suggestion": "Give this check an explicit rule id in the emitting script so it can be documented and suppressed independently."
+    },
+    "STRUCT-001": {
+      "severity": "fail",
+      "description": "Required project file or directory is missing.",
+      "suggestion": "Create the artifact, or move the project to a mode/gate that does not require it. The Mode x Gate matrix lives in pmo-config/artifact-policy.json."
+    },
+    "PLACEHOLDER-001": {
+      "severity": "fail_release",
+      "description": "Placeholder, TODO, or TBD remains at release gate.",
+      "suggestion": "Replace the placeholder with a real value, or remove the row. Release artifacts must not ship template text."
+    },
+    "SOURCE-001": {
+      "severity": "fail_release",
+      "description": "Requirement is missing source reference.",
+      "suggestion": "Add a source_ref pointing at the MOM, REQ, or transcript row the requirement came from. If no source exists, record it as an open question instead of a requirement."
+    },
+    "SOURCE-002": {
+      "severity": "warn",
+      "description": "Source Snapshot is missing or does not show sync time.",
+      "suggestion": "Run scripts/update-source-snapshot.ps1 to regenerate the Source Snapshot table from the files in source/."
+    },
+    "SOURCE-003": {
+      "severity": "fail",
+      "description": "Requirement IDs are duplicated.",
+      "suggestion": "Give each requirement a unique REQ-### id. Duplicated ids break traceability from RTM and DELIVERY back to PROJECT."
+    },
+    "SOURCE-LINK-001": {
+      "severity": "warn",
+      "description": "Broken links in user-owned source files are informational or warning only.",
+      "suggestion": "User-owned source is not edited by the framework. Ask the document owner to fix the link, or ignore it if the target is intentionally external."
+    },
+    "REF-001": {
+      "severity": "fail_release",
+      "description": "Requirement, source, design, decision, or release references do not resolve.",
+      "suggestion": "Point the reference at an id that exists, or add the missing row. Every id referenced must be declared somewhere in the project."
+    },
+    "ENUM-001": {
+      "severity": "fail_release",
+      "description": "Work item mode, status, review stage, or evidence enum is invalid.",
+      "suggestion": "Use one of the values declared in pmo-config/policy.json enums. Free text is not accepted in an enum column."
+    },
+    "EVIDENCE-001": {
+      "severity": "fail_release",
+      "description": "Requirement is missing evidence status or uses an invalid evidence status.",
+      "suggestion": "Set evidence status to verified, supported, inferred, missing, or conflict. inferred, missing, and conflict require review before release."
+    },
+    "MODE-001": {
+      "severity": "fail_release",
+      "description": "Requested mode cannot downgrade the effective mode (FAIL at Release, WARN otherwise).",
+      "suggestion": "Re-run with the project's own mode or higher. Downgrading Strict requires PM or Tech Lead approval recorded in the decision log, not a CLI flag."
+    },
+    "MODE-002": {
+      "severity": "warn",
+      "description": "PROJECT.md declares an unrecognized default mode.",
+      "suggestion": "Set 'Default mode:' in PROJECT.md to Lite, Standard, or Strict."
+    },
+    "MODE-003": {
+      "severity": "info",
+      "description": "Strict escalation triggered by a work item's strict trigger.",
+      "suggestion": "No action needed. The work item declared a strict trigger, so the project was escalated automatically."
+    },
+    "APPROVAL-001": {
+      "severity": "fail",
+      "description": "Approval row is missing or incomplete.",
+      "suggestion": "Add the approval row for this gate with approver, role, date, and resolvable evidence. An AI must not fill this in on a human's behalf."
+    },
+    "APPROVAL-002": {
+      "severity": "fail",
+      "description": "Approval contains placeholder, invalid date, missing role, or unresolvable evidence (WARN_BLOCKING for Lite free-text evidence).",
+      "suggestion": "Use a real ISO date and evidence that resolves to a decision id, file, or tracked link. Free text like 'approved by email' is not evidence."
+    },
+    "APPROVAL-003": {
+      "severity": "warn",
+      "description": "Approver role is not in the allowed role matrix (WARN_BLOCKING at Standard, FAIL at Strict).",
+      "suggestion": "Have the gate approved by a role listed in pmo-config/policy.json approval_roles, or extend that matrix through a recorded decision."
+    },
+    "TASK-001": {
+      "severity": "warn",
+      "description": "Task source of truth is missing or invalid.",
+      "suggestion": "Declare 'Task source: file' or 'Task source: github' in PROJECT.md so there is exactly one work-item board."
+    },
+    "TASK-002": {
+      "severity": "fail",
+      "description": "PROJECT.md and DELIVERY.md task source of truth conflict.",
+      "suggestion": "Make PROJECT.md and DELIVERY.md agree on one task source. Two competing boards means neither is authoritative."
+    },
+    "TASK-003": {
+      "severity": "warn",
+      "description": "GitHub task source: DELIVERY.md absent, work-item board not verifiable offline (non-blocking).",
+      "suggestion": "Verify work-item completion on the GitHub board or in CI. This offline validator cannot read GitHub Issues."
+    },
+    "WORKITEM-001": {
+      "severity": "warn",
+      "description": "Work item is missing required governance fields or the header contract.",
+      "suggestion": "Fill every column of the Work Items table. The required column set is pmo-config/policy.json table_schemas.delivery_work_items."
+    },
+    "STRICT-001": {
+      "severity": "fail_release",
+      "description": "Strict trigger exists but work item is not Strict.",
+      "suggestion": "Set the work item's Mode to Strict, or remove the strict trigger if it was recorded in error. An AI must not downgrade a strict trigger."
+    },
+    "STRICT-002": {
+      "severity": "fail",
+      "description": "Strict release is missing RTM, RAID, or decision-log guardrails.",
+      "suggestion": "Add RTM.json, RAID-log.md, and decision-log.md. Strict release requires full traceability, not just passing tests."
+    },
+    "BLOCKER-001": {
+      "severity": "fail_release",
+      "description": "Open blocker exists during release validation.",
+      "suggestion": "Close the blocker in RAID-log.md, or record an accepted-risk decision that explains why release proceeds anyway."
+    },
+    "RELEASE-001": {
+      "severity": "fail_release",
+      "description": "Release rollback plan is missing, unstructured, or has an invalid Lite waiver.",
+      "suggestion": "Add a structured Rollback Plan table with trigger, steps, and owner. A waiver is only valid for Lite content-only changes."
+    },
+    "RELEASE-STATUS-001": {
+      "severity": "fail",
+      "description": "A release-scope work item is not Done.",
+      "suggestion": "Finish the work item, or remove it from Release Scope with a stated reason."
+    },
+    "RELEASE-SCOPE-001": {
+      "severity": "fail",
+      "description": "A work item is not listed in the Release Scope table, or is excluded without a reason.",
+      "suggestion": "List every work item in the Release Scope table and mark it included or excluded with a reason."
+    },
+    "REVIEW-001": {
+      "severity": "fail",
+      "description": "A release-scope work item (Standard/Strict) has no review stage.",
+      "suggestion": "Set Review Stage to code, qa, business, or security for each released work item."
+    },
+    "TEST-RESULT-001": {
+      "severity": "fail",
+      "description": "A Test Summary row is not passed (or skipped without a reason; Strict also requires resolvable skip evidence).",
+      "suggestion": "Make the test pass, or record it as skipped with a reason. Do not delete a failing row to make the gate green."
+    },
+    "TEST-SUMMARY-001": {
+      "severity": "fail",
+      "description": "Standard/Strict Release has no Test Summary row and no valid test_required:false waiver, or (Strict) every row is skipped.",
+      "suggestion": "Add at least one executed test row to RELEASE.md, or declare a test waiver that policy allows for this mode and change type."
+    },
+    "TEST-EVIDENCE-001": {
+      "severity": "fail",
+      "description": "A release-scope work item's test checklist or evidence is missing or unresolvable (WARN_BLOCKING for Lite).",
+      "suggestion": "Point Evidence Ref at a file, test id, or tracked link that exists. A description of the evidence is not the evidence."
+    },
+    "TEST-EVIDENCE-002": {
+      "severity": "fail",
+      "description": "A passed Test Summary row has missing or unresolvable evidence.",
+      "suggestion": "Attach resolvable evidence to every passed test row, or mark the row skipped with a reason."
+    },
+    "QA-REVIEW-001": {
+      "severity": "fail",
+      "description": "QA review row is missing or invalid at Release (Standard/Strict).",
+      "suggestion": "Add a QA review row with reviewer, role, date, and resolvable evidence."
+    },
+    "SECURITY-REVIEW-001": {
+      "severity": "fail",
+      "description": "Security review row is missing or invalid at Strict Release.",
+      "suggestion": "Add a security review row approved by a Security Reviewer or Tech Lead before a Strict release."
+    },
+    "RTM-001": {
+      "severity": "fail",
+      "description": "Strict RTM.json is empty, invalid, or missing schema_version/traceability.",
+      "suggestion": "Generate RTM.json from templates/RTM.json and fill one row per requirement."
+    },
+    "RTM-002": {
+      "severity": "fail",
+      "description": "RTM is missing a requirement declared in PROJECT.md.",
+      "suggestion": "Add an RTM row for every requirement in PROJECT.md In Scope."
+    },
+    "RTM-003": {
+      "severity": "fail",
+      "description": "RTM row has a broken delivery_ref.",
+      "suggestion": "Point delivery_ref at a work item id that exists in DELIVERY.md."
+    },
+    "RTM-004": {
+      "severity": "fail",
+      "description": "RTM row has a broken test_ref.",
+      "suggestion": "Point test_ref at a test id that exists in RELEASE.md's Test Summary."
+    },
+    "RTM-005": {
+      "severity": "fail",
+      "description": "RTM row has a missing or unresolvable evidence_ref.",
+      "suggestion": "Point evidence_ref at a resolvable file, decision, or tracked link."
+    },
+    "RTM-006": {
+      "severity": "fail",
+      "description": "RTM row has a broken release_ref.",
+      "suggestion": "Point release_ref at the release id declared in RELEASE.md."
+    },
+    "RTM-007": {
+      "severity": "fail",
+      "description": "RTM row is an orphan or duplicate (requirement not in PROJECT.md, or repeated).",
+      "suggestion": "Remove the orphan row, or add the requirement to PROJECT.md. One RTM row per requirement."
+    },
+    "RTM-008": {
+      "severity": "fail",
+      "description": "RTM row has a missing or malformed source_ref.",
+      "suggestion": "Use a source id that appears in PROJECT.md's Source Snapshot and matches a pattern in policy.json source_ref_patterns."
+    },
+    "RTM-009": {
+      "severity": "fail",
+      "description": "RTM row design_ref does not resolve to an existing design file.",
+      "suggestion": "Point design_ref at a file that exists under DESIGN/."
+    },
+    "RTM-010": {
+      "severity": "fail",
+      "description": "RTM row has an invalid status (not an evidence-status enum value).",
+      "suggestion": "Set status to verified, supported, inferred, missing, or conflict."
+    },
+    "LINK-001": {
+      "severity": "fail_release",
+      "description": "Local markdown link is broken.",
+      "suggestion": "Fix the relative path, or remove the link. Governed artifacts must not link to files that do not exist."
+    },
+    "SENSITIVE-001": {
+      "severity": "warn",
+      "description": "Potential sensitive file detected by pre-check.",
+      "suggestion": "Move the file out of the project, or confirm explicitly that it is safe to commit. Never commit credentials or customer data."
+    },
+    "HANDOFF-001": {
+      "severity": "fail",
+      "description": "A required handoff artifact is missing or its metadata contract is incomplete.",
+      "suggestion": "Create HANDOFF.md from templates/HANDOFF.md and fill the metadata block: target, horizon, handoff owner, named integrator, and build-spec reference.",
+      "documentation": "docs/rules/HANDOFF-001.md"
+    },
+    "HANDOFF-002": {
+      "severity": "fail",
+      "description": "The Build Now / Deferred / Do Not Build scope contract is incomplete.",
+      "suggestion": "State what is built now, what is deliberately deferred, and what must not be built. Write 'none' explicitly when a bucket is empty; a blank section is silence, not a decision.",
+      "documentation": "docs/rules/HANDOFF-002.md"
+    },
+    "HANDOFF-003": {
+      "severity": "fail",
+      "description": "A work item, prerequisite, or handoff role has no named owner.",
+      "suggestion": "Replace the generic token with a named person. 'Dev Team' and 'TBD' do not tell anyone who starts on Monday. Generic tokens are configured in pmo-config/handoff-policy.json owner_policy.",
+      "documentation": "docs/rules/HANDOFF-003.md"
+    },
+    "HANDOFF-004": {
+      "severity": "fail",
+      "description": "The dependency or build sequence is incomplete, unresolvable, or ordered so a prerequisite is built after its consumer.",
+      "suggestion": "Give every Build Now item a step, declare its dependencies (or 'none'), and move shared prerequisites to an earlier step than the items that consume them.",
+      "documentation": "docs/rules/HANDOFF-004.md"
+    },
+    "HANDOFF-005": {
+      "severity": "fail",
+      "description": "A required BUILD-SPEC section is missing, empty, or waived without a permitted rationale.",
+      "suggestion": "Fill the section, or mark it 'Status: not_required' with a written rationale where policy allows a waiver. Blank is never a valid answer.",
+      "documentation": "docs/rules/HANDOFF-005.md"
+    },
+    "HANDOFF-006": {
+      "severity": "fail",
+      "description": "An acceptance case has no automated/manual execution classification.",
+      "suggestion": "Mark each acceptance case automated, manual, or exploratory so the team knows what CI covers and what a person has to run.",
+      "documentation": "docs/rules/HANDOFF-006.md"
+    },
+    "HANDOFF-007": {
+      "severity": "fail",
+      "description": "An acceptance case has no seed, fixture, or reset strategy.",
+      "suggestion": "State the data each case starts from and how to reset it. A case that cannot be reached from the declared seed data cannot be demonstrated.",
+      "documentation": "docs/rules/HANDOFF-007.md"
+    },
+    "HANDOFF-008": {
+      "severity": "fail",
+      "description": "A demo or pilot milestone lacks device, integrator, capacity, or reset path.",
+      "suggestion": "Name the demo device, the person integrating the streams, the available capacity, and the reset path before the demo date.",
+      "documentation": "docs/rules/HANDOFF-008.md"
+    },
+    "HANDOFF-009": {
+      "severity": "fail",
+      "description": "An open action has no owner or no blocking point.",
+      "suggestion": "Give every open action an owner and say which stage it blocks: before_build, before_integration, before_demo, before_uat, before_release, or non_blocking.",
+      "documentation": "docs/rules/HANDOFF-009.md"
+    },
+    "HANDOFF-010": {
+      "severity": "fail",
+      "description": "The semantic handoff review is missing, incomplete, or stale.",
+      "suggestion": "Run the pmo-delivery handoff_review intent and record the result in HANDOFF-REVIEW.json. Re-run it whenever the Source Snapshot changes; a review only speaks for the sources it saw.",
+      "documentation": "docs/rules/HANDOFF-010.md"
+    },
+    "HANDOFF-011": {
+      "severity": "fail",
+      "description": "A data element declared as sensitive has no classification or retention decision.",
+      "suggestion": "Record a classification and retention decision for the element, then reference the decision id. The validator reads your own 'Contains Sensitive Data' declaration; it never guesses which data is sensitive.",
+      "documentation": "docs/rules/HANDOFF-011.md"
+    },
+    "HANDOFF-012": {
+      "severity": "fail",
+      "description": "A declared device or runtime capability has no resolved serving model or environment decision.",
+      "suggestion": "Decide how the capability will actually be served and record it. The validator reads the capabilities you declared; it never infers that a feature needs a camera or HTTPS.",
+      "documentation": "docs/rules/HANDOFF-012.md"
+    },
+    "HANDOFF-013": {
+      "severity": "fail",
+      "description": "A governed table header does not match the columns the policy declares.",
+      "suggestion": "Restore the column names and their order from pmo-config/handoff-policy.json. The validator reads cells by name, so a renamed or reordered header silently yields empty cells and the failure surfaces as some other rule complaining about a value you did fill in.",
+      "documentation": "docs/rules/HANDOFF-013.md"
+    },
+    "HANDOFF-014": {
+      "severity": "fail",
+      "description": "A handoff artifact names a different project than PROJECT.md declares.",
+      "suggestion": "Make HANDOFF.md and HANDOFF-REVIEW.json agree with PROJECT.md's heading. A mismatch is usually a project started by copying another, where the old project code was left behind.",
+      "documentation": "docs/rules/HANDOFF-014.md"
+    },
+    "DOCTOR-000": {
+      "severity": "fail",
+      "description": "Fallback rule id for framework doctor results, and broken doctor-scanned local links.",
+      "suggestion": "Fix the reported path or give the check an explicit rule id."
+    },
+    "DOCTOR-001": {
+      "severity": "fail",
+      "description": "Active skill runtime does not match skill manifest.",
+      "suggestion": "Align .claude/skills/ with pmo-config/skill-manifest.json. Archived skills belong in .claude-archive/."
+    },
+    "DOCTOR-002": {
+      "severity": "fail",
+      "description": "Router references archived legacy skill.",
+      "suggestion": "Update CLAUDE.md and CONTEXT-ROUTER.md to reference only the active skills in the manifest."
+    },
+    "DOCTOR-003": {
+      "severity": "fail",
+      "description": "Context map does not reference JSON runtime config.",
+      "suggestion": "Point pmo-config/context-map.json config_refs at policy.json, skill-manifest.json, and validation-rules.json."
+    },
+    "DOCTOR-004": {
+      "severity": "fail",
+      "description": "Active skill contains legacy rule references.",
+      "suggestion": "Remove references to retired rule ids from the active SKILL.md files."
+    },
+    "DOCTOR-005": {
+      "severity": "fail",
+      "description": "Version metadata is inconsistent across VERSION, CHANGELOG, and config.",
+      "suggestion": "Bump VERSION, the CHANGELOG's newest heading, and every pmo-config version field together."
+    },
+    "DOCTOR-006": {
+      "severity": "fail",
+      "description": "A pmo-config/*.json file is missing or has an unsupported schema_version.",
+      "suggestion": "Add or correct schema_version in the reported config file."
+    },
+    "DOCTOR-007": {
+      "severity": "fail",
+      "description": "A runtime rule id is missing from this catalog, or a catalog entry is never emitted.",
+      "suggestion": "Add the missing rule to validation-rules.json, or delete the dead catalog entry. The catalog and the emitters must match exactly."
+    },
+    "DOCTOR-008": {
+      "severity": "fail",
+      "description": "A rule that can fail or warn has no suggestion text in the catalog.",
+      "suggestion": "Add a `suggestion` to the reported rule. Every actionable diagnostic must tell the reader how to fix it, not only what broke."
+    },
+    "DOCTOR-009": {
+      "severity": "fail",
+      "description": "A rule's documentation path does not resolve to a file in the repository.",
+      "suggestion": "Create the referenced docs/rules/*.md page, or remove the `documentation` key so the rule emits documentation_url: null instead of a dead link."
+    },
+    "DOCTOR-STRUCT": {
+      "severity": "fail",
+      "description": "A required framework structural file or directory is missing.",
+      "suggestion": "Restore the missing framework file. Structure is defined in scripts/pmo-doctor.ps1."
+    },
+    "DOCTOR-EXAMPLE": {
+      "severity": "fail",
+      "description": "A required example project is missing.",
+      "suggestion": "Restore the example project under examples/."
+    },
+    "DOCTOR-HOOK": {
+      "severity": "fail",
+      "description": "Fake PMO echo hooks still exist in settings.",
+      "suggestion": "Remove echo-only hooks from .claude/settings.json and use scripts/validate-project.ps1 for real validation."
+    },
+    "DOCTOR-SKILL-001": {
+      "severity": "fail",
+      "description": "Active skill SKILL.md frontmatter is missing, incomplete, or mismatched.",
+      "suggestion": "Give the SKILL.md YAML frontmatter with name and description, and make name match the directory."
+    },
+    "TABLE-001": {
+      "severity": "fail",
+      "description": "Markdown table column counts do not match the header.",
+      "suggestion": "Make every row have the same number of pipe-separated cells as the header row."
+    },
+    "PERMISSION-000": {
+      "severity": "fail",
+      "description": ".claude/settings.json does not parse as JSON.",
+      "suggestion": "Fix the JSON syntax in .claude/settings.json."
+    },
+    "PERMISSION-001": {
+      "severity": "fail",
+      "description": "Dangerous git mutation is allowed by default.",
+      "suggestion": "Remove git push/commit/tag from permissions.allow. These must be human-confirmed, not pre-approved."
+    },
+    "PERMISSION-002": {
+      "severity": "fail",
+      "description": "A required allowlisted framework command is not permitted.",
+      "suggestion": "Add the framework's own validation commands to permissions.allow so checks can run without prompting."
+    },
+    "PERMISSION-003": {
+      "severity": "fail",
+      "description": "git commit/push/tag is not gated behind an ask rule.",
+      "suggestion": "Add git commit/push/tag to permissions.ask."
+    },
+    "PERMISSION-004": {
+      "severity": "fail",
+      "description": "Common secret and private-key paths are not denied.",
+      "suggestion": "Add .env, *.pem, *.key, and id_rsa style paths to permissions.deny."
+    },
+    "PERMISSION-005": {
+      "severity": "fail",
+      "description": "Bypass-permissions mode is not disabled.",
+      "suggestion": "Set disableBypassPermissionsMode in .claude/settings.json. Autonomy must never mean bypassing the permission layer."
+    },
+    "PERMISSION-006": {
+      "severity": "fail",
+      "description": "External web search requires human approval.",
+      "suggestion": "Add WebSearch to permissions.ask so source material is never sent outward without a human decision."
+    },
+    "PERMISSION-007": {
+      "severity": "fail",
+      "description": "Sensitive ignore patterns are too broad, stale, or missing.",
+      "suggestion": "Use precise .gitignore patterns for sensitive files instead of broad wildcards that hide governed artifacts."
+    }
   }
 }
