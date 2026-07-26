@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" data-pptx-page-role="content">
+  <rect id="page-bg" data-pptx-role="background" x="0" y="0" width="1280" height="720" fill="#FFFFFF" />
+
+  <g id="page-header" data-pptx-bounds="72 56 1136 148">
+    <text x="72" y="82" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#D6360B">04</text>
+    <text x="112" y="82" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">ปัญหา — ทำไมต้องมี Axiom-PMO</text>
+    <text x="72" y="146" font-family="Tahoma, Arial, sans-serif" font-size="42" font-weight="700" fill="#14161A">prompt คือคำขอ ไม่ใช่ control</text>
+    <line x1="72" y1="180" x2="1208" y2="180" stroke="#DEDDD8" stroke-width="1" />
+  </g>
+
+  <g id="p04-argument" data-pptx-bounds="72 210 640 330">
+    
+  <g transform="translate(72, 212) scale(1.41667)" fill="none" stroke="#D6360B" stroke-width="2">
+    <path d="M11.46 20.846a12 12 0 0 1 -7.96 -14.846a12 12 0 0 0 8.5 -3a12 12 0 0 0 8.5 3a12 12 0 0 1 -.09 7.06" />
+    <path d="M15 19l2 2l4 -4" />
+  </g>
+    <text font-family="Tahoma, Arial, sans-serif" fill="#14161A" font-weight="700" font-size="30" x="72" y="298">A prompt that politely asks</text><text font-family="Tahoma, Arial, sans-serif" fill="#14161A" font-weight="700" font-size="30" x="72" y="338">the agent not to do these</text><text font-family="Tahoma, Arial, sans-serif" fill="#14161A" font-weight="700" font-size="30" x="72" y="378">things is not a control.</text><text font-family="Tahoma, Arial, sans-serif" fill="#3A3F45" font-weight="400" font-size="24" x="72" y="440">Axiom-PMO เปลี่ยนข้อห้ามแต่ละข้อ</text><text font-family="Tahoma, Arial, sans-serif" fill="#3A3F45" font-weight="400" font-size="24" x="72" y="476">ให้เป็นสัญญาที่เครื่องตรวจสอบได้ มี</text><text font-family="Tahoma, Arial, sans-serif" fill="#3A3F45" font-weight="400" font-size="24" x="72" y="512">validator ที่ exit non-zero เมื่อสัญญา</text><text font-family="Tahoma, Arial, sans-serif" fill="#3A3F45" font-weight="400" font-size="24" x="72" y="548">ถูกละเมิด เหมือน linter ที่ทำให้ PR ไม่ผ่าน</text></g>
+
+  <g id="p04-nicely" data-pptx-bounds="72 556 640 60">
+    <text x="72" y="590" font-family="Tahoma, Arial, sans-serif" font-size="24" font-weight="700" fill="#D6360B">Nothing is enforced by asking the agent nicely.</text>
+  </g>
+
+  <g id="p04-case" data-pptx-bounds="730 220 478 412">
+    <rect x="730" y="230" width="478" height="394" fill="#F2F1ED" />
+    <rect x="730" y="230" width="5" height="394" fill="#D6360B" />
+    <text x="762" y="278" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#D6360B">เคสจริงที่ทำให้ framework นี้เกิด</text>
+    <text font-family="Tahoma, Arial, sans-serif" fill="#14161A" font-weight="700" font-size="24" x="762" y="322">The Agent That Shipped</text><text font-family="Tahoma, Arial, sans-serif" fill="#14161A" font-weight="700" font-size="24" x="762" y="354">Without Permission</text><rect x="762" y="382" width="20" height="3" fill="#14161A" />
+    <text font-family="Tahoma, Arial, sans-serif" fill="#3A3F45" font-weight="400" font-size="18" x="762" y="418">agent commit และ push ขึ้น main เอง</text><text font-family="Tahoma, Arial, sans-serif" fill="#3A3F45" font-weight="400" font-size="18" x="762" y="444">แก้ไปหลายร้อยไฟล์ ไม่มีใคร review diff</text><rect x="762" y="462" width="20" height="3" fill="#14161A" />
+    <text font-family="Tahoma, Arial, sans-serif" fill="#3A3F45" font-weight="400" font-size="18" x="762" y="498">รายงานสถานะของตัวเองบอกว่า</text><text font-family="Tahoma, Arial, sans-serif" fill="#3A3F45" font-weight="400" font-size="18" x="762" y="524">ยังไม่ได้ commit หรือ push</text><rect x="762" y="542" width="20" height="3" fill="#D6360B" />
+    <text font-family="Tahoma, Arial, sans-serif" fill="#14161A" font-weight="700" font-size="18" x="762" y="578">สาเหตุราก — The boundary lived</text><text font-family="Tahoma, Arial, sans-serif" fill="#14161A" font-weight="700" font-size="18" x="762" y="604">only in prose.</text></g>
+
+  <text id="page-footer" data-pptx-role="footer" x="1208" y="690" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="400" fill="#3A3F45">Axiom-PMO 1.1.1</text>
+</svg>

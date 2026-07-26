@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" data-pptx-page-role="content">
+  <rect id="page-bg" data-pptx-role="background" x="0" y="0" width="1280" height="720" fill="#FFFFFF" />
+
+  <g id="page-header" data-pptx-bounds="72 56 1136 148">
+    <text x="72" y="82" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#D6360B">10</text>
+    <text x="112" y="82" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">เจาะลึก — ด่าน Handoff</text>
+    <text x="72" y="146" font-family="Tahoma, Arial, sans-serif" font-size="42" font-weight="700" fill="#14161A">ทำไมต้องมีด่าน Handoff</text>
+    <line x1="72" y1="180" x2="1208" y2="180" stroke="#DEDDD8" stroke-width="1" />
+  </g>
+
+  <g id="p10-question" data-pptx-bounds="72 214 1136 62">
+    <text x="72" y="252" font-family="Tahoma, Arial, sans-serif" font-size="32" font-weight="400" fill="#14161A">เอกสารชุดนี้ดีพอให้ dev เริ่มสร้าง และให้ทีมเดโมทันเวลาไหม</text>
+  </g>
+
+  <g id="p10-row-1" data-pptx-bounds="72 284 1136 64">
+    <text x="72" y="310" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">schema กลางที่ทุกงานต้องอ่าน ถูกจัดคิวไว้หลังงานที่เรียกใช้มัน</text>
+    <text x="1208" y="310" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#D6360B">วิศวกรสองคนเสียวันแรก</text>
+  </g>
+
+  <g id="p10-row-2" data-pptx-bounds="72 348 1136 64">
+    <line x1="72" y1="348" x2="1208" y2="348" stroke="#DEDDD8" stroke-width="1" />
+    <text font-family="Tahoma, Arial, sans-serif" fill="#3A3F45" font-weight="400" font-size="18" x="72" y="378">ฟีเจอร์สแกนต้องใช้กล้อง แต่ไม่มีใครตัดสินว่าหน้าเว็บจะเสิร์ฟยังไง</text><text font-family="Tahoma, Arial, sans-serif" fill="#3A3F45" font-weight="400" font-size="18" x="72" y="400">ทำงานบน localhost แต่พังบนแท็บเล็ตที่ยืมมา</text><text x="1208" y="378" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#D6360B">code review จับไม่ได้</text>
+  </g>
+
+  <g id="p10-row-3" data-pptx-bounds="72 412 1136 64">
+    <line x1="72" y1="412" x2="1208" y2="412" stroke="#DEDDD8" stroke-width="1" />
+    <text font-family="Tahoma, Arial, sans-serif" fill="#3A3F45" font-weight="400" font-size="18" x="72" y="442">เอกสารหนึ่งบอกว่าเก็บรูปไว้ในเครือข่ายไซต์</text><text font-family="Tahoma, Arial, sans-serif" fill="#3A3F45" font-weight="400" font-size="18" x="72" y="464">อีกเอกสารระบุอัปโหลดรูปโดยไม่จัดชั้นข้อมูล</text><text x="1208" y="442" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#D6360B">ทั้งคู่ถูกในหน้าตัวเอง</text>
+  </g>
+
+  <g id="p10-row-4" data-pptx-bounds="72 476 1136 64">
+    <line x1="72" y1="476" x2="1208" y2="476" stroke="#DEDDD8" stroke-width="1" />
+    <text x="72" y="506" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">acceptance case อ้างพฤติกรรมกับ record ที่ seed data ไม่เคยสร้าง</text>
+    <text x="1208" y="506" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#D6360B">เคสไม่เคยถูกรันจริง</text>
+  </g>
+
+  <g id="p10-row-5" data-pptx-bounds="72 540 1136 64">
+    <line x1="72" y1="540" x2="1208" y2="540" stroke="#DEDDD8" stroke-width="1" />
+    <text x="72" y="570" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">งานถูก assign ให้ "Dev Team"</text>
+    <text x="1208" y="570" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#D6360B">ไม่มีใครเริ่มงาน</text>
+  </g>
+
+  <g id="p10-close" data-pptx-bounds="72 620 1136 52">
+    <line x1="72" y1="620" x2="1208" y2="620" stroke="#DEDDD8" stroke-width="1" />
+    <text x="72" y="656" font-family="Tahoma, Arial, sans-serif" font-size="24" font-weight="700" fill="#14161A">ไม่มีข้อไหนที่กฎ "ช่องนี้กรอกหรือยัง" มองเห็น — และทุกข้อกินเวลาเป็นวัน</text>
+  </g>
+
+  <text id="page-footer" data-pptx-role="footer" x="1208" y="690" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="400" fill="#3A3F45">Axiom-PMO 1.1.1</text>
+</svg>

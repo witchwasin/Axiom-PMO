@@ -1,0 +1,75 @@
+{
+  "schema": "ppt-master.svg-quality-report.v1",
+  "stage": "first-page",
+  "target": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726",
+  "source_fingerprint": {
+    "algorithm": "sha256",
+    "digest": "25f6d57653a4e36d1834a2de9db8029a2e3ea921ea9d104305f845af621d94aa",
+    "file_count": 1,
+    "files": [
+      {
+        "file": "01_cover.svg",
+        "sha256": "852cf6bb8977449a710eb88c4cbd8f4213d783b9d1f1c0deb66a61625b714d2f"
+      }
+    ]
+  },
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "warnings": 0,
+    "errors": 0
+  },
+  "issue_types": {},
+  "categories": {
+    "blocking": {
+      "count": 0,
+      "issues": []
+    },
+    "introduced": {
+      "count": 0,
+      "issues": []
+    },
+    "inherited": {
+      "count": 0,
+      "issues": []
+    },
+    "source-import": {
+      "count": 0,
+      "summary": {
+        "warning_count": 0,
+        "by_code": {}
+      }
+    }
+  },
+  "drift": {
+    "colors": {},
+    "fonts": {},
+    "sizes": {}
+  },
+  "project_issues": {
+    "template": [],
+    "animation": [],
+    "illustration": [],
+    "communication_trace": [],
+    "pptx_structure": []
+  },
+  "files": [
+    {
+      "file": "01_cover.svg",
+      "path": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/01_cover.svg",
+      "exists": true,
+      "errors": [],
+      "warnings": [],
+      "info": {
+        "viewbox": "0 0 1280 720",
+        "fonts": [
+          "Tahoma, Arial, sans-serif"
+        ],
+        "text_elements": 6,
+        "tspan_elements": 1
+      },
+      "passed": true,
+      "source_sha256": "852cf6bb8977449a710eb88c4cbd8f4213d783b9d1f1c0deb66a61625b714d2f"
+    }
+  ]
+}

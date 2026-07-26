@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" data-pptx-page-role="content">
+  <rect id="page-bg" data-pptx-role="background" x="0" y="0" width="1280" height="720" fill="#FFFFFF"/>
+
+  <g id="page-header" data-pptx-bounds="72 56 1136 148">
+    <text x="72" y="82" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#D6360B">11</text>
+    <text x="112" y="82" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">เจาะลึก — ด่าน Handoff</text>
+    <text x="72" y="146" font-family="Tahoma, Arial, sans-serif" font-size="42" font-weight="700" fill="#14161A">สองชั้น — เครื่องตรวจกับคนตรวจ แยกกันโดยตั้งใจ</text>
+    <line x1="72" y1="180" x2="1208" y2="180" stroke="#DEDDD8" stroke-width="1"/>
+  </g>
+
+  <g id="p11-layer1" data-pptx-bounds="72 234 548 268">
+    <rect x="72" y="240" width="548" height="52" fill="#14161A"/>
+    <text x="96" y="274" font-family="Tahoma, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">Layer 1 — Deterministic</text>
+    <use data-icon="tabler-outline/binary-tree" x="568" y="252" width="30" height="30" fill="#FFFFFF" stroke-width="2"/>
+    <rect x="72" y="322" width="10" height="10" fill="#14161A"/>
+    <text x="104" y="332" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">ตรวจสิ่งที่พิสูจน์ได้จากเอกสาร</text>
+    <rect x="72" y="358" width="10" height="10" fill="#14161A"/>
+    <text x="104" y="368" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">กฎ HANDOFF-001 ถึง HANDOFF-014</text>
+    <rect x="72" y="394" width="10" height="10" fill="#14161A"/>
+    <text x="104" y="404" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">อ่านเฉพาะสิ่งที่ผู้เขียนประกาศไว้<tspan x="104" dy="24">แล้วเช็คว่าครบและสอดคล้องกันไหม</tspan></text>
+    <rect x="72" y="454" width="10" height="10" fill="#D6360B"/>
+    <text x="104" y="464" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#14161A">ตัดสินไม่ได้ว่ารูปถ่ายรถคือข้อมูลส่วนบุคคล<tspan x="104" dy="24">และไม่พยายามจะตัดสิน</tspan></text>
+  </g>
+
+  <g id="p11-layer2" data-pptx-bounds="660 234 548 268">
+    <rect x="660" y="240" width="548" height="52" fill="#2E6B5E"/>
+    <text x="684" y="274" font-family="Tahoma, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">Layer 2 — Semantic review</text>
+    <use data-icon="tabler-outline/eye-search" x="1156" y="252" width="30" height="30" fill="#FFFFFF" stroke-width="2"/>
+    <rect x="660" y="322" width="10" height="10" fill="#2E6B5E"/>
+    <text x="692" y="332" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">ตรวจว่าสัญญาทั้งชุดสมเหตุสมผลไหม</text>
+    <rect x="660" y="358" width="10" height="10" fill="#2E6B5E"/>
+    <text x="692" y="368" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">อ่านผ่าน 12 เลนส์ โดย AI หรือคน</text>
+    <rect x="660" y="394" width="10" height="10" fill="#2E6B5E"/>
+    <text x="692" y="404" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">บันทึกเป็น HANDOFF-REVIEW.json</text>
+    <rect x="660" y="454" width="10" height="10" fill="#D6360B"/>
+    <text x="692" y="464" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#14161A">เป็นหลักฐานที่ยังไม่ได้รับรอง<tspan x="692" dy="24">ไม่ใช่การอนุมัติ</tspan></text>
+  </g>
+
+  <g id="p11-why" data-pptx-bounds="72 512 1136 88">
+    <text x="72" y="540" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#D6360B">ทำไมถึงตั้งใจไม่ฝังกฎเชิงโดเมนลงไปในเครื่อง</text>
+    <text x="72" y="576" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">"a validator that guesses wrong is worse than one that stays quiet — it teaches people to ignore it"</text>
+  </g>
+
+  <g id="p11-closure" data-pptx-bounds="72 606 1136 66">
+    <rect x="72" y="610" width="1136" height="58" fill="#F2F1ED"/>
+    <text x="104" y="646" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">ใครปิด finding ได้: AI ปิดได้เฉพาะสถานะ resolved — เลนส์ privacy และ environment ต้องให้คนปิด บังคับด้วยกฎ HANDOFF-010</text>
+  </g>
+
+  <text id="page-footer" data-pptx-role="footer" x="1208" y="690" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="400" fill="#3A3F45">Axiom-PMO 1.1.1</text>
+</svg>

@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" data-pptx-page-role="content">
+  <rect id="page-bg" data-pptx-role="background" x="0" y="0" width="1280" height="720" fill="#FFFFFF"/>
+
+  <g id="page-header" data-pptx-bounds="72 56 1136 148">
+    <text x="72" y="82" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#D6360B">13</text>
+    <text x="112" y="82" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">เจาะลึก — ด่าน Handoff</text>
+    <text x="72" y="146" font-family="Tahoma, Arial, sans-serif" font-size="42" font-weight="700" fill="#14161A">ความพร้อมรายงานเป็นหกด่าน ไม่ใช่ค่าเดียว</text>
+    <line x1="72" y1="180" x2="1208" y2="180" stroke="#DEDDD8" stroke-width="1"/>
+  </g>
+
+  <g id="p13-stages" data-pptx-bounds="72 226 460 390">
+    <text x="72" y="250" font-family="Tahoma, Arial, sans-serif" font-size="24" font-weight="700" fill="#14161A">หกด่านความพร้อม</text>
+    <rect x="72" y="292" width="10" height="10" fill="#DEDDD8"/>
+    <text x="104" y="302" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">Contract Valid</text>
+    <rect x="72" y="332" width="10" height="10" fill="#DEDDD8"/>
+    <text x="104" y="342" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">Ready to Start Development</text>
+    <rect x="72" y="372" width="10" height="10" fill="#DEDDD8"/>
+    <text x="104" y="382" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">Ready to Integrate</text>
+    <rect x="72" y="412" width="10" height="10" fill="#DEDDD8"/>
+    <text x="104" y="422" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">Ready to Demo</text>
+    <rect x="72" y="452" width="10" height="10" fill="#DEDDD8"/>
+    <text x="104" y="462" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">Ready for UAT</text>
+    <rect x="72" y="492" width="10" height="10" fill="#DEDDD8"/>
+    <text x="104" y="502" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">Ready for Release</text>
+    <line x1="72" y1="524" x2="532" y2="524" stroke="#DEDDD8" stroke-width="1"/>
+    <text x="72" y="552" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="400" fill="#3A3F45">แต่ละด่านมีสามค่า: true / false / null<tspan x="72" dy="22">null สำคัญ เพราะ "ยังไม่มีการรีวิว"</tspan><tspan x="72" dy="22">ไม่เท่ากับ "ไม่มี finding"</tspan></text>
+  </g>
+
+  <g id="p13-score" data-pptx-bounds="560 226 648 340">
+    <text x="560" y="250" font-family="Tahoma, Arial, sans-serif" font-size="24" font-weight="700" fill="#14161A">คะแนน 7 มิติ รวม 100</text>
+    <g id="chartArea">
+      <line x1="850" y1="280" x2="850" y2="552" stroke="#14161A" stroke-width="2"/>
+      <!-- chart-plot-area: 850,280,1150,552 -->
+      <text x="830" y="306" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="400" fill="#3A3F45">Engineering contract</text>
+      <rect x="850" y="290" width="300" height="22" fill="#14161A"/>
+      <text x="1162" y="306" font-family="Consolas, Courier New, monospace" font-size="16" font-weight="700" fill="#14161A">20</text>
+      <text x="830" y="346" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="400" fill="#3A3F45">Source and scope integrity</text>
+      <rect x="850" y="330" width="225" height="22" fill="#3A3F45"/>
+      <text x="1087" y="346" font-family="Consolas, Courier New, monospace" font-size="16" font-weight="700" fill="#14161A">15</text>
+      <text x="830" y="386" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="400" fill="#3A3F45">Requirement traceability</text>
+      <rect x="850" y="370" width="225" height="22" fill="#3A3F45"/>
+      <text x="1087" y="386" font-family="Consolas, Courier New, monospace" font-size="16" font-weight="700" fill="#14161A">15</text>
+      <text x="830" y="426" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="400" fill="#3A3F45">Acceptance and testability</text>
+      <rect x="850" y="410" width="225" height="22" fill="#3A3F45"/>
+      <text x="1087" y="426" font-family="Consolas, Courier New, monospace" font-size="16" font-weight="700" fill="#14161A">15</text>
+      <text x="830" y="466" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="400" fill="#3A3F45">Dependency, owner, capacity</text>
+      <rect x="850" y="450" width="225" height="22" fill="#3A3F45"/>
+      <text x="1087" y="466" font-family="Consolas, Courier New, monospace" font-size="16" font-weight="700" fill="#14161A">15</text>
+      <text x="830" y="506" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="400" fill="#3A3F45">Security, privacy, environment</text>
+      <rect x="850" y="490" width="150" height="22" fill="#DEDDD8"/>
+      <text x="1012" y="506" font-family="Consolas, Courier New, monospace" font-size="16" font-weight="700" fill="#14161A">10</text>
+      <text x="830" y="546" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="400" fill="#3A3F45">Demo and operational readiness</text>
+      <rect x="850" y="530" width="150" height="22" fill="#DEDDD8"/>
+      <text x="1012" y="546" font-family="Consolas, Courier New, monospace" font-size="16" font-weight="700" fill="#14161A">10</text>
+    </g>
+  </g>
+
+  <g id="p13-caps" data-pptx-bounds="560 566 648 106">
+    <rect x="560" y="572" width="648" height="98" fill="#F2F1ED"/>
+    <text x="584" y="598" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="700" fill="#D6360B">เพดานคะแนนสี่ข้อ</text>
+    <text x="584" y="622" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="400" fill="#3A3F45">deterministic FAIL ใด ๆ → BLOCKED · review หายหรือเก่า → สูงสุด 70<tspan x="584" dy="22">ไม่มีเจ้าของเป็นชื่อคน หรือลำดับ build รันไม่ได้ → 69 · critical ที่บล็อก before_build → 49</tspan></text>
+  </g>
+
+  <g id="p13-close" data-pptx-bounds="72 626 460 46">
+    <text x="72" y="656" font-family="Tahoma, Arial, sans-serif" font-size="24" font-weight="700" fill="#D6360B">The score is not an approval.</text>
+  </g>
+
+  <text id="page-footer" data-pptx-role="footer" x="1208" y="690" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="400" fill="#3A3F45">Axiom-PMO 1.1.1</text>
+</svg>

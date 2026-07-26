@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" data-pptx-page-role="content">
+  <rect id="page-bg" data-pptx-role="background" x="0" y="0" width="1280" height="720" fill="#FFFFFF"/>
+
+  <g id="page-header" data-pptx-bounds="72 56 1136 148">
+    <text x="72" y="82" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#D6360B">06</text>
+    <text x="112" y="82" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">หลักการ 1 จาก 4 — สี่หลักการที่ทำให้มันทำงาน</text>
+    <text x="72" y="146" font-family="Tahoma, Arial, sans-serif" font-size="42" font-weight="700" fill="#14161A">Evidence — ทุกข้ออ้างต้องสาวกลับไปหาแหล่งได้</text>
+    <line x1="72" y1="180" x2="1208" y2="180" stroke="#DEDDD8" stroke-width="1"/>
+  </g>
+
+  <g id="p06-yaml" data-pptx-bounds="72 218 1136 205">
+    <rect x="72" y="225" width="1136" height="190" fill="#F2F1ED"/>
+    <text x="104" y="262" font-family="Consolas, Courier New, monospace" font-size="18" font-weight="400" fill="#3A3F45">id: REQ-001<tspan x="104" dy="26">statement: "User can reset password by verified email."</tspan><tspan x="104" dy="26">source_ref:  - source_id: MOM-20260710  locator: item-2.1</tspan></text>
+    <text x="104" y="340" font-family="Consolas, Courier New, monospace" font-size="18" font-weight="700" fill="#D6360B">evidence_status: supported</text>
+    <text x="104" y="366" font-family="Consolas, Courier New, monospace" font-size="18" font-weight="400" fill="#3A3F45">acceptance_criteria:<tspan x="104" dy="26">  "Given a registered email, a reset link is sent."</tspan></text>
+  </g>
+
+  <g id="p06-status-verified" data-pptx-bounds="72 440 211 165">
+    <rect x="72" y="450" width="211" height="6" fill="#2E6B5E"/>
+    <text x="72" y="492" font-family="Consolas, Courier New, monospace" font-size="18" font-weight="700" fill="#2E6B5E">verified</text>
+    <text x="72" y="526" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">มีแหล่งอ้างอิงตรง<tspan x="72" dy="26">และมนุษย์อนุมัติแล้ว</tspan></text>
+  </g>
+
+  <g id="p06-status-supported" data-pptx-bounds="303 440 211 165">
+    <rect x="303" y="450" width="211" height="6" fill="#2E6B5E"/>
+    <text x="303" y="492" font-family="Consolas, Courier New, monospace" font-size="18" font-weight="700" fill="#2E6B5E">supported</text>
+    <text x="303" y="526" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">มีแหล่งอ้างอิงตรง<tspan x="303" dy="26">แต่ยังรออนุมัติ</tspan></text>
+  </g>
+
+  <g id="p06-status-inferred" data-pptx-bounds="534 440 211 165">
+    <rect x="534" y="450" width="211" height="6" fill="#B36A00"/>
+    <text x="534" y="492" font-family="Consolas, Courier New, monospace" font-size="18" font-weight="700" fill="#B36A00">inferred</text>
+    <text x="534" y="526" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">อนุมานจากแหล่งที่ไม่ครบ<tspan x="534" dy="26">ต้องให้คนรีวิว</tspan></text>
+  </g>
+
+  <g id="p06-status-missing" data-pptx-bounds="765 440 211 165">
+    <rect x="765" y="450" width="211" height="6" fill="#D6360B"/>
+    <text x="765" y="492" font-family="Consolas, Courier New, monospace" font-size="18" font-weight="700" fill="#D6360B">missing</text>
+    <text x="765" y="526" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">ไม่พบในแหล่ง<tspan x="765" dy="26">ห้ามเป็น requirement</tspan></text>
+  </g>
+
+  <g id="p06-status-conflict" data-pptx-bounds="996 440 212 165">
+    <rect x="996" y="450" width="212" height="6" fill="#D6360B"/>
+    <text x="996" y="492" font-family="Consolas, Courier New, monospace" font-size="18" font-weight="700" fill="#D6360B">conflict</text>
+    <text x="996" y="526" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">แหล่งขัดกันเอง<tspan x="996" dy="26">ต้องเคลียร์ก่อนออกจริง</tspan></text>
+  </g>
+
+  <g id="p06-close" data-pptx-bounds="72 618 1136 54">
+    <text x="72" y="652" font-family="Tahoma, Arial, sans-serif" font-size="30" font-weight="700" fill="#14161A">inferred, missing, conflict — ไม่ใช่ความล้มเหลว แต่คือคำตอบที่ซื่อสัตย์</text>
+  </g>
+
+  <text id="page-footer" data-pptx-role="footer" x="1208" y="690" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="400" fill="#3A3F45">Axiom-PMO 1.1.1</text>
+</svg>

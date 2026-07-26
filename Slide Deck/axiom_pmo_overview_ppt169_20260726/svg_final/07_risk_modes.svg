@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" data-pptx-page-role="content">
+  <rect id="page-bg" data-pptx-role="background" x="0" y="0" width="1280" height="720" fill="#FFFFFF" />
+
+  <g id="page-header" data-pptx-bounds="72 56 1136 148">
+    <text x="72" y="82" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#D6360B">07</text>
+    <text x="112" y="82" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">หลักการ 2 จาก 4 — สี่หลักการที่ทำให้มันทำงาน</text>
+    <text x="72" y="146" font-family="Tahoma, Arial, sans-serif" font-size="42" font-weight="700" fill="#14161A">Risk Modes — เลือกโหมดเบาที่สุดที่ยังคุมความเสี่ยงจริงได้</text>
+    <line x1="72" y1="180" x2="1208" y2="180" stroke="#DEDDD8" stroke-width="1" />
+  </g>
+
+  <g id="p07-mode-lite" data-pptx-bounds="72 218 362 262">
+    <rect x="72" y="225" width="362" height="44" fill="#F2F1ED" />
+    <text x="92" y="254" font-family="Tahoma, Arial, sans-serif" font-size="24" font-weight="700" fill="#14161A">Lite</text>
+    <text font-family="Tahoma, Arial, sans-serif" fill="#3A3F45" font-weight="400" font-size="18" x="92" y="305">บั๊กเล็ก งานความเสี่ยงต่ำ</text><text font-family="Tahoma, Arial, sans-serif" fill="#3A3F45" font-weight="400" font-size="18" x="92" y="329">หรือคำถามเพื่อความชัดเจน</text><line x1="72" y1="352" x2="434" y2="352" stroke="#DEDDD8" stroke-width="1" />
+    <text font-family="Consolas, Courier New, monospace" fill="#14161A" font-weight="400" font-size="16" x="92" y="380">Requirement → AC →</text><text font-family="Consolas, Courier New, monospace" fill="#14161A" font-weight="400" font-size="16" x="92" y="402">Develop → Test → Done</text><line x1="72" y1="422" x2="434" y2="422" stroke="#DEDDD8" stroke-width="1" />
+    <text x="92" y="452" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">เจ้าของงานกลาง ๆ = <tspan font-weight="700" fill="#B36A00">warn</tspan></text>
+  </g>
+
+  <g id="p07-mode-standard" data-pptx-bounds="458 218 362 262">
+    <rect x="458" y="225" width="362" height="44" fill="#F2F1ED" />
+    <text x="478" y="254" font-family="Tahoma, Arial, sans-serif" font-size="24" font-weight="700" fill="#14161A">Standard</text>
+    <text font-family="Tahoma, Arial, sans-serif" fill="#3A3F45" font-weight="400" font-size="18" x="478" y="305">ฟีเจอร์ปกติที่ PM, Dev, QA</text><text font-family="Tahoma, Arial, sans-serif" fill="#3A3F45" font-weight="400" font-size="18" x="478" y="329">ต้องเห็นภาพร่วมกัน</text><line x1="458" y1="352" x2="820" y2="352" stroke="#DEDDD8" stroke-width="1" />
+    <text font-family="Consolas, Courier New, monospace" fill="#14161A" font-weight="400" font-size="16" x="478" y="380">Intake → Design →</text><text font-family="Consolas, Courier New, monospace" fill="#14161A" font-weight="400" font-size="16" x="478" y="402">Handoff → Build → Release</text><line x1="458" y1="422" x2="820" y2="422" stroke="#DEDDD8" stroke-width="1" />
+    <text x="478" y="452" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">เจ้าของงานกลาง ๆ = <tspan font-weight="700" fill="#D6360B">fail</tspan></text>
+  </g>
+
+  <g id="p07-mode-strict" data-pptx-bounds="844 218 364 262">
+    <rect x="844" y="225" width="364" height="44" fill="#D6360B" />
+    <text x="864" y="254" font-family="Tahoma, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">Strict</text>
+    <text font-family="Tahoma, Arial, sans-serif" fill="#3A3F45" font-weight="400" font-size="18" x="864" y="305">พลาดแล้วกระทบธุรกิจ กฎหมาย</text><text font-family="Tahoma, Arial, sans-serif" fill="#3A3F45" font-weight="400" font-size="18" x="864" y="329">เงิน ความเป็นส่วนตัว production</text><line x1="844" y1="352" x2="1208" y2="352" stroke="#DEDDD8" stroke-width="1" />
+    <text font-family="Consolas, Courier New, monospace" fill="#14161A" font-weight="400" font-size="16" x="864" y="380">+ Risk Review + Separate</text><text font-family="Consolas, Courier New, monospace" fill="#14161A" font-weight="400" font-size="16" x="864" y="402">Review / Test + Approval</text><line x1="844" y1="422" x2="1208" y2="422" stroke="#DEDDD8" stroke-width="1" />
+    <text x="864" y="452" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">review หายหรือเก่า = <tspan font-weight="700" fill="#D6360B">fail</tspan></text>
+  </g>
+
+  <g id="p07-triggers" data-pptx-bounds="72 482 1136 130">
+    <rect x="72" y="490" width="1136" height="118" fill="#F2F1ED" />
+    <text x="104" y="522" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#D6360B">13 strict triggers — เข้าข้อไหนข้อเดียว validator บังคับทั้งโปรเจกต์ขึ้น Strict ทันที</text>
+    <text font-family="Consolas, Courier New, monospace" fill="#3A3F45" font-weight="400" font-size="16" x="104" y="552">payment · financial calculation · PII · sensitive data · authentication · authorization</text><text font-family="Consolas, Courier New, monospace" fill="#3A3F45" font-weight="400" font-size="16" x="104" y="574">permission · irreversible action · external integration · legal/compliance</text><text font-family="Consolas, Courier New, monospace" fill="#3A3F45" font-weight="400" font-size="16" x="104" y="596">production data migration · critical infrastructure · public-sector formal acceptance</text></g>
+
+  <g id="p07-note" data-pptx-bounds="72 622 1136 46">
+    <text x="72" y="648" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#14161A">You can always do more; you cannot silently do less. — AI ขยับขึ้นเองได้ แต่ลดจาก Strict ต้องให้คนอนุมัติ</text>
+  </g>
+
+  <text id="page-footer" data-pptx-role="footer" x="1208" y="690" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="400" fill="#3A3F45">Axiom-PMO 1.1.1</text>
+</svg>

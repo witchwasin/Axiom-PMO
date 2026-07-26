@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" data-pptx-page-role="cover">
+  <rect id="cover-bg" data-pptx-role="background" x="0" y="0" width="1280" height="720" fill="#FFFFFF"/>
+
+  <g id="cover-eyebrow" data-pptx-bounds="72 66 700 54">
+    <rect x="72" y="70" width="52" height="4" fill="#D6360B"/>
+    <text x="72" y="112" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="700" fill="#14161A">AXIOM-PMO 1.1.1</text>
+  </g>
+
+  <g id="cover-statement" data-pptx-bounds="72 200 1136 300">
+    <text x="72" y="250" font-family="Tahoma, Arial, sans-serif" font-size="42" font-weight="400" fill="#3A3F45">AI agents can write code.</text>
+    <text x="72" y="360" font-family="Tahoma, Arial, sans-serif" font-size="84" font-weight="700" fill="#14161A">They <tspan fill="#D6360B">should not</tspan></text>
+    <text x="72" y="457" font-family="Tahoma, Arial, sans-serif" font-size="84" font-weight="700" fill="#14161A">invent the project.</text>
+  </g>
+
+  <g id="cover-thai" data-pptx-bounds="72 528 1136 132">
+    <line x1="72" y1="545" x2="1208" y2="545" stroke="#DEDDD8" stroke-width="1"/>
+    <text x="72" y="597" font-family="Tahoma, Arial, sans-serif" font-size="30" font-weight="700" fill="#14161A">AI เขียนโค้ดได้ แต่ต้องไม่กุโปรเจกต์ขึ้นมาเอง</text>
+    <text x="72" y="640" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">The Anti-Hallucination Framework for AI Agents — กรอบกำกับการทำงานของ AI Agent</text>
+  </g>
+</svg>
