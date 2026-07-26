@@ -10,7 +10,7 @@ PWSH ?= pwsh
 PS := $(PWSH) -NoProfile -ExecutionPolicy Bypass -File
 NODE ?= node
 
-.PHONY: demo doctor validate test golden mutation contract eol assess handoff e2e cli check help
+.PHONY: demo doctor validate test golden mutation contract eol assess handoff e2e cli check clean-room help
 
 help:
 	@echo "Targets:"
@@ -27,6 +27,7 @@ help:
 	@echo "  handoff   Handoff gate on the worked example"
 	@echo "  e2e       Generator-to-gate end-to-end runs"
 	@echo "  cli       Thin CLI tests (requires Node.js)"
+	@echo "  clean-room  Build the clean-room walkthrough container (see clean-room/)"
 
 demo:
 	$(PS) scripts/demo.ps1
@@ -67,6 +68,15 @@ e2e:
 
 cli:
 	$(NODE) tests/helpers/cli-tests.mjs
+
+# Not part of `check`: this builds an environment for a person to walk through,
+# not a test to run. See clean-room/README.md for what it can and cannot prove.
+CONTAINER ?= docker
+PREREQS ?= none
+clean-room:
+	$(CONTAINER) build --build-arg PREREQS=$(PREREQS) -t axiom-cleanroom:$(PREREQS) clean-room
+	@echo ""
+	@echo "Run it:  $(CONTAINER) run --rm -it axiom-cleanroom:$(PREREQS)"
 
 check:
 	$(PS) scripts/run-all-checks.ps1 -RepoPath .

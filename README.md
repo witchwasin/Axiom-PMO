@@ -268,6 +268,7 @@ TESTING.md, SECURITY.md, MIGRATION.md     Test tooling, security rules, legacy-l
 templates/                                Blank PROJECT.md / DELIVERY.md / HANDOFF.md / BUILD-SPEC.md / RELEASE.md / RTM.json / etc.
 examples/                                 Worked example projects (Lite, Standard, Strict, handoff, and a demo)
 demo/                                     The three-minute proof: a broken handoff and a fixed one
+clean-room/                               Container for walking the docs as a stranger would (issue #8)
 cli/                                      Thin Node wrapper over the PowerShell scripts (no validation logic)
 scripts/                                  The validator, framework doctor, and project generator
   scripts/lib/                              The validator's modules (config, parsing, per-rule checks, output)
