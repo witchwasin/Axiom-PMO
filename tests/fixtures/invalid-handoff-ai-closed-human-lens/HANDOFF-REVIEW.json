@@ -1,0 +1,184 @@
+{
+  "schema_version": "1.0",
+  "project_code": "HANDOFF-DEMO",
+  "reviewed_at": "2026-07-16",
+  "reviewer_kind": "ai",
+  "reviewer": "pmo-delivery handoff_review",
+  "handoff_target": "demo",
+  "source_snapshot": {
+    "source_ids": [
+      "MOM-20260714",
+      "REQ-20260714"
+    ],
+    "digest": "fba5dc448206d2e6b8c0c571bf3da2294426e79bef60aa9cc2c5cf8f1f6f39c2"
+  },
+  "review_inputs": {
+    "digest": "d3dfa4e0b325b38ba30d973440b71a8bcd3b8c3c3dc3d12f23cfc8a2087e8f1e"
+  },
+  "lenses": [
+    {
+      "lens": "value_and_scope_slice",
+      "status": "reviewed"
+    },
+    {
+      "lens": "capability_lifecycle",
+      "status": "reviewed"
+    },
+    {
+      "lens": "data_cardinality_and_units",
+      "status": "reviewed"
+    },
+    {
+      "lens": "state_transitions_and_rollback",
+      "status": "reviewed"
+    },
+    {
+      "lens": "concurrency_and_idempotency",
+      "status": "reviewed"
+    },
+    {
+      "lens": "dependencies_and_build_order",
+      "status": "reviewed"
+    },
+    {
+      "lens": "ownership_and_capacity",
+      "status": "reviewed"
+    },
+    {
+      "lens": "acceptance_seed_reachability",
+      "status": "reviewed"
+    },
+    {
+      "lens": "automated_manual_test_split",
+      "status": "reviewed"
+    },
+    {
+      "lens": "privacy_and_data_classification",
+      "status": "reviewed"
+    },
+    {
+      "lens": "environment_and_device_constraints",
+      "status": "reviewed"
+    },
+    {
+      "lens": "demo_startup_reset_and_recovery",
+      "status": "reviewed"
+    }
+  ],
+  "findings": [
+    {
+      "finding_id": "HF-001",
+      "lens": "capability_lifecycle",
+      "severity": "major",
+      "artifact": "PROJECT.md",
+      "item_id": "REQ-002",
+      "field": "Requirement",
+      "description": "The first draft scoped stock consumption only. A count that can go down but never up cannot be demonstrated twice from the same seed, and the source states both directions are needed.",
+      "evidence_refs": [
+        "MOM-20260714 item 4",
+        "REQ-20260714 row 2"
+      ],
+      "suggestion": "Split the requirement so receive is a first-class operation rather than an implied inverse.",
+      "owner": "Demo PM",
+      "blocking_point": "before_build",
+      "status": "resolved",
+      "decision_ref": "DEC-002"
+    },
+    {
+      "finding_id": "HF-002",
+      "lens": "dependencies_and_build_order",
+      "severity": "critical",
+      "artifact": "HANDOFF.md",
+      "item_id": "D-002",
+      "field": "Depends On",
+      "description": "The initial sequence built the scan flow before the part master it reads from, so the first two days of work had nothing to query.",
+      "evidence_refs": [
+        "HANDOFF.md Build Sequence step 2",
+        "DELIVERY.md D-001"
+      ],
+      "suggestion": "Schedule the shared schema and part master as step 1 and make both stock items depend on it.",
+      "owner": "R. Silva",
+      "blocking_point": "before_build",
+      "status": "resolved",
+      "decision_ref": "DEC-002"
+    },
+    {
+      "finding_id": "HF-003",
+      "lens": "environment_and_device_constraints",
+      "severity": "critical",
+      "artifact": "DESIGN/BUILD-SPEC.md",
+      "item_id": "Rear camera",
+      "field": "Serving Model",
+      "description": "The scan flow depends on the rear camera, and the serving model was left open. A page served over plain HTTP to the tablet cannot open the camera at all, and no code review would surface that.",
+      "evidence_refs": [
+        "DESIGN/BUILD-SPEC.md Target Devices and Runtime Capabilities",
+        "MOM-20260714 item 2"
+      ],
+      "suggestion": "Decide the serving model before build and record it; a local reverse proxy with a trusted certificate satisfies the secure-context requirement.",
+      "owner": "Demo Tech Lead",
+      "blocking_point": "before_demo",
+      "status": "resolved",
+      "decision_ref": "DEC-005"
+    },
+    {
+      "finding_id": "HF-004",
+      "lens": "privacy_and_data_classification",
+      "severity": "major",
+      "artifact": "DESIGN/BUILD-SPEC.md",
+      "item_id": "Part photo file",
+      "field": "Classification Decision",
+      "description": "The source asks that photos not leave the site network, while the photo feature had no classification or retention decision attached. The two statements were made in different documents by different authors and neither was wrong on its own.",
+      "evidence_refs": [
+        "MOM-20260714 item 5",
+        "PROJECT.md BR-002"
+      ],
+      "suggestion": "Classify the photo element and its metadata, and state what happens to it on reset. A human owner must confirm the classification.",
+      "owner": "Demo Tech Lead",
+      "blocking_point": "before_build",
+      "status": "resolved",
+      "decision_ref": "DEC-003"
+    },
+    {
+      "finding_id": "HF-005",
+      "lens": "demo_startup_reset_and_recovery",
+      "severity": "major",
+      "artifact": "HANDOFF.md",
+      "item_id": "OA-002",
+      "field": "Demo Device",
+      "description": "The demonstration runs on hardware the delivery team does not own, and its availability before demo day is not yet confirmed in writing. A rehearsal on an equivalent device reduces but does not remove the risk.",
+      "evidence_refs": [
+        "MOM-20260714 item 2",
+        "RAID-log.md R-001",
+        "RAID-log.md DEP-001"
+      ],
+      "suggestion": "Get written confirmation of the device by 2026-08-01 and rehearse on an equivalent tablet in the meantime.",
+      "owner": "A. Nakamura",
+      "blocking_point": "before_demo",
+      "status": "open",
+      "decision_ref": null
+    },
+    {
+      "finding_id": "HF-006",
+      "lens": "concurrency_and_idempotency",
+      "severity": "minor",
+      "artifact": "DESIGN/BUILD-SPEC.md",
+      "item_id": "AC-006",
+      "field": "Given / When / Then",
+      "description": "Two users adjusting the same part is plausible on a shared workshop tablet, and the original acceptance set had no case for it even though the transaction boundary claims to handle it.",
+      "evidence_refs": [
+        "DESIGN/BUILD-SPEC.md Concurrency, Idempotency and ID Allocation"
+      ],
+      "suggestion": "Add an acceptance case that proves the claimed row lock actually holds under two concurrent consumes.",
+      "owner": "R. Silva",
+      "blocking_point": "non_blocking",
+      "status": "resolved",
+      "decision_ref": "DEC-002"
+    }
+  ],
+  "recommendation": {
+    "ready_to_start_development": true,
+    "ready_to_demo": false,
+    "notes": "Both engineers can start on step 1 today: every finding that blocked before_build has been resolved in the documents. The demonstration itself is not yet safe to promise. HF-005 is open and the tablet is not under the delivery team's control, and OA-001 still has to install the site certificate authority before the camera will work on that device. Treat 2026-08-05 as achievable but contingent on the device arriving by 2026-08-01."
+  },
+  "review_origin": "AI-drafted review that closed a human-only finding without a human."
+}

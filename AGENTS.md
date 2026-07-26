@@ -29,7 +29,10 @@ projects/P01-CODE/
 +-- DESIGN/
 |   +-- FLOW.puml
 |   +-- WIREFRAME.md or WIREFRAME.html
+|   +-- BUILD-SPEC.md           <- technical spec, required at Handoff (Standard/Strict)
 +-- DELIVERY.md
++-- HANDOFF.md                  <- required at the Handoff gate
++-- HANDOFF-REVIEW.json         <- semantic review evidence (Standard/Strict)
 +-- RELEASE.md                  <- required when release/UAT exists
 +-- RAID-log.md                 <- required for Strict or meaningful risks
 +-- decision-log.md             <- required for Strict or meaningful decisions
@@ -75,6 +78,18 @@ Approval gates:
 2. Design Ready
 3. Release Approved
 
+Validation gates run in this order:
+
+```text
+Draft -> Scope -> Design -> Handoff -> Release
+```
+
+`Handoff` is a checking gate, not an approval gate. It reuses `Design Ready` and
+asks whether the contract is complete enough for a developer to start,
+integrate, and demonstrate. Handoff checks run only when `-Gate Handoff` is
+requested; every other gate behaves as it did before. See
+`docs/concepts/handoff-readiness.md`.
+
 Work status:
 
 ```text
@@ -97,6 +112,7 @@ Use labels for detail: `blocked`, `needs-client`, `bug`, `high-risk`, `ready-to-
 8. Log only meaningful changes: requirement change, scope change, business decision, design approval, release approval, high-risk issue.
 9. Treat `source/`, `MOM/`, `REQ/`, `Transcript/`, and `Others/` as user-owned inputs. Do not edit, create, or delete source files unless the user explicitly asks.
 10. AI must not push, deploy, approve production, or approve business scope by itself. Commit requires explicit user instruction; push and production release require human confirmation.
+11. A semantic handoff review is candidate evidence, never an approval. An AI may record findings and may close one when the artifacts show it was fixed. It must not close a finding that needs a business, legal, security, or human decision, must not move an approval row from pending to approved, and must not present a readiness score as a decision.
 
 ---
 
@@ -165,6 +181,11 @@ Active skill groups are defined in `pmo-config/skill-manifest.json`:
 - Governance: `pmo-governance`
 - Git safety: `pmo-git-safety`
 
+`pmo-delivery` carries two intents: `delivery_planning` (default) and
+`handoff_review`. The review intent reads `HANDOFF.md` and
+`DESIGN/BUILD-SPEC.md` in addition to the normal delivery set, and walks the
+twelve lenses configured in `pmo-config/handoff-policy.json`.
+
 Archived skills under `.claude-archive/` are preserved for reference only and must not be loaded by default.
 
 ---
@@ -179,4 +200,11 @@ powershell -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1
 powershell -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1
 ```
 
-Validation checks structure, placeholders, source references, approval authenticity, task source consistency, blockers, sensitive file pre-checks, basic local links, and negative fixtures.
+Before handing work to a developer:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project> -Mode <mode> -Gate Handoff
+powershell -ExecutionPolicy Bypass -File scripts/assess-handoff.ps1 -ProjectPath <project> -Mode <mode>
+```
+
+Validation checks structure, placeholders, source references, approval authenticity, task source consistency, blockers, sensitive file pre-checks, basic local links, negative fixtures, and -- at the Handoff gate -- scope contract, build order, ownership, build-spec completeness, acceptance testability, declared data classification, declared runtime capabilities, and semantic review freshness.

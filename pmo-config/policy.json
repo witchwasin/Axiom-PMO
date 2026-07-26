@@ -1,11 +1,16 @@
 ﻿{
-  "version": "1.0.0",
+  "version": "1.1.0",
   "schema_version": "1.0",
   "sentinel_rules": {
     "not_required": {
       "allowed_fields": ["Design Ref"],
       "allowed_modes": ["Lite"]
     }
+  },
+  "approval_checkpoints": {
+    "Scope Approved": { "gates": ["Scope", "Design", "Handoff", "Release"], "exempt_modes": [] },
+    "Design Ready": { "gates": ["Design", "Handoff", "Release"], "exempt_modes": ["Lite"] },
+    "Release Approved": { "gates": ["Release"], "exempt_modes": [] }
   },
   "approval_roles": {
     "Scope Approved": ["Product Owner", "Project Owner"],
@@ -27,7 +32,7 @@
   },
   "enums": {
     "modes": ["Lite", "Standard", "Strict"],
-    "gates": ["Draft", "Scope", "Design", "Release"],
+    "gates": ["Draft", "Scope", "Design", "Handoff", "Release"],
     "statuses": ["To Do", "In Progress", "Review / Test", "Done"],
     "review_stages": ["none", "code", "qa", "business", "security"],
     "evidence_statuses": ["verified", "supported", "inferred", "missing", "conflict"],

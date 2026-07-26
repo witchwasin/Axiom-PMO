@@ -1,0 +1,75 @@
+{
+  "$comment": [
+    "Machine-readable result of a semantic handoff review (pmo-delivery, intent handoff_review).",
+    "",
+    "This file is CANDIDATE EVIDENCE, not an approval. An AI reviewer may record findings,",
+    "recommend a readiness stage, and close a finding when the documents show it was fixed.",
+    "It may not close a finding that needs a business, legal, security, or human decision,",
+    "and it may never move an approval row in PROJECT.md from pending to approved.",
+    "",
+    "Freshness uses TWO digests, because a review goes stale two different ways:",
+    "  source_snapshot.digest  the material the requirements came from changed",
+    "  review_inputs.digest    a governed artifact the reviewer read changed",
+    "Get both with: scripts/handoff-digest.ps1 -ProjectPath <project>",
+    "Without the second digest, rewriting BUILD-SPEC after a review would leave it",
+    "reporting as current.",
+    "",
+    "Closure is enforced, not requested. A finding whose status is not `open` needs a",
+    "resolvable decision_ref. An AI reviewer may only set `resolved`, and may never close",
+    "a finding under a human-only lens (privacy classification, environment constraints)",
+    "whatever the decision reference says. See handoff-policy.json semantic_review.closure_policy.",
+    "",
+    "Remove this $comment block in a real project file."
+  ],
+  "schema_version": "1.0",
+  "project_code": "<PROJECT-CODE>",
+  "reviewed_at": "<YYYY-MM-DD>",
+  "reviewer_kind": "ai",
+  "reviewer": "<model or person identifier>",
+  "handoff_target": "<demo | pilot | production | internal>",
+  "source_snapshot": {
+    "source_ids": ["<MOM-20260101>", "<REQ-20260101>"],
+    "digest": "<scripts/handoff-digest.ps1 -Which Source>"
+  },
+  "review_inputs": {
+    "digest": "<scripts/handoff-digest.ps1 -Which ReviewInputs>"
+  },
+  "lenses": [
+    { "lens": "value_and_scope_slice", "status": "reviewed" },
+    { "lens": "capability_lifecycle", "status": "reviewed" },
+    { "lens": "data_cardinality_and_units", "status": "reviewed" },
+    { "lens": "state_transitions_and_rollback", "status": "reviewed" },
+    { "lens": "concurrency_and_idempotency", "status": "reviewed" },
+    { "lens": "dependencies_and_build_order", "status": "reviewed" },
+    { "lens": "ownership_and_capacity", "status": "reviewed" },
+    { "lens": "acceptance_seed_reachability", "status": "reviewed" },
+    { "lens": "automated_manual_test_split", "status": "reviewed" },
+    { "lens": "privacy_and_data_classification", "status": "reviewed" },
+    { "lens": "environment_and_device_constraints", "status": "reviewed" },
+    { "lens": "demo_startup_reset_and_recovery", "status": "reviewed" }
+  ],
+  "findings": [
+    {
+      "finding_id": "HF-001",
+      "lens": "dependencies_and_build_order",
+      "severity": "critical",
+      "artifact": "HANDOFF.md",
+      "item_id": "<D-002>",
+      "field": "Depends On",
+      "description": "<What is wrong, in one or two sentences. Do not quote source content.>",
+      "evidence_refs": ["<HANDOFF.md Build Sequence step 2>", "<DELIVERY.md D-005>"],
+      "suggestion": "<The concrete change that would resolve it.>",
+      "owner": "<Name>",
+      "blocking_point": "before_build",
+      "status": "open",
+      "decision_ref": null,
+      "$decision_ref_note": "Required by any status other than open. Must lead with a resolvable reference (DEC-###, ISSUE:n, FILE:path, URL:...)."
+    }
+  ],
+  "recommendation": {
+    "$comment": "A recommendation, not a verdict. scripts/assess-handoff.ps1 computes the stage verdicts; a human decides whether to act on them.",
+    "ready_to_start_development": true,
+    "ready_to_demo": false,
+    "notes": "<One paragraph: what a reader most needs to know before acting on this review.>"
+  }
+}

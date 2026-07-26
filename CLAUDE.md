@@ -47,6 +47,7 @@ Legacy folders are supported. Map them this way:
 | "ทำ use case" | Standard | `PROJECT.md`, `DESIGN/` | `pmo-design` |
 | "ทำ wireframe" | Standard | `PROJECT.md`, `DESIGN/FLOW.puml` | `pmo-design` |
 | "แตกงาน", "handoff dev" | Standard | `PROJECT.md`, `DESIGN/`, `DELIVERY.md` | `pmo-delivery` |
+| "พร้อมส่ง dev ยัง", "handoff review", "พร้อม demo ไหม" | Standard | `PROJECT.md`, `DELIVERY.md`, `HANDOFF.md`, `DESIGN/BUILD-SPEC.md` | `pmo-delivery` |
 | "Dev เสร็จแล้ว", "review dev" | Standard | `DELIVERY.md`, relevant design | `pmo-build-review` |
 | "QA", "test", "bug" | Standard | `DELIVERY.md`, `RAID-log.md`, `RELEASE.md` | `pmo-quality-release` |
 | "release", "deploy", "close" | Strict if production | `RELEASE.md`, `RAID-log.md`, `decision-log.md` | `pmo-quality-release`, `pmo-governance` |
@@ -107,6 +108,45 @@ Required:
 
 ---
 
+## Handoff Gate
+
+```text
+Draft -> Scope -> Design -> Handoff -> Release
+```
+
+`Handoff` answers one question: **can a developer start, integrate, and
+demonstrate this?** It introduces no new human approval -- it reuses the
+existing `Design Ready` approval and checks whether the contract is complete
+enough to act on.
+
+Required artifacts (see `pmo-config/artifact-policy.json`):
+
+| Mode | Required at Handoff |
+|---|---|
+| Lite | `PROJECT.md`, `DELIVERY.md`, `HANDOFF.md` |
+| Standard | above plus `DESIGN/`, `DESIGN/BUILD-SPEC.md` |
+| Strict | above plus `RAID-log.md`, `decision-log.md` |
+
+Two layers, deliberately separate:
+
+1. **Deterministic** (`HANDOFF-001` to `HANDOFF-012`) checks what the artifacts
+   declare. It never infers domain meaning -- it will not decide that a photo is
+   PII or that a scanner needs HTTPS.
+2. **Semantic review** (`pmo-delivery`, intent `handoff_review`) supplies
+   judgement and records it in `HANDOFF-REVIEW.json`. That file is **candidate
+   evidence, not an approval.**
+
+Readiness is reported per stage, not as one boolean:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project> -Mode <mode> -Gate Handoff
+powershell -ExecutionPolicy Bypass -File scripts/assess-handoff.ps1 -ProjectPath <project> -Mode <mode>
+```
+
+Details: `docs/concepts/handoff-readiness.md`, `docs/rules/`.
+
+---
+
 ## Core 1-2-3 Mapping
 
 | Core | Packages | Gate |
@@ -124,9 +164,11 @@ Update this when a reusable project/example is added.
 | Project Code | Full Name | Folder | Status | Notes |
 |---|---|---|---|---|
 | P01-DEMO | Demo Intake to Release | `examples/P01-DEMO` | Ready | Synthetic data only |
+| HANDOFF-DEMO | Standard Demo Handoff | `examples/HANDOFF-DEMO` | Ready | Handoff gate, build order, demo milestone, semantic review |
 | LITE-BUGFIX | Lite Bug Fix Example | `examples/LITE-BUGFIX` | Ready | Minimal docs for low-risk change |
 | STANDARD-FEATURE | Standard Feature Example | `examples/STANDARD-FEATURE` | Ready | Normal flow, delivery, QA, release |
 | STRICT-HIGH-RISK | Strict High-Risk Example | `examples/STRICT-HIGH-RISK` | Ready | Permission/audit example with RTM |
+| DEMO-BROKEN / DEMO-FIXED | Three-minute proof | `demo/` | Ready | Synthetic; drives `make demo` |
 
 ## Active Skill Runtime
 

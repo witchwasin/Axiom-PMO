@@ -87,6 +87,18 @@ Release decision:
 
 This keeps roadmap execution from expanding into unrelated product work.
 
+Dependency chain:
+
+```text
+Milestone 1 -> Milestone 2 -> Milestone 2.5 -> Milestone 3 -> Milestone 4 -> Milestone 5
+```
+
+Milestone 2.5 sits between diagnostics and the CLI deliberately. The CLI's
+`handoff` verb and the GitHub Action's per-stage reporting both depend on the
+structured diagnostics from Milestone 2 and the stage verdicts from Milestone
+2.5; shipping either earlier would have meant a second, incompatible output
+shape. Milestones 6 to 8 keep their original intent and sequence.
+
 ## Milestone 1 - Public Trust + Three-Minute Proof
 
 Objective: make the repository trustworthy and make the value visible within
@@ -183,6 +195,81 @@ Definition of done:
 ```text
 Every failure tells a developer what failed, where it failed, why it matters,
 and what to do next.
+```
+
+## Milestone 2.5 - Engineering Handoff Readiness
+
+Objective: let the framework answer, with evidence, whether a documentation set
+is sufficient for a developer to start building, integrate, and demonstrate.
+
+Status: **delivered in 1.1.0.**
+
+### Why this milestone exists
+
+Milestones 1 and 2 make the validator trustworthy and its output actionable.
+Neither addresses the question a delivery lead actually asks before a handoff:
+
+```text
+Is this enough for someone to start on Monday, and will it demo on time?
+```
+
+A project can satisfy every governance check in 1.0 and still hand a developer
+a plan that cannot be executed: a shared prerequisite scheduled after the items
+that consume it, a device capability whose serving model nobody decided, a
+privacy commitment in one document contradicted by a feature in another, an
+acceptance case unreachable from the seed data, a work item owned by a team
+name. Each is invisible to a rule that checks whether a field is filled in, and
+each costs days.
+
+### The two-layer split
+
+The failures above must not be encoded as validator rules. "Stock features need
+a receive operation", "photos are PII", "QR scanning requires HTTPS" are true in
+some domains and wrong in others, and a validator that guesses wrong teaches
+people to ignore it.
+
+| Layer | Owns | Mechanism |
+|---|---|---|
+| Deterministic validation | What is provable from the artifacts | `-Gate Handoff`, rules `HANDOFF-001` to `HANDOFF-012` |
+| Semantic handoff review | Whether the complete contract makes sense | `pmo-delivery` intent `handoff_review`, recorded in `HANDOFF-REVIEW.json` |
+
+The deterministic layer reads declarations the author wrote and checks that they
+are complete, resolvable, and owned. It never infers domain meaning. The
+semantic layer supplies judgement, and the deterministic layer's only interest
+in it is mechanical: did a review happen, did it cover every lens, does every
+finding have an owner and a blocking point, and is it still current.
+
+**A semantic review is candidate evidence, not an approval.**
+
+### Scope
+
+- `Handoff` gate between `Design` and `Release`, reusing the existing
+  `Design Ready` approval and introducing no new human sign-off.
+- Canonical artifacts: `HANDOFF.md`, `DESIGN/BUILD-SPEC.md`,
+  `HANDOFF-REVIEW.json`.
+- Rules `HANDOFF-001` to `HANDOFF-012`, each with a `docs/rules/` page.
+- Twelve semantic review lenses, config-driven in
+  `pmo-config/handoff-policy.json`.
+- Review freshness via a Source Snapshot digest: a review speaks only for the
+  sources it read.
+- Stage verdicts instead of one boolean: Contract Valid, Ready to Start
+  Development, Ready to Integrate, Ready to Demo, Ready for UAT, Ready for
+  Release.
+- A capped readiness score that can never masquerade as an approval.
+
+### Non-goals
+
+- No new approval gate.
+- No domain rules in the core validator.
+- No change to how `Draft`, `Scope`, `Design`, or `Release` behave.
+- No coding plan, implementation, or test execution. Those belong to an
+  execution framework; see `docs/architecture/control-plane.md`.
+
+Definition of done:
+
+```text
+The framework can say "ready to build, not ready to demo" and show which
+declared evidence supports each half of that sentence.
 ```
 
 ## Milestone 3 - Thin Local CLI

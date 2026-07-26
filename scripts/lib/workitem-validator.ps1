@@ -51,7 +51,7 @@ function Test-DeliveryWorkItems {
     $deliveryIds = Get-IdsFromRows $workItems
     foreach ($item in $workItems) {
       $requiredFields = @("ID", "Mode", "Mode Reason", "Mode Approved By", "Requirement Ref", "Design Ref", "Acceptance Criteria", "Test Checklist", "Owner", "Status", "Review Stage", "Evidence Ref")
-      $blankFields = $requiredFields | Where-Object { -not $item.$_ -or (Test-FieldValue $_ $item.$_ $item.Mode) }
+      $blankFields = @($requiredFields | Where-Object { -not $item.$_ -or (Test-FieldValue $_ $item.$_ $item.Mode) })
       if ($blankFields.Count -gt 0) {
         $workItemLevel = if ($Gate -eq "Release") { "FAIL" } else { "WARN" }
         Add-Result $workItemLevel "$($item.ID) has missing work item fields: $($blankFields -join ', ')" "WORKITEM-001"

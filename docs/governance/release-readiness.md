@@ -25,9 +25,27 @@ It may **not** mark QA, security, or release approved on its own, and it may not
 commit, push, tag, or deploy without explicit human confirmation. See
 [human authority](../concepts/human-authority.md).
 
+## Release readiness is not handoff readiness
+
+These are different questions asked at different times, and conflating them is a
+common way to arrive at a release gate with surprises in it.
+
+| | Handoff gate | Release gate |
+|---|---|---|
+| Asks | Can a developer start, integrate, and demonstrate this? | Is the built thing tested, reviewed, approved, and reversible? |
+| Timing | Before the work is built | After it is built |
+| Approval | None of its own; reuses `Design Ready` | `Release Approved`, plus QA and (Strict) security |
+| Evidence | Declared contract plus a semantic review | Executed tests, reviews, and rollback |
+
+The Handoff gate can report `Ready for Release: NO` while a project is still
+weeks from release — that verdict reflects *recorded findings blocking that
+stage*, not the outcome of the release gate. Only the Release gate decides
+release. See [handoff readiness](../concepts/handoff-readiness.md).
+
 ## Enforcement
 
 The release validator raises `BLOCKER-*`, `RELEASE-*`, `TEST-*`,
 `QA-REVIEW-*`, `SECURITY-REVIEW-*`, and (for Strict) aggregate guardrail rules;
-`fail_release` severities block the Release gate. See the
+`fail_release` severities block the Release gate. The Handoff gate raises
+`HANDOFF-*` and is never a substitute for any of them. See the
 [validation engine](../architecture/validation-engine.md).
