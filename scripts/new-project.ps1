@@ -135,7 +135,7 @@ Write-Host "2. Run scripts/update-source-snapshot.ps1 -ProjectPath $projectDir a
 Write-Host "3. Replace remaining draft placeholders before Scope/Release gates."
 if ($IncludeHandoff) {
   Write-Host "4. Fill HANDOFF.md and DESIGN/BUILD-SPEC.md, then record the review:"
-  Write-Host "   scripts/handoff-digest.ps1 -ProjectPath $projectDir   (paste into HANDOFF-REVIEW.json source_snapshot.digest)"
+  Write-Host "   scripts/handoff-digest.ps1 -ProjectPath $projectDir   (records BOTH digests in HANDOFF-REVIEW.json)"
   Write-Host "   scripts/validate-project.ps1 -ProjectPath $projectDir -Mode $Mode -Gate Handoff"
   Write-Host "   scripts/assess-handoff.ps1 -ProjectPath $projectDir -Mode $Mode"
 }

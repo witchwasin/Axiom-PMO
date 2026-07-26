@@ -6,8 +6,20 @@
   "description": "Shape of the JSON emitted by scripts/validate-project.ps1 -Format Json and scripts/assess-handoff.ps1 -Format Json. Consumers (CI annotations, dashboards, the thin CLI) read this contract, not the text report.",
   "compatibility": {
     "policy": "additive",
-    "stable_fields": ["level", "rule_id", "message", "blocking"],
-    "added_in_1_1": ["schema_version", "artifact", "item_id", "field", "suggestion", "documentation_url"],
+    "stable_fields": [
+      "level",
+      "rule_id",
+      "message",
+      "blocking"
+    ],
+    "added_in_1_1": [
+      "schema_version",
+      "artifact",
+      "item_id",
+      "field",
+      "suggestion",
+      "documentation_url"
+    ],
     "unknown_field_behavior": "Consumers MUST ignore fields they do not recognize. A future minor version may add fields; it will not remove or repurpose an existing one.",
     "absent_vs_null": "Every field defined here is always present on every diagnostic. A field that does not apply to a given finding is emitted as null, never omitted and never an empty string.",
     "deprecation_policy": "A field is first documented as deprecated in this file and in docs/reference/diagnostics-contract.md for at least one minor release before removal. Removal requires a major version bump of diagnostics_schema_version.",
@@ -36,25 +48,92 @@
   },
   "envelope": {
     "type": "object",
-    "required": ["schema_version", "project", "requested_mode", "effective_mode", "gate", "summary", "results"],
+    "required": [
+      "schema_version",
+      "project",
+      "requested_mode",
+      "effective_mode",
+      "gate",
+      "summary",
+      "results"
+    ],
     "properties": {
-      "schema_version": { "type": "string", "const": "1.1" },
-      "project": { "type": "string", "description": "Absolute path of the validated project." },
-      "requested_mode": { "type": "string", "enum": ["Lite", "Standard", "Strict"] },
-      "effective_mode": { "type": "string", "enum": ["Lite", "Standard", "Strict"] },
-      "gate": { "type": "string", "enum": ["Draft", "Scope", "Design", "Handoff", "Release"] },
+      "schema_version": {
+        "type": "string",
+        "const": "1.1"
+      },
+      "project": {
+        "type": "string",
+        "description": "Absolute path of the validated project."
+      },
+      "requested_mode": {
+        "type": "string",
+        "enum": [
+          "Lite",
+          "Standard",
+          "Strict"
+        ]
+      },
+      "effective_mode": {
+        "type": "string",
+        "enum": [
+          "Lite",
+          "Standard",
+          "Strict"
+        ]
+      },
+      "gate": {
+        "type": "string",
+        "enum": [
+          "Draft",
+          "Scope",
+          "Design",
+          "Handoff",
+          "Release"
+        ]
+      },
       "summary": {
         "type": "object",
-        "required": ["pass", "warn", "warn_blocking", "fail", "exit_code"],
+        "required": [
+          "pass",
+          "warn",
+          "warn_blocking",
+          "fail",
+          "exit_code"
+        ],
         "properties": {
-          "pass": { "type": "integer", "minimum": 0 },
-          "warn": { "type": "integer", "minimum": 0 },
-          "warn_blocking": { "type": "integer", "minimum": 0 },
-          "fail": { "type": "integer", "minimum": 0 },
-          "exit_code": { "type": "integer", "enum": [0, 1, 2] }
+          "pass": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "warn": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "warn_blocking": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "fail": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "exit_code": {
+            "type": "integer",
+            "enum": [
+              0,
+              1,
+              2
+            ]
+          }
         }
       },
-      "results": { "type": "array", "items": { "$ref": "#/diagnostic" } }
+      "results": {
+        "type": "array",
+        "items": {
+          "$ref": "#/diagnostic"
+        }
+      }
     }
   },
   "diagnostic": {
@@ -79,7 +158,12 @@
       },
       "level": {
         "type": "string",
-        "enum": ["PASS", "WARN", "FAIL", "INFO"],
+        "enum": [
+          "PASS",
+          "WARN",
+          "FAIL",
+          "INFO"
+        ],
         "description": "Stable since 1.0."
       },
       "rule_id": {
@@ -97,24 +181,192 @@
         "description": "Stable since 1.0. A blocking WARN turns into a non-zero exit under -FailOnWarning; a non-blocking WARN never does."
       },
       "artifact": {
-        "type": ["string", "null"],
+        "type": [
+          "string",
+          "null"
+        ],
         "description": "Project-relative path of the file the finding is about, e.g. DELIVERY.md or DESIGN/BUILD-SPEC.md. Null for findings that are not tied to one file."
       },
       "item_id": {
-        "type": ["string", "null"],
+        "type": [
+          "string",
+          "null"
+        ],
         "description": "Governed row identifier inside the artifact, e.g. D-002, REQ-001, TEST-003, or an approval gate name. Null when the finding is file-level."
       },
       "field": {
-        "type": ["string", "null"],
+        "type": [
+          "string",
+          "null"
+        ],
         "description": "Column or named section inside the row, e.g. 'Depends On', 'Owner', 'Evidence'. Null when the finding is row-level or file-level."
       },
       "suggestion": {
-        "type": ["string", "null"],
+        "type": [
+          "string",
+          "null"
+        ],
         "description": "Concrete next action. Defaulted from the rule catalog entry; a call site may override it with something more specific. Always null on PASS and INFO."
       },
       "documentation_url": {
-        "type": ["string", "null"],
+        "type": [
+          "string",
+          "null"
+        ],
         "description": "Resolved from validation-rules.json documentation_base_url + the rule's documentation path. Null when the rule has no doc page. Always null on PASS and INFO."
+      }
+    }
+  },
+  "assessment_envelope": {
+    "$comment": "Shape of scripts/assess-handoff.ps1 -Format Json. Reporting output, not a gate result: it never decides anything, and nothing in it is an approval.",
+    "type": "object",
+    "required": [
+      "schema_version",
+      "project",
+      "mode",
+      "gate",
+      "gate_exit_code",
+      "verdict",
+      "verdicts",
+      "verdict_reasons",
+      "score",
+      "semantic_review",
+      "deterministic"
+    ],
+    "properties": {
+      "schema_version": {
+        "type": "string",
+        "const": "1.1"
+      },
+      "verdict": {
+        "type": "string",
+        "enum": [
+          "READY",
+          "READY TO BUILD, NOT READY TO DEMO",
+          "NOT READY TO BUILD",
+          "CONTRACT VALID, NOT REVIEWED",
+          "BLOCKED"
+        ],
+        "description": "One-line summary of the stage verdicts below. Never a substitute for reading them."
+      },
+      "verdicts": {
+        "type": "object",
+        "description": "One entry per stage. TRI-STATE: true = no recorded blocker; false = a recorded blocker; null = cannot be determined from the available evidence, usually because no usable semantic review exists. Consumers must handle null explicitly -- coercing it to false reports a problem that was never found, and coercing it to true reports an absence of evidence as evidence of absence.",
+        "additionalProperties": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "verdict_reasons": {
+        "type": "object",
+        "description": "One sentence per stage explaining which of the three states applies and why.",
+        "additionalProperties": {
+          "type": "string"
+        }
+      },
+      "verdict_states": {
+        "type": "string",
+        "description": "Human-readable restatement of the tri-state contract, carried in the payload so a reader of raw JSON does not have to find this file."
+      },
+      "score": {
+        "type": "object",
+        "required": [
+          "raw",
+          "awarded",
+          "total",
+          "dimensions",
+          "caps_applied",
+          "disclaimer"
+        ],
+        "description": "A summary of declared evidence. Capped hard when that evidence is thin. NOT an approval; see disclaimer."
+      },
+      "semantic_review": {
+        "type": "object",
+        "required": [
+          "present",
+          "usable",
+          "stale",
+          "is_approval",
+          "open_blockers"
+        ],
+        "properties": {
+          "usable": {
+            "type": "boolean",
+            "description": "Present, parseable, current, and recording both freshness digests."
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "stale_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "source snapshot changed",
+              "a reviewed artifact changed",
+              null
+            ]
+          },
+          "is_approval": {
+            "type": "boolean",
+            "const": false,
+            "description": "Always false. Present so a consumer cannot mistake this object for a sign-off."
+          },
+          "open_blockers": {
+            "type": "array",
+            "description": "Merged and deduplicated from HANDOFF-REVIEW.json open findings and HANDOFF.md open actions.",
+            "items": {
+              "type": "object",
+              "required": [
+                "finding_id",
+                "severity",
+                "blocking_point",
+                "owner",
+                "artifact",
+                "origin"
+              ],
+              "properties": {
+                "origin": {
+                  "type": "string",
+                  "enum": [
+                    "review_finding",
+                    "open_action"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "cli_handoff_envelope": {
+    "$comment": "Shape of `node cli/axiom.mjs handoff --json`. The verb runs two JSON-producing steps; they are merged into one document because two concatenated payloads with labels between them is not JSON, whatever --json implies.",
+    "type": "object",
+    "required": [
+      "schema_version",
+      "gate",
+      "assessment"
+    ],
+    "properties": {
+      "schema_version": {
+        "type": "string",
+        "const": "1.1"
+      },
+      "gate": {
+        "$ref": "#/envelope",
+        "description": "Output of the Handoff gate. The CLI's exit code comes from this step."
+      },
+      "assessment": {
+        "$ref": "#/assessment_envelope",
+        "description": "Always present, even when the gate failed: knowing which stage is blocked is the point."
+      },
+      "parse_error": {
+        "type": "boolean",
+        "description": "Set on a step whose output could not be parsed, alongside `raw`. Surfaced rather than dropped."
       }
     }
   }

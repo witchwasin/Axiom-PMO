@@ -124,8 +124,13 @@ The validator has now proven the contract is complete. It cannot prove it is sen
 
 ```bash
 pwsh -File scripts/handoff-digest.ps1 -ProjectPath examples/HANDOFF-DEMO
-# fba5dc44...  -> paste into HANDOFF-REVIEW.json source_snapshot.digest
+# source_snapshot.digest : fba5dc44...   <- the material the requirements came from
+# review_inputs.digest   : 44eda5d0...   <- the artifacts the reviewer actually read
 ```
+
+Both go into `HANDOFF-REVIEW.json`. The second is the one people forget:
+rewriting the build sequence after a review leaves the source snapshot
+untouched, so without it the review would keep reporting as current.
 
 Run the `pmo-delivery` skill with the `handoff_review` intent, or write `HANDOFF-REVIEW.json` from the template. In this example the review found six things. The one no rule could have caught:
 
@@ -169,19 +174,27 @@ node cli/axiom.mjs handoff --project examples/HANDOFF-DEMO --mode Standard
 ```text
 Verdict: READY TO BUILD, NOT READY TO DEMO
 
-  YES  Contract Valid
-  YES  Ready to Start Development
-  YES  Ready to Integrate
-  NO   Ready to Demo
-  NO   Ready for UAT
-  NO   Ready for Release
+  YES  Contract Valid               no deterministic failures
+  YES  Ready to Start Development   no recorded blocker
+  YES  Ready to Integrate           no recorded blocker
+  NO   Ready to Demo                blocked by HF-005, OA-001
+  NO   Ready for UAT                blocked by HF-005, OA-001
+  NO   Ready for Release            blocked by HF-005, OA-001
 
-Open review findings by blocking point:
+Open blockers by blocking point:
   before_demo
-    - HF-005 [major] owner: A. Nakamura
+    - HF-005 [major] owner: A. Nakamura  (review finding)
+    - OA-001 [action] owner: R. Silva  (HANDOFF.md open action)
+  non_blocking
+    - OA-003 [action] owner: A. Nakamura  (HANDOFF.md open action)
 
-Score: 96 / 100
+Score: 92 / 100
 ```
+
+Two things worth noticing. The demo blockers come from **both** documents — the
+review found one, the handoff sheet declares the other — and the score is not
+100, because a project that blocks its own demonstration should not read as
+perfect.
 
 Both engineers start on step 1 today. The demonstration is achievable but contingent, and the contingency has a name and an owner and a date.
 
