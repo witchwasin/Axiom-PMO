@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 1.1.1 - 2026-07-26
+
+A patch release: two validation rules that were deferred from 1.1.0, and a CI
+change that halves the duplicated work in the test suite. No behavioural change
+to any gate that existed in 1.1.0.
 
 ### Added
 
