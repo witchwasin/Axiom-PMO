@@ -115,6 +115,46 @@ The contract test enforces two proxies for this: a message may not span multiple
 
 ---
 
+## Two other JSON outputs
+
+`validate-project.ps1` is not the only thing that emits JSON. Both of the
+following are defined in the same schema file.
+
+### Readiness assessment
+
+`scripts/assess-handoff.ps1 -Format Json`. Reporting output, not a gate result.
+
+The part consumers get wrong is that **stage verdicts are tri-state**:
+
+| Value | Meaning |
+|---|---|
+| `true` | no recorded blocker |
+| `false` | a recorded blocker, named in `verdict_reasons` |
+| `null` | cannot be determined — usually because no usable review exists |
+
+Coercing `null` to `false` reports a problem nobody found. Coercing it to `true`
+reports an absence of evidence as evidence of absence, which is the specific
+failure this framework exists to prevent. Handle it explicitly.
+
+`semantic_review.open_blockers` merges open findings from `HANDOFF-REVIEW.json`
+with open actions from `HANDOFF.md`, deduplicated, each tagged with `origin`.
+`semantic_review.is_approval` is always `false` and exists so nothing downstream
+can mistake the object for a sign-off.
+
+### CLI handoff envelope
+
+`node cli/axiom.mjs handoff --json` runs two JSON-producing steps and merges
+them:
+
+```json
+{ "schema_version": "1.1", "gate": { ... }, "assessment": { ... } }
+```
+
+One document, because two concatenated payloads with progress labels between
+them is not JSON whatever `--json` implies. `assessment` is present even when
+`gate` failed — knowing *which* stage is blocked is the point. The exit code
+comes from the gate.
+
 ## Adding a rule
 
 1. Add the entry to `pmo-config/validation-rules.json` with `severity`, `description`, and a `suggestion`. `DOCTOR-008` fails the build without a suggestion on any fail/warn rule.

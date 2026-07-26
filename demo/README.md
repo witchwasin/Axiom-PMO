@@ -40,15 +40,19 @@ The fixed project passes every deterministic check and still reports:
 ```text
 Verdict: READY TO BUILD, NOT READY TO DEMO
 
-  YES  Contract Valid
-  YES  Ready to Start Development
-  YES  Ready to Integrate
-  NO   Ready to Demo
-  NO   Ready for UAT
-  NO   Ready for Release
+  YES  Contract Valid               no deterministic failures
+  YES  Ready to Start Development   no recorded blocker
+  YES  Ready to Integrate           no recorded blocker
+  NO   Ready to Demo                blocked by HF-005, OA-001
+  NO   Ready for UAT                blocked by HF-005, OA-001
+  NO   Ready for Release            blocked by HF-005, OA-001
+
+Score: 92 / 100
 ```
 
-Its semantic review has an open finding about a demo device the delivery team does not own. That blocks the demonstration. It does not stop anyone writing code today, so the gate does not pretend it does.
+Two blockers, from two different documents. The semantic review found one — a demo device the delivery team does not own. `HANDOFF.md` declares the other — a certificate not yet installed on that device. Both stop the demonstration. Neither stops anyone writing code today, so the gate does not pretend they do.
+
+The score is 92, not 100, because a project that blocks its own demonstration should not read as perfect.
 
 A single pass/fail answer would have to choose between stalling a team that could be working and promising a demonstration that will not happen.
 

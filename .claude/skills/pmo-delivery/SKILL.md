@@ -44,7 +44,12 @@ The deterministic validator proves the contract is **complete**. It cannot prove
 2. Read the artifacts listed above. Read them together, not one at a time — most real findings are contradictions *between* documents, each of which is defensible alone.
 3. Walk **every** lens in `pmo-config/handoff-policy.json` `semantic_review.lenses`. Record each one in the output even when it found nothing; a lens with no entry is an unfinished review, and `HANDOFF-010` will say so.
 4. Record findings in `HANDOFF-REVIEW.json` (see `templates/HANDOFF-REVIEW.json`).
-5. Get the current digest with `scripts/handoff-digest.ps1 -ProjectPath <project>` and write it to `source_snapshot.digest`.
+5. Record **both** freshness digests. `scripts/handoff-digest.ps1 -ProjectPath <project>` prints them:
+   - `source_snapshot.digest` — the material the requirements came from
+   - `review_inputs.digest` — the governed artifacts you actually read
+
+   A review that records only the first keeps reporting as current after
+   someone rewrites the build sequence or waives a build-spec section.
 6. Re-run the gate, then `scripts/assess-handoff.ps1` for stage verdicts.
 
 ### The twelve lenses
@@ -75,7 +80,9 @@ The deterministic validator proves the contract is **complete**. It cannot prove
 
 ### What an AI reviewer may and may not close
 
-May close a finding (`status: resolved`) when the artifacts now show it was fixed, and cite the change as evidence.
+May close a finding (`status: resolved`) when the artifacts now show it was fixed, and cite the change as evidence. Every non-`open` status needs a `decision_ref` that resolves.
+
+These limits are **enforced by `HANDOFF-010`**, not merely requested here. An AI-authored review that sets `accepted_risk`, or that closes a privacy finding, fails the gate. A closure under a human-only lens additionally has to cite a `DEC-###` that exists in `decision-log.md` with a named decider.
 
 **May not close**, regardless of how obvious the answer looks — these need a named human and a decision record:
 
@@ -107,7 +114,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/assess-handoff.ps1 -
 
 ## Prohibited Actions
 
-Do not create hidden task systems, duplicate source of truth, hardcode mode/gate matrices, or add features outside scope. Do not hardcode review lenses, blocking points, or owner tokens — they come from `pmo-config/handoff-policy.json`. Do not record a review whose `source_snapshot.digest` you did not recompute.
+Do not create hidden task systems, duplicate source of truth, hardcode mode/gate matrices, or add features outside scope. Do not hardcode review lenses, blocking points, or owner tokens — they come from `pmo-config/handoff-policy.json`. Do not record a review whose digests you did not recompute — both of them, after every other artifact is final.
 
 ## Completion Criteria
 

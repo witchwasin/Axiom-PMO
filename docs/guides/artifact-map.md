@@ -16,7 +16,7 @@ Axiom-PMO deliberately uses short names for artifacts rather than industry acron
 | `DESIGN/BUILD-SPEC.md` | Technical specification | What will be built, and how does it behave at the boundaries? | Handoff (Standard, Strict) |
 | `DELIVERY.md` | Work breakdown | What are the units of work, who owns each, what is its status? | Scope |
 | `HANDOFF.md` | Developer entry point | What do I build first, who do I ask, what would stop the demo? | Handoff |
-| `HANDOFF-REVIEW.json` | Readiness evidence | Did someone read this for sense, and what did they find? | Handoff (Standard, Strict) |
+| `HANDOFF-REVIEW.json` | Readiness evidence | Did someone read this for sense, what did they find, and is it still current? | Handoff (Standard, Strict) |
 | `RELEASE.md` | QA / release evidence | Was it tested, approved, and can it be rolled back? | Release |
 | `RAID-log.md` | Risk register | What could go wrong, what are we assuming? | Strict, or when real risks exist |
 | `decision-log.md` | Decision record | What did we decide, why, and who decided it? | Strict, or when real decisions exist |

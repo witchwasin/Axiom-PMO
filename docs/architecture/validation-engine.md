@@ -34,6 +34,7 @@ Two modules support the tooling rather than the checks themselves:
 |---|---|
 | `pwsh-host.ps1` | Resolves the PowerShell executable for child processes: `AXIOM_PWSH`, then the running host itself, then `pwsh` / `powershell` / `powershell.exe`. |
 | `golden-normalizer.ps1` | Canonicalizes validator output for golden comparison so a capture under one PowerShell host verifies under another. |
+| `ordinal-sort.ps1` | Ordinal string sorting for every sort whose output reaches a freshness digest or a diagnostic. `Sort-Object` is culture-sensitive, which makes both host-dependent. |
 
 `handoff-validator.ps1` carries a hard scope boundary: it checks only what the
 artifacts **declare**, and never infers domain meaning. It will not decide that a
@@ -89,6 +90,10 @@ contract is [`docs/reference/diagnostics-contract.md`](../reference/diagnostics-
   form, so they are portable across checkouts *and* across PowerShell hosts.
 - **Diagnostic contract tests** assert the shape of every row the validator
   emits, independently of which findings a fixture happens to produce.
+- **Line-ending tests** assert that regexes, digests, and golden comparison
+  behave identically on a CRLF checkout and an LF one. `.gitattributes` marks
+  markdown as text, so those differ by platform, and a `(?m)$` anchor against
+  raw file content silently matches nothing on Windows.
 - **Generator-to-release E2E** exercises a real generated project end to end,
   including the Handoff gate, and asserts that an unfilled generated scaffold
   *fails* that gate.
