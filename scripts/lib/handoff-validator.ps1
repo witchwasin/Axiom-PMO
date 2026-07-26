@@ -18,6 +18,8 @@
 #   Sensitive Data = yes" has no classification decision. It does not fire
 #   because the row is called "photo".
 
+. (Join-Path $PSScriptRoot "ordinal-sort.ps1")
+
 function Get-HandoffPolicySeverity {
   param(
     $SeverityMap,
@@ -103,7 +105,7 @@ function Get-SourceSnapshotDigest {
     $cells = @($row.PSObject.Properties | ForEach-Object { "$($_.Name)=$($_.Value)".Trim() })
     $lines += ($cells -join '|')
   }
-  return (Get-Sha256Hex -Text (($lines | Sort-Object) -join "`n"))
+  return (Get-Sha256Hex -Text ((Sort-Ordinal -Values ([string[]]$lines)) -join "`n"))
 }
 
 # Digest of the governed artifacts the semantic review actually read.
@@ -128,7 +130,7 @@ function Get-ReviewInputDigest {
   if ($files.Count -eq 0) { return $null }
 
   $parts = New-Object System.Collections.Generic.List[string]
-  foreach ($relative in ($files | Sort-Object)) {
+  foreach ($relative in (Sort-Ordinal -Values ([string[]]$files))) {
     $path = Join-Path $Project $relative
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
       $parts.Add("$relative`n<absent>") | Out-Null
@@ -341,7 +343,7 @@ function Test-HandoffReadiness {
     }
   }
   if ($unresolvedBuildNow.Count -gt 0) {
-    Add-Result FAIL ("Build Now references work items that do not exist in DELIVERY.md: " + (($unresolvedBuildNow | Sort-Object -Unique) -join ', ')) "HANDOFF-002" $true `
+    Add-Result FAIL ("Build Now references work items that do not exist in DELIVERY.md: " + ((Sort-OrdinalUnique -Values ([string[]]$unresolvedBuildNow)) -join ', ')) "HANDOFF-002" $true `
       -Artifact "HANDOFF.md" -Field "Work Item Ref"
   } elseif ($buildNowRows.Count -gt 0) {
     Add-Result PASS "Build Now scope resolves to declared work items" "HANDOFF-002"
@@ -353,7 +355,7 @@ function Test-HandoffReadiness {
   # column as "Dev Team" is exactly the ambiguity this rule exists to catch.
   $buildNowRefs = @()
   foreach ($row in $buildNowRows) { $buildNowRefs += (Split-ReferenceValues $row.'Work Item Ref') }
-  $buildNowRefs = @($buildNowRefs | Sort-Object -Unique)
+  $buildNowRefs = @(Sort-OrdinalUnique -Values ([string[]]$buildNowRefs))
   $unownedItems = @()
   foreach ($item in @($WorkItems)) {
     if ($buildNowRefs -notcontains $item.ID) { continue }
@@ -494,7 +496,7 @@ function Test-HandoffBuildSequence {
   }
 
   if ($problems.Count -gt 0) {
-    foreach ($problem in ($problems | Sort-Object -Unique)) {
+    foreach ($problem in (Sort-OrdinalUnique -Values ([string[]]$problems))) {
       Add-Result FAIL "Build sequence is not executable as declared: $problem" "HANDOFF-004" $true `
         -Artifact "HANDOFF.md" -Field "Build Sequence and Dependencies"
     }
@@ -921,7 +923,7 @@ function Test-HandoffSemanticReview {
     $problems += "lenses not reviewed: " + ($missingLenses -join ', ')
   }
   if ($unknownLenses.Count -gt 0) {
-    $problems += "unknown review lenses: " + (($unknownLenses | Sort-Object -Unique) -join ', ')
+    $problems += "unknown review lenses: " + ((Sort-OrdinalUnique -Values ([string[]]$unknownLenses)) -join ', ')
   }
 
   $validSeverities = @($reviewPolicy.finding_severities)
@@ -1017,6 +1019,9 @@ function Test-HandoffSemanticReview {
   # reviewer actually read can change. Hashing only the first lets someone
   # rewrite the build sequence after review and keep a clean bill of health.
   $staleLevel = Get-HandoffPolicySeverity -SeverityMap $reviewPolicy.freshness.stale_severity -Mode $Mode -Default "warn"
+  # Tracked so the summary PASS below cannot claim the review "is current"
+  # three lines under a WARN saying it is stale.
+  $isStale = $false
 
   $currentSourceDigest = Get-SourceSnapshotDigest -ProjectText $ProjectText
   $recordedSourceDigest = "$($review.source_snapshot.digest)".Trim().ToLowerInvariant()
@@ -1025,6 +1030,7 @@ function Test-HandoffSemanticReview {
   } elseif ($currentSourceDigest -and ($currentSourceDigest -ne $recordedSourceDigest)) {
     Add-Result $staleLevel "$($reviewPolicy.artifact) is stale: it was recorded against a different Source Snapshot than PROJECT.md currently declares" "HANDOFF-010" $true `
       -Artifact ([string]$reviewPolicy.artifact) -Field "source_snapshot.digest"
+    $isStale = $true
   }
 
   $currentInputDigest = Get-ReviewInputDigest -Project $Project -HandoffPolicy $HandoffPolicy
@@ -1034,6 +1040,7 @@ function Test-HandoffSemanticReview {
   } elseif ($currentInputDigest -and ($currentInputDigest -ne $recordedInputDigest)) {
     Add-Result $staleLevel "$($reviewPolicy.artifact) is stale: a governed artifact it reviewed has changed since it was recorded" "HANDOFF-010" $true `
       -Artifact ([string]$reviewPolicy.artifact) -Field "review_inputs.digest"
+    $isStale = $true
   }
 
   if ($problems.Count -gt 0) {
@@ -1041,7 +1048,7 @@ function Test-HandoffSemanticReview {
       Add-Result FAIL "Semantic handoff review is incomplete: $problem" "HANDOFF-010" $true `
         -Artifact ([string]$reviewPolicy.artifact)
     }
-  } else {
+  } elseif (-not $isStale) {
     $openCritical = @(@($review.findings) | Where-Object {
       "$($_.status)" -eq "open" -and "$($_.severity)" -eq "critical"
     })
