@@ -6,6 +6,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "lib/ordinal-sort.ps1")
+
 $root = Resolve-Path -LiteralPath $RepoPath
 $repo = $root.Path
 $policyPath = Join-Path $repo "pmo-config/policy.json"
@@ -354,7 +356,7 @@ if ($validationRules -and $validationRules.rules) {
 if ($rulesWithoutSuggestion.Count -eq 0) {
   Add-Result PASS "Every fail/warn rule in the catalog carries a suggestion" "DOCTOR-008"
 } else {
-  Add-Result FAIL ("Rules missing a suggestion: " + (($rulesWithoutSuggestion | Sort-Object) -join ", ")) "DOCTOR-008"
+  Add-Result FAIL ("Rules missing a suggestion: " + ((Sort-Ordinal -Values ([string[]]$rulesWithoutSuggestion)) -join ", ")) "DOCTOR-008"
 }
 
 # DOCTOR-009: a documentation_url must never 404. The catalog stores a
@@ -374,7 +376,7 @@ if ($validationRules -and $validationRules.rules) {
 if ($rulesWithBrokenDocs.Count -eq 0) {
   Add-Result PASS "Every rule documentation path resolves to a file" "DOCTOR-009"
 } else {
-  Add-Result FAIL ("Rules with unresolvable documentation: " + (($rulesWithBrokenDocs | Sort-Object) -join ", ")) "DOCTOR-009"
+  Add-Result FAIL ("Rules with unresolvable documentation: " + ((Sort-Ordinal -Values ([string[]]$rulesWithBrokenDocs)) -join ", ")) "DOCTOR-009"
 }
 
 $settingsPath = Join-Path $repo ".claude/settings.json"

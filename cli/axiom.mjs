@@ -39,7 +39,11 @@ function findPowerShell() {
     // An override is a promise the user made. Check it rather than failing
     // later with an opaque ENOENT from spawn.
     if (isAbsolute(override) && !existsSync(override)) {
-      return { error: `AXIOM_PWSH points at a file that does not exist: ${override}` };
+      // Same remediation as a missing host: the reader's problem is identical
+      // ("nothing here can run PowerShell"), so the answer should be too.
+      return {
+        error: `AXIOM_PWSH points at a file that does not exist: ${override}\n\n${powerShellMissingMessage()}`,
+      };
     }
     return { exe: override };
   }

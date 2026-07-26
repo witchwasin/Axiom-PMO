@@ -138,6 +138,22 @@ fields on the JSON diagnostic.
   process down before an asynchronous pipe write drains, so the envelope looked
   correct in a terminal (a TTY flushes synchronously) and failed to parse under
   `| jq`. The CLI now sets `process.exitCode` and lets Node exit naturally.
+- **Freshness digests and diagnostic ordering were culture-dependent.**
+  `Sort-Object` compares strings using the current culture, and it was used
+  both inside the review-input digest and in diagnostics that golden masters
+  compare byte-for-byte. Switching to ordinal changed the digest value, which
+  proves the two orderings genuinely differed -- a review recorded on one
+  machine could have read as stale on another. `scripts/lib/ordinal-sort.ps1`
+  now backs every sort whose output reaches a digest or a diagnostic.
+- **A stale review still printed "is current".** The freshness WARN and the
+  summary PASS were emitted independently, so a stale review produced both.
+- **The missing-PowerShell CLI test assumed POSIX.** It emptied `PATH` to hide
+  the host, which does not work on Windows: `CreateProcess` searches the system
+  directory whatever `PATH` says, so `powershell.exe` is still found and the
+  assertion tested the harness rather than the CLI. The cross-platform case now
+  runs through `AXIOM_PWSH`, and the `PATH` technique is skipped on Windows
+  with a printed reason. An unreachable `AXIOM_PWSH` now prints the same
+  remediation as a missing host.
 - **An empty `AllowedSecondaryRules` disabled the check it was meant to
   tighten.** `@()` is falsy in PowerShell, so a fixture declaring "this must
   fire nothing else" asserted nothing at all. The runner now tests for key

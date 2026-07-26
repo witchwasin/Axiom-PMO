@@ -88,13 +88,28 @@ console.log("");
 {
   // Reported, not swallowed. A CLI that silently skipped validation when
   // PowerShell was absent would be worse than one that refuses to run.
-  const noHost = runCli(["doctor"], { PATH: "/nonexistent-path-for-test", AXIOM_PWSH: "" });
-  assert("missing PowerShell exits 127", noHost.status === 127, `exit=${noHost.status}`);
-  assert("missing PowerShell names the remediation", noHost.stderr.includes("aka.ms") || noHost.stderr.includes("install"));
-  assert("missing PowerShell mentions the AXIOM_PWSH escape hatch", noHost.stderr.includes("AXIOM_PWSH"));
-
+  //
+  // The unreachable-host case is exercised through AXIOM_PWSH because it is
+  // the only technique that works on every platform. Emptying PATH hides
+  // PowerShell on POSIX but NOT on Windows: CreateProcess searches the system
+  // directory regardless of PATH, so powershell.exe is still found and the
+  // assertion would be testing the harness rather than the CLI.
   const badOverride = runCli(["doctor"], { AXIOM_PWSH: "/nonexistent/pwsh" });
-  assert("an AXIOM_PWSH that does not exist is reported, not spawned", badOverride.status === 127, `exit=${badOverride.status}`);
+  assert("an unreachable PowerShell exits 127", badOverride.status === 127, `exit=${badOverride.status}`);
+  assert("an unreachable PowerShell names what was wrong", badOverride.stderr.includes("/nonexistent/pwsh"));
+  assert("an unreachable PowerShell names the remediation",
+    badOverride.stderr.includes("aka.ms") || badOverride.stderr.includes("install"));
+  assert("an unreachable PowerShell mentions the AXIOM_PWSH escape hatch",
+    badOverride.stderr.includes("AXIOM_PWSH"));
+
+  if (process.platform === "win32") {
+    console.log("[SKIP] empty-PATH host discovery -- CreateProcess finds powershell.exe in the system directory whatever PATH says");
+  } else {
+    const noHost = runCli(["doctor"], { PATH: "/nonexistent-path-for-test", AXIOM_PWSH: "" });
+    assert("no PowerShell on PATH exits 127", noHost.status === 127, `exit=${noHost.status}`);
+    assert("no PowerShell on PATH names the remediation",
+      noHost.stderr.includes("aka.ms") || noHost.stderr.includes("install"));
+  }
 }
 
 {
