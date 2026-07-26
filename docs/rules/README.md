@@ -20,6 +20,8 @@ These pages are linked automatically. A rule's `documentation` path in `pmo-conf
 | [HANDOFF-010](HANDOFF-010.md) | Semantic review missing, incomplete, or stale |
 | [HANDOFF-011](HANDOFF-011.md) | Declared sensitive-data capability lacks a decision |
 | [HANDOFF-012](HANDOFF-012.md) | Declared device or runtime capability lacks an environment decision |
+| [HANDOFF-013](HANDOFF-013.md) | Table header does not match the declared columns |
+| [HANDOFF-014](HANDOFF-014.md) | Handoff artifact names a different project |
 
 ## Other rules
 

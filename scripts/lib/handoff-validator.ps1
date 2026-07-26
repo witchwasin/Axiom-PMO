@@ -200,6 +200,89 @@ function Get-DecisionDecider {
   return $null
 }
 
+
+# ---------------------------------------------------------------- HANDOFF-013
+# Header row of the first pipe table under a heading, or $null when there is no
+# table there.
+function Get-TableHeaderCells {
+  param(
+    [string]$Text,
+    [string]$Heading,
+    [int]$Level = 2
+  )
+
+  $lines = @(Get-TableLinesAfterHeading $Text (Get-HeadingPattern -Heading $Heading -Level $Level))
+  if ($lines.Count -lt 2) { return $null }
+
+  $parts = @($lines[0] -split '\|')
+  $cells = @()
+  for ($i = 1; $i -lt ($parts.Count - 1); $i++) { $cells += $parts[$i].Trim() }
+  return $cells
+}
+
+# Compare a table's header against the columns the policy declares.
+#
+# Reading cells by name means a renamed or reordered column does not error --
+# `$row.'Blocking Point'` simply resolves to an empty string, and the gate then
+# reports "no valid blocking point" about a cell the author filled in. Naming
+# the header mismatch turns a misleading downstream complaint into one accurate
+# diagnostic.
+function Test-TableHeader {
+  param(
+    [string]$Text,
+    [string]$Heading,
+    [int]$Level,
+    [string[]]$Expected,
+    [string]$Artifact,
+    $HandoffPolicy
+  )
+
+  $policy = $HandoffPolicy.table_headers
+  if (-not $policy -or -not $policy.enforce) { return $true }
+  if ($null -eq $Expected -or $Expected.Count -eq 0) { return $true }
+
+  $actual = Get-TableHeaderCells -Text $Text -Heading $Heading -Level $Level
+  # No table at all is a different rule's finding (HANDOFF-002 / HANDOFF-005).
+  if ($null -eq $actual) { return $true }
+
+  $expectedList = [string[]]@($Expected)
+  if (($actual -join '|') -eq ($expectedList -join '|')) { return $true }
+
+  # Distinguish the two failures: a reordered header is a different mistake
+  # from a renamed or missing one, and the fix differs.
+  $sameSet = ((Sort-Ordinal -Values ([string[]]$actual)) -join '|') -eq
+             ((Sort-Ordinal -Values $expectedList) -join '|')
+  if ($sameSet -and $policy.order_matters) {
+    Add-Result FAIL "Table '$Heading' has the declared columns in a different order (expected: $($expectedList -join ' | '))" "HANDOFF-013" $true `
+      -Artifact $Artifact -Field $Heading
+    return $false
+  }
+
+  $missing = @($expectedList | Where-Object { $actual -notcontains $_ })
+  $unexpected = @($actual | Where-Object { $expectedList -notcontains $_ })
+  $detail = @()
+  if ($missing.Count -gt 0) { $detail += "missing: " + ($missing -join ', ') }
+  if ($unexpected.Count -gt 0) { $detail += "unexpected: " + ($unexpected -join ', ') }
+
+  Add-Result FAIL "Table '$Heading' header does not match the declared columns ($($detail -join '; '))" "HANDOFF-013" $true `
+    -Artifact $Artifact -Field $Heading
+  return $false
+}
+
+# ---------------------------------------------------------------- HANDOFF-014
+# The project's own name for itself, taken from PROJECT.md's heading.
+function Get-DeclaredProjectCode {
+  param(
+    [string]$ProjectText,
+    $HandoffPolicy
+  )
+
+  $pattern = [string]$HandoffPolicy.project_identity.authority_pattern
+  if ([string]::IsNullOrWhiteSpace($pattern)) { return $null }
+  if ($ProjectText -match "(?m)$pattern") { return $Matches[1].Trim() }
+  return $null
+}
+
 function Test-HandoffReadiness {
   param(
     [string]$Project,
@@ -221,6 +304,9 @@ function Test-HandoffReadiness {
   # otherwise a report shows "[FAIL] HANDOFF-003 ... no named owner" three lines
   # above "[PASS] HANDOFF-003 ... has a named owner", which reads as a bug.
   $script:handoffOwnerProblems = 0
+  # Set by Test-BuildSpec, which runs in its own function; the HANDOFF.md side
+  # tracks its own local flag.
+  $script:handoffHeaderOk = $true
   $handoffDoc = $HandoffPolicy.handoff_document
   $handoffPath = Join-Path $Project "HANDOFF.md"
 
@@ -279,6 +365,12 @@ function Test-HandoffReadiness {
     Add-Result PASS "HANDOFF.md declares complete handoff metadata" "HANDOFF-001"
   }
 
+  # ---------------------------------------------------------------- HANDOFF-014
+  # A handoff sheet that names a different project than PROJECT.md is the
+  # signature of a project started by copying another. Every other check passes,
+  # and a later reader cannot tell which of the two documents is wrong.
+  Test-HandoffProjectIdentity -Project $Project -ProjectText $ProjectText -Metadata $meta -HandoffPolicy $HandoffPolicy
+
   if ($handoffTarget -and (@($HandoffPolicy.handoff_targets) -notcontains $handoffTarget)) {
     Add-Result FAIL "Handoff Target '$handoffTarget' is not one of: $(@($HandoffPolicy.handoff_targets) -join ', ')" "HANDOFF-001" $true `
       -Artifact "HANDOFF.md" -Field "Handoff Target"
@@ -297,10 +389,18 @@ function Test-HandoffReadiness {
   # constrains it. "Nothing deferred" is a valid answer, but it has to be
   # written down -- an empty section is silence, not a decision.
   $sectionRows = @{}
+  $headerOk = $true
   foreach ($section in @($handoffDoc.sections)) {
     $heading = [string]$section.heading
     $rows = @(Get-TableRowsAfterHeading $handoffText (Get-HeadingPattern -Heading $heading -Level 2))
     $sectionRows[$heading] = $rows
+
+    if ($section.table -and $section.columns) {
+      if (-not (Test-TableHeader -Text $handoffText -Heading $heading -Level 2 `
+          -Expected ([string[]]@($section.columns)) -Artifact "HANDOFF.md" -HandoffPolicy $HandoffPolicy)) {
+        $headerOk = $false
+      }
+    }
 
     $applies = $true
     if ($section.required_targets) {
@@ -394,6 +494,10 @@ function Test-HandoffReadiness {
       -ProjectReqIds $ProjectReqIds -DecisionIds $DecisionIds
   }
 
+  if ($headerOk -and $script:handoffHeaderOk) {
+    Add-Result PASS "Every governed table header matches the columns the policy declares" "HANDOFF-013"
+  }
+
   # ---------------------------------------------------------------- HANDOFF-010
   Test-HandoffSemanticReview -Project $Project -Mode $Mode -HandoffPolicy $HandoffPolicy -ProjectText $ProjectText -DecisionIds $DecisionIds
 }
@@ -420,6 +524,61 @@ function Get-SectionBody {
     $body += $lines[$i]
   }
   return ($body -join "`n")
+}
+
+function Test-HandoffProjectIdentity {
+  param(
+    [string]$Project,
+    [string]$ProjectText,
+    $Metadata,
+    $HandoffPolicy
+  )
+
+  $policy = $HandoffPolicy.project_identity
+  if (-not $policy -or -not $policy.enforce) { return }
+
+  $declared = Get-DeclaredProjectCode -ProjectText $ProjectText -HandoffPolicy $HandoffPolicy
+  if ([string]::IsNullOrWhiteSpace($declared)) {
+    # PROJECT.md has no identifying heading. That is a shape problem for the
+    # project template, not something this rule can adjudicate.
+    return
+  }
+
+  $mismatches = @()
+  foreach ($target in @($policy.cross_checked)) {
+    $artifact = [string]$target.artifact
+    $field = [string]$target.field
+    $actual = $null
+
+    if ([string]$target.kind -eq "metadata") {
+      if ($Metadata.ContainsKey($field)) { $actual = [string]$Metadata[$field] }
+    } else {
+      $path = Join-Path $Project $artifact
+      if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { continue }
+      try {
+        $doc = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
+        $prop = $doc.PSObject.Properties[$field]
+        if ($prop) { $actual = [string]$prop.Value }
+      } catch {
+        # Unparseable JSON is HANDOFF-010's finding, not this rule's.
+        continue
+      }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($actual)) { continue }
+    if ($actual.Trim() -cne $declared) {
+      $mismatches += [pscustomobject]@{ Artifact = $artifact; Field = $field; Value = $actual.Trim() }
+    }
+  }
+
+  if ($mismatches.Count -gt 0) {
+    foreach ($m in $mismatches) {
+      Add-Result FAIL "$($m.Artifact) names project '$($m.Value)' but PROJECT.md declares '$declared'" "HANDOFF-014" $true `
+        -Artifact $m.Artifact -Field $m.Field
+    }
+  } else {
+    Add-Result PASS "Handoff artifacts agree with PROJECT.md on the project code" "HANDOFF-014"
+  }
 }
 
 function Test-HandoffBuildSequence {
@@ -691,6 +850,12 @@ function Test-BuildSpec {
       $rows = @(Get-TableRowsAfterHeading $text (Get-HeadingPattern -Heading $heading -Level 3))
       if ($rows.Count -eq 0) {
         $sectionProblems += "'$heading' is marked specified but its table has no rows"
+      }
+      if ($section.columns) {
+        if (-not (Test-TableHeader -Text $text -Heading $heading -Level 3 `
+            -Expected ([string[]]@($section.columns)) -Artifact "DESIGN/BUILD-SPEC.md" -HandoffPolicy $HandoffPolicy)) {
+          $script:handoffHeaderOk = $false
+        }
       }
     }
   }

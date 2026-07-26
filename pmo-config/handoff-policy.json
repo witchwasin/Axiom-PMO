@@ -184,6 +184,30 @@
     ]
   },
 
+  "table_headers": {
+    "$comment": "HANDOFF-013. The validator reads table cells by column name, so a renamed or reordered header does not raise an error -- it silently yields empty cells, and the failure surfaces as some downstream rule complaining about a value the author did in fact fill in. Asserting the header turns that into one accurate diagnostic.",
+    "rule": "HANDOFF-013",
+    "enforce": true,
+    "comparison": "case_sensitive_trimmed",
+    "order_matters": true,
+    "order_note": "Order is part of the contract because the columns are declared as an ordered list and a reader scanning two projects should find the same shape in both. A reordered header is reported separately from a renamed one.",
+    "scope_note": "Only tables whose columns are declared in this file. Column *counts* in templates are already covered by TABLE-001; this is about names and order in project artifacts."
+  },
+
+  "project_identity": {
+    "$comment": "HANDOFF-014. PROJECT.md's own heading is the project's declaration of identity; the handoff artifacts have to agree with it. The exposure is a project started by copying another: HANDOFF.md keeps the old code, every other check passes, and the sheet names a project that is not the one being validated.",
+    "rule": "HANDOFF-014",
+    "enforce": true,
+    "authority": "PROJECT.md",
+    "authority_pattern": "^#\\s+PROJECT\\s+-\\s+(.+?)\\s*$",
+    "authority_note": "The heading, not the directory name: a project can legitimately live in a differently named folder, so the folder is the weaker source.",
+    "cross_checked": [
+      { "artifact": "HANDOFF.md", "field": "Project", "kind": "metadata" },
+      { "artifact": "HANDOFF-REVIEW.json", "field": "project_code", "kind": "json" }
+    ],
+    "comparison": "case_sensitive_trimmed"
+  },
+
   "acceptance_cases": {
     "execution_classes": ["automated", "manual", "exploratory"],
     "fixture_none_token": "none",

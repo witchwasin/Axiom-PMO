@@ -5,7 +5,7 @@
 "effective_mode": "Standard",
 "gate": "Handoff",
 "summary": {
-"pass": 32,
+"pass": 34,
 "warn": 0,
 "warn_blocking": 0,
 "fail": 2,
@@ -278,6 +278,18 @@
 },
 {
 "schema_version": "1.1",
+"level": "PASS",
+"rule_id": "HANDOFF-014",
+"message": "Handoff artifacts agree with PROJECT.md on the project code",
+"blocking": true,
+"artifact": null,
+"item_id": null,
+"field": null,
+"suggestion": null,
+"documentation_url": null
+},
+{
+"schema_version": "1.1",
 "level": "FAIL",
 "rule_id": "HANDOFF-002",
 "message": "Build Now references work items that do not exist in DELIVERY.md: D-999",
@@ -401,6 +413,18 @@
 "level": "PASS",
 "rule_id": "HANDOFF-012",
 "message": "Every declared runtime capability has a resolved serving model and environment decision",
+"blocking": true,
+"artifact": null,
+"item_id": null,
+"field": null,
+"suggestion": null,
+"documentation_url": null
+},
+{
+"schema_version": "1.1",
+"level": "PASS",
+"rule_id": "HANDOFF-013",
+"message": "Every governed table header matches the columns the policy declares",
 "blocking": true,
 "artifact": null,
 "item_id": null,

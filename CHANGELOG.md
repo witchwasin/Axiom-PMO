@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **`HANDOFF-013`** ([#6](https://github.com/witchwasin/Axiom-PMO/issues/6)) —
+  every governed table's header must match the columns declared in
+  `pmo-config/handoff-policy.json`, by name and in order. The validator reads
+  cells by column name, so a renamed header previously yielded empty cells and
+  the failure surfaced as some *other* rule complaining about a value the author
+  had filled in. A reordered header is reported separately from a renamed one,
+  because the fix differs.
+- **`HANDOFF-014`** ([#7](https://github.com/witchwasin/Axiom-PMO/issues/7)) —
+  `HANDOFF.md` and `HANDOFF-REVIEW.json` must name the project `PROJECT.md`
+  declares. `Project` was the only metadata field checked against nothing while
+  its neighbours (mode, horizon, build-spec reference) were all cross-checked.
+  The exposure is a project started by copying another, which is exactly what a
+  filled-in handoff sheet invites.
+
+### Fixed
+
+- **`demo/broken-project` and `demo/fixed-project` named the wrong project.**
+  Both were copied from `examples/HANDOFF-DEMO` with only their headings
+  renamed, so their handoff artifacts still said `HANDOFF-DEMO`. Found by
+  `HANDOFF-014` on its first run — the rule's own worked example.
+
 ## 1.1.0 - 2026-07-26
 
 **Handoff-Ready.** Adds a checking layer between `Design` and `Release` that
