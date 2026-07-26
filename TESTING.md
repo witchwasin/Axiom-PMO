@@ -131,6 +131,7 @@ stale.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tests/helpers/diagnostics-contract-tests.ps1
+powershell -ExecutionPolicy Bypass -File tests/helpers/line-ending-tests.ps1
 powershell -ExecutionPolicy Bypass -File tests/helpers/handoff-assessment-tests.ps1
 powershell -ExecutionPolicy Bypass -File tests/helpers/demo-smoke-tests.ps1
 ```
@@ -142,6 +143,7 @@ node tests/helpers/cli-tests.mjs
 | Suite | Proves |
 |---|---|
 | diagnostics-contract | Every emitted diagnostic matches `pmo-config/diagnostics-schema.json`, carries remediation on WARN/FAIL, and does not echo artifact content |
+| line-endings | Regexes, digests, and golden comparison behave identically on a CRLF (Windows) and an LF checkout |
 | handoff-assessment | Stage verdicts stay separate, and every score cap actually binds |
 | demo-smoke | The demo's narration matches its real output, and it finishes well inside three minutes |
 | cli | Exit codes propagate unchanged, and no validation logic has leaked into JavaScript |

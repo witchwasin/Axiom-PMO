@@ -10,7 +10,7 @@ PWSH ?= pwsh
 PS := $(PWSH) -NoProfile -ExecutionPolicy Bypass -File
 NODE ?= node
 
-.PHONY: demo doctor validate test golden mutation contract assess handoff e2e cli check help
+.PHONY: demo doctor validate test golden mutation contract eol assess handoff e2e cli check help
 
 help:
 	@echo "Targets:"
@@ -22,6 +22,7 @@ help:
 	@echo "  golden    Example golden outputs"
 	@echo "  mutation  Config-is-source-of-truth tests"
 	@echo "  contract  Structured diagnostics contract tests"
+	@echo "  eol       Line-ending (CRLF vs LF) regression tests"
 	@echo "  assess    Handoff readiness assessment tests"
 	@echo "  handoff   Handoff gate on the worked example"
 	@echo "  e2e       Generator-to-gate end-to-end runs"
@@ -47,6 +48,9 @@ mutation:
 
 contract:
 	$(PS) tests/helpers/diagnostics-contract-tests.ps1 -RepoPath .
+
+eol:
+	$(PS) tests/helpers/line-ending-tests.ps1 -RepoPath .
 
 assess:
 	$(PS) tests/helpers/handoff-assessment-tests.ps1 -RepoPath .

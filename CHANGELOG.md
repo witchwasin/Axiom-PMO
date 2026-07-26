@@ -138,6 +138,15 @@ fields on the JSON diagnostic.
   process down before an asynchronous pipe write drains, so the envelope looked
   correct in a terminal (a TTY flushes synchronously) and failed to parse under
   `| jq`. The CLI now sets `process.exitCode` and lets Node exit naturally.
+- **A template placeholder regex could not match on a Windows checkout.**
+  `.gitattributes` marks `*.md` as text, so a Windows checkout gets CRLF, and
+  .NET's `(?m)$` matches only immediately before `\n` -- never before the `\r`
+  of a `\r\n` pair. The E2E handoff filler's `(?m)^<[^>\r\n]+>$` therefore
+  matched nothing on Windows: every prose placeholder survived and the
+  generated project failed its own Handoff gate. Reproduced by converting the
+  repository to CRLF, confirmed with a negative control, and covered by
+  `tests/helpers/line-ending-tests.ps1`, which asserts that regexes, digests,
+  and golden comparison behave identically under both line endings.
 - **Freshness digests and diagnostic ordering were culture-dependent.**
   `Sort-Object` compares strings using the current culture, and it was used
   both inside the review-input digest and in diagnostics that golden masters
