@@ -4,6 +4,14 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "../../scripts/lib/pwsh-host.ps1")
+
+$pwshExe = Get-PowerShellHost
+if (-not $pwshExe) {
+  Write-Host (Get-PowerShellHostMissingMessage)
+  exit 127
+}
+
 . (Join-Path $PSScriptRoot "lib/fill-project.ps1")
 
 # Thai directory name + a space, deliberately: the generator/validator must
@@ -12,14 +20,14 @@ $thaiLite = -join ([char[]](0x0E44, 0x0E25, 0x0E17, 0x0E4C))
 $workRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("pmo e2e $thaiLite " + [guid]::NewGuid().ToString("N"))
 try {
   New-Item -ItemType Directory -Force -Path $workRoot | Out-Null
-  & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $RepoPath "scripts/new-project.ps1") -ProjectCode "LITE-E2E" -Mode Lite -OutputRoot $workRoot | Out-Null
+  & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $RepoPath "scripts/new-project.ps1") -ProjectCode "LITE-E2E" -Mode Lite -OutputRoot $workRoot | Out-Null
   if ($LASTEXITCODE -ne 0) { throw "Lite E2E: new-project.ps1 failed with exit $LASTEXITCODE" }
   $project = Join-Path $workRoot "LITE-E2E"
 
   Set-E2EProjectContent -ProjectPath $project -Mode Lite -ProjectCode "LITE-E2E"
 
   foreach ($gate in @("Draft", "Scope", "Release")) {
-    $output = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $RepoPath "scripts/validate-project.ps1") -ProjectPath $project -Mode Lite -Gate $gate
+    $output = & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $RepoPath "scripts/validate-project.ps1") -ProjectPath $project -Mode Lite -Gate $gate
     if ($LASTEXITCODE -ne 0) {
       $output | Write-Host
       throw "Lite E2E failed validation at Gate=$gate"

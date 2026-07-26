@@ -1,5 +1,194 @@
 # Changelog
 
+## 1.1.0 - 2026-07-26
+
+**Handoff-Ready.** Adds a checking layer between `Design` and `Release` that
+answers a question 1.0 could not: is this documentation sufficient for a
+developer to start building, integrate, and demonstrate on time?
+
+```text
+Draft -> Scope -> Design -> Handoff -> Build/QA -> Release
+```
+
+Backward compatible. Projects that do not request the new gate validate exactly
+as they did in 1.0; the only change visible to an existing consumer is additive
+fields on the JSON diagnostic.
+
+### Added
+
+- **`Handoff` gate** (`scripts/validate-project.ps1 -Gate Handoff`) with rules
+  `HANDOFF-001` to `HANDOFF-012`. It introduces **no new human approval** -- it
+  reuses the existing `Design Ready` approval and checks whether the contract is
+  complete enough to act on. Policy lives in `pmo-config/handoff-policy.json`.
+- **Canonical handoff artifacts**: `templates/HANDOFF.md` (developer entry
+  point), `templates/BUILD-SPEC.md` (technical specification with per-section
+  `Status: specified | not_required` and a required rationale for every waiver),
+  and `templates/HANDOFF-REVIEW.json` (machine-readable readiness evidence).
+- **Semantic handoff review** as a second, separate layer. `pmo-delivery` gains
+  a `handoff_review` intent with twelve config-driven review lenses. The
+  deterministic validator checks only what the artifacts *declare*; judgement
+  about whether the declarations make sense is recorded as structured evidence
+  in `HANDOFF-REVIEW.json`. **A review is candidate evidence, never an
+  approval.**
+- **Review freshness.** `HANDOFF-REVIEW.json` records a digest of `PROJECT.md`'s
+  Source Snapshot table; when the sources change the review is reported as stale
+  by `HANDOFF-010`. `scripts/handoff-digest.ps1` prints the current digest.
+- **Readiness assessment** (`scripts/assess-handoff.ps1`, Text and JSON). Reports
+  six stage verdicts -- Contract Valid, Ready to Start Development, Ready to
+  Integrate, Ready to Demo, Ready for UAT, Ready for Release -- rather than one
+  boolean, because "ready to build" and "ready to demo" are different questions
+  with different owners. Each verdict is `true`, `false`, or **`null`** for
+  "cannot be determined", with a per-stage reason; an absence of recorded
+  findings is never reported as an absence of problems. Blockers are drawn from
+  **both** `HANDOFF-REVIEW.json` findings and `HANDOFF.md` open actions,
+  deduplicated. Includes a 100-point score with hard caps: `BLOCKED` on any
+  deterministic FAIL, max 70 without a usable review, max 69 with a missing
+  owner or an unexecutable build sequence, max 49 with an open critical
+  `before_build` finding. **The score is not an approval.**
+- **Enforced closure authority.** Any finding status other than `open` requires
+  a resolvable `decision_ref`; an AI reviewer may only set `resolved`; and an AI
+  may never close a finding under a human-only lens (privacy classification,
+  environment constraints) whatever decision it cites. Previously this boundary
+  existed only as skill instructions, which an agent can ignore. Configured in
+  `handoff-policy.json` `semantic_review.closure_policy`.
+- **Two freshness digests.** `source_snapshot.digest` covers the material the
+  requirements came from; `review_inputs.digest` covers the governed artifacts
+  the reviewer actually read. With only the first, editing `DESIGN/BUILD-SPEC.md`
+  or the build sequence after a review left it reporting as current.
+  `scripts/handoff-digest.ps1` prints both.
+- **Resolved references at the Handoff gate.** Acceptance cases must cite
+  requirements that exist in `PROJECT.md`; classification, retention, and
+  environment decision columns must lead with a resolvable reference rather than
+  prose; `HANDOFF.md` metadata must agree with the effective mode, carry an
+  ISO-8601 horizon, and point at a build spec that exists.
+- **Structured diagnostics v1.1.** Every JSON diagnostic now carries `artifact`,
+  `item_id`, `field`, `suggestion`, `documentation_url`, and `schema_version`
+  alongside the v1.0 fields. `suggestion` and `documentation_url` are resolved
+  from the rule catalog, so remediation text for a rule lives in one place.
+  Contract defined in `pmo-config/diagnostics-schema.json` and documented in
+  `docs/reference/diagnostics-contract.md`.
+- **Rule reference pages** under `docs/rules/`, one per handoff rule. Each states
+  what is checked, why it blocks, **what the validator deliberately does not
+  decide**, and how to fix it.
+- **Three-minute demo.** `demo/broken-project` and `demo/fixed-project`, driven
+  by `scripts/demo.ps1` / `make demo` / `node cli/axiom.mjs demo`. Two synthetic
+  projects that both pass every 1.0 gate; one of them cannot be built on Monday
+  morning. Runs in seconds and every line is real validator output.
+- **Thin local CLI** (`cli/axiom.mjs`): `demo`, `check`, `doctor`, `validate`,
+  `handoff`, `init`. Contains zero validation logic -- it locates a PowerShell
+  host, forwards arguments, and preserves stdout, stderr, and exit codes.
+  Honours `AXIOM_PWSH`, and reports a missing PowerShell host with remediation
+  rather than skipping the check.
+- **Project generator options**: `new-project.ps1 -IncludeHandoff -Target
+  <demo|pilot|production|internal> -HorizonDays <n>`. Default behaviour is
+  unchanged. The generated scaffold deliberately **fails** the Handoff gate
+  until it is filled in; a generator that emitted a passing handoff would be
+  manufacturing evidence.
+- **Doctor checks** `DOCTOR-008` (every fail/warn rule carries a suggestion) and
+  `DOCTOR-009` (every rule documentation path resolves, so a diagnostic can
+  never advertise a dead link).
+- **Worked example** `examples/HANDOFF-DEMO`: a Standard demo handoff that
+  passes every deterministic check and still reports "ready to build, not ready
+  to demo".
+- **Docs**: `docs/concepts/handoff-readiness.md`,
+  `docs/guides/three-day-demo-handoff.md`, `docs/guides/artifact-map.md`,
+  `docs/reference/diagnostics-contract.md`, `docs/rules/`.
+- **Tests**: 33 new handoff fixtures (positive and negative, each asserting a
+  specific rule id and level), diagnostics contract tests, handoff assessment
+  tests, demo smoke test, CLI tests, a Handoff end-to-end run, and six new
+  config-mutation cases proving the handoff policy is genuinely config-driven.
+- **Roadmap**: `Milestone 2.5 - Engineering Handoff Readiness`, with the
+  dependency chain `1 -> 2 -> 2.5 -> 3 -> 4 -> 5`. Milestones 6 to 8 keep their
+  original intent.
+- **Experimental Linux CI leg** running the full suite under `pwsh`, marked
+  non-blocking. It exists to produce evidence for the cross-platform claim
+  rather than assertions about it.
+
+### Fixed
+
+- **Test runners could not run on PowerShell 7.** Every child invocation was
+  hardcoded to `powershell`, which does not resolve outside Windows PowerShell
+  5.1, so the entire fixture suite reported `PASS=0 FAIL=95` on any other host
+  for reasons unrelated to the validator. Added `scripts/lib/pwsh-host.ps1`,
+  which resolves `AXIOM_PWSH`, then the running host's own executable, then
+  `pwsh` / `powershell` / `powershell.exe`.
+- **A count rendered as empty in a diagnostic message.** `Where-Object` results
+  were used without `@()`, so a pipeline matching exactly one row returned a
+  bare object whose `.Count` rendered as nothing: `" requirement line(s) may be
+  missing source_ref"`. Fixed in `source-validator.ps1`, `workitem-validator.ps1`,
+  and `pmo-doctor.ps1`. Two golden masters had recorded the defective message and
+  were corrected.
+- **Generated dates used the wrong calendar.** `Get-Date -Format` follows the
+  current culture, so on a machine with a Thai locale every generated project
+  was dated in the Buddhist year (`2569-07-26`). `scripts/new-project.ps1`,
+  `scripts/update-source-snapshot.ps1`, and the E2E filler now format with
+  `InvariantCulture`.
+- **Golden masters were host-specific.** UTF-8 BOM, JSON indentation, numeric
+  character escapes, and path separators all differ between PowerShell hosts, so
+  `-VerifyGolden` reported all 90 cases as mismatched whenever the verifying
+  host differed from the capturing one. `scripts/lib/golden-normalizer.ps1`
+  compares canonically; rule ids, levels, blocking flags, messages, counters, and
+  exit codes are all still compared exactly. Golden files are now stored in that
+  canonical form, so a capture on any host produces the same bytes.
+- **`axiom handoff --json` did not emit JSON.** It streamed two JSON documents
+  with human-readable labels between them, which no parser accepts despite
+  `--json` being advertised. The two steps are now merged into a single
+  versioned envelope, `{schema_version, gate, assessment}`.
+- **The CLI truncated large JSON output at 8 KB.** `process.exit()` tears the
+  process down before an asynchronous pipe write drains, so the envelope looked
+  correct in a terminal (a TTY flushes synchronously) and failed to parse under
+  `| jq`. The CLI now sets `process.exitCode` and lets Node exit naturally.
+- **An empty `AllowedSecondaryRules` disabled the check it was meant to
+  tighten.** `@()` is falsy in PowerShell, so a fixture declaring "this must
+  fire nothing else" asserted nothing at all. The runner now tests for key
+  presence, and every handoff negative fixture genuinely isolates its rule.
+- **The release helper suggested the previous release's tag.**
+  `scripts/prepare-public-release.ps1` hardcoded `v1.0.0`; it now derives the
+  tag and commit message from `VERSION`. A helper that names a stale version
+  reads as authoritative, and the version it prints is the one that gets typed.
+- **A vague privacy declaration bypassed `HANDOFF-011`.** Anything that was not
+  a recognised "yes" was treated as "no", so a `Contains Sensitive Data` cell
+  reading `maybe` skipped the classification requirement entirely. An
+  unrecognised value is now an *undeclared* classification and fails. The
+  validator still never decides what is sensitive — it insists the author does.
+- **A blocked demo could still score 100/100.** Open actions blocked a stage
+  verdict without costing score, so the report printed a perfect number
+  directly above `Ready to Demo: NO`. Open actions now cost points in the
+  dimension their blocking point belongs to.
+- **Human-only closure rested on a self-declared `reviewer_kind`.** Writing
+  `"human"` in the review was enough to close a privacy finding. Closure under
+  a human-only lens now requires a `DEC-###` that exists in `decision-log.md`
+  with a named decider. This makes the closure traceable to a governed
+  artifact, not provably human — a limit now stated in the release notes rather
+  than implied away.
+
+### Changed
+
+- `pmo-config/policy.json` gains `approval_checkpoints`, replacing the hardcoded
+  gate-to-approval mapping in `source-validator.ps1`. This is how the Handoff
+  gate reuses `Design Ready` without a code change.
+- `pmo-config/artifact-policy.json` gains a `Handoff` column per mode. Handoff
+  artifacts are reported only when the matrix asks for them, so runs at other
+  gates are unchanged.
+- Text output attaches an indented `where:` / `fix:` / `docs:` block to WARN and
+  FAIL rows only. A clean run reads exactly as it did in 1.0.
+
+### Compatibility
+
+- The v1.0 diagnostic fields `level`, `rule_id`, `message`, and `blocking` keep
+  their names, meanings, and relative order. A v1.0 consumer reads v1.1 output
+  without changes.
+- New fields are always present and `null` when they do not apply -- never
+  omitted, never `""`.
+- Exit codes are unchanged: `0` pass, `1` fail, `2` blocking warning under
+  `-FailOnWarning`. The CLI adds `127` for a missing PowerShell host and `64`
+  for a usage error, neither of which the validator itself emits.
+- Golden masters were intentionally re-captured for the additive diagnostic
+  fields. The diff was reviewed group by group and is additive only: no existing
+  field changed name, value, or position.
+- **Migration**: none required. To adopt the gate, add `HANDOFF.md` and (for
+  Standard/Strict) `DESIGN/BUILD-SPEC.md`, then run `-Gate Handoff`.
+
 ## 1.0.0 - 2026-07-14
 
 First public release, published as **Axiom-PMO — The Anti-Hallucination

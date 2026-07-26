@@ -15,6 +15,7 @@ This file is guidance. The machine-readable map is `pmo-config/context-map.json`
 | Flow / design | `PROJECT.md`, `DESIGN/` | Only for unclear source-backed logic | delivery/release docs |
 | Wireframe | `PROJECT.md`, `DESIGN/FLOW.puml` | Only for missing UX rules | all MOM/transcripts |
 | Handoff / task breakdown | `PROJECT.md`, `DESIGN/`, `DELIVERY.md` | Only for missing requirement detail | release docs |
+| Handoff readiness review | `PROJECT.md`, `DELIVERY.md`, `HANDOFF.md`, `DESIGN/BUILD-SPEC.md`, `RAID-log.md`, `decision-log.md` | Only rows already cited in `PROJECT.md` | release docs, unrelated design |
 | Dev report / review | `DELIVERY.md`, relevant design, user-provided dev note | No unless scope is disputed | all source docs |
 | QA / bug | `DELIVERY.md`, `RAID-log.md`, `RELEASE.md` | Only if expected behavior is unclear | unrelated design docs |
 | Release | `RELEASE.md`, `RAID-log.md`, `decision-log.md`, `DELIVERY.md` | Only for unresolved acceptance disputes | all skills |

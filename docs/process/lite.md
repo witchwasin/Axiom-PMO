@@ -21,6 +21,10 @@ Requirement -> Acceptance Criteria -> Develop -> Test -> Done
 - Reopen source only when the summary is missing, disputed, or ambiguous.
 - Do not create Use Case, full System Flow, or Wireframe unless the feature needs it.
 - Log only scope changes, decisions, and meaningful risks.
+- Handing the item to someone else? A Lite handoff needs only `HANDOFF.md`
+  (`DESIGN/BUILD-SPEC.md` is not required at Lite), and a generic owner is a
+  warning rather than a failure. Run `-Gate Handoff` in that case; skip it when
+  the person who scoped the item is the person building it.
 
 ## Exit Criteria
 
