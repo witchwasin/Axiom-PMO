@@ -19,7 +19,10 @@ if (-not (Test-Path -LiteralPath $sourceRoot -PathType Container)) {
   throw "No source directory found: $sourceRoot"
 }
 
-$syncedAt = Get-Date -Format "yyyy-MM-ddTHH:mm:ssK"
+# InvariantCulture: see scripts/new-project.ps1 -- the default formatter
+# emits a Buddhist year under a Thai culture, which would silently write a
+# non-Gregorian timestamp into every Source Snapshot row.
+$syncedAt = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ssK", [Globalization.CultureInfo]::InvariantCulture)
 $rows = @()
 foreach ($file in Get-ChildItem -LiteralPath $sourceRoot -Recurse -File) {
   $relative = $file.FullName.Substring($project.Length).TrimStart("\", "/") -replace "\\", "/"

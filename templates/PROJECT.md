@@ -73,6 +73,10 @@ One-sentence project outcome:
 
 ## Approvals
 
+> These three are the only human approvals in the framework. The `Handoff`
+> validation gate adds none of its own -- it reuses `Design Ready`. Only a human
+> may move a row from `pending` to `approved`.
+
 | Gate | Approval Status | Approver | Role | Date | Evidence |
 |---|---|---|---|---|---|
 | Scope Approved | pending | <approver name> | Product Owner | YYYY-MM-DD | DEC-001 |

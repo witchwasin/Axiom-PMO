@@ -6,7 +6,7 @@ param(
   [ValidateSet("Lite", "Standard", "Strict")]
   [string]$Mode = "Standard",
 
-  [ValidateSet("Draft", "Scope", "Design", "Release")]
+  [ValidateSet("Draft", "Scope", "Design", "Handoff", "Release")]
   [string]$Gate = "Draft",
 
   [switch]$Release,
@@ -45,6 +45,7 @@ $repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
 . (Join-Path $PSScriptRoot "lib/workitem-validator.ps1")
 . (Join-Path $PSScriptRoot "lib/rtm-validator.ps1")
 . (Join-Path $PSScriptRoot "lib/release-validator.ps1")
+. (Join-Path $PSScriptRoot "lib/handoff-validator.ps1")
 
 $cfg = Import-PmoConfig -RepoRoot $repoRoot
 $policy = $cfg.Policy
@@ -52,6 +53,10 @@ $policyEnums = $cfg.PolicyEnums
 $sentinelRules = $cfg.SentinelRules
 $artifactPolicy = $cfg.ArtifactPolicy
 $referenceTypesConfig = $cfg.ReferenceTypesConfig
+# Rule catalog is read by Add-Result to attach suggestion/documentation_url to
+# every actionable diagnostic (see lib/result-writer.ps1).
+$ruleCatalog = $cfg.ValidationRules
+$handoffPolicy = $cfg.HandoffPolicy
 
 $pass = 0
 $warn = 0
@@ -107,6 +112,13 @@ $releaseRegistry = $releaseResult.ReleaseRegistry
 Test-ReleaseScopeCompletion -WorkItems $workItems -ReleaseText $releaseText -Mode $Mode -Gate $Gate -DecisionIds $decisionIds -ReleaseRegistry $releaseRegistry
 
 Test-StrictReleaseGuardrails -Project $project -Mode $Mode -Gate $Gate -ProjectReqIds $projectReqIds -DeliveryIds $deliveryIds -DecisionIds $decisionIds -ReleaseRegistry $releaseRegistry -ProjectSourceIds $projectSourceIds
+
+# Handoff checks run only when the caller asks for -Gate Handoff. Every other
+# gate behaves exactly as it did in v1.0; adding the gate does not retro-apply
+# handoff requirements to Draft/Scope/Design/Release runs.
+if ($Gate -eq "Handoff") {
+  Test-HandoffReadiness -Project $project -Mode $Mode -Gate $Gate -HandoffPolicy $handoffPolicy -PolicyEnums $policyEnums -WorkItems $workItems -DeliveryIds $deliveryIds -ProjectReqIds $projectReqIds -DecisionIds $decisionIds -ProjectText $projectText
+}
 
 Test-SensitiveFilenames -AllProjectFiles $allProjectFiles
 

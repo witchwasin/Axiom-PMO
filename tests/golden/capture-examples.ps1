@@ -3,6 +3,15 @@ param(
   [switch]$Verify
 )
 $ErrorActionPreference = "Stop"
+
+. (Join-Path $PSScriptRoot "../../scripts/lib/pwsh-host.ps1")
+. (Join-Path $PSScriptRoot "../../scripts/lib/golden-normalizer.ps1")
+
+$pwshExe = Get-PowerShellHost
+if (-not $pwshExe) {
+  Write-Host (Get-PowerShellHostMissingMessage)
+  exit 127
+}
 $repo = (Resolve-Path -LiteralPath $RepoPath).Path
 $validator = Join-Path $repo "scripts/validate-project.ps1"
 $goldenDir = Join-Path $repo "tests/golden"
@@ -20,7 +29,7 @@ foreach ($c in $cmds) {
   $psArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $validator, "-ProjectPath", $projectPath, "-Mode", $c.Mode, "-Gate", $c.Gate, "-Format", "Json", "-FailOnWarning")
   $prevEAP = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
-  $output = & powershell @psArgs 2>$null
+  $output = & $pwshExe @psArgs 2>$null
   $exitCode = $LASTEXITCODE
   $ErrorActionPreference = $prevEAP
   $raw = ($output | Out-String).TrimEnd() + "`nEXIT_CODE=$exitCode"
@@ -36,13 +45,16 @@ foreach ($c in $cmds) {
     if (-not (Test-Path -LiteralPath $file)) {
       $mismatches += "$($c.Name): no golden file"
     } else {
-      # Normalized line endings: git text normalization rewrites golden files
-      # on checkout, so byte-exact comparison false-flags after a round-trip.
-      $expected = ((Get-Content -LiteralPath $file -Raw) -replace "`r`n", "`n").TrimEnd()
-      if ($expected -ne ($raw -replace "`r`n", "`n").TrimEnd()) { $mismatches += "$($c.Name): differs" }
+      # Canonical comparison (scripts/lib/golden-normalizer.ps1): git text
+      # normalization rewrites golden files on checkout and the JSON
+      # pretty-printer differs between PowerShell hosts, so byte-exact
+      # comparison false-flags without catching any real behavior change.
+      $expected = Get-Content -LiteralPath $file -Raw
+      if (-not (Test-GoldenMatch -Expected $expected -Actual $raw)) { $mismatches += "$($c.Name): differs" }
     }
   } else {
-    Set-Content -LiteralPath $file -Value $raw -NoNewline -Encoding utf8
+    # Canonical form, so a capture on any PowerShell host produces the same file.
+    Set-Content -LiteralPath $file -Value (Get-CanonicalGoldenText -Text $raw) -NoNewline -Encoding utf8
     Write-Host "Captured $($c.Name)"
   }
 }

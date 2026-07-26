@@ -11,6 +11,8 @@ condition.
 | Silently expanding scope | Scope is approved at a gate; work items declare mode and triggers; out-of-scope is explicit. |
 | Claiming unverified test/QA evidence | Test and review claims must resolve to typed references; unresolvable evidence blocks the gate. |
 | Fabricating approvals | Approvals are validated against declared roles and gates; a bare "approved-by-chat" string does not pass. |
+| Presenting a review as an approval | A semantic handoff review is recorded as candidate evidence with a reviewer kind, per-finding owners, and a freshness digest. It cannot move an approval row, and `HANDOFF-010` checks only that it exists and is current — never that it was right. |
+| Guessing domain meaning in a rule | The validator checks declarations, not semantics. It will not decide that a photograph is personal data or that a scanner needs a secure context; those judgements are the reviewer's, and they need a named human to close. |
 | Losing traceability | Source → requirement → design → delivery → test → evidence → release is checked row by row (RTM in Strict). |
 | Crossing authority boundaries | Git mutations and release approval require explicit human confirmation. |
 

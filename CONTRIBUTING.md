@@ -49,14 +49,38 @@ Or, with `make`: `make check`. Everything must exit 0 before you open a PR.
    `scripts/lib/*.ps1`, or `scripts/pmo-doctor.ps1` via `Add-Result <LEVEL>
    "<message>" "<RULE-ID>"`. Levels: `PASS`, `INFO`, `WARN`, `FAIL` (and the
    release-only `fail_release` severity is expressed in the catalog).
-2. **Register it** in `pmo-config/validation-rules.json` with a `severity` and a
-   `description`. `DOCTOR-007` reconciles emitted rule ids against the catalog in
-   **both** directions — a rule you emit but don't register, or register but
-   never emit, fails the doctor. Keep them in sync.
-3. **Decide severity deliberately.** `info` never blocks; `warn` blocks only
+2. **Register it** in `pmo-config/validation-rules.json` with a `severity`, a
+   `description`, and a **`suggestion`**. `DOCTOR-007` reconciles emitted rule
+   ids against the catalog in **both** directions — a rule you emit but don't
+   register, or register but never emit, fails the doctor. `DOCTOR-008` fails
+   any fail/warn rule with no suggestion: a diagnostic that says what broke but
+   not what to do is the failure mode the diagnostics contract exists to
+   prevent.
+3. **Write a doc page** if the rule is actionable enough to deserve one, and
+   point `documentation` at it (`docs/rules/<RULE-ID>.md`). `DOCTOR-009` fails
+   when the path does not resolve, so a diagnostic can never advertise a dead
+   link. A rule page answers four things: what is checked, why it blocks, **what
+   the validator deliberately does not decide**, and how to fix it.
+4. **Pass location context.** `Add-Result` accepts `-Artifact`, `-ItemId`, and
+   `-Field` after `-Blocking`. Supply them wherever the check knows them; a
+   consumer annotating a pull request needs the file and row, not just a
+   message.
+5. **Decide severity deliberately.** `info` never blocks; `warn` blocks only
    under `-FailOnWarning`; `fail` always blocks; `fail_release` blocks a Release
    gate. Prefer the least severe level that still controls the risk — but do not
    downgrade an existing blocking rule without a documented reason.
+
+### Rules must not guess
+
+A rule may check that a declaration is present, complete, resolvable, and
+internally consistent. It may **not** infer domain meaning — that a photograph is
+personal data, that a stock feature needs a receive operation, that a scanner
+needs a secure context. Those are true in some domains and wrong in others, and a
+validator that guesses wrong teaches people to ignore it.
+
+Judgement of that kind belongs to the semantic review layer, recorded in
+`HANDOFF-REVIEW.json`. See
+[handoff readiness](docs/concepts/handoff-readiness.md) for the boundary.
 
 ## How to add fixtures
 
@@ -71,7 +95,11 @@ needs **both** a positive fixture (the rule passes when it should) and a
    `scripts/run-validation-tests.ps1`: `Name`, `Path`, `Mode`, `Gate`,
    `ShouldPass`, `Rule`, `ExpectedLevel`, `Type`, plus optional `FailOnWarning`,
    `AllowedSecondaryRules`, `ForbiddenRules`.
-3. A negative fixture that must not ship a real secret still needs its sensitive
+3. **Isolate the rule.** A negative fixture should fire the rule under test and
+   nothing else. When a mutation trips an unrelated rule too, either narrow the
+   mutation or list the extra rule in `AllowedSecondaryRules` — never leave it
+   implicit.
+4. A negative fixture that must not ship a real secret still needs its sensitive
    file — see the scoped `.gitignore` negation for the synthetic `Quotation.xlsx`
    placeholder as the pattern to follow.
 
@@ -84,24 +112,44 @@ behavioral change is **intentional and reviewed**.
   `-VerifyGolden` checks. Paths are normalized to `<REPO_ROOT>` for portability.
 - Example goldens: `tests/golden/capture-examples.ps1` captures,
   `-Verify` checks (also `<REPO_ROOT>`-normalized).
+- Comparison is canonical, not byte-exact: `scripts/lib/golden-normalizer.ps1`
+  folds away the BOM, line endings, JSON indentation, numeric character escapes,
+  and path separators, because those differ between PowerShell hosts and are not
+  part of the diagnostic contract. Rule ids, levels, blocking flags, messages,
+  counters, and exit codes are still compared exactly.
+- **Review before you capture.** Diff the current output against the stored
+  golden and confirm every change is the one you intended. The useful question is
+  narrower than "did anything change": *did any FAIL or WARN row change?* A diff
+  confined to PASS rows is a reporting change; a changed FAIL row is a behavior
+  change and needs its own justification.
 - In your PR, **explain the diff**: which rule changed, why, and confirm no rule
   was silently downgraded. A golden diff with no rationale is a red flag.
 
 ## How to add a mode or policy
 
 Modes, gates, statuses, evidence statuses, strict triggers, approval roles,
-table schemas, and git-authority live in `pmo-config/policy.json` and the
-Mode×Gate artifact matrix in `pmo-config/artifact-policy.json`. Because these
-files are load-bearing, add or extend a scenario in
+approval checkpoints, table schemas, and git-authority live in
+`pmo-config/policy.json`; the Mode×Gate artifact matrix in
+`pmo-config/artifact-policy.json`; handoff artifacts, review lenses, blocking
+points, owner tokens, build-spec sections, and readiness scoring in
+`pmo-config/handoff-policy.json`.
+
+Because these files are load-bearing, add or extend a scenario in
 `tests/helpers/config-mutation-tests.ps1` proving that mutating your new policy
 actually changes validator behavior — a policy no test can move is decoration.
+
+No hardcoded fallbacks. If a config file is missing or malformed the validator
+must fail, not guess.
 
 ## Pull-request expectations
 
 Use the PR template. In particular:
 
 - Tests added, including a **negative** fixture for any new rule.
-- Golden diffs reviewed and explained.
+- A `suggestion` for any new fail/warn rule, and a `docs/rules/` page where the
+  rule is actionable.
+- Golden diffs reviewed and explained, with FAIL/WARN changes called out
+  separately from PASS-only changes.
 - No validation weakening (or an explicit, justified policy decision).
 - Docs updated when behavior or configuration changed.
 - No private data (paths, handles, secrets, customer material).

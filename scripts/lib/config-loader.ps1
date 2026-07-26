@@ -24,12 +24,30 @@ function Import-PmoConfig {
   }
   $referenceTypesConfig = Get-Content -LiteralPath $referenceTypesPath -Raw | ConvertFrom-Json
 
+  # The rule catalog is a runtime input, not just doctor documentation: it
+  # supplies the `suggestion` and `documentation_url` carried on every
+  # structured diagnostic. Loading it here keeps one parse per run and keeps
+  # the "no silent fallback" rule -- a missing catalog is a hard error.
+  $validationRulesPath = Join-Path $RepoRoot "pmo-config/validation-rules.json"
+  if (-not (Test-Path -LiteralPath $validationRulesPath -PathType Leaf)) {
+    throw "Missing runtime validation-rules config: $validationRulesPath"
+  }
+  $validationRules = Get-Content -LiteralPath $validationRulesPath -Raw | ConvertFrom-Json
+
+  $handoffPolicyPath = Join-Path $RepoRoot "pmo-config/handoff-policy.json"
+  if (-not (Test-Path -LiteralPath $handoffPolicyPath -PathType Leaf)) {
+    throw "Missing runtime handoff policy config: $handoffPolicyPath"
+  }
+  $handoffPolicy = Get-Content -LiteralPath $handoffPolicyPath -Raw | ConvertFrom-Json
+
   return [pscustomobject]@{
     Policy = $policy
     PolicyEnums = $policy.enums
     SentinelRules = $policy.sentinel_rules
     ArtifactPolicy = $artifactPolicy
     ReferenceTypesConfig = $referenceTypesConfig
+    ValidationRules = $validationRules
+    HandoffPolicy = $handoffPolicy
   }
 }
 

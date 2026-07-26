@@ -67,14 +67,19 @@ function Test-ProjectSourceSection {
     Add-Result $noReqLevel "No REQ-### entries found in PROJECT.md" "SOURCE-001"
   } else {
     $projectReqIds = Get-IdsFromRows $reqRows
-    $duplicateIds = $projectReqIds | Group-Object | Where-Object { $_.Count -gt 1 }
+    # @() around every Where-Object result: a pipeline that matches exactly one
+    # row returns the bare object, not a one-element array, and Windows
+    # PowerShell 5.1 then renders "$($x.Count)" as empty -- which is how the
+    # golden master came to record " requirement line(s) may be missing
+    # source_ref" with no number in front of it.
+    $duplicateIds = @($projectReqIds | Group-Object | Where-Object { $_.Count -gt 1 })
     if ($duplicateIds.Count -gt 0) {
       Add-Result FAIL "Duplicate requirement IDs: $($duplicateIds.Name -join ', ')" "SOURCE-003"
     }
 
-    $missingSource = $reqRows | Where-Object { $_.'Source Ref' -notmatch $SourceRefRegex }
+    $missingSource = @($reqRows | Where-Object { $_.'Source Ref' -notmatch $SourceRefRegex })
     $validEvidence = @($PolicyEnums.evidence_statuses)
-    $missingEvidence = $reqRows | Where-Object { $validEvidence -notcontains $_.'Evidence Status' }
+    $missingEvidence = @($reqRows | Where-Object { $validEvidence -notcontains $_.'Evidence Status' })
     $missingLevel = if ($Gate -eq "Release") { "FAIL" } else { "WARN" }
 
     if ($missingSource.Count -eq 0) {
@@ -96,15 +101,24 @@ function Test-ProjectSourceSection {
   $projectSourceIds = @($sourceRows | Where-Object { $_.'Source ID' } | ForEach-Object { $_.'Source ID'.Trim() } | Sort-Object -Unique)
   $projectBusinessIds = Get-IdsFromRows (Get-TableRowsAfterHeading $ProjectText '^##\s+Business Rules')
 
+  # Which approval must already exist at which gate is policy, not code. The
+  # Handoff gate was added by listing it in policy.json approval_checkpoints --
+  # it deliberately reuses Design Ready and introduces no approval of its own.
+  # Evaluation order is fixed here (not taken from JSON key order) so the
+  # result sequence stays stable across hosts and JSON parsers.
   $requireDecisionEvidence = ($Mode -ne "Lite")
-  if ($Gate -in @("Scope", "Design", "Release")) {
-    Test-Approval $ProjectText "Scope Approved" $DecisionIds $requireDecisionEvidence $Mode
+  $checkpoints = $script:policy.approval_checkpoints
+  if (-not $checkpoints) {
+    throw "policy.json is missing approval_checkpoints; refusing to guess which approvals a gate requires."
   }
-  if ($Gate -in @("Design", "Release") -and $Mode -ne "Lite") {
-    Test-Approval $ProjectText "Design Ready" $DecisionIds $requireDecisionEvidence $Mode
-  }
-  if ($Gate -eq "Release") {
-    Test-Approval $ProjectText "Release Approved" $DecisionIds $requireDecisionEvidence $Mode
+  foreach ($approvalGate in @("Scope Approved", "Design Ready", "Release Approved")) {
+    $spec = $checkpoints.PSObject.Properties[$approvalGate]
+    if (-not $spec) { continue }
+    $gates = @($spec.Value.gates)
+    $exemptModes = @($spec.Value.exempt_modes)
+    if ($gates -notcontains $Gate) { continue }
+    if ($exemptModes -contains $Mode) { continue }
+    Test-Approval $ProjectText $approvalGate $DecisionIds $requireDecisionEvidence $Mode
   }
 
   if ($Mode -ne "Lite" -and $projectSourceIds.Count -gt 0 -and $reqRows.Count -gt 0) {
