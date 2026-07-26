@@ -104,6 +104,16 @@ Assert-True "the blocking open action is named in the output" `
 Assert-True "open actions and review findings are distinguishable by origin" `
   (@($demo.semantic_review.open_blockers | Where-Object { $_.origin -eq "review_finding" }).Count -gt 0)
 
+# A score that contradicts the verdict printed above it is worse than no score:
+# the number is what ends up in a status report.
+Assert-True "an open action costs score, not only a stage verdict" `
+  ($openAction.score.awarded -lt $openAction.score.total) `
+  "score=$($openAction.score.awarded)/$($openAction.score.total) with Ready to Demo = $($openAction.verdicts.'Ready to Demo')"
+Assert-True "a project that blocks its own demo never scores full marks" `
+  (($openAction.verdicts.'Ready to Demo' -eq $false) -and ($openAction.score.awarded -lt 100))
+Assert-True "a non_blocking action costs nothing" `
+  ($openAction.score.dimensions | Where-Object { $_.id -eq "source_scope_integrity" } | ForEach-Object { $_.awarded -eq $_.points })
+
 # ---- A finding that names an action is one blocker, not two.
 Assert-True "a review finding pointing at an action id is not double-counted" `
   (@($demo.semantic_review.open_blockers | Where-Object { $_.finding_id -eq "OA-002" }).Count -eq 0) `

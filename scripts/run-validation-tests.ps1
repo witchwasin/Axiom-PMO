@@ -177,7 +177,14 @@ $cases = @(
   @{ Name = "handoff-environment-freetext-decision"; Path = "tests/fixtures/invalid-handoff-environment-freetext-decision"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-012"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
   @{ Name = "handoff-mode-mismatch"; Path = "tests/fixtures/invalid-handoff-mode-mismatch"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-001"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
   @{ Name = "handoff-horizon-not-a-date"; Path = "tests/fixtures/invalid-handoff-horizon-not-a-date"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-001"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
-  @{ Name = "handoff-buildspec-ref-missing"; Path = "tests/fixtures/invalid-handoff-buildspec-ref-missing"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-001"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() }
+  @{ Name = "handoff-buildspec-ref-missing"; Path = "tests/fixtures/invalid-handoff-buildspec-ref-missing"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-001"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+
+  # A vague classification is an undeclared one, and a human-only closure has to
+  # be anchored to a decision somebody signed. Both were ways to pass the gate
+  # without producing the evidence it claims to require.
+  @{ Name = "handoff-sensitive-undeclared"; Path = "tests/fixtures/invalid-handoff-sensitive-undeclared"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-011"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-human-closure-generic-decider"; Path = "tests/fixtures/invalid-handoff-human-closure-generic-decider"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-010"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+  @{ Name = "handoff-human-closure-no-decision-log"; Path = "tests/fixtures/invalid-handoff-human-closure-no-decision-log"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-010"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() }
 )
 
 $doctorCases = @(

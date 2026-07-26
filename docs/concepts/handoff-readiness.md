@@ -77,6 +77,8 @@ Recording a review is only half the control. The other half is that closing a fi
 
 The intended shape is that an AI drafts the review and a human signs it. An instruction telling an agent not to close a privacy finding is not a control; a rule that fails the gate when it does is.
 
+`reviewer_kind` is a self-declaration, and no offline validator can prove who typed it. So the check does not rest on that word: a closure under a human-only lens must cite a `DEC-###` that exists in `decision-log.md` with a named decider. That makes the closure **traceable to a governed artifact**, not **provably human**. Provable attribution needs signed commits or a reviewed pull request, both outside this validator.
+
 ---
 
 ## Readiness is not one boolean
@@ -138,7 +140,7 @@ The assessment produces a number out of 100 across seven dimensions. It exists t
 | max 69 | no named owner, or the build sequence is not executable |
 | max 49 | an open critical finding blocks `before_build` |
 
-Open findings also cost points in the dimension their lens belongs to, so a project cannot score full marks while its own review says the demonstration will fail.
+Open findings cost points in the dimension their lens belongs to, and open actions cost points in the dimension their blocking point belongs to. A project therefore cannot score full marks while its own documents say the demonstration will fail — a number printed directly above `Ready to Demo: NO` and reading `100 / 100` is worse than no number, because the number is what ends up in a status report.
 
 **The score is not an approval.** It does not transfer accountability, and no gate may be passed on the strength of it. A team that starts optimising the number instead of the plan has turned a diagnostic into a target, which is the failure mode this framework was built to avoid in the first place.
 
