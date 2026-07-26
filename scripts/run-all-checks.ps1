@@ -49,7 +49,16 @@ if ($TestChildScript) {
 }
 
 Invoke-Check "pmo-doctor" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/pmo-doctor.ps1") -RepoPath $repo }
-Invoke-Check "validation-fixtures" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/run-validation-tests.ps1") -RepoPath $repo }
+# -VerifyGolden here rather than as a separate CI step. Running the fixture
+# matrix is by far the most expensive thing this suite does -- 148 child
+# PowerShell processes -- and verifying the goldens re-runs every one of those
+# cases. Doing both in one pass costs nothing extra and saves the entire second
+# pass; measured at ~2.5 minutes per CI run, growing with every fixture added.
+Invoke-Check "validation-fixtures" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/run-validation-tests.ps1") -RepoPath $repo -VerifyGolden }
+# The example goldens were verified nowhere: not here, and not in the workflow.
+# They are cheap (three cases) and they are what proves the README's worked
+# examples still produce what the docs say they produce.
+Invoke-Check "example-golden" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/golden/capture-examples.ps1") -RepoPath $repo -Verify }
 Invoke-Check "config-mutation" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/config-mutation-tests.ps1") -RepoPath $repo }
 Invoke-Check "diagnostics-contract" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/diagnostics-contract-tests.ps1") -RepoPath $repo }
 Invoke-Check "line-endings" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/line-ending-tests.ps1") -RepoPath $repo }

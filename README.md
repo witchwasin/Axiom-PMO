@@ -251,7 +251,7 @@ its scripts, configs, and skills are internally consistent:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1            # framework health
 powershell -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1  # positive/negative fixture matrix + golden master
-powershell -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1        # everything + config-mutation + end-to-end
+powershell -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1        # everything: goldens, config-mutation, end-to-end, CLI
 ```
 
 The test suite includes a positive/negative fixture matrix, golden masters,
