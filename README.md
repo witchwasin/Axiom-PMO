@@ -1,6 +1,8 @@
 <!-- markdownlint-disable MD033 MD041 -->
 <div align="center">
 
+<img src="Slide%20Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-logo-primary.svg" alt="Axiom-PMO — The governance control plane for AI-assisted software delivery." width="520">
+
 # Axiom-PMO
 
 ### The Anti-Hallucination Framework for AI Agents
@@ -339,6 +341,41 @@ interoperability docs. The one hard rule: **do not weaken governance to make
 tests pass.** See [`CONTRIBUTING.md`](CONTRIBUTING.md) and
 [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). AI-assisted contributions are welcome
 but must be disclosed and human-reviewed.
+
+## Brand and Visual Identity
+
+Axiom-PMO uses a Swiss-minimal visual system inspired by engineering
+documentation: quiet, inspectable, and precise.
+
+The primary mark is the **Axiom Gate** — a geometric *A* with a red control
+boundary. It represents the point where AI-assisted work must stop until
+evidence, policy, or human approval allows it to proceed. AI can build;
+Axiom-PMO verifies the source, scope, evidence, and authority behind the work.
+
+<p align="center">
+  <img src="Slide%20Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-brand-board-en.svg" alt="Axiom-PMO brand board" width="780">
+</p>
+
+Brand assets live under
+[`Slide Deck/axiom_pmo_overview_ppt169_20260726/images/`](Slide%20Deck/axiom_pmo_overview_ppt169_20260726/images):
+
+- [`axiom-pmo-logo-primary.svg`](Slide%20Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-logo-primary.svg) — primary logo for documentation and presentation
+- [`axiom-pmo-mark.svg`](Slide%20Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-mark.svg) — the Axiom Gate mark for compact placements
+- [`axiom-pmo-logo-monochrome.svg`](Slide%20Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-logo-monochrome.svg) — single-color variant
+- [`axiom-pmo-slide-signature.svg`](Slide%20Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-slide-signature.svg) — header/footer lockup for slides
+
+[View the full brand board](Slide%20Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-brand-board-en.svg).
+
+| Token | Hex | Use |
+|---|---|---|
+| Graphite | `#14161A` | Structure and type |
+| Control Red | `#D6360B` | The gate — boundaries and warnings |
+| Verified Green | `#2E6B5E` | Approved, evidence-backed states |
+| Grid | `#DEDDD8` | Dividers and rules |
+| Warm White | `#FAFAF8` | Surface |
+
+Typography: Tahoma / Arial (sans-serif) for voice; Consolas / Courier New
+(monospace) for data and labels.
 
 ## Documentation
 

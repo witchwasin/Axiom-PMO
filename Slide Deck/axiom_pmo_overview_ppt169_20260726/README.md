@@ -17,3 +17,17 @@
 - `validation/`: SVG quality reports and PPTX postflight audit reports
 - `exports/`: final native DrawingML pptx deliverables only (timestamped); `_native_charts_tables.pptx` name with `--native-charts-and-tables`, `_narrated.pptx` name when narration audio is embedded
 - `backup/<timestamp>/`: svg_output/ archive (always written in default-flow mode; safe to delete old timestamps)
+
+## Brand Assets
+
+The deck ships a starter brand identity for Axiom-PMO in `images/`:
+
+- `axiom-pmo-logo-primary.svg` — primary logo for general presentation and documentation use
+- `axiom-pmo-mark.svg` — the Axiom Gate mark for compact placements
+- `axiom-pmo-logo-monochrome.svg` — single-color variant for low-contrast backgrounds
+- `axiom-pmo-slide-signature.svg` — header/footer lockup for slide headers and footers
+
+The brand board (positioning, palette, typography, dark-background application) is available as:
+
+- `images/axiom-pmo-brand-board-en.svg`
+- `images/axiom-pmo-brand-board.svg`

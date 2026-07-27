@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="96" viewBox="0 0 480 96" role="img" aria-labelledby="title desc">
+  <title id="title">Axiom-PMO slide signature</title>
+  <desc id="desc">A compact Axiom Gate mark and Axiom-PMO wordmark for presentation headers and footers.</desc>
+  <g transform="translate(8 8) scale(0.15625)">
+    <path d="M76 432L190 80H254L140 432H76Z" fill="#14161A"/>
+    <path d="M258 80H322L436 432H372L258 80Z" fill="#14161A"/>
+    <rect x="142" y="286" width="228" height="48" fill="#D6360B"/>
+    <rect x="76" y="432" width="360" height="16" fill="#14161A"/>
+  </g>
+  <text x="98" y="49" font-family="Tahoma, Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="0.6" fill="#14161A">AXIOM-PMO</text>
+  <rect x="100" y="63" width="34" height="4" fill="#D6360B"/>
+  <text x="146" y="69" font-family="Consolas, Courier New, monospace" font-size="13" font-weight="400" letter-spacing="1.4" fill="#3A3F45">GOVERNANCE CONTROL PLANE</text>
+</svg>
