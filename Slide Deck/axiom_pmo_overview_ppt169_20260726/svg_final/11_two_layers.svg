@@ -11,7 +11,7 @@
   <g id="p11-layer1" data-pptx-bounds="72 234 548 268">
     <rect x="72" y="240" width="548" height="52" fill="#14161A" />
     <text x="96" y="274" font-family="Tahoma, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">Layer 1 — Deterministic</text>
-    
+
   <g transform="translate(568, 252) scale(1.25)" fill="none" stroke="#FFFFFF" stroke-width="2">
     <path d="M6 20a2 2 0 1 0 -4 0a2 2 0 0 0 4 0" />
     <path d="M16 4a2 2 0 1 0 -4 0a2 2 0 0 0 4 0" />
@@ -34,7 +34,7 @@
   <g id="p11-layer2" data-pptx-bounds="660 234 548 268">
     <rect x="660" y="240" width="548" height="52" fill="#2E6B5E" />
     <text x="684" y="274" font-family="Tahoma, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">Layer 2 — Semantic review</text>
-    
+
   <g transform="translate(1156, 252) scale(1.25)" fill="none" stroke="#FFFFFF" stroke-width="2">
     <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
     <path d="M12 18c-.328 0 -.652 -.017 -.97 -.05c-3.172 -.332 -5.85 -2.315 -8.03 -5.95c2.4 -4 5.4 -6 9 -6c3.465 0 6.374 1.853 8.727 5.558" />

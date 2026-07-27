@@ -1,7 +1,7 @@
 {
   "schema": "ppt-master.svg-quality-report.v1",
   "stage": "first-page",
-  "target": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726",
+  "target": "Slide Deck/axiom_pmo_overview_ppt169_20260726",
   "source_fingerprint": {
     "algorithm": "sha256",
     "digest": "25f6d57653a4e36d1834a2de9db8029a2e3ea921ea9d104305f845af621d94aa",
@@ -56,7 +56,7 @@
   "files": [
     {
       "file": "01_cover.svg",
-      "path": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/01_cover.svg",
+      "path": "Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/01_cover.svg",
       "exists": true,
       "errors": [],
       "warnings": [],

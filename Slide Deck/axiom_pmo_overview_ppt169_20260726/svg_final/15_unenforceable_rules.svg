@@ -33,13 +33,13 @@
   <g id="p15-content" data-pptx-bounds="72 320 1136 220">
     <!-- Left Column: Protection -->
     <text x="72" y="340" font-family="Tahoma, Arial, sans-serif" font-size="24" font-weight="700" fill="#14161A">engine ป้องกันตัวเองยังไง</text>
-    
+
     <rect x="72" y="360" width="12" height="12" fill="#D6360B"/>
     <text x="96" y="372" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">
       <tspan x="96" dy="0">config-mutation test พิสูจน์ว่า JSON policy มีผลจริง</tspan>
       <tspan x="96" dy="24">แก้ policy แล้วกฎต้องเปลี่ยนพฤติกรรม</tspan>
     </text>
-    
+
     <rect x="72" y="408" width="12" height="12" fill="#D6360B"/>
     <text x="96" y="420" font-family="Tahoma, Arial, sans-serif" font-size="18" font-weight="400" fill="#3A3F45">
       <tspan x="96" dy="0">เทสต์ยืนยันว่า scaffold ที่ generate ออกมาใหม่แต่ยังไม่กรอก ต้อง fail ที่ด่าน Handoff</tspan>
@@ -57,7 +57,7 @@
 
     <!-- Right Column: Usage -->
     <text x="660" y="340" font-family="Tahoma, Arial, sans-serif" font-size="24" font-weight="700" fill="#14161A">เริ่มใช้ยังไง</text>
-    
+
     <text x="660" y="372" font-family="Consolas, Courier New, monospace" font-size="18" font-weight="400" fill="#3A3F45">
       <tspan x="660" dy="0">validate-project.ps1 -ProjectPath &lt;project&gt;</tspan>
       <tspan x="680" dy="24">-Mode Standard -Gate Handoff</tspan>
@@ -66,7 +66,7 @@
       <tspan x="660" dy="24">pmo-doctor.ps1</tspan>
       <tspan x="660" dy="24">run-validation-tests.ps1</tspan>
     </text>
-    
+
     <text x="660" y="504" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="400" fill="#3A3F45">exit code: 0 ผ่าน / 1 fail / 2 warning</text>
     <text x="660" y="528" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="400" fill="#3A3F45">Windows PowerShell 5.1 คือขาอ้างอิงที่บล็อกใน CI</text>
   </g>

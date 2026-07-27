@@ -2,7 +2,7 @@
   "schema": "ppt-master.pptx-postflight-report.v1",
   "status": "passed-with-warnings",
   "output": {
-    "path": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726/exports/axiom_pmo_overview_20260726_164009.pptx",
+    "path": "Slide Deck/axiom_pmo_overview_ppt169_20260726/exports/axiom_pmo_overview_20260726_164009.pptx",
     "bytes": 96593
   },
   "source": {
@@ -99,7 +99,7 @@
   },
   "quality": {
     "status": "loaded",
-    "path": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726/validation/svg_quality_report.json",
+    "path": "Slide Deck/axiom_pmo_overview_ppt169_20260726/validation/svg_quality_report.json",
     "schema": "ppt-master.svg-quality-report.v1",
     "stage": "final",
     "source_match": "mismatch",
@@ -215,6 +215,6 @@
       "external_references": []
     }
   },
-  "backup_path": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726/backup/20260726_164009/svg_output",
+  "backup_path": "Slide Deck/axiom_pmo_overview_ppt169_20260726/backup/20260726_164009/svg_output",
   "conversion_trace_path": null
 }

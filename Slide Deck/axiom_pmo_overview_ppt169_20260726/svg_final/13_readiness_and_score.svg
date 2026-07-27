@@ -29,7 +29,7 @@
     <text x="560" y="250" font-family="Tahoma, Arial, sans-serif" font-size="24" font-weight="700" fill="#14161A">คะแนน 7 มิติ รวม 100</text>
     <g id="chartArea">
       <line x1="850" y1="280" x2="850" y2="552" stroke="#14161A" stroke-width="2" />
-      
+
       <text x="830" y="306" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="16" font-weight="400" fill="#3A3F45">Engineering contract</text>
       <rect x="850" y="290" width="300" height="22" fill="#14161A" />
       <text x="1162" y="306" font-family="Consolas, Courier New, monospace" font-size="16" font-weight="700" fill="#14161A">20</text>

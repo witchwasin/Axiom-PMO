@@ -1,7 +1,7 @@
 {
   "schema": "ppt-master.svg-quality-report.v1",
   "stage": "final",
-  "target": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726",
+  "target": "Slide Deck/axiom_pmo_overview_ppt169_20260726",
   "source_fingerprint": {
     "algorithm": "sha256",
     "digest": "b8f79c092358c9ab6d0e43eab61884f5f09d0e8648d5369529f17bb6dbbc2524",
@@ -113,7 +113,7 @@
   "files": [
     {
       "file": "01_cover.svg",
-      "path": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/01_cover.svg",
+      "path": "Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/01_cover.svg",
       "exists": true,
       "errors": [],
       "warnings": [],
@@ -130,7 +130,7 @@
     },
     {
       "file": "02_the_question.svg",
-      "path": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/02_the_question.svg",
+      "path": "Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/02_the_question.svg",
       "exists": true,
       "errors": [],
       "warnings": [],
@@ -147,7 +147,7 @@
     },
     {
       "file": "03_five_behaviours.svg",
-      "path": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/03_five_behaviours.svg",
+      "path": "Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/03_five_behaviours.svg",
       "exists": true,
       "errors": [],
       "warnings": [],
@@ -164,7 +164,7 @@
     },
     {
       "file": "04_prompt_is_not_a_control.svg",
-      "path": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/04_prompt_is_not_a_control.svg",
+      "path": "Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/04_prompt_is_not_a_control.svg",
       "exists": true,
       "errors": [],
       "warnings": [],
@@ -181,7 +181,7 @@
     },
     {
       "file": "05_control_plane.svg",
-      "path": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/05_control_plane.svg",
+      "path": "Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/05_control_plane.svg",
       "exists": true,
       "errors": [],
       "warnings": [
@@ -200,7 +200,7 @@
     },
     {
       "file": "06_evidence.svg",
-      "path": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/06_evidence.svg",
+      "path": "Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/06_evidence.svg",
       "exists": true,
       "errors": [],
       "warnings": [],
@@ -218,7 +218,7 @@
     },
     {
       "file": "07_risk_modes.svg",
-      "path": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/07_risk_modes.svg",
+      "path": "Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/07_risk_modes.svg",
       "exists": true,
       "errors": [],
       "warnings": [],
@@ -236,7 +236,7 @@
     },
     {
       "file": "08_gates.svg",
-      "path": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/08_gates.svg",
+      "path": "Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/08_gates.svg",
       "exists": true,
       "errors": [],
       "warnings": [],
@@ -254,7 +254,7 @@
     },
     {
       "file": "09_human_authority.svg",
-      "path": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/09_human_authority.svg",
+      "path": "Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/09_human_authority.svg",
       "exists": true,
       "errors": [],
       "warnings": [],
@@ -271,7 +271,7 @@
     },
     {
       "file": "10_why_handoff.svg",
-      "path": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/10_why_handoff.svg",
+      "path": "Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/10_why_handoff.svg",
       "exists": true,
       "errors": [],
       "warnings": [],
@@ -288,7 +288,7 @@
     },
     {
       "file": "11_two_layers.svg",
-      "path": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/11_two_layers.svg",
+      "path": "Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/11_two_layers.svg",
       "exists": true,
       "errors": [],
       "warnings": [],
@@ -305,7 +305,7 @@
     },
     {
       "file": "12_twelve_lenses.svg",
-      "path": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/12_twelve_lenses.svg",
+      "path": "Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/12_twelve_lenses.svg",
       "exists": true,
       "errors": [],
       "warnings": [],
@@ -323,7 +323,7 @@
     },
     {
       "file": "13_readiness_and_score.svg",
-      "path": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/13_readiness_and_score.svg",
+      "path": "Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/13_readiness_and_score.svg",
       "exists": true,
       "errors": [],
       "warnings": [],
@@ -341,7 +341,7 @@
     },
     {
       "file": "14_broken_vs_fixed.svg",
-      "path": "/Users/arm/Documents/GitHub/Axiom-PMO/Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/14_broken_vs_fixed.svg",
+      "path": "Slide Deck/axiom_pmo_overview_ppt169_20260726/svg_output/14_broken_vs_fixed.svg",
       "exists": true,
       "errors": [],
       "warnings": [],
