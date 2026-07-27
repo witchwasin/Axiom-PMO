@@ -5,7 +5,7 @@
 
 # Axiom-PMO
 
-### The Anti-Hallucination Framework for AI Agents
+### The governance control plane for AI-assisted software delivery.
 
 A deterministic governance layer that keeps AI coding agents inside **verified
 requirements, approved scope, traceable evidence, and human-controlled release
