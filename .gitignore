@@ -105,3 +105,8 @@ Internal/
 # Project-specific sensitive folders
 P*/confidential/
 P*/confidenciacal/
+
+# ==========================
+# Slide Deck — generated backups (safe to delete, regenerated on export)
+# ==========================
+Slide Deck/**/backup/
