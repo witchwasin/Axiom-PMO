@@ -5,8 +5,8 @@
 > วันที่รวบรวม: 2026-07-27
 > Commit ที่ตรวจ: `c539c3e` (HEAD ของ `main` ตอนที่รายงานเขียน)
 
-ไฟล์นี้คือ **feedback archive** เท่านั้น แผนการปรับแก้อยู่ที่:
-`~/.claude/plans/fodler-fixed-plan-glimmering-raccoon.md`
+ไฟล์นี้คือ **feedback archive** เท่านั้น แผนการปรับแก้อยู่ที่ (ใน repo เดียวกัน):
+`fixed_plan/remediation-plan.md`
 
 > หมายเหตุ: ในเอกสารนี้ใช้ placeholder `<HOME>` แทน absolute macOS home path
 > (รูปแบบ home-dir-prefix + username + `/Documents/...`) เพื่อไม่ให้ไฟล์นี้เอง
