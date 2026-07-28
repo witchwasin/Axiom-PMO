@@ -1,0 +1,11 @@
+version: 2
+updates:
+  # Workflow actions are pinned by commit SHA (see .github/workflows/*). Without
+  # this updater those pins go stale and silently miss security patches, so the
+  # pinning stays a control rather than a liability. Dependabot opens PRs that
+  # move each SHA to its latest tag for review.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
