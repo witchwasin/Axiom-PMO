@@ -509,14 +509,28 @@ foreach ($file in Get-ChildItem -LiteralPath $repo -Recurse -File -Include *.md 
   if ($relativeFile -match "^tests[\\/]fixtures[\\/]invalid-") { continue }
   if ($relativeFile -match "(^|[\\/])(source|MOM|REQ|Transcript)[\\/]") { continue }
 
-  $content = Get-Content -LiteralPath $file.FullName -Raw -ErrorAction SilentlyContinue
+  # -Encoding UTF8 is required on Windows PowerShell 5.1, whose default ANSI
+  # codepage turns non-ASCII (Thai, emoji) markdown into mojibake. The regex
+  # below then matched spurious links inside that mojibake, producing targets
+  # with illegal path characters that crashed Test-Path and failed all of CI.
+  $content = Get-Content -LiteralPath $file.FullName -Raw -Encoding UTF8 -ErrorAction SilentlyContinue
   $linkMatches = [regex]::Matches($content, "\[[^\]]+\]\((?!https?://)([^)#]+)(?:#[^)]+)?\)")
   foreach ($match in $linkMatches) {
     $target = $match.Groups[1].Value
     if ($target -match "^\s*$|^mailto:|^<") { continue }
     $base = Split-Path -Parent $file.FullName
     $resolved = Join-Path $base $target
-    if (-not (Test-Path -LiteralPath $resolved)) {
+    # A malformed target -- illegal path characters (a stray colon, control
+    # bytes), or mojibake that slipped past the encoding read -- makes Test-Path
+    # throw instead of returning false. Treat any exception as a broken link so
+    # one bad target is reported, not allowed to abort the whole doctor run.
+    $linkMissing = $false
+    try {
+      $linkMissing = -not (Test-Path -LiteralPath $resolved -ErrorAction Stop)
+    } catch {
+      $linkMissing = $true
+    }
+    if ($linkMissing) {
       $links += "$relativeFile -> $target"
     }
   }
