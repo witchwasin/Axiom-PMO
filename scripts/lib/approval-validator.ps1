@@ -42,6 +42,19 @@ function Test-Approval {
     # (DEC-###, ISSUE:n, URL:..., FILE:path that exists, etc.), not arbitrary
     # prose like "approved-by-email" or "some-proof".
     $ref = Resolve-Reference -Value $evidence -ReferenceTypesConfig $script:referenceTypesConfig -ProjectRoot $script:project -DecisionIds $DecisionIds
+    # A FILE: reference that escapes the project root is a containment breach.
+    if ($ref.PathEscaped) {
+      Add-Result FAIL "$GateName approval evidence '$evidence' points outside the project root" "REF-002"
+      return
+    }
+    # An external link (URL:/ISSUE:/CI:) has a valid shape and even "resolves",
+    # but this offline validator cannot prove a human decided anything behind it.
+    # It is not acceptable as approval evidence at Standard/Strict; Lite still
+    # permits light evidence through the WARN path below.
+    if ($ref.ExternallyUnverified) {
+      Add-Result FAIL "$GateName approval evidence '$evidence' is an external reference the validator cannot verify as a decision" "APPROVAL-004"
+      return
+    }
     if (-not $ref.Type) {
       $invalid += "evidence_unrecognized_type"
     } elseif (-not $ref.Resolved) {
@@ -52,6 +65,21 @@ function Test-Approval {
   if ($invalid.Count -gt 0) {
     Add-Result FAIL "$GateName approval has invalid or placeholder fields: $($invalid -join ', ')" "APPROVAL-002"
     return
+  }
+
+  # FIX B: a generic group ("Dev Team", "Engineering") is not a named approver.
+  # The same owner_policy HANDOFF-003 uses for handoff owners applies to who
+  # signed off a gate: WARN-blocking at Lite, FAIL at Standard/Strict. The
+  # placeholder check above already caught blanks and TBD-style sentinels.
+  if (-not (Test-PlaceholderValue $approver)) {
+    if (Test-GenericOwner -Value $approver -OwnerPolicy $script:handoffPolicy.owner_policy) {
+      $ownerLevel = Get-HandoffPolicySeverity -SeverityMap $script:handoffPolicy.owner_policy.severity_by_mode -Mode $ApprovalMode
+      if ($ownerLevel -eq "FAIL") {
+        Add-Result FAIL "$GateName approver '$approver' is a generic group, not a named person" "APPROVAL-005"
+        return
+      }
+      Add-Result WARN "$GateName approver '$approver' is a generic group, not a named person" "APPROVAL-005" -Blocking $true
+    }
   }
 
   # H4: Lite skips the hard typed-evidence FAIL above ($RequireEvidenceExists

@@ -45,6 +45,12 @@
       "description": "Requirement, source, design, decision, or release references do not resolve.",
       "suggestion": "Point the reference at an id that exists, or add the missing row. Every id referenced must be declared somewhere in the project."
     },
+    "REF-002": {
+      "severity": "fail",
+      "description": "A FILE: reference resolves outside the project root (containment breach).",
+      "suggestion": "Point the FILE: reference at a path inside the project root. A path that exists on disk but escapes the project is a containment breach, not a resolution success.",
+      "documentation": "docs/rules/REF-002.md"
+    },
     "ENUM-001": {
       "severity": "fail_release",
       "description": "Work item mode, status, review stage, or evidence enum is invalid.",
@@ -84,6 +90,18 @@
       "severity": "warn",
       "description": "Approver role is not in the allowed role matrix (WARN_BLOCKING at Standard, FAIL at Strict).",
       "suggestion": "Have the gate approved by a role listed in pmo-config/policy.json approval_roles, or extend that matrix through a recorded decision."
+    },
+    "APPROVAL-004": {
+      "severity": "fail",
+      "description": "Approval evidence is an external reference (URL/ISSUE/CI) the validator cannot verify as a human decision (Standard/Strict).",
+      "suggestion": "Use a governed, locally-checkable reference as approval evidence: a DEC-### from decision-log.md or a FILE: inside the project. A link nobody verifies is not approval.",
+      "documentation": "docs/rules/APPROVAL-004.md"
+    },
+    "APPROVAL-005": {
+      "severity": "fail",
+      "description": "Approval approver is a generic group, not a named person (WARN-blocking at Lite, FAIL at Standard/Strict).",
+      "suggestion": "Name the person who approved. 'Dev Team' or 'Engineering' is not an approver; the same owner_policy that governs handoff owners applies to who signed off a gate.",
+      "documentation": "docs/rules/APPROVAL-005.md"
     },
     "TASK-001": {
       "severity": "warn",
