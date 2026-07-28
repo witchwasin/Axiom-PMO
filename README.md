@@ -1,7 +1,7 @@
 <!-- markdownlint-disable MD033 MD041 -->
 <div align="center">
 
-<img src="Slide%20Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-logo-primary.svg" alt="Axiom-PMO — The governance control plane for AI-assisted software delivery." width="520">
+<img src="Slide Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-logo-primary.svg" alt="Axiom-PMO — The governance control plane for AI-assisted software delivery." width="520">
 
 # Axiom-PMO
 
@@ -353,18 +353,18 @@ evidence, policy, or human approval allows it to proceed. AI can build;
 Axiom-PMO verifies the source, scope, evidence, and authority behind the work.
 
 <p align="center">
-  <img src="Slide%20Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-brand-board-en.svg" alt="Axiom-PMO brand board" width="780">
+  <img src="Slide Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-brand-board-en.svg" alt="Axiom-PMO brand board" width="780">
 </p>
 
 Brand assets live under
-[`Slide Deck/axiom_pmo_overview_ppt169_20260726/images/`](Slide%20Deck/axiom_pmo_overview_ppt169_20260726/images):
+[`Slide Deck/axiom_pmo_overview_ppt169_20260726/images/`](Slide Deck/axiom_pmo_overview_ppt169_20260726/images):
 
-- [`axiom-pmo-logo-primary.svg`](Slide%20Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-logo-primary.svg) — primary logo for documentation and presentation
-- [`axiom-pmo-mark.svg`](Slide%20Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-mark.svg) — the Axiom Gate mark for compact placements
-- [`axiom-pmo-logo-monochrome.svg`](Slide%20Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-logo-monochrome.svg) — single-color variant
-- [`axiom-pmo-slide-signature.svg`](Slide%20Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-slide-signature.svg) — header/footer lockup for slides
+- [`axiom-pmo-logo-primary.svg`](Slide Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-logo-primary.svg) — primary logo for documentation and presentation
+- [`axiom-pmo-mark.svg`](Slide Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-mark.svg) — the Axiom Gate mark for compact placements
+- [`axiom-pmo-logo-monochrome.svg`](Slide Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-logo-monochrome.svg) — single-color variant
+- [`axiom-pmo-slide-signature.svg`](Slide Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-slide-signature.svg) — header/footer lockup for slides
 
-[View the full brand board](Slide%20Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-brand-board-en.svg).
+[View the full brand board](Slide Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-brand-board-en.svg).
 
 | Token | Hex | Use |
 |---|---|---|
