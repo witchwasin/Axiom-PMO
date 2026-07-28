@@ -38,6 +38,7 @@ function Resolve-Reference {
     Type = $null
     Resolved = $false
     ExternallyUnverified = $false
+    PathEscaped = $false
   }
 
   $trimmed = "$Value".Trim()
@@ -62,7 +63,27 @@ function Resolve-Reference {
     "release" { $result.Resolved = if ($null -eq $ReleaseId) { $true } else { $trimmed -eq $ReleaseId } }
     "file" {
       $filePath = $trimmed.Substring(5)
-      $result.Resolved = (Test-Path -LiteralPath (Join-Path $ProjectRoot $filePath) -PathType Leaf)
+      # A FILE: reference must stay inside the project root. Reject an absolute
+      # path outright, and reject any relative path that canonicalizes above the
+      # root (../..). The target may exist on disk and still be a containment
+      # breach, so the caller emits REF-002 -- this is not evidence_not_found.
+      if ($filePath -match '^[/\\]' -or $filePath -match '^[A-Za-z]:[\\/]?') {
+        $result.PathEscaped = $true
+      } else {
+        try {
+          $rootFull = [System.IO.Path]::GetFullPath($ProjectRoot)
+          $resolvedFull = [System.IO.Path]::GetFullPath((Join-Path $ProjectRoot $filePath))
+          $sep = [System.IO.Path]::DirectorySeparatorChar
+          if (($resolvedFull -ne $rootFull) -and -not $resolvedFull.StartsWith($rootFull + $sep)) {
+            $result.PathEscaped = $true
+          } else {
+            $result.Resolved = (Test-Path -LiteralPath $resolvedFull -PathType Leaf)
+          }
+        } catch {
+          # A path GetFullPath cannot normalize is not a valid in-project
+          # reference; leave it unresolved rather than crashing the validator.
+        }
+      }
     }
     default { $result.Resolved = $false }
   }
