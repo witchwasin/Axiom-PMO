@@ -6,6 +6,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   pmo-checks:
     runs-on: windows-latest
@@ -19,7 +22,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       # run-all-checks verifies the golden masters as part of the fixture run;
       # a separate verification step would re-execute all 148 cases for nothing.
@@ -62,7 +65,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       # Golden masters are stored in a form independent of the PowerShell host's
       # JSON pretty-printer (see scripts/lib/golden-normalizer.ps1). This leg is
