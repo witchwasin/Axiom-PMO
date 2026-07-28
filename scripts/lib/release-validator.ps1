@@ -45,6 +45,19 @@ function Test-ReviewRow {
     $invalid += "evidence"
   } else {
     $ref = Resolve-Reference -Value $row.Evidence -ReferenceTypesConfig $script:referenceTypesConfig -ProjectRoot $script:project -DecisionIds $DecisionIds -TestIds $ReleaseRegistry.TestIds
+    # A FILE: reference that escapes the project root is a containment breach.
+    if ($ref.PathEscaped) {
+      Add-Result FAIL "$ReviewType review evidence '$($row.Evidence)' points outside the project root" "REF-002"
+      return $false
+    }
+    # An external link (URL:/ISSUE:/CI:) resolves, but this validator cannot
+    # verify a human decided anything behind it. Test-ReviewRow runs only at
+    # Standard/Strict (its caller gates on $Mode -ne "Lite"), so this is the
+    # same APPROVAL-004 guard the approval gate applies to PROJECT.md rows.
+    if ($ref.ExternallyUnverified) {
+      Add-Result FAIL "$ReviewType review evidence '$($row.Evidence)' is an external reference the validator cannot verify as a decision" "APPROVAL-004"
+      return $false
+    }
     if (-not $ref.Type) { $invalid += "evidence_unrecognized_type" }
     elseif (-not $ref.Resolved) { $invalid += "evidence_not_found" }
   }
