@@ -5,11 +5,11 @@
 | Level | FAIL |
 | Gate | Scope, Design, Release (any gate that resolves approval evidence) |
 | Applies to | Standard, Strict |
-| Artifacts | `PROJECT.md` Approvals table |
+| Artifacts | `PROJECT.md` Approvals table, `RELEASE.md` QA / Security Review rows |
 
 ## What this rule checks
 
-At Standard and Strict, the evidence behind an approval row must be a reference this validator can check against the project itself - a `DEC-###` from `decision-log.md` or a `FILE:` inside the project. An external link (`URL:`, `ISSUE:`, `CI:`) has a valid shape and resolves, but the validator cannot prove a human actually decided anything behind it.
+At Standard and Strict, the evidence behind an approval **or** a QA/Security review row must be a reference this validator can check against the project itself - a `DEC-###` from `decision-log.md` or a `FILE:` inside the project. An external link (`URL:`, `ISSUE:`, `CI:`) has a valid shape and resolves, but the validator cannot prove a human actually decided anything behind it. A review sign-off is a decision the same way an approval row is, so the same guard covers both.
 
 This rule does **not** apply to Lite. Lite may use light evidence (including `ISSUE:`), surfaced as a blocking WARN by `APPROVAL-002` rather than a hard FAIL.
 
