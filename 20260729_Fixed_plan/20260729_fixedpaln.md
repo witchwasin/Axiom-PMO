@@ -2,8 +2,8 @@
 
 Date: 2026-07-29
 Plan ID: `20260729_fixedpaln`
-Status: implementation plan with 2026-07-29 execution updates; no milestone
-acceptance is implied
+Status: implementation plan with 2026-07-29 execution updates and M4 planning;
+no milestone acceptance is implied
 
 ## Purpose
 
@@ -298,6 +298,13 @@ comments, and validation-engine documentation so that:
 - Human acceptance is recorded.
 
 ## Workstream 4 — Milestone 4 GitHub Action Planning
+
+Detailed implementation plan:
+[`M4_GitHub_Action_implementation_plan.md`](M4_GitHub_Action_implementation_plan.md).
+
+Status: planning ready; implementation not started. Do not implement the
+Action, open child issues, or mark M4 accepted without explicit human
+confirmation.
 
 Open one tracking issue:
 
