@@ -49,6 +49,7 @@ if ($TestChildScript) {
 }
 
 Invoke-Check "pmo-doctor" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/pmo-doctor.ps1") -RepoPath $repo }
+Invoke-Check "doctor-markdown" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/doctor-markdown-tests.ps1") -RepoPath $repo }
 # -VerifyGolden here rather than as a separate CI step. Running the fixture
 # matrix is by far the most expensive thing this suite does -- 148 child
 # PowerShell processes -- and verifying the goldens re-runs every one of those
