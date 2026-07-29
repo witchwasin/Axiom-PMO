@@ -154,7 +154,7 @@ Test-Links -GovernedFiles $governedFiles -UserSourceFiles $userSourceFiles -Gate
 $scopeDiffResult = $null
 if ($ScopeDiffBase -and $ScopeDiffHead) {
   $scopeDiffGitRoot = if ($ScopeDiffRepoRoot) { (Resolve-Path -LiteralPath $ScopeDiffRepoRoot).Path } else { $repoRoot }
-  $scopeDiffResult = Invoke-ScopeDiffCheck -ProjectPath $project -RepoRoot $scopeDiffGitRoot -BaseRef $ScopeDiffBase -HeadRef $ScopeDiffHead
+  $scopeDiffResult = Invoke-ScopeDiffCheck -ProjectPath $project -GitRepoRoot $scopeDiffGitRoot -FrameworkRoot $repoRoot -BaseRef $ScopeDiffBase -HeadRef $ScopeDiffHead
 }
 
 $exitCode = Get-ExitCode -Fail $fail -WarnBlocking $warnBlocking -FailOnWarning:$FailOnWarning

@@ -64,6 +64,7 @@ Invoke-Check "config-mutation" { & $ps -NoProfile -ExecutionPolicy Bypass -File 
 Invoke-Check "diagnostics-contract" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/diagnostics-contract-tests.ps1") -RepoPath $repo }
 Invoke-Check "line-endings" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/line-ending-tests.ps1") -RepoPath $repo }
 Invoke-Check "handoff-assessment" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/handoff-assessment-tests.ps1") -RepoPath $repo }
+Invoke-Check "scope-diff" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/scope-diff-tests.ps1") -RepoPath $repo }
 Invoke-Check "demo-smoke" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/demo-smoke-tests.ps1") -RepoPath $repo }
 Invoke-Check "lite-example" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/validate-project.ps1") -ProjectPath (Join-Path $repo "examples/LITE-BUGFIX") -Mode Lite -Gate Scope -FailOnWarning }
 Invoke-Check "standard-example" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/validate-project.ps1") -ProjectPath (Join-Path $repo "examples/STANDARD-FEATURE") -Mode Standard -Gate Release -FailOnWarning }
