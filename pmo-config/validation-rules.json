@@ -248,6 +248,36 @@
       "description": "Potential sensitive file detected by pre-check.",
       "suggestion": "Move the file out of the project, or confirm explicitly that it is safe to commit. Never commit credentials or customer data."
     },
+    "SCOPE-DIFF-001": {
+      "severity": "fail",
+      "description": "A changed file (or, when passing, every changed file) is compared against the project's approved implementation scope. FAIL when at least one changed file matches no approved include pattern; PASS when every changed file is in scope or repo-wide exempt.",
+      "suggestion": "Either the change belongs in a different requirement/PR, or SCOPE.json's implementation_scope.include needs a pattern that covers this path -- get that pattern reviewed and approved before widening it.",
+      "documentation": "docs/rules/SCOPE-DIFF-001.md"
+    },
+    "SCOPE-DIFF-002": {
+      "severity": "fail",
+      "description": "SCOPE-DIFF was requested (a base and head commit were supplied) but the project has no SCOPE.json. A missing declaration is never treated as an approval to change anything.",
+      "suggestion": "Add SCOPE.json (see templates/SCOPE.json) declaring implementation_scope.include for this project before scope-diff enforcement can run.",
+      "documentation": "docs/rules/SCOPE-DIFF-002.md"
+    },
+    "SCOPE-DIFF-003": {
+      "severity": "fail",
+      "description": "SCOPE.json exists but fails schema validation: invalid JSON, a missing or empty implementation_scope.include, a non-string entry, or a pattern with disallowed syntax (leading '/', a backslash, or a '..' segment).",
+      "suggestion": "Fix SCOPE.json against templates/SCOPE.json. Patterns are repo-root-relative, forward-slash paths using only '*', '?', and '**'.",
+      "documentation": "docs/rules/SCOPE-DIFF-003.md"
+    },
+    "SCOPE-DIFF-004": {
+      "severity": "fail",
+      "description": "The base or head commit for the requested scope-diff comparison could not be resolved in this checkout, or `git diff` itself failed. This is an infrastructure/configuration failure, not a scope violation -- most commonly a shallow checkout that does not include the base commit.",
+      "suggestion": "If running in CI, increase actions/checkout's fetch-depth (or set it to 0) so the base commit is present. If running locally, confirm both refs exist in this repository.",
+      "documentation": "docs/rules/SCOPE-DIFF-004.md"
+    },
+    "SCOPE-DIFF-005": {
+      "severity": "fail",
+      "description": "A changed file matches an implementation_scope.exclude pattern. Distinct from SCOPE-DIFF-001: this path was inside the broader approved area but was explicitly carved out.",
+      "suggestion": "This path was deliberately excluded from the approved scope. If it genuinely needs to change as part of this work, get the exclusion removed (or narrowed) through the same review that approved the rest of the scope -- do not just delete the exclude entry unreviewed.",
+      "documentation": "docs/rules/SCOPE-DIFF-005.md"
+    },
     "HANDOFF-001": {
       "severity": "fail",
       "description": "A required handoff artifact is missing or its metadata contract is incomplete.",

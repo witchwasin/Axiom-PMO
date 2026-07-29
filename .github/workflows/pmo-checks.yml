@@ -242,3 +242,109 @@ jobs:
           gate: Release
           enforce: "true"
           artifact-name: axiom-pmo-report-dogfood-enforced-clean
+
+  # M4.5 dogfooding: exercises action.yml's SCOPE-DIFF inputs via `uses: ./`
+  # against real commits in this repository's own history (see
+  # demo/scope-diff-dogfood-{pass,fail}/), not a mock. Needs full git
+  # history -- fetch-depth: 0 -- because scope-diff-base references commits
+  # a shallow checkout (the default everywhere else in this file) would not
+  # have; this is also, deliberately, the same condition SCOPE-DIFF-004
+  # exists to catch when a consumer's own checkout forgets it.
+  dogfood-scope-diff:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      # demo/scope-diff-dogfood-pass/SCOPE.json approves its own whole
+      # directory; the diff between these two commits touches only a file
+      # inside it. Report-only (the default) and enforce must both pass --
+      # this is the "no false positive" proof, not just "report-only hides
+      # a failure."
+      - name: SCOPE-DIFF, report-only, on a real in-scope change
+        id: pass_report_only
+        uses: ./
+        with:
+          project: demo/scope-diff-dogfood-pass
+          mode: Standard
+          gate: Draft
+          enable-scope-diff: "true"
+          scope-diff-base: c9576a7ef0df9e406ad29783be2f1c2990c61c36
+          scope-diff-head: 3974d20a9067e6e41c60f6a09d69cc7f680d5bb4
+          artifact-name: axiom-pmo-report-dogfood-scope-diff-pass-report-only
+
+      - name: Verify the in-scope case actually verdicts pass
+        shell: bash
+        run: |
+          echo "scope-diff-verdict=${{ steps.pass_report_only.outputs.scope-diff-verdict }}"
+          if [ "${{ steps.pass_report_only.outputs.scope-diff-verdict }}" != "pass" ]; then
+            echo "::error::Expected scope-diff-verdict=pass for the in-scope dogfood fixture; got '${{ steps.pass_report_only.outputs.scope-diff-verdict }}'."
+            exit 1
+          fi
+
+      - name: SCOPE-DIFF, enforced, on the same in-scope change
+        uses: ./
+        with:
+          project: demo/scope-diff-dogfood-pass
+          mode: Standard
+          gate: Draft
+          enable-scope-diff: "true"
+          scope-diff-base: c9576a7ef0df9e406ad29783be2f1c2990c61c36
+          scope-diff-head: 3974d20a9067e6e41c60f6a09d69cc7f680d5bb4
+          enforce: "true"
+          artifact-name: axiom-pmo-report-dogfood-scope-diff-pass-enforced
+
+      # demo/scope-diff-dogfood-fail/SCOPE.json approves only src/**; the
+      # diff between these two commits is exactly one real, committed file
+      # (README.md) outside it. Report-only must still report the true
+      # verdict without failing the step.
+      - name: SCOPE-DIFF, report-only, on a real out-of-scope change
+        id: fail_report_only
+        uses: ./
+        with:
+          project: demo/scope-diff-dogfood-fail
+          mode: Standard
+          gate: Draft
+          enable-scope-diff: "true"
+          scope-diff-base: 3974d20a9067e6e41c60f6a09d69cc7f680d5bb4
+          scope-diff-head: 973530466146d0da2ce474ab112481305383cc60
+          artifact-name: axiom-pmo-report-dogfood-scope-diff-fail-report-only
+
+      - name: Verify report-only recorded the violation without failing the step
+        shell: bash
+        run: |
+          echo "scope-diff-verdict=${{ steps.fail_report_only.outputs.scope-diff-verdict }}"
+          if [ "${{ steps.fail_report_only.outputs.scope-diff-verdict }}" != "fail" ]; then
+            echo "::error::Expected scope-diff-verdict=fail for the out-of-scope dogfood fixture; got '${{ steps.fail_report_only.outputs.scope-diff-verdict }}'. SCOPE-DIFF may not be evaluating real changed files at all."
+            exit 1
+          fi
+
+      # Same violation, enforcement on. continue-on-error so the job can
+      # assert on the expected failure, exactly like the M4 dogfood job
+      # above does for its own enforced case.
+      - name: SCOPE-DIFF, enforced, on the same out-of-scope change
+        id: fail_enforced
+        continue-on-error: true
+        uses: ./
+        with:
+          project: demo/scope-diff-dogfood-fail
+          mode: Standard
+          gate: Draft
+          enable-scope-diff: "true"
+          scope-diff-base: 3974d20a9067e6e41c60f6a09d69cc7f680d5bb4
+          scope-diff-head: 973530466146d0da2ce474ab112481305383cc60
+          enforce: "true"
+          artifact-name: axiom-pmo-report-dogfood-scope-diff-fail-enforced
+
+      - name: Verify enforcement actually blocks a real SCOPE-DIFF violation
+        shell: bash
+        run: |
+          if [ "${{ steps.fail_enforced.outcome }}" != "failure" ]; then
+            echo "::error::Expected the enforced step against demo/scope-diff-dogfood-fail to fail; its outcome was '${{ steps.fail_enforced.outcome }}'. SCOPE-DIFF enforcement is not blocking."
+            exit 1
+          fi
+          echo "Enforcement correctly failed the step for a real SCOPE-DIFF violation."

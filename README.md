@@ -201,6 +201,7 @@ than aspiration.
 | Structured JSON diagnostics for CI and dashboard consumers | **Shipped** |
 | `DELIVERY.md` or GitHub Issues as the declared task source | **Shipped** |
 | GitHub Action: report-only by default, PR-native Job Summary/annotations/report artifact | **Shipped** |
+| SCOPE-DIFF: deterministic changed-files-vs-approved-scope check, opt-in | **Shipped** |
 | Execution work-package and evidence-return schemas | **Experimental** |
 | Automated execution-framework evidence import | **Roadmap** |
 | Portfolio dashboard, enterprise identity/RBAC, and deep tracker adapters | **Not shipped** |
@@ -281,6 +282,23 @@ nobody has configured a rule set for yet.
 ```
 
 Full inputs, outputs, and the report contract: [docs/guides/github-action.md](docs/guides/github-action.md).
+
+Add `enable-scope-diff: "true"` to also check that the PR's changed files
+stayed inside the project's approved `SCOPE.json` -- deterministic path
+matching, no LLM judging whether a file "seems related":
+
+```yaml
+- uses: actions/checkout@v7
+  with:
+    fetch-depth: 0   # SCOPE-DIFF needs the base commit, not just the current one
+- uses: witchwasin/Axiom-PMO@<pinned-sha-or-tag>
+  with:
+    project: projects/P02-MYPROJECT
+    gate: Release
+    enable-scope-diff: "true"
+```
+
+Scope syntax, precedence, and git range semantics: [docs/reference/scope-declaration.md](docs/reference/scope-declaration.md).
 
 ### The gates
 
@@ -453,7 +471,7 @@ Typography: Tahoma / Arial (sans-serif) for voice; Consolas / Courier New
 |---|---|
 | **Concepts** | [handoff readiness](docs/concepts/handoff-readiness.md) · [anti-hallucination](docs/concepts/anti-hallucination.md) · [evidence-based execution](docs/concepts/evidence-based-execution.md) · [risk modes](docs/concepts/risk-modes.md) · [human authority](docs/concepts/human-authority.md) |
 | **Guides** | [artifact map](docs/guides/artifact-map.md) · [GitHub Action](docs/guides/github-action.md) · [M1 walkthrough and recording evidence](docs/guides/m1-walkthrough-and-recording.md) · [PowerShell runtime setup](docs/guides/powershell-runtime.md) · [three-day demo handoff](docs/guides/three-day-demo-handoff.md) |
-| **Reference** | [diagnostics contract](docs/reference/diagnostics-contract.md) · [rule reference](docs/rules/) |
+| **Reference** | [diagnostics contract](docs/reference/diagnostics-contract.md) · [scope declaration (SCOPE-DIFF)](docs/reference/scope-declaration.md) · [rule reference](docs/rules/) |
 | **Architecture** | [control plane](docs/architecture/control-plane.md) · [validation engine](docs/architecture/validation-engine.md) |
 | **Governance** | [release readiness](docs/governance/release-readiness.md) · [source ownership](docs/governance/source-ownership.md) |
 | **Process** | [Lite](docs/process/lite.md) · [Standard](docs/process/standard.md) · [Strict](docs/process/strict.md) |
