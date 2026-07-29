@@ -52,13 +52,14 @@ The intended outcome is to:
 - Ubuntu PowerShell 7 promotion threshold is human-approved: after
   `continue-on-error` is removed, it must pass two consecutive full CI runs on
   `main` before M3.5 acceptance.
-- `main` branch protection is intentionally deferred and may be skipped by
-  human decision.
+- Human acceptance for M3.5 was recorded on 2026-07-29 in Codex chat, with
+  `main` branch protection deferred and not required for this milestone
+  acceptance.
 - Milestone 1 is not accepted: no independent clean-room walkthrough and no
   committed terminal recording/GIF exist.
 - GitHub Issue #8 tracks the walkthrough and recording and is open.
-- GitHub Issue #12 tracks Milestone 4 and must remain blocked until M1
-  acceptance and M3.5 completion.
+- GitHub Issue #12 tracks Milestone 4. M3.5 is accepted; the remaining blocker
+  before M4 implementation is M1 acceptance.
 - The Superpowers schemas are experimental and are not connected to the
   validator runtime.
 
@@ -70,8 +71,8 @@ The intended outcome is to:
 | M2 — Developer Diagnostics | Delivered |
 | M2.5 — Engineering Handoff Readiness | Delivered in 1.1.0; strengthened in 1.1.1 |
 | M3 — Thin Local CLI | Phase A delivered; npm Phase B deferred |
-| M3.5 — Runtime Portability | In progress; CI threshold met, human acceptance pending |
-| M4 — GitHub Action | Planned; implementation blocked by M1 and M3.5 |
+| M3.5 — Runtime Portability | Accepted on 2026-07-29 |
+| M4 — GitHub Action | Planned; implementation blocked by M1 acceptance |
 | M5 — Superpowers Runtime Bridge | Blocked by M4 acceptance |
 | M6 — Claude Code Integration Experience | Planned |
 | M7 — Community Launch | Remove from roadmap |
@@ -297,8 +298,8 @@ Open one tracking issue:
 [roadmap]: Milestone 4 — GitHub Action
 ```
 
-Do not assign an owner unless a human has named one. Record dependencies on
-M1 acceptance and M3.5 completion.
+Do not assign an owner unless a human has named one. Record that M3.5 is
+accepted and that M1 acceptance remains the blocker before implementation.
 
 Create these child issues and link them from the parent checklist.
 
@@ -487,10 +488,10 @@ test failure or as a passing result.
 1. Align roadmap and documentation
 2. Promote Ubuntu PowerShell 7 from experimental to blocking workflow job
 3. Record the two consecutive green main CI runs after Ubuntu promotion
-4. Decide whether to configure main branch protection
+4. Record branch protection as deferred for M3.5 acceptance
 5. Reopen and complete Issue #8 with real human evidence
-6. Accept M3.5 only after the CI evidence and human decision exist
-7. Keep M4 blocked until M1 and M3.5 are accepted
+6. Keep M4 blocked until M1 is accepted
+7. Start M4 planning only after the remaining blocker is cleared
 8. Open and implement M5 only after M4 human acceptance
 9. Continue to M6 only when separately approved
 ```

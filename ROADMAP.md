@@ -68,8 +68,8 @@ Recommended effort allocation:
 | Milestone 2 - Developer Diagnostics | Delivered | Delivered in 1.1 |
 | Milestone 2.5 - Engineering Handoff Readiness | Delivered | Delivered in 1.1.0; strengthened in 1.1.1 |
 | Milestone 3 - Thin Local CLI | Delivered (Phase A) | Local CLI delivered; public npm package deferred |
-| Milestone 3.5 - Runtime Portability | In progress — CI threshold met | Branch protection decision and human acceptance remain |
-| Milestone 4 - GitHub Action | Planned | Blocked by Milestone 1 acceptance and Milestone 3.5 |
+| Milestone 3.5 - Runtime Portability | Accepted | CI threshold met; branch protection deferred by human decision |
+| Milestone 4 - GitHub Action | Planned | Blocked by Milestone 1 acceptance |
 | Milestone 5 - Superpowers Runtime Bridge | Blocked | Starts only after Milestone 4 human acceptance |
 | Milestone 6 - Claude Code Integration Experience | Planned | Requires separate approval after Milestone 5 |
 
@@ -344,8 +344,7 @@ Objective: make PowerShell 7 the primary portable runtime without dropping
 Windows PowerShell 5.1 compatibility or creating a second validator
 implementation.
 
-Status: **in progress; promoted Ubuntu CI threshold is met, but acceptance is
-pending.**
+Status: **accepted on 2026-07-29.**
 
 The runtime already resolves `AXIOM_PWSH`, the current host, `pwsh`,
 `powershell`, and `powershell.exe`. This milestone promotes that runtime
@@ -373,9 +372,9 @@ Current evidence and gaps:
 - **Confirmed:** Human-approved threshold: Ubuntu PowerShell 7 must pass two
   consecutive full CI runs on `main` after `continue-on-error` is removed before
   M3.5 can be accepted.
-- **Open question:** whether `main` branch protection will be configured for
-  the promoted Ubuntu and Windows PowerShell 7 jobs. This repository setting is
-  deferred and may be skipped by human decision.
+- **Confirmed:** Human acceptance recorded on 2026-07-29 in Codex chat. The
+  human decision accepts M3.5 with branch protection deferred and not required
+  for this milestone acceptance.
 
 Target support matrix:
 
@@ -575,6 +574,10 @@ Do not spend near-term effort on:
 - Broken/fixed demo, one-command demo, and README quick start.
 - Structured diagnostics, stable JSON result schema, and rule documentation.
 - Engineering Handoff Readiness and the local CLI.
+- Milestone 3.5 Runtime Portability: Windows PowerShell 7 and Ubuntu
+  PowerShell 7 are blocking workflow jobs, Ubuntu passed two promoted `main`
+  runs, Windows PowerShell 5.1 remains green, and human acceptance was recorded
+  on 2026-07-29 with branch protection deferred.
 
 ### Acceptance debt
 
@@ -585,20 +588,13 @@ Do not spend near-term effort on:
 
 ### Next
 
-- Remove `continue-on-error` from the Ubuntu PowerShell 7 workflow job and
-  rename it to `pmo-checks-linux-pwsh7`.
-- Record the two consecutive green `main` CI runs after the Ubuntu promotion.
-- Decide whether to configure `main` branch protection for the blocking
-  Windows PowerShell 7 and Ubuntu PowerShell 7 jobs.
-- Record Milestone 3.5 human acceptance only after its definition of done is
-  satisfied.
 - Milestone 4 tracking issue and child issues for the reusable Action,
   Job Summary/report artifacts, safe annotations, consumer/privacy tests, and
   acceptance documentation.
 
 ### Blocked
 
-- Milestone 4 implementation, until Milestone 1 and Milestone 3.5 are accepted.
+- Milestone 4 implementation, until Milestone 1 is accepted.
 - Superpowers export/import runtime, until Milestone 4 is accepted.
 - Claude Code integration implementation, until separately approved after
   Milestone 5.
