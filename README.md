@@ -415,7 +415,7 @@ Next:
 - complete Milestone 3.5 by making Windows and Ubuntu PowerShell 7 required,
   while keeping Windows PowerShell 5.1 compatibility coverage;
 - build a GitHub Action that reports governance failures directly in pull
-  requests.
+  requests, after Milestone 3.5 is complete.
 
 The Superpowers runtime bridge remains blocked until the GitHub Action has
 passed human acceptance. The active roadmap is intentionally limited to
