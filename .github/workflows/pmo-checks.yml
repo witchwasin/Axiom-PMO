@@ -101,13 +101,12 @@ jobs:
           exit 0
 
   # Ubuntu + PowerShell 7. PowerShell 7 is the documented minimum for Linux.
-  # This leg stays deliberately non-blocking until it has a reliable track
-  # record across the whole suite -- promote it to required (branch protection)
-  # only once it has passed repeatedly, not because it is green today.
-  pmo-checks-linux-experimental:
+  # This leg is now a blocking workflow job. Milestone 3.5 acceptance still
+  # requires two consecutive green main runs after this promotion, plus human
+  # acceptance; branch protection is a separate repository setting.
+  pmo-checks-linux-pwsh7:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -128,6 +127,22 @@ jobs:
         shell: pwsh
         run: |
           pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -RepoPath .
+
+      - name: Run public hygiene checks
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/check-public-hygiene.ps1 -RepoPath .
+
+      - name: Verify fault injection propagates as a failure
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -RepoPath . -TestChildScript tests/helpers/exit-1.ps1
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "FAULT INJECTION DID NOT PROPAGATE: run-all-checks.ps1 exited 0 with a failing -TestChildScript"
+            exit 1
+          }
+          Write-Host "Fault injection correctly propagated as exit $LASTEXITCODE"
+          exit 0
 
   # macOS + PowerShell 7 smoke test (Milestone 3.5). Non-blocking: macOS is a
   # developer convenience surface, not a reference platform. It exists to gather
