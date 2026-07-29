@@ -34,7 +34,21 @@ function Resolve-ScopeDiffCombinedVerdict {
 function Invoke-ScopeDiffCheck {
   param(
     [Parameter(Mandatory = $true)][string]$ProjectPath,
-    [Parameter(Mandatory = $true)][string]$RepoRoot,
+    # Where the git history to diff lives -- the consumer's own checkout when
+    # running as the GitHub Action, which is NOT the same directory as
+    # $FrameworkRoot below. See validate-project.ps1's -ScopeDiffRepoRoot
+    # comment.
+    [Parameter(Mandatory = $true)][string]$GitRepoRoot,
+    # Where the Axiom-PMO framework's own pmo-config/*.json lives. Always the
+    # framework's checkout, exactly like every other Import-PmoConfig caller
+    # in this codebase -- never the project/consumer repo. Reusing $RepoRoot
+    # for both this and $GitRepoRoot was a real bug caught by
+    # tests/helpers/scope-diff-tests.ps1's disposable-fixture-repo cases: on
+    # this developer's own machine, testing only against the Axiom-PMO
+    # checkout itself, framework root and git root happen to be the same
+    # directory, which hid the bug completely until a fixture used a
+    # different one for each.
+    [Parameter(Mandatory = $true)][string]$FrameworkRoot,
     [Parameter(Mandatory = $true)][string]$BaseRef,
     [Parameter(Mandatory = $true)][string]$HeadRef
   )
@@ -59,7 +73,7 @@ function Invoke-ScopeDiffCheck {
     }
   }
 
-  $diffResult = Get-ScopeDiffChangedFiles -RepoRoot $RepoRoot -BaseRef $BaseRef -HeadRef $HeadRef
+  $diffResult = Get-ScopeDiffChangedFiles -RepoRoot $GitRepoRoot -BaseRef $BaseRef -HeadRef $HeadRef
   if (-not $diffResult.Ok) {
     Add-Result FAIL "Could not compute the changed-file diff between $BaseRef and $HeadRef`: $($diffResult.ErrorDetail)" "SCOPE-DIFF-004"
     return [pscustomobject]@{
@@ -72,7 +86,7 @@ function Invoke-ScopeDiffCheck {
 
   $includeRegexes = @($scope.Include | ForEach-Object { ConvertTo-ScopeGlobRegex -Pattern $_ })
   $excludeRegexes = @($scope.Exclude | ForEach-Object { ConvertTo-ScopeGlobRegex -Pattern $_ })
-  $exemptEntries = @(Read-ScopeDiffPolicy -RepoRoot $RepoRoot | ForEach-Object {
+  $exemptEntries = @(Read-ScopeDiffPolicy -RepoRoot $FrameworkRoot | ForEach-Object {
     [pscustomobject]@{ Pattern = $_.Pattern; Reason = $_.Reason; Regex = (ConvertTo-ScopeGlobRegex -Pattern $_.Pattern) }
   })
 

@@ -10,7 +10,7 @@
 //   node tests/helpers/github-action-tests.mjs
 
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, chmodSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, chmodSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -175,6 +175,51 @@ function cleanup(outDir) {
   try { rmSync(outDir, { recursive: true, force: true }); } catch { /* best effort */ }
 }
 
+// A small disposable git repository for SCOPE-DIFF Action-layer tests --
+// the PowerShell-level matching/precedence/rename cases already have their
+// own thorough fixture-based suite in scope-diff-tests.ps1; this exists
+// only to exercise the Action wrapper's own responsibilities (ref
+// resolution, report-only vs enforce, output plumbing) against something
+// real rather than mocked.
+function git(dir, args) {
+  const result = spawnSync("git", ["-C", dir, ...args], { encoding: "utf8" });
+  return result.stdout.trim();
+}
+
+function createScopeDiffFixture() {
+  const dir = mkdtempSync(join(tmpdir(), "axiom-scope-diff-action-"));
+  spawnSync("git", ["-C", dir, "init", "-q", "--initial-branch=main"]);
+  spawnSync("git", ["-C", dir, "config", "user.email", "test@axiom-pmo.local"]);
+  spawnSync("git", ["-C", dir, "config", "user.name", "Axiom Scope Diff Action Tests"]);
+
+  mkdirSync(join(dir, "src", "payments"), { recursive: true });
+  writeFileSync(join(dir, "src", "payments", "foo.ts"), "a");
+  writeFileSync(
+    join(dir, "SCOPE.json"),
+    JSON.stringify({
+      schema_version: "1.0",
+      project: "T",
+      implementation_scope: { include: ["src/payments/**"], exclude: [] },
+    }),
+  );
+  spawnSync("git", ["-C", dir, "add", "-A"]);
+  spawnSync("git", ["-C", dir, "commit", "-q", "-m", "base"]);
+  const base = git(dir, ["rev-parse", "HEAD"]);
+
+  // A violation by default -- most of the tests below want one; the
+  // clean-scope test overwrites this before committing instead.
+  writeFileSync(join(dir, "src", "auth-out-of-scope.ts"), "new");
+  spawnSync("git", ["-C", dir, "add", "-A"]);
+  spawnSync("git", ["-C", dir, "commit", "-q", "-m", "violation"]);
+  const head = git(dir, ["rev-parse", "HEAD"]);
+
+  return { dir, base, head };
+}
+
+function cleanupFixture(fixture) {
+  try { rmSync(fixture.dir, { recursive: true, force: true }); } catch { /* best effort */ }
+}
+
 if (POWERSHELL_AVAILABLE) {
   {
     const r = runAction(["--project", "examples/STANDARD-FEATURE", "--mode", "Standard", "--gate", "Release"]);
@@ -306,6 +351,137 @@ if (POWERSHELL_AVAILABLE) {
     const md = readFileSync(r.mdPath, "utf8");
     assert("no absolute local path in the markdown report", !md.includes(REPO_ROOT));
     cleanup(r.outDir);
+  }
+
+  // --- SCOPE-DIFF: Action-layer behavior (ref resolution, report-only vs
+  // enforce, output plumbing). The matching/precedence/rename logic itself
+  // is covered exhaustively in tests/helpers/scope-diff-tests.ps1; these
+  // tests exist only for what the Action wrapper is responsible for.
+  {
+    const fixture = createScopeDiffFixture();
+    const r = runAction([
+      "--project", fixture.dir, "--mode", "Standard", "--gate", "Draft",
+      "--working-directory", fixture.dir,
+      "--enable-scope-diff", "true", "--scope-diff-base", fixture.base, "--scope-diff-head", fixture.head,
+    ]);
+    assert("scope-diff violation, report-only: wrapper exits 0", r.status === 0, `status=${r.status}`);
+    const json = JSON.parse(readFileSync(r.jsonPath, "utf8"));
+    assert("scope-diff violation, report-only: real verdict still recorded as fail", json.scope_diff?.verdict === "fail");
+    assert("scope-diff violation, report-only: offending path listed", json.scope_diff?.changed_out_of_scope?.includes("src/auth-out-of-scope.ts"));
+    const md = readFileSync(r.mdPath, "utf8");
+    assert("scope-diff violation: Markdown report has a Scope-diff section", md.includes("## Scope-diff"));
+    cleanup(r.outDir);
+    cleanupFixture(fixture);
+  }
+
+  {
+    const fixture = createScopeDiffFixture();
+    const r = runAction([
+      "--project", fixture.dir, "--mode", "Standard", "--gate", "Draft",
+      "--working-directory", fixture.dir,
+      "--enable-scope-diff", "true", "--scope-diff-base", fixture.base, "--scope-diff-head", fixture.head,
+      "--enforce", "true",
+    ]);
+    assert("scope-diff violation, enforce=true: wrapper exits 1", r.status === 1, `status=${r.status}`);
+    cleanup(r.outDir);
+    cleanupFixture(fixture);
+  }
+
+  {
+    // Same repo, but diff base==head (no violation possible) -- enforce must
+    // not false-positive.
+    const fixture = createScopeDiffFixture();
+    const r = runAction([
+      "--project", fixture.dir, "--mode", "Standard", "--gate", "Draft",
+      "--working-directory", fixture.dir,
+      "--enable-scope-diff", "true", "--scope-diff-base", fixture.base, "--scope-diff-head", fixture.base,
+      "--enforce", "true",
+    ]);
+    const json = JSON.parse(readFileSync(r.jsonPath, "utf8"));
+    assert("scope-diff clean (empty diff), enforce=true: verdict pass", json.scope_diff?.verdict === "pass");
+    cleanup(r.outDir);
+    cleanupFixture(fixture);
+  }
+
+  {
+    // No explicit refs and no GITHUB_EVENT_PATH -- enable-scope-diff must
+    // still fail loudly (SCOPE-DIFF-004), and report-only must not be able
+    // to hide it, the same way a missing PowerShell host can't be hidden.
+    const fixture = createScopeDiffFixture();
+    const r = runAction(
+      ["--project", fixture.dir, "--mode", "Standard", "--gate", "Draft", "--working-directory", fixture.dir, "--enable-scope-diff", "true"],
+      { GITHUB_EVENT_PATH: "" },
+    );
+    assert("scope-diff enabled with no resolvable refs: wrapper exits non-zero even in report-only mode", r.status !== 0, `status=${r.status}`);
+    const json = JSON.parse(readFileSync(r.jsonPath, "utf8"));
+    assert("unresolved refs: SCOPE-DIFF-004 row present", json.results.some((row) => row.rule_id === "SCOPE-DIFF-004"));
+    cleanup(r.outDir);
+    cleanupFixture(fixture);
+  }
+
+  {
+    // pull_request event context is used when no explicit override is given.
+    const fixture = createScopeDiffFixture();
+    const eventPath = join(fixture.dir, "event.json");
+    writeFileSync(eventPath, JSON.stringify({ pull_request: { base: { sha: fixture.base }, head: { sha: fixture.head } } }));
+    const r = runAction(
+      ["--project", fixture.dir, "--mode", "Standard", "--gate", "Draft", "--working-directory", fixture.dir, "--enable-scope-diff", "true"],
+      { GITHUB_EVENT_PATH: eventPath },
+    );
+    const json = JSON.parse(readFileSync(r.jsonPath, "utf8"));
+    assert("PR-event ref auto-detection: base/head match the event payload", json.scope_diff?.base_sha === fixture.base && json.scope_diff?.head_sha === fixture.head);
+    assert("PR-event ref auto-detection: real verdict computed (not unresolved)", json.scope_diff?.verdict === "fail");
+    cleanup(r.outDir);
+    cleanupFixture(fixture);
+  }
+
+  {
+    // An explicit override wins over the PR event context, even when they
+    // disagree.
+    const fixture = createScopeDiffFixture();
+    const eventPath = join(fixture.dir, "event.json");
+    writeFileSync(eventPath, JSON.stringify({ pull_request: { base: { sha: "0000000000000000000000000000000000000000" }, head: { sha: "1111111111111111111111111111111111111111" } } }));
+    const r = runAction(
+      [
+        "--project", fixture.dir, "--mode", "Standard", "--gate", "Draft", "--working-directory", fixture.dir,
+        "--enable-scope-diff", "true", "--scope-diff-base", fixture.base, "--scope-diff-head", fixture.base,
+      ],
+      { GITHUB_EVENT_PATH: eventPath },
+    );
+    const json = JSON.parse(readFileSync(r.jsonPath, "utf8"));
+    assert("explicit override wins over PR event", json.scope_diff?.base_sha === fixture.base && json.scope_diff?.head_sha === fixture.base);
+    assert("explicit override: valid refs resolve (event's fake SHAs were not used)", json.scope_diff?.verdict === "pass");
+    cleanup(r.outDir);
+    cleanupFixture(fixture);
+  }
+
+  {
+    // GITHUB_OUTPUT plumbing for the new scope-diff-verdict output.
+    const fixture = createScopeDiffFixture();
+    const outputFile = join(fixture.dir, "github_output");
+    writeFileSync(outputFile, "");
+    runAction(
+      [
+        "--project", fixture.dir, "--mode", "Standard", "--gate", "Draft", "--working-directory", fixture.dir,
+        "--enable-scope-diff", "true", "--scope-diff-base", fixture.base, "--scope-diff-head", fixture.head,
+      ],
+      { GITHUB_OUTPUT: outputFile },
+    );
+    const outputText = readFileSync(outputFile, "utf8");
+    assert("GITHUB_OUTPUT includes scope-diff-verdict=fail", outputText.includes("scope-diff-verdict=fail"));
+    cleanupFixture(fixture);
+  }
+
+  {
+    // Opt-in at the Action layer too: not passing enable-scope-diff leaves
+    // the report exactly as plain M4 always produced it.
+    const fixture = createScopeDiffFixture();
+    const r = runAction(["--project", fixture.dir, "--mode", "Standard", "--gate", "Draft", "--working-directory", fixture.dir]);
+    const json = JSON.parse(readFileSync(r.jsonPath, "utf8"));
+    assert("scope-diff not enabled: no scope_diff key in the report", !("scope_diff" in json));
+    assert("scope-diff not enabled: no SCOPE-DIFF rows", !json.results.some((row) => row.rule_id.startsWith("SCOPE-DIFF")));
+    cleanup(r.outDir);
+    cleanupFixture(fixture);
   }
 } else {
   console.log("");
