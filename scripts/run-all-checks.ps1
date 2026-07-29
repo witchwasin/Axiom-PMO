@@ -79,9 +79,14 @@ Invoke-Check "e2e-handoff" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Joi
 $node = Get-Command node -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($node) {
   Invoke-Check "cli" { & $node.Source (Join-Path $repo "tests/helpers/cli-tests.mjs") }
+  # The GitHub Action wrapper is Node like the CLI, and its integration tests
+  # shell out to the same PowerShell host this whole run already required --
+  # running it here gets Windows/Ubuntu/macOS coverage for free from the
+  # existing CI matrix instead of needing a separate consumer-repo workflow.
+  Invoke-Check "github-action" { & $node.Source (Join-Path $repo "tests/helpers/github-action-tests.mjs") }
 } else {
   Write-Host ""
-  Write-Host "SKIPPED: cli tests -- Node.js was not found on PATH."
+  Write-Host "SKIPPED: cli and github-action tests -- Node.js was not found on PATH."
   Write-Host "         The CLI is an optional wrapper; the PowerShell scripts above are the reference implementation."
 }
 

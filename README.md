@@ -200,6 +200,7 @@ than aspiration.
 | Handoff readiness assessment and semantic-review evidence checks | **Shipped** |
 | Structured JSON diagnostics for CI and dashboard consumers | **Shipped** |
 | `DELIVERY.md` or GitHub Issues as the declared task source | **Shipped** |
+| GitHub Action: report-only by default, PR-native Job Summary/annotations/report artifact | **Shipped** |
 | Execution work-package and evidence-return schemas | **Experimental** |
 | Automated execution-framework evidence import | **Roadmap** |
 | Portfolio dashboard, enterprise identity/RBAC, and deep tracker adapters | **Not shipped** |
@@ -264,6 +265,22 @@ powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPa
 powershell -ExecutionPolicy Bypass -File scripts/assess-handoff.ps1 -ProjectPath projects/P02-MYPROJECT -Mode Standard
 powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath projects/P02-MYPROJECT -Mode Standard -Gate Release -FailOnWarning
 ```
+
+### Run it as a GitHub Action
+
+No local PowerShell install required -- GitHub-hosted runners already ship
+one. Report-only by default, so a first install cannot break a pull request
+nobody has configured a rule set for yet.
+
+```yaml
+- uses: witchwasin/Axiom-PMO@<pinned-sha-or-tag>
+  with:
+    project: projects/P02-MYPROJECT
+    mode: Standard
+    gate: Release
+```
+
+Full inputs, outputs, and the report contract: [docs/guides/github-action.md](docs/guides/github-action.md).
 
 ### The gates
 
@@ -435,7 +452,7 @@ Typography: Tahoma / Arial (sans-serif) for voice; Consolas / Courier New
 | | |
 |---|---|
 | **Concepts** | [handoff readiness](docs/concepts/handoff-readiness.md) · [anti-hallucination](docs/concepts/anti-hallucination.md) · [evidence-based execution](docs/concepts/evidence-based-execution.md) · [risk modes](docs/concepts/risk-modes.md) · [human authority](docs/concepts/human-authority.md) |
-| **Guides** | [artifact map](docs/guides/artifact-map.md) · [M1 walkthrough and recording evidence](docs/guides/m1-walkthrough-and-recording.md) · [PowerShell runtime setup](docs/guides/powershell-runtime.md) · [three-day demo handoff](docs/guides/three-day-demo-handoff.md) |
+| **Guides** | [artifact map](docs/guides/artifact-map.md) · [GitHub Action](docs/guides/github-action.md) · [M1 walkthrough and recording evidence](docs/guides/m1-walkthrough-and-recording.md) · [PowerShell runtime setup](docs/guides/powershell-runtime.md) · [three-day demo handoff](docs/guides/three-day-demo-handoff.md) |
 | **Reference** | [diagnostics contract](docs/reference/diagnostics-contract.md) · [rule reference](docs/rules/) |
 | **Architecture** | [control plane](docs/architecture/control-plane.md) · [validation engine](docs/architecture/validation-engine.md) |
 | **Governance** | [release readiness](docs/governance/release-readiness.md) · [source ownership](docs/governance/source-ownership.md) |

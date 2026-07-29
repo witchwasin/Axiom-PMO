@@ -150,6 +150,7 @@ powershell -ExecutionPolicy Bypass -File tests/helpers/demo-smoke-tests.ps1
 
 ```bash
 node tests/helpers/cli-tests.mjs
+node tests/helpers/github-action-tests.mjs
 ```
 
 | Suite | Proves |
@@ -160,5 +161,6 @@ node tests/helpers/cli-tests.mjs
 | cli | Exit codes propagate unchanged, `handoff --json` is one parseable document, and no validation logic has leaked into JavaScript |
 | handoff-assessment | Stage verdicts stay separate, and every score cap actually binds |
 | demo-smoke | The demo's narration matches its real output, and it finishes well inside three minutes |
+| github-action | The Action wrapper's annotation escaping, path-outside-workspace fallback, exit-code-to-outcome mapping, and report-only-vs-enforce behavior all hold, including against a missing-PowerShell host and malformed validator output |
 
 All of these run as part of `scripts/run-all-checks.ps1`.
