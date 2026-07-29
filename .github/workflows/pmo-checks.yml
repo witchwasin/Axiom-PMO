@@ -197,6 +197,7 @@ jobs:
           project: demo/broken-project
           mode: Standard
           gate: Handoff
+          artifact-name: axiom-pmo-report-dogfood-report-only
 
       - name: Verify report-only recorded the real result without failing the step
         shell: bash
@@ -220,6 +221,7 @@ jobs:
           mode: Standard
           gate: Handoff
           enforce: "true"
+          artifact-name: axiom-pmo-report-dogfood-enforced-fail
 
       - name: Verify enforcement actually blocks
         shell: bash
@@ -239,3 +241,4 @@ jobs:
           mode: Standard
           gate: Release
           enforce: "true"
+          artifact-name: axiom-pmo-report-dogfood-enforced-clean

@@ -29,6 +29,15 @@ inputs:
     description: "Whether to upload axiom-report.json and axiom-report.md as a workflow artifact."
     required: false
     default: "true"
+  artifact-name:
+    description: >-
+      Name for the uploaded artifact. actions/upload-artifact v4 rejects a
+      second artifact with the same name in one workflow run, so a workflow
+      that calls this Action more than once (for example, once per project
+      in a matrix, or once for a report-only pass and once enforced) must
+      give each call a distinct name.
+    required: false
+    default: "axiom-pmo-report"
   annotation-mode:
     description: "'safe' emits sanitized FAIL/WARN annotations on the pull request; 'off' emits none."
     required: false
@@ -88,13 +97,27 @@ runs:
           --annotation-mode "${{ inputs.annotation-mode }}" \
           --enforce "${{ inputs.enforce }}"
 
+    # continue-on-error: the governance verdict already came from the `run`
+    # step above and set this composite action's exit status. An unrelated
+    # artifact-storage problem (quota, a transient API error, or -- before
+    # `artifact-name` existed -- a name collision from calling this Action
+    # more than once in one workflow run) must not overwrite that verdict
+    # with an unrelated "failed" outcome.
     - name: Upload governance report
+      id: upload
       if: ${{ inputs.upload-artifact == 'true' && !cancelled() }}
+      continue-on-error: true
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
-        name: axiom-pmo-report
+        name: ${{ inputs.artifact-name }}
         path: |
           ${{ steps.run.outputs.json-report }}
           ${{ steps.run.outputs.markdown-report }}
         if-no-files-found: warn
         retention-days: 30
+
+    - name: Note a failed artifact upload
+      if: ${{ inputs.upload-artifact == 'true' && steps.upload.outcome == 'failure' }}
+      shell: bash
+      run: |
+        echo "::warning title=Axiom-PMO report artifact not uploaded::The governance check itself completed (see outputs.outcome); only the report-artifact upload failed. If this workflow calls the Action more than once, give each call a distinct 'artifact-name'."
