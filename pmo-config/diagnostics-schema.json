@@ -146,6 +146,7 @@
           "changed_out_of_scope",
           "changed_excluded",
           "exempt",
+          "renames",
           "verdict"
         ],
         "properties": {
@@ -164,6 +165,21 @@
               "properties": {
                 "path": { "type": "string" },
                 "reason": { "type": "string" }
+              }
+            }
+          },
+          "renames": {
+            "type": "array",
+            "description": "One entry per changed file git diff reported as a rename or copy (R/C status). Structured old/new path and per-side verdict, additive to the plain-path buckets above -- a renamed file's new_path still also appears in exactly one of changed_in_scope/changed_out_of_scope/changed_excluded/exempt per the combined-verdict rule.",
+            "items": {
+              "type": "object",
+              "required": ["status", "old_path", "new_path", "old_verdict", "new_verdict"],
+              "properties": {
+                "status": { "type": "string" },
+                "old_path": { "type": "string" },
+                "new_path": { "type": "string" },
+                "old_verdict": { "type": "string", "enum": ["excluded", "out_of_scope", "exempt", "in_scope"] },
+                "new_verdict": { "type": "string", "enum": ["excluded", "out_of_scope", "exempt", "in_scope"] }
               }
             }
           },

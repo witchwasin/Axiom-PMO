@@ -132,6 +132,15 @@ function Read-ScopeDeclaration {
 # SCOPE.json this file is part of the framework's own runtime config (like
 # policy.json, artifact-policy.json, etc.) -- Import-PmoConfig's "missing
 # config is a hard error" rule applies the same way here.
+#
+# A repo-wide exemption is reviewable precisely because it is explicit and
+# narrow -- every entry is validated the same way a project's own SCOPE.json
+# patterns are (Test-ScopeGlobSyntax), plus three checks specific to this
+# file: a pattern broad enough to exempt the whole repository defeats the
+# entire check for every project at once, so patterns matching "everything"
+# are rejected outright; an empty reason defeats the "reviewable in a diff"
+# purpose of this file; and a duplicate pattern is very likely a copy-paste
+# mistake, not an intended second rule.
 function Read-ScopeDiffPolicy {
   param([Parameter(Mandatory = $true)][string]$RepoRoot)
 
@@ -141,9 +150,28 @@ function Read-ScopeDiffPolicy {
   }
   $doc = Get-Content -LiteralPath $policyPath -Raw | ConvertFrom-Json
 
+  $tooBroad = @('**', '*', '**/*', '**/**')
+  $seen = New-Object System.Collections.Generic.HashSet[string]
   $entries = @()
   foreach ($item in @($doc.repo_wide_exempt)) {
-    $entries += [pscustomobject]@{ Pattern = [string]$item.pattern; Reason = [string]$item.reason }
+    $pattern = [string]$item.pattern
+    $reason = [string]$item.reason
+
+    $syntaxError = Test-ScopeGlobSyntax $pattern
+    if ($syntaxError) {
+      throw "Invalid entry in $policyPath -- pattern '$pattern': $syntaxError"
+    }
+    if ($tooBroad -contains $pattern) {
+      throw "Invalid entry in $policyPath -- pattern '$pattern' is too broad for a repo-wide exemption: it would exempt effectively every file in every project from SCOPE-DIFF. Name a specific file or path prefix instead."
+    }
+    if ([string]::IsNullOrWhiteSpace($reason)) {
+      throw "Invalid entry in $policyPath -- pattern '$pattern' has no reason. Every repo-wide exemption must document why it is exempt."
+    }
+    if (-not $seen.Add($pattern)) {
+      throw "Invalid entry in $policyPath -- duplicate pattern '$pattern'"
+    }
+
+    $entries += [pscustomobject]@{ Pattern = $pattern; Reason = $reason }
   }
   return $entries
 }
@@ -158,6 +186,14 @@ function Read-ScopeDiffPolicy {
 #   "exempt"      -- matches a repo-wide exemption, with its reason
 #   "in_scope"    -- matches an include pattern, not excluded, not exempt
 #   "out_of_scope" -- matches nothing approved (SCOPE-DIFF-001)
+# Path comparisons here are always -cmatch (case-sensitive), never plain
+# -match. PowerShell's -match is case-insensitive by default, which would
+# let `SRC/PAYMENTS/admin.ts` satisfy an `include: ["src/payments/**"]`
+# declaration on a case-sensitive filesystem/Git checkout (Linux/macOS, and
+# most CI runners) even though the literal path does not match what was
+# approved -- a real scope bypass, not a formatting edge case. git itself
+# always reports the on-disk byte-for-byte path, so the comparison must
+# preserve case exactly.
 function Resolve-ScopeVerdict {
   param(
     [Parameter(Mandatory = $true)][string]$Path,
@@ -167,17 +203,17 @@ function Resolve-ScopeVerdict {
   )
 
   foreach ($rx in $ExcludeRegexes) {
-    if ($Path -match $rx) {
+    if ($Path -cmatch $rx) {
       return [pscustomobject]@{ Verdict = "excluded"; Reason = $null }
     }
   }
   foreach ($entry in $ExemptEntries) {
-    if ($Path -match $entry.Regex) {
+    if ($Path -cmatch $entry.Regex) {
       return [pscustomobject]@{ Verdict = "exempt"; Reason = $entry.Reason }
     }
   }
   foreach ($rx in $IncludeRegexes) {
-    if ($Path -match $rx) {
+    if ($Path -cmatch $rx) {
       return [pscustomobject]@{ Verdict = "in_scope"; Reason = $null }
     }
   }

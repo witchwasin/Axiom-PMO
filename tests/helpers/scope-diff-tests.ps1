@@ -14,6 +14,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 . (Join-Path $PSScriptRoot "../../scripts/lib/pwsh-host.ps1")
+. (Join-Path $PSScriptRoot "../../scripts/lib/scope-diff-matcher.ps1")
 
 $pwshExe = Get-PowerShellHost
 if (-not $pwshExe) {
@@ -130,6 +131,39 @@ Write-Host ""
       ($r.Json.scope_diff.changed_out_of_scope -contains "src/auth/bar.ts")
     Assert-True "one-outside: SCOPE-DIFF-001 FAIL row names the file as artifact" `
       (@($r.Json.results | Where-Object { $_.rule_id -eq "SCOPE-DIFF-001" -and $_.level -eq "FAIL" -and $_.artifact -eq "src/auth/bar.ts" }).Count -eq 1)
+  } finally { Remove-ScopeDiffGitFixture $dir }
+}.Invoke()
+
+# ---- Case: path matching is case-sensitive (MAJOR fix -- was a scope bypass) --
+{
+  $dir = New-ScopeDiffGitFixture
+  try {
+    Write-FixtureFile $dir "src/payments/foo.ts" "a"
+    Write-FixtureFile $dir "SCOPE.json" '{"schema_version":"1.0","project":"T","implementation_scope":{"include":["src/payments/**"],"exclude":[]}}'
+    $base = New-FixtureCommit $dir "base"
+    Write-FixtureFile $dir "src/payments/foo.ts" "b"
+    & git -C $dir add -A 2>$null | Out-Null
+    # Added via git plumbing (hash-object + update-index --cacheinfo), not a
+    # working-tree write: on a case-insensitive-but-case-preserving
+    # filesystem (macOS APFS's default, and Windows/NTFS), writing to
+    # "SRC/PAYMENTS/bar.ts" when "src/payments/" already exists on disk
+    # silently resolves into the existing directory, and git then reports
+    # the on-disk case -- which would hide the very case-sensitivity bug
+    # this test exists to catch. Injecting the blob directly into the index
+    # bypasses the filesystem's own case-folding entirely, so this test is
+    # meaningful on every host this suite runs on, not only a
+    # case-sensitive one (see also docs/reference/scope-declaration.md).
+    $blobHash = (($(printf 'new' | & git -C $dir hash-object -w --stdin)) | Select-Object -Last 1).Trim()
+    & git -C $dir update-index --add --cacheinfo "100644,$blobHash,SRC/PAYMENTS/bar.ts" 2>$null | Out-Null
+    & git -C $dir commit -q -m "change" 2>$null | Out-Null
+    $head = (& git -C $dir rev-parse HEAD 2>$null)
+
+    $r = Invoke-ScopeDiffValidate -RepoRoot $dir -ProjectPath $dir -Base $base -Head $head
+    Assert-True "case-sensitive: verdict is fail" ($r.Json.scope_diff.verdict -eq "fail")
+    Assert-True "case-sensitive: wrong-case path reported out of scope" `
+      ($r.Json.scope_diff.changed_out_of_scope -contains "SRC/PAYMENTS/bar.ts")
+    Assert-True "case-sensitive: wrong-case path not counted as in scope" `
+      (-not ($r.Json.scope_diff.changed_in_scope -contains "SRC/PAYMENTS/bar.ts"))
   } finally { Remove-ScopeDiffGitFixture $dir }
 }.Invoke()
 
@@ -251,6 +285,11 @@ Write-Host ""
 
     $r = Invoke-ScopeDiffValidate -RepoRoot $dir -ProjectPath $dir -Base $base -Head $head
     Assert-True "rename in-scope-to-in-scope: verdict pass" ($r.Json.scope_diff.verdict -eq "pass")
+    $renameRow = @($r.Json.scope_diff.renames | Where-Object { $_.new_path -eq "src/payments/new name.ts" })
+    Assert-True "rename in-scope-to-in-scope: renames array has one structured entry" ($renameRow.Count -eq 1)
+    Assert-True "rename in-scope-to-in-scope: structured entry has both verdicts" `
+      ($renameRow[0].old_path -eq "src/payments/old name.ts" -and `
+       $renameRow[0].old_verdict -eq "in_scope" -and $renameRow[0].new_verdict -eq "in_scope")
   } finally { Remove-ScopeDiffGitFixture $dir }
 }.Invoke()
 
@@ -273,6 +312,11 @@ Write-Host ""
     Assert-True "rename in-scope-to-out-of-scope: verdict fail (worse side wins)" ($r.Json.scope_diff.verdict -eq "fail")
     Assert-True "rename: violation message mentions the rename" `
       ((@($r.Json.results | Where-Object { $_.rule_id -eq "SCOPE-DIFF-001" -and $_.level -eq "FAIL" })[0]).message -match "renamed from")
+    $renameRow = @($r.Json.scope_diff.renames | Where-Object { $_.new_path -eq "src/auth/new name.ts" })
+    Assert-True "rename in-scope-to-out-of-scope: structured entry present" ($renameRow.Count -eq 1)
+    Assert-True "rename in-scope-to-out-of-scope: old side recorded in_scope, new side out_of_scope" `
+      ($renameRow[0].old_path -eq "src/payments/old name.ts" -and `
+       $renameRow[0].old_verdict -eq "in_scope" -and $renameRow[0].new_verdict -eq "out_of_scope")
   } finally { Remove-ScopeDiffGitFixture $dir }
 }.Invoke()
 
@@ -362,7 +406,60 @@ Write-Host ""
     Assert-True "repo-wide exempt: verdict pass" ($r.Json.scope_diff.verdict -eq "pass")
     Assert-True "repo-wide exempt: file listed with a reason" `
       (@($r.Json.scope_diff.exempt | Where-Object { $_.path -eq "package-lock.json" -and $_.reason }).Count -eq 1)
+    Assert-True "repo-wide exempt: not double-counted into changed_in_scope" `
+      (-not ($r.Json.scope_diff.changed_in_scope -contains "package-lock.json"))
   } finally { Remove-ScopeDiffGitFixture $dir }
+}.Invoke()
+
+# ---- Case: repo-wide exemption policy rejects an overly broad pattern ------
+{
+  $policyDir = Join-Path ([System.IO.Path]::GetTempPath()) ("axiom-scope-diff-policy-" + [System.Guid]::NewGuid().ToString("N"))
+  New-Item -ItemType Directory -Path (Join-Path $policyDir "pmo-config") -Force | Out-Null
+  try {
+    Set-Content -LiteralPath (Join-Path $policyDir "pmo-config/scope-diff-policy.json") -Value (
+      '{"repo_wide_exempt":[{"pattern":"**","reason":"shared files"}]}'
+    ) -NoNewline
+    $threw = $false
+    try { Read-ScopeDiffPolicy -RepoRoot $policyDir | Out-Null } catch { $threw = $true }
+    Assert-True "repo-wide policy: '**' pattern is rejected, not silently accepted" $threw
+  } finally { Remove-Item -LiteralPath $policyDir -Recurse -Force -ErrorAction SilentlyContinue }
+}.Invoke()
+
+# ---- Case: repo-wide exemption policy rejects an entry with no reason ------
+{
+  $policyDir = Join-Path ([System.IO.Path]::GetTempPath()) ("axiom-scope-diff-policy-" + [System.Guid]::NewGuid().ToString("N"))
+  New-Item -ItemType Directory -Path (Join-Path $policyDir "pmo-config") -Force | Out-Null
+  try {
+    Set-Content -LiteralPath (Join-Path $policyDir "pmo-config/scope-diff-policy.json") -Value (
+      '{"repo_wide_exempt":[{"pattern":"foo.lock","reason":""}]}'
+    ) -NoNewline
+    $threw = $false
+    try { Read-ScopeDiffPolicy -RepoRoot $policyDir | Out-Null } catch { $threw = $true }
+    Assert-True "repo-wide policy: empty reason is rejected" $threw
+  } finally { Remove-Item -LiteralPath $policyDir -Recurse -Force -ErrorAction SilentlyContinue }
+}.Invoke()
+
+# ---- Case: repo-wide exemption policy rejects a duplicate pattern ----------
+{
+  $policyDir = Join-Path ([System.IO.Path]::GetTempPath()) ("axiom-scope-diff-policy-" + [System.Guid]::NewGuid().ToString("N"))
+  New-Item -ItemType Directory -Path (Join-Path $policyDir "pmo-config") -Force | Out-Null
+  try {
+    Set-Content -LiteralPath (Join-Path $policyDir "pmo-config/scope-diff-policy.json") -Value (
+      '{"repo_wide_exempt":[{"pattern":"foo.lock","reason":"a"},{"pattern":"foo.lock","reason":"b"}]}'
+    ) -NoNewline
+    $threw = $false
+    try { Read-ScopeDiffPolicy -RepoRoot $policyDir | Out-Null } catch { $threw = $true }
+    Assert-True "repo-wide policy: duplicate pattern is rejected" $threw
+  } finally { Remove-Item -LiteralPath $policyDir -Recurse -Force -ErrorAction SilentlyContinue }
+}.Invoke()
+
+# ---- Case: the framework's own scope-diff-policy.json is itself valid ------
+{
+  $threw = $false
+  $entries = $null
+  try { $entries = Read-ScopeDiffPolicy -RepoRoot $repo } catch { $threw = $true }
+  Assert-True "repo-wide policy: framework's own policy.json passes validation" `
+    ((-not $threw) -and $entries.Count -gt 0)
 }.Invoke()
 
 # ---- Case: an unrelated, non-exempt file still fails ------------------------

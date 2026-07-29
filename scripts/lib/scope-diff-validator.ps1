@@ -59,7 +59,7 @@ function Invoke-ScopeDiffCheck {
     return [pscustomobject]@{
       base_sha = $BaseRef; head_sha = $HeadRef
       approved_include = @(); approved_exclude = @()
-      changed_in_scope = @(); changed_out_of_scope = @(); changed_excluded = @(); exempt = @()
+      changed_in_scope = @(); changed_out_of_scope = @(); changed_excluded = @(); exempt = @(); renames = @()
       verdict = "scope_missing"
     }
   }
@@ -68,7 +68,7 @@ function Invoke-ScopeDiffCheck {
     return [pscustomobject]@{
       base_sha = $BaseRef; head_sha = $HeadRef
       approved_include = @(); approved_exclude = @()
-      changed_in_scope = @(); changed_out_of_scope = @(); changed_excluded = @(); exempt = @()
+      changed_in_scope = @(); changed_out_of_scope = @(); changed_excluded = @(); exempt = @(); renames = @()
       verdict = "invalid_scope"
     }
   }
@@ -79,7 +79,7 @@ function Invoke-ScopeDiffCheck {
     return [pscustomobject]@{
       base_sha = $BaseRef; head_sha = $HeadRef
       approved_include = $scope.Include; approved_exclude = $scope.Exclude
-      changed_in_scope = @(); changed_out_of_scope = @(); changed_excluded = @(); exempt = @()
+      changed_in_scope = @(); changed_out_of_scope = @(); changed_excluded = @(); exempt = @(); renames = @()
       verdict = "git_error"
     }
   }
@@ -94,6 +94,15 @@ function Invoke-ScopeDiffCheck {
   $outOfScope = New-Object System.Collections.Generic.List[string]
   $excluded = New-Object System.Collections.Generic.List[string]
   $exempt = New-Object System.Collections.Generic.List[object]
+  # Structured rename records, additive to the plain-path buckets above.
+  # Those buckets only ever hold the new path (change.Path), so a rename
+  # whose old-path side is what actually triggered the worse verdict (e.g.
+  # old path excluded, new path in-scope) is otherwise invisible to a
+  # consumer reading only changed_excluded/changed_out_of_scope -- the
+  # `(renamed from ...)` note in the FAIL message is the only place that
+  # says so. This list lets external tooling see both sides and both
+  # per-side verdicts without parsing diagnostic prose.
+  $renames = New-Object System.Collections.Generic.List[object]
 
   foreach ($change in $diffResult.Changes) {
     $newVerdict = Resolve-ScopeVerdict -Path $change.Path -IncludeRegexes $includeRegexes -ExcludeRegexes $excludeRegexes -ExemptEntries $exemptEntries
@@ -101,6 +110,13 @@ function Invoke-ScopeDiffCheck {
     if ($change.OldPath) {
       $oldVerdict = Resolve-ScopeVerdict -Path $change.OldPath -IncludeRegexes $includeRegexes -ExcludeRegexes $excludeRegexes -ExemptEntries $exemptEntries
       $combined = Resolve-ScopeDiffCombinedVerdict -VerdictA $newVerdict -VerdictB $oldVerdict
+      $renames.Add([pscustomobject]@{
+        status = $change.Status
+        old_path = $change.OldPath
+        new_path = $change.Path
+        old_verdict = $oldVerdict.Verdict
+        new_verdict = $newVerdict.Verdict
+      }) | Out-Null
     }
 
     switch ($combined.Verdict) {
@@ -115,8 +131,14 @@ function Invoke-ScopeDiffCheck {
         Add-Result FAIL "Changed file is outside the approved implementation scope: $($change.Path)$renameNote" "SCOPE-DIFF-001" -Artifact $change.Path
       }
       "exempt" {
+        # Exempt is its own category, disjoint from changed_in_scope -- a
+        # path here is approved *without* being covered by the project's own
+        # include list. Adding it to $inScope as well would double-count it
+        # in every consumer that sums these buckets (result-writer.ps1's
+        # summary line, and any external tooling that does
+        # changed_in_scope.length + exempt.length to reconcile against the
+        # total changed-file count).
         $exempt.Add([pscustomobject]@{ path = $change.Path; reason = $combined.Reason }) | Out-Null
-        $inScope.Add($change.Path) | Out-Null
       }
       "in_scope" {
         $inScope.Add($change.Path) | Out-Null
@@ -150,6 +172,7 @@ function Invoke-ScopeDiffCheck {
     changed_out_of_scope = $outOfScope.ToArray()
     changed_excluded = $excluded.ToArray()
     exempt = $exempt.ToArray()
+    renames = $renames.ToArray()
     verdict = $verdict
   }
 }

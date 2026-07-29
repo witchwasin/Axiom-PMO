@@ -91,9 +91,22 @@ function Get-ScopeDiffChangedFiles {
   # --no-pager and explicit refs (never a bare "..." range) so behavior does
   # not depend on the current branch or on any pager/alias configuration in
   # the runner's environment.
+  #
+  # Rename detection is forced via explicit -c overrides and --find-renames
+  # rather than left to ambient config: `diff.renames` and `diff.renameLimit`
+  # can be set differently per machine, per repo, or per CI runner image, and
+  # a repository/global gitconfig outside this script's control must never be
+  # able to change whether a change is reported as "R100 old -> new" or as
+  # "D old" + "A new" -- those two shapes carry different scope-diff
+  # semantics (see Resolve-ScopeDiffCombinedVerdict) and must be identical
+  # across every environment this check runs in. The rename similarity index
+  # (100%, i.e. an exact-content rename) is left at git's default -- only
+  # whether detection is on at all, and the candidate-pair search limit, are
+  # pinned here.
   $stderrFile = [System.IO.Path]::GetTempFileName()
   try {
-    $raw = & git -C $RepoRoot --no-pager diff --no-color --name-status -z "$BaseRef" "$HeadRef" 2>$stderrFile
+    $raw = & git -C $RepoRoot -c diff.renames=true -c diff.renameLimit=32767 `
+      --no-pager diff --no-color --find-renames --name-status -z "$BaseRef" "$HeadRef" 2>$stderrFile
     $exitCode = $LASTEXITCODE
     if ($exitCode -ne 0) {
       # The actual git stderr is intentionally not included below -- only
