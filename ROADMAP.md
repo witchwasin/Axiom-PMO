@@ -71,7 +71,7 @@ Recommended effort allocation:
 | Milestone 3.5 - Runtime Portability | Accepted | CI threshold met; branch protection deferred by human decision |
 | Milestone 4 - GitHub Action | Delivered | Merged to `main` at `31d1e25`; child issues #12-#17 closed |
 | Milestone 4.5 - SCOPE-DIFF | Delivered | Human Owner accepted 2026-07-30 after two independent AI review rounds; merged to `main` at `6b42643` |
-| Milestone 5 - Execution Contract Verification MVP | Blocked | Starts only after Milestone 4 and Milestone 4.5 human acceptance |
+| Milestone 5 - Execution Contract Verification MVP | Unblocked; open for planning | Milestone 4 and Milestone 4.5 human acceptance both satisfied 2026-07-30 |
 | Milestone 6 - Claude Code Integration Experience | Planned | Requires separate approval after Milestone 5 |
 
 ## Roadmap Governance
@@ -109,7 +109,7 @@ Milestone 1 delivered, with walkthrough/recording evidence deferred
 -> Milestone 3.5 (accepted)
 -> Milestone 4 (delivered)
 -> Milestone 4.5 (delivered)
--> Milestone 5
+-> Milestone 5 (unblocked, open for planning)
 -> Milestone 6
 ```
 
@@ -525,9 +525,13 @@ integration -- inspection of the real `superpowers` plugin found skills and
 a `SessionStart` hook only, no contract-ingestion or result-emission surface
 Axiom-PMO could treat as a trusted boundary.
 
-Status: **blocked by Milestone 4 and Milestone 4.5 human acceptance.**
-Experimental schemas may remain available for design review, but runtime
-export/import work must not start before that acceptance.
+Status: **unblocked; open for planning.** Milestone 4 and Milestone 4.5
+both received Human Owner acceptance on 2026-07-30. Per Roadmap Governance,
+"unblocked" means planning issues may now be opened -- it is not itself an
+approval to start implementation. Runtime export/import work still needs
+its own scoped plan and, per the Non-Negotiable Rules, still needs the
+AI to stop at every human-approval, push, or milestone-acceptance boundary
+the same as every earlier milestone did.
 
 Reference framing:
 
