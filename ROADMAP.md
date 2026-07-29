@@ -64,12 +64,12 @@ Recommended effort allocation:
 
 | Milestone | Status | Release / dependency |
 |---|---|---|
-| Milestone 1 - Public Trust + Three-Minute Proof | Acceptance debt | Walkthrough and recording remain open |
+| Milestone 1 - Public Trust + Three-Minute Proof | Delivered with deferred evidence | Walkthrough and recording are optional trust evidence, not a Milestone 4 blocker |
 | Milestone 2 - Developer Diagnostics | Delivered | Delivered in 1.1 |
 | Milestone 2.5 - Engineering Handoff Readiness | Delivered | Delivered in 1.1.0; strengthened in 1.1.1 |
 | Milestone 3 - Thin Local CLI | Delivered (Phase A) | Local CLI delivered; public npm package deferred |
 | Milestone 3.5 - Runtime Portability | Accepted | CI threshold met; branch protection deferred by human decision |
-| Milestone 4 - GitHub Action | Planned | Blocked by Milestone 1 acceptance |
+| Milestone 4 - GitHub Action | Planned | Next implementation milestone |
 | Milestone 5 - Superpowers Runtime Bridge | Blocked | Starts only after Milestone 4 human acceptance |
 | Milestone 6 - Claude Code Integration Experience | Planned | Requires separate approval after Milestone 5 |
 
@@ -101,7 +101,7 @@ This keeps roadmap execution from expanding into unrelated product work.
 Active dependency chain:
 
 ```text
-Milestone 1 acceptance
+Milestone 1 delivered, with walkthrough/recording evidence deferred
 -> Milestone 2 (delivered)
 -> Milestone 2.5 (delivered)
 -> Milestone 3 (delivered)
@@ -125,11 +125,13 @@ not begin until its preceding acceptance condition is satisfied.
 Objective: make the repository trustworthy and make the value visible within
 three minutes.
 
-Status: **acceptance debt.** The validator, demo, hygiene tooling, quick start,
-and CI exist. An independent clean-room walkthrough and a committed terminal
-recording/GIF are still required. Issue #8 records this work and is open. Use
+Status: **delivered with deferred evidence.** The validator, demo, hygiene
+tooling, quick start, and CI exist. On 2026-07-29, the human decision changed
+the independent clean-room walkthrough and committed terminal recording/GIF
+from required Milestone 4 blockers into optional trust evidence. Issue #8
+remains the place to track that optional evidence if it is picked up later. Use
 the [M1 walkthrough and recording evidence guide](docs/guides/m1-walkthrough-and-recording.md)
-to capture the required evidence rather than replacing the issue.
+to capture evidence without fabricating it.
 
 Deliverables:
 
@@ -141,8 +143,9 @@ Deliverables:
 - `demo/broken-project/` and `demo/fixed-project/`.
 - One-command demo through `scripts/demo.ps1` and `make demo`.
 - README quick start near the top of the document.
-- GIF or terminal recording showing a failing gate becoming a passing gate.
-- One clean-room usability test with a developer unfamiliar with Axiom-PMO.
+- Optional GIF or terminal recording showing a failing gate becoming a passing
+  gate.
+- Optional clean-room usability test with a developer unfamiliar with Axiom-PMO.
 - CI green.
 
 Demo failures should only use behavior that exists today. Good first demo cases:
@@ -415,8 +418,7 @@ contracts match, and the support documentation reflects the evidence.
 
 Objective: make Axiom-PMO visible directly in pull requests.
 
-Status: **planned; implementation blocked by Milestone 1 acceptance and
-Milestone 3.5.**
+Status: **planned; ready for implementation planning.**
 
 Dependency:
 
@@ -580,12 +582,11 @@ Do not spend near-term effort on:
   runs, Windows PowerShell 5.1 remains green, and human acceptance was recorded
   on 2026-07-29 with branch protection deferred.
 
-### Acceptance debt
+### Deferred trust evidence
 
-- Reopen Issue #8.
-- Complete an independent clean-room walkthrough on Windows and macOS.
-- Commit a deterministic terminal recording and README GIF.
-- Record human acceptance of Milestone 1 after the evidence is verified.
+- Optional independent clean-room walkthrough on Windows and macOS.
+- Optional deterministic terminal recording and README GIF.
+- Issue #8 remains available if the deferred evidence is picked up later.
 
 ### Next
 
@@ -595,7 +596,6 @@ Do not spend near-term effort on:
 
 ### Blocked
 
-- Milestone 4 implementation, until Milestone 1 is accepted.
 - Superpowers export/import runtime, until Milestone 4 is accepted.
 - Claude Code integration implementation, until separately approved after
   Milestone 5.

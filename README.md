@@ -410,12 +410,13 @@ Delivered in 1.1:
 
 Next:
 
-- close Milestone 1 acceptance debt with an independent clean-room walkthrough
-  and a committed terminal recording/GIF;
-- complete Milestone 3.5 by making Windows and Ubuntu PowerShell 7 required,
-  while keeping Windows PowerShell 5.1 compatibility coverage;
+- keep the optional Milestone 1 walkthrough and recording evidence packet
+  available for future trust work;
+- use the accepted Milestone 3.5 runtime portability matrix: Windows and Ubuntu
+  PowerShell 7 are blocking workflow jobs, with Windows PowerShell 5.1
+  compatibility coverage retained;
 - build a GitHub Action that reports governance failures directly in pull
-  requests, after Milestone 3.5 is complete.
+  requests.
 
 The Superpowers runtime bridge remains blocked until the GitHub Action has
 passed human acceptance. The active roadmap is intentionally limited to
