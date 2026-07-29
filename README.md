@@ -7,9 +7,9 @@
 
 ### The governance control plane for AI-assisted software delivery.
 
-A deterministic governance layer that keeps AI coding agents inside **verified
-requirements, approved scope, traceable evidence, and human-controlled release
-gates.**
+A repo-native, deterministic governance layer that keeps AI coding agents
+inside **verified requirements, approved scope, traceable evidence, and
+human-controlled release gates.**
 
 [![Axiom-PMO Checks](https://github.com/witchwasin/Axiom-PMO/actions/workflows/pmo-checks.yml/badge.svg)](https://github.com/witchwasin/Axiom-PMO/actions/workflows/pmo-checks.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -22,6 +22,23 @@ gates.**
 ---
 
 > **AI agents can write code. They should not invent the project.**
+
+## Why this matters now
+
+AI coding agents can plan, implement, test, review, and produce their own
+evidence. That creates a new governance problem: the same system performing the
+work may also claim that the work is correct, complete, and approved.
+
+Axiom-PMO keeps four things separate that AI-assisted delivery must not collapse:
+
+1. **Source** — what a stakeholder or governed input actually said.
+2. **Inference** — what an AI reasoned from incomplete information.
+3. **Candidate evidence** — what execution produced and still needs verification.
+4. **Human authority** — what only an authorized person may approve.
+
+This is not prompt guidance. Axiom-PMO turns those boundaries into
+**machine-testable contracts** and fails the delivery gate when the contract is
+broken.
 
 ## See it in three minutes
 
@@ -144,6 +161,10 @@ approved, or deploy without human permission.
 Axiom-PMO is framework-agnostic. It defines *what may be built and when it is
 safe to release*; your execution framework defines *how it gets built*.
 
+> **Product boundary:** Axiom-PMO does not replace Jira, Azure DevOps, Linear,
+> GitHub, or an AI coding framework. It governs the scope, authority, and
+> evidence that move through those systems.
+
 | Capability | Axiom-PMO | Execution frameworks (Superpowers / BMAD / spec-kit / OpenSpec) |
 |---|---|---|
 | Requirement & scope governance | Primary | Limited / partial |
@@ -158,11 +179,43 @@ safe to release*; your execution framework defines *how it gets built*.
 > governance layer they can operate inside. Individual elements here have prior
 > art; the differentiation is combining risk-adaptive PM governance, source
 > protection, human authority boundaries, full-chain traceability, and
-> deterministic validation into one lightweight control plane for small
-> AI-assisted teams.
+> deterministic validation into one repo-native control plane for AI-assisted
+> software delivery.
 
 See [`docs/integrations/overview.md`](docs/integrations/overview.md) for the
 Level 0–4 interoperability model and authority-precedence order.
+
+## What is shipped today
+
+The status labels below are deliberate. They separate implemented behavior from
+schemas and roadmap intent, so teams can evaluate Axiom-PMO on evidence rather
+than aspiration.
+
+| Capability | Status |
+|---|---|
+| Source-backed requirements and evidence statuses | **Shipped** |
+| Lite / Standard / Strict risk-adaptive modes | **Shipped** |
+| Human-only approval and release-authority boundaries | **Shipped** |
+| Deterministic Scope, Design, Handoff, and Release validation | **Shipped** |
+| Handoff readiness assessment and semantic-review evidence checks | **Shipped** |
+| Structured JSON diagnostics for CI and dashboard consumers | **Shipped** |
+| `DELIVERY.md` or GitHub Issues as the declared task source | **Shipped** |
+| Execution work-package and evidence-return schemas | **Experimental** |
+| Automated execution-framework evidence import | **Roadmap** |
+| Portfolio dashboard, enterprise identity/RBAC, and deep tracker adapters | **Not shipped** |
+
+### Current fit
+
+The shipped product is **repo-scoped** and is best suited to a product team or
+squad that wants enforceable AI-delivery governance without adopting another
+project-management suite. Larger organizations can apply the same policy per
+repository or project, but portfolio aggregation, centralized identity/RBAC,
+and deep Jira/Azure DevOps/Linear synchronization are not current capabilities.
+
+That boundary is a product-maturity statement, not an architectural claim that
+Markdown or PowerShell stops working when a team reaches a particular headcount.
+Scale depends on repository ownership, concurrent work, project count, CI
+design, and cross-project dependencies — not headcount alone.
 
 ## The three modes
 
