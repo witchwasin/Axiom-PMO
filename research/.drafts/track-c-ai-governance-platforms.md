@@ -134,7 +134,7 @@ Sources: [Guardrails AI](https://www.guardrailsai.com/)
 
 ## CalypsoAI (acquired by F5, Sept 2025)
 
-**Updated 2026-08 (Independent AI Reviewer review follow-up) — first-party source now confirmed, superseding the
+**Updated 2026-07-29 (Independent AI Reviewer review follow-up) — first-party source now confirmed, superseding the
 original 403/secondary-only entry below.** CalypsoAI's own support/help-center pages
 (`support.calypsoai.com`, live-fetched, not blocked) describe the platform as covering:
 prompt/input-output scanning, runtime AI security, red teaming, prompt injection detection,
@@ -197,7 +197,7 @@ Sources: [Cisco AI Defense overview blog](https://blogs.cisco.com/ai/cisco-ai-de
 
 ## IBM watsonx.governance
 
-**Updated 2026-08 (Independent AI Reviewer review follow-up) — first-party IBM docs now confirmed, superseding
+**Updated 2026-07-29 (Independent AI Reviewer review follow-up) — first-party IBM docs now confirmed, superseding
 the original 403/secondary-only entry below.** IBM's own documentation describes
 `watsonx.governance` as tracking and evaluating AI assets, models, prompts, and **agentic
 applications** for compliance, risk management, observability, and runtime monitoring.
@@ -371,10 +371,10 @@ Source: [Modulos AI — AI governance tools in 2026: one category is splitting i
 | Galileo | Yes — agent/RAG evaluation, hallucination guardrails | No — "CI/CD rigor" is a metaphor for eval workflow, not real CI/CD | Being acquired by Cisco |
 | Arize AI | Yes — agent tracing/eval (incl. coding-agent reasoning) | Partial/No — debugs coding-agent *behavior*, not code-change approval or scope | Closest observability vendor to "coding agents," but not delivery governance |
 | Guardrails AI | Yes — LLM input/output validation | No | Open-source + hosted Pro tier |
-| CalypsoAI (F5) | Yes — inference red-teaming, runtime defense | No | Acquired by F5, Sept 2025. First-party-confirmed 2026-08. |
+| CalypsoAI (F5) | Yes — inference red-teaming, runtime defense | No | Acquired by F5, Sept 2025. First-party-confirmed 2026-07-29. |
 | Lakera | Yes — prompt injection / DLP at runtime | No | Runtime AI security layer |
 | Robust Intelligence (Cisco AI Defense) | Yes — model/agent red-teaming, runtime guardrails | No | Folded into Cisco AI Defense |
-| IBM watsonx.governance | Yes — model/agent lifecycle, fairness/bias/drift, agentic catalog | No | Classic MRM extended to GenAI/agents. First-party-confirmed 2026-08 (was unverified/403 originally). |
+| IBM watsonx.governance | Yes — model/agent lifecycle, fairness/bias/drift, agentic catalog | No | Classic MRM extended to GenAI/agents. First-party-confirmed 2026-07-29 (was unverified/403 originally). |
 | Microsoft Purview (AI governance) | No (not model-output governance either) | No | Actually a fourth category: enterprise data security/compliance for AI *usage*, not model output or code |
 | AWS Bedrock Guardrails / SageMaker Governance | Yes — content safety, hallucination filtering at inference | No — "code" mention is about filtering malicious code content, not SDLC | |
 | Arthur AI | Yes — agent discovery + runtime governance | No | Same category as Credo AI / Holistic AI |
@@ -425,15 +425,15 @@ claim could not be confirmed and should not be treated as evidence of a direct c
 - [Arize AI](https://arize.com/)
 - [Arize Phoenix (GitHub)](https://github.com/arize-ai/phoenix)
 - [Guardrails AI](https://www.guardrailsai.com/)
-- [CalypsoAI — Platform Overview (first-party, added 2026-08)](https://support.calypsoai.com/en/articles/10245110-platform-overview)
+- [CalypsoAI — Platform Overview (first-party, added 2026-07-29)](https://support.calypsoai.com/en/articles/10245110-platform-overview)
 - [F5 to acquire CalypsoAI](https://www.f5.com/company/news/press-releases/f5-to-acquire-calypsoai-to-bring-advanced-ai-guardrails-to-large-enterprises)
 - [Gartner Peer Insights — CalypsoAI Inference Platform](https://www.gartner.com/reviews/product/calypsoai-inference-platform)
 - [Lakera](https://www.lakera.ai/)
 - [Lakera — Security overview](https://www.lakera.ai/security)
 - [Cisco AI Defense overview blog](https://blogs.cisco.com/ai/cisco-ai-defense-comprehensive-security-for-enterprise-ai-adoption)
 - [Cisco AI Defense product page](https://www.cisco.com/site/us/en/products/security/ai-defense/index.html)
-- [IBM Docs — Governing AI (first-party, added 2026-08)](https://www.ibm.com/docs/en/watsonx/w-and-w/2.4.x?topic=governing-ai)
-- [IBM Docs — What's new in watsonx.governance (first-party, added 2026-08)](https://www.ibm.com/docs/en/watsonx/w-and-w/2.2.0?topic=new-watsonxgovernance)
+- [IBM Docs — Governing AI (first-party, added 2026-07-29)](https://www.ibm.com/docs/en/watsonx/w-and-w/2.4.x?topic=governing-ai)
+- [IBM Docs — What's new in watsonx.governance (first-party, added 2026-07-29)](https://www.ibm.com/docs/en/watsonx/w-and-w/2.2.0?topic=new-watsonxgovernance)
 - [IBM watsonx.governance product page](https://www.ibm.com/products/watsonx-governance) (marketing page, fetch blocked, 403 — superseded by first-party docs above)
 - [IBM docs — watsonx.governance use case](https://www.ibm.com/docs/en/watsonx/saas?topic=cases-watsonxgovernance-use-case) (fetch blocked, 403)
 - [Microsoft Purview — data security and compliance protections for Copilot and generative AI apps](https://learn.microsoft.com/en-us/purview/ai-microsoft-purview)
