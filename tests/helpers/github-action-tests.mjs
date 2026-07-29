@@ -233,14 +233,21 @@ if (POWERSHELL_AVAILABLE) {
   {
     // Simulate a PowerShell host that runs but emits garbage instead of JSON
     // (e.g. a corrupted profile writing to stdout). The wrapper must still
-    // produce a useful, non-crashing failure report rather than throwing.
+    // produce a useful, non-crashing failure report rather than throwing --
+    // and, per Independent AI Reviewer's privacy review, must never copy that garbage into any
+    // persisted output. A malformed-stdout scenario is exactly the case where
+    // the garbage could be a leaked token, connection string, or local path
+    // from a corrupted profile/wrapper/dependency -- so the "garbage" here is
+    // a fake secret marker, not an arbitrary string, and this test asserts
+    // the marker reaches nowhere it could be uploaded as an artifact.
     //
     // AXIOM_PWSH is spawned directly by axiom.mjs -- not through a shell --
     // so the shim has to be something the OS can execute on its own: a
     // shebang script on POSIX, a .cmd file on Windows (Node's child_process
     // auto-wraps .cmd/.bat through cmd.exe on win32; a bare extensionless
     // "shebang" file is not executable there at all).
-    const GARBAGE = "not json at all";
+    const SECRET_MARKER = "ghp_FAKE_SECRET_FOR_TEST";
+    const GARBAGE = `not json at all: token=${SECRET_MARKER}`;
     const shimDir = mkdtempSync(join(tmpdir(), "axiom-fake-pwsh-"));
     let wrapperPath;
     if (process.platform === "win32") {
@@ -252,36 +259,35 @@ if (POWERSHELL_AVAILABLE) {
       chmodSync(wrapperPath, 0o755);
     }
 
-    const r = runAction(["--project", "examples/STANDARD-FEATURE"], { AXIOM_PWSH: wrapperPath });
+    // Exercise the real Job Summary path too (normally a no-op in this test
+    // harness, since GITHUB_STEP_SUMMARY is unset outside real Actions runs).
+    const jobSummaryPath = join(shimDir, "job-summary.md");
+    writeFileSync(jobSummaryPath, "");
+
+    const r = runAction(["--project", "examples/STANDARD-FEATURE"], {
+      AXIOM_PWSH: wrapperPath,
+      GITHUB_STEP_SUMMARY: jobSummaryPath,
+    });
     assert("malformed JSON from validator: wrapper does not crash", r.status !== null);
     assert("malformed JSON: report files still exist", existsSync(r.jsonPath) && existsSync(r.mdPath));
-    const json = JSON.parse(readFileSync(r.jsonPath, "utf8"));
+    const jsonText = readFileSync(r.jsonPath, "utf8");
+    const mdText = readFileSync(r.mdPath, "utf8");
+    const jobSummaryText = readFileSync(jobSummaryPath, "utf8");
+    const json = JSON.parse(jsonText);
     assert("malformed JSON: synthetic FAIL row is present", json.results.some((row) => row.rule_id === "ACTION-PARSE-ERROR"));
-    // Confirmed on real CI (not just locally): on POSIX, axiom.mjs inherits
-    // the shim's stdout straight through and the exact garbage text lands in
-    // raw_stdout_preview. On Windows, spawning a .cmd through the same
-    // stdio:"inherit" chain (this test's shim -> axiom.mjs -> run-action.mjs)
-    // reliably yields an *empty* captured stdout instead of the shim's text --
-    // a real, observed cross-platform difference in how a non-JSON-emitting
-    // host's output propagates, not a defect in run-action.mjs. Either way,
-    // run-action.mjs must still degrade safely: no crash, both report files
-    // written, a synthetic FAIL row present (all asserted above, and all
-    // green on every platform including Windows). What this assertion checks
-    // is only that the field exists as a string -- present and inspectable,
-    // whatever its content -- since that field's job is to help a human debug
-    // the underlying host, not to prove byte-for-byte capture.
-    assert(
-      "malformed JSON: raw stdout preview is captured for debugging",
-      typeof json.action.raw_stdout_preview === "string",
-      `got ${JSON.stringify(json.action.raw_stdout_preview)}`,
-    );
-    if (json.action.raw_stdout_preview.length > 0) {
-      assert(
-        "malformed JSON: when a preview is captured, it matches what the shim printed",
-        json.action.raw_stdout_preview.trim() === GARBAGE,
-        `got ${JSON.stringify(json.action.raw_stdout_preview)}`,
-      );
-    }
+
+    // Independent AI Reviewer's blocking privacy finding: no raw stdout content in any persisted
+    // surface, ever -- confirmed via the field never existing, and via a
+    // direct secret-marker scan of every artifact this Action writes.
+    assert("malformed JSON: no raw_stdout_preview field exists at all", json.action.raw_stdout_preview === undefined);
+    assert("malformed JSON: action.parse_error is true", json.action.parse_error === true);
+    assert("malformed JSON: action.stdout_present is a boolean", typeof json.action.stdout_present === "boolean");
+    assert("malformed JSON: action.stdout_length is a number", typeof json.action.stdout_length === "number");
+    assert("secret marker does not appear in the JSON report", !jsonText.includes(SECRET_MARKER));
+    assert("secret marker does not appear in the Markdown report", !mdText.includes(SECRET_MARKER));
+    assert("secret marker does not appear in stdout (annotations)", !r.stdout.includes(SECRET_MARKER));
+    assert("secret marker does not appear in the Job Summary", !jobSummaryText.includes(SECRET_MARKER));
+
     cleanup(r.outDir);
     rmSync(shimDir, { recursive: true, force: true });
   }
