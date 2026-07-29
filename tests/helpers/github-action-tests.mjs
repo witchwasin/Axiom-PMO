@@ -105,6 +105,55 @@ console.log("");
 }
 
 {
+  // SCOPE-DIFF-* rows are the one documented exception: `artifact` is
+  // repo-root-relative (a real git-diff path), not project-relative like
+  // every other rule -- see emit-annotations.mjs's safeWorkspacePath
+  // comment. Resolving it against projectPath the way every other rule's
+  // artifact is resolved either doubles the project prefix (this case: the
+  // changed file happens to sit inside the project folder) or points at a
+  // nonexistent file (the next case: it does not) -- a real bug caught by
+  // inspecting an actual annotation GitHub rendered from this repository's
+  // own dogfood CI run, not by local testing alone.
+  const workspace = REPO_ROOT;
+  const projectPath = join(REPO_ROOT, "demo/scope-diff-dogfood-fail");
+  const results = [
+    { level: "FAIL", rule_id: "SCOPE-DIFF-001", message: "out of scope", artifact: "demo/scope-diff-dogfood-fail/README.md", item_id: null, field: null, suggestion: null, documentation_url: null },
+  ];
+  const lines = buildAnnotations(results, { workspace, projectPath });
+  assert(
+    "SCOPE-DIFF artifact resolves against the workspace, not doubled under the project path",
+    lines[0].includes("file=demo/scope-diff-dogfood-fail/README.md") && !lines[0].includes("scope-diff-dogfood-fail/demo/scope-diff-dogfood-fail"),
+    lines[0],
+  );
+}
+
+{
+  // The documented common case: the changed file lives entirely outside the
+  // project's own folder (project governs projects/P02-X/, the code it
+  // approves lives in src/**). A project-relative resolution would produce
+  // a path nested under the project directory that does not correspond to
+  // any real file at all.
+  const workspace = REPO_ROOT;
+  const projectPath = join(REPO_ROOT, "examples/STANDARD-FEATURE");
+  const results = [
+    { level: "FAIL", rule_id: "SCOPE-DIFF-001", message: "out of scope", artifact: "src/payments/checkout.ts", item_id: null, field: null, suggestion: null, documentation_url: null },
+  ];
+  const lines = buildAnnotations(results, { workspace, projectPath });
+  assert(
+    "SCOPE-DIFF artifact outside the project folder still resolves to its real workspace-relative path",
+    lines[0].includes("file=src/payments/checkout.ts"),
+    lines[0],
+  );
+}
+
+{
+  // Non-SCOPE-DIFF rule ids must be completely unaffected -- the exception
+  // is keyed on rule_id prefix, never a default.
+  assert("isRepoRootRelativeRule is scoped to SCOPE-DIFF-*", annotationTesting.isRepoRootRelativeRule("SCOPE-DIFF-004") === true);
+  assert("isRepoRootRelativeRule does not match unrelated rule ids", annotationTesting.isRepoRootRelativeRule("HANDOFF-004") === false);
+}
+
+{
   const results = Array.from({ length: 15 }, (_, i) => ({
     level: "FAIL", rule_id: `R-${i}`, message: "m", artifact: null, item_id: null, field: null, suggestion: null, documentation_url: null,
   }));
