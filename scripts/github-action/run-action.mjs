@@ -86,7 +86,17 @@ function writeJobSummary(markdown) {
   appendFileSync(target, `${markdown}\n`);
 }
 
-function buildParseFailureResult({ project, mode, gate, exitCode, rawStdout }) {
+// Deliberately takes a length, never the stdout string itself -- a function
+// that never receives the raw content cannot leak it, by construction. If the
+// validator's stdout is malformed because of a corrupted PowerShell profile,
+// a broken wrapper, or a misconfigured dependency, that stdout can contain
+// anything: a token, a connection string, a local path, output the user never
+// intended to publish. axiom-report.json is uploaded as a workflow artifact
+// by default, so nothing beyond "did this happen, and how much text was
+// there" belongs in it. The actual content stays in the workflow run log
+// (private to the same audience that could already read this step's log),
+// which is where a human debugging the underlying host should look anyway.
+function buildParseFailureResult({ project, mode, gate, exitCode, stdoutLength }) {
   return {
     schema_version: "1.1",
     project,
@@ -104,11 +114,8 @@ function buildParseFailureResult({ project, mode, gate, exitCode, rawStdout }) {
         artifact: null,
         item_id: null,
         field: null,
-        suggestion: rawStdout.length > 0
-          ? `Check the workflow run log for the underlying PowerShell error. The first ${Math.min(
-              rawStdout.length,
-              200,
-            )} characters of raw stdout are included in axiom-report.json under action.raw_stdout_preview.`
+        suggestion: stdoutLength > 0
+          ? "Check the workflow run log for the underlying PowerShell error. The raw output is not copied into this report -- it may contain secrets or other content that should not be persisted in an uploaded artifact."
           : "The validator produced no stdout at all. Check the workflow run log above this annotation for the underlying error (commonly a missing PowerShell host or a bad Action input).",
         documentation_url: null,
       },
@@ -163,7 +170,7 @@ function main() {
       mode: options.mode,
       gate: options.gate,
       exitCode,
-      rawStdout: child.stdout ?? "",
+      stdoutLength: (child.stdout ?? "").length,
     });
   }
 
@@ -188,7 +195,11 @@ function main() {
 
   const reportJson = buildReportJson(validatorResult, meta);
   if (!parseOk) {
-    reportJson.action.raw_stdout_preview = (child.stdout ?? "").slice(0, 200);
+    // Safe metadata only -- see buildParseFailureResult's comment above for
+    // why the raw content itself never reaches this object.
+    reportJson.action.parse_error = true;
+    reportJson.action.stdout_present = (child.stdout ?? "").length > 0;
+    reportJson.action.stdout_length = (child.stdout ?? "").length;
   }
   const reportMarkdown = buildReportMarkdown(validatorResult, meta);
   const jobSummary = buildJobSummary(validatorResult, meta);

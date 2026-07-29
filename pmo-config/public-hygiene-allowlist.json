@@ -60,6 +60,13 @@
         "tests/golden/others-and-sensitive-source-do-not-fail-release.txt"
       ],
       "reason": "Synthetic sensitive-source fixture name used to prove validator behavior."
+    },
+    {
+      "pattern": "ghp_[A-Za-z0-9_]{20,}",
+      "paths": [
+        "tests/helpers/github-action-tests.mjs"
+      ],
+      "reason": "Synthetic GitHub-token-shaped marker used to prove the M4 Action wrapper never copies raw malformed validator stdout into JSON/Markdown reports, stdout annotations, or the Job Summary (Sol privacy review, 2026-07-29)."
     }
   ]
 }
