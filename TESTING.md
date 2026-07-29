@@ -35,16 +35,16 @@ powershell -ExecutionPolicy Bypass -File scripts/assess-handoff.ps1 -ProjectPath
 
 ## Running on PowerShell 7 / non-Windows
 
-Windows PowerShell 5.1 is the reference platform. PowerShell 7 (`pwsh`) on
-Linux/macOS is experimental but supported by the test tooling: every runner
-resolves its host through `scripts/lib/pwsh-host.ps1`, which honours
-`AXIOM_PWSH` and then probes `pwsh`, `powershell`, `powershell.exe` in that
-order.
+PowerShell 7 (`pwsh`) is the recommended portable runtime; Windows PowerShell
+5.1 is the reference platform and remains required compatibility coverage.
+Every runner resolves its host through `scripts/lib/pwsh-host.ps1`, which
+honours `AXIOM_PWSH` and then probes `pwsh`, `powershell`, `powershell.exe` in
+that order.
 
-This is the current support state, not the target state. Roadmap Milestone 3.5
-will make Windows and Ubuntu PowerShell 7 required CI environments, retain
-Windows PowerShell 5.1 as required compatibility coverage, and collect
-non-blocking macOS evidence before any promotion claim.
+Milestone 3.5 turns this into an explicit CI matrix: Windows PowerShell 5.1 and
+Windows PowerShell 7 are blocking full-suite jobs, while Ubuntu PowerShell 7 and
+macOS PowerShell 7 run non-blocking until they earn a track record and are
+promoted and accepted. See `ROADMAP.md`.
 
 ```bash
 AXIOM_PWSH=/path/to/pwsh pwsh -File scripts/run-all-checks.ps1 -RepoPath .

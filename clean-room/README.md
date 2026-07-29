@@ -73,8 +73,8 @@ walkthrough.
 ## What this cannot prove
 
 **It is Linux.** Windows PowerShell 5.1 is the reference platform for this
-project; Linux and macOS are documented as experimental and covered by a
-non-blocking CI leg. A clean walk in this container closes the Linux half of
+project; Linux and macOS run PowerShell 7 via `pwsh` as non-blocking CI smoke
+legs (Milestone 3.5). A clean walk in this container closes the Linux half of
 issue #8 and nothing more.
 
 Whoever reports findings should say which platform they walked. "The

@@ -31,6 +31,14 @@ const EXIT_USAGE = 64;
 // Linux) is preferred over Windows PowerShell 5.1. AXIOM_PWSH overrides both,
 // for pinned CI images and unusual installs -- the same variable
 // scripts/lib/pwsh-host.ps1 honours, so the CLI and the scripts agree.
+//
+// M3.5 host-selection contract: the PowerShell helper additionally prefers the
+// *current* host, because re-entering the same pwsh/5.1 keeps JSON depth,
+// encoding, and regex behaviour stable. That step has no analogue here -- this
+// CLI is a Node process, not a PowerShell one, so there is no current host to
+// re-enter. What must stay identical (and does) is: AXIOM_PWSH wins, the PATH
+// fallback order (pwsh, powershell, powershell.exe) matches, and a missing
+// host exits 127.
 const HOST_CANDIDATES = ["pwsh", "powershell", "powershell.exe"];
 
 function findPowerShell() {
