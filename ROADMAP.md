@@ -70,7 +70,7 @@ Recommended effort allocation:
 | Milestone 3 - Thin Local CLI | Delivered (Phase A) | Local CLI delivered; public npm package deferred |
 | Milestone 3.5 - Runtime Portability | Accepted | CI threshold met; branch protection deferred by human decision |
 | Milestone 4 - GitHub Action | Planned | Next implementation milestone |
-| Milestone 5 - Superpowers Runtime Bridge | Blocked | Starts only after Milestone 4 human acceptance |
+| Milestone 5 - Execution Contract Verification MVP | Blocked | Starts only after Milestone 4 and Milestone 4.5 human acceptance |
 | Milestone 6 - Claude Code Integration Experience | Planned | Requires separate approval after Milestone 5 |
 
 ## Roadmap Governance
@@ -458,66 +458,165 @@ A repository can add Axiom-PMO to CI quickly and see actionable governance
 failures inside a pull request.
 ```
 
-## Milestone 5 - Superpowers Bridge MVP
+## Milestone 5 - Execution Contract Verification MVP
 
-Objective: build one complete, tested integration instead of many shallow
-compatibility claims.
+Objective: verify that an AI agent's execution output stayed inside an
+approved contract, using observable ground truth wherever possible instead
+of trusting the agent's own report of what it did.
 
-Status: **blocked by Milestone 4 human acceptance.** Experimental schemas may
-remain available for design review, but runtime export/import work must not
-start before that acceptance.
+Renamed from "Superpowers Runtime Bridge" (see decision record below). The
+capability is a contract-verification engine, not a technical integration
+with one execution framework. Superpowers remains the reference execution
+workflow used to design and test it, referenced as a
+**Superpowers-compatible execution workflow**, never as a native runtime
+integration -- inspection of the real `superpowers` plugin found skills and
+a `SessionStart` hook only, no contract-ingestion or result-emission surface
+Axiom-PMO could treat as a trusted boundary.
 
-Reference integration:
+Status: **blocked by Milestone 4 and Milestone 4.5 human acceptance.**
+Experimental schemas may remain available for design review, but runtime
+export/import work must not start before that acceptance.
+
+Reference framing:
 
 ```text
-Axiom-PMO = governance
-Superpowers = execution
+Axiom-PMO   = governance: contract, scope, evidence policy, human authority
+Execution   = planning, coding, testing (Superpowers today; any workflow that
+              can consume the same contract shape tomorrow)
 ```
 
-Target flow:
+### Core principle: execution output is a claim, not evidence
+
+An agent-authored `EXECUTION-RESULT.json` is written by the same actor being
+verified. It cannot be trusted as evidence by default. Every field carries an
+explicit provenance:
 
 ```text
-Axiom work item
--> Export execution contract
--> Superpowers executes
--> Return execution result
--> Axiom validates
--> Build review
--> Human QA / release
+Agent claim -> Axiom-observed evidence -> Human authority
 ```
 
-Deliverables:
+| Data | Status |
+|---|---|
+| Agent states a test ran | Claim |
+| A test tool produced a real artifact (JUnit XML, checked CI run) | Observed evidence |
+| A CI check tied to the exact commit SHA passed | Stronger observed evidence |
+| A human states the work is accepted | Human authority |
 
-- `axiom export D-001 --format superpowers`
-- `.execution/D-001/EXECUTION-CONTRACT.json`
-- `.execution/D-001/EXECUTION-RESULT.json`
-- `axiom import .execution/D-001/EXECUTION-RESULT.json`
-- Schema validation.
-- Work item and requirement matching.
-- Allowed-path validation.
-- Required-test validation.
-- Evidence resolution checks.
-- Scope deviation checks.
-- Contract-to-result git authority validation.
-- Agent self-approval blocking.
-- Integration tests.
+`evidence_origin` (`agent-claimed` vs. `git-observed` or equivalent) and
+`verification_status` (`unverified` vs. `verified`) are attached per field,
+not assumed at the envelope level. Unverified claims may be recorded; they
+must never satisfy a required check on their own.
 
-Git authority validation in the MVP means checking the execution contract
-against the returned execution result. It should verify whether the result
-reports commits or pushes, whether the contract allowed that action, whether
-reported commit references are well-formed, and whether the result attempts to
-claim an approval the agent cannot grant.
+### Threat model (required output of Milestone 5.0)
 
-The MVP should not claim to detect every possible git side effect outside the
-execution session. Broader local/remote state verification can be added later
-when the bridge has enough runtime context to prove it safely.
+```text
+Untrusted:
+  Agent-generated execution result, agent-authored summaries, agent-declared
+  test outcomes, agent-declared approval state.
+
+Observed but context-limited:
+  Local Git repository, available remote refs, CI artifacts, workflow check
+  conclusions.
+
+Trusted only under explicit policy:
+  Framework configuration, the approved execution contract, human authority
+  records.
+```
+
+### Contract immutability
+
+A contract and result that can both be edited by the same actor prove
+nothing. The result must reference the contract it claims to satisfy by
+content digest, not by filename:
+
+```json
+{ "contract_sha256": "...", "base_sha": "...", "head_sha": "..." }
+```
+
+Axiom-PMO validates the result against the contract version that was
+actually approved, never a version the agent could have modified afterward.
+Validation compares exact SHAs (contract base SHA, result head SHA), never a
+moving branch name -- the same time-of-check/time-of-use discipline
+Milestone 4.5 already applies to pull-request base/head resolution.
+
+### Deliverables
+
+- `axiom export D-001 --format superpowers` (name kept for continuity;
+  format is not Superpowers-specific).
+- `.execution/D-001/EXECUTION-CONTRACT.json`, carrying its own content digest.
+- `.execution/D-001/EXECUTION-RESULT.json`, referencing that digest and the
+  base/head SHAs it claims to satisfy.
+- `axiom import .execution/D-001/EXECUTION-RESULT.json`.
+- Schema validation; work item and requirement matching; allowed-path
+  validation (reusing Milestone 4.5's glob engine, precedence rules, and
+  git-diff adapter rather than a new scope engine); required-test validation
+  against a small set of machine-verifiable evidence adapters (JUnit
+  artifact with a checksum, a CI check tied to the exact commit SHA, or an
+  exit record Axiom's own runner produced -- not free-text agent claims
+  alone); scope deviation checks; contract-to-result git authority
+  validation; agent self-approval blocking via typed authority-claim
+  records, not a single boolean; integration tests, including a clean case
+  and a deviation/malicious case.
+
+Git authority validation means checking the execution contract against the
+returned execution result: whether the result reports commits or pushes,
+whether the contract allowed that action, whether reported commit references
+resolve to real, well-formed commits, and whether the result attempts to
+claim an approval the agent cannot grant. Approval claims are validated as
+typed authority events (`actor`, `claim type`) so a validator can reject any
+claim whose actor type lacks the authority to grant it, rather than trusting
+an `approval_claimed: false` field the same actor could set.
+
+The MVP does not claim to prove the absence of every possible git side
+effect outside the execution session (for example, a push to a remote the
+current checkout does not know about, or a force-moved remote ref cannot be
+disproven from local state alone). It verifies observable Git claims within
+the available repository and remote context; it does not prove a negative
+about state entirely outside that context. Broader remote-state verification
+can be added later when the bridge has enough runtime context to prove it
+safely.
+
+### Milestone 5.0 - Research and go/no-go gate
+
+Milestone 5.0 is not a research document that milestone 5.1 starts
+automatically after. It ends with an explicit decision record choosing one
+of:
+
+```text
+GO              - a native, verifiable integration surface exists
+GO WITH REFRAME - no native surface; proceed as git-ground-truth contract
+                  verification instead
+NO-GO           - no meaningful verification boundary can be established
+```
+
+Milestone 5.0 must inspect: the experimental schemas already in
+`integrations/superpowers/`; the current work item and requirement
+structures; `SCOPE.json` and Milestone 4.5's diagnostic contract; the real
+execution workflow's actual hook/event surface (not an assumed one); and
+what data that workflow can actually receive and return. Output is a schema
+and threat model, not production code. Do not build a large normalized
+intermediate representation to make this milestone's design feel more
+general -- one schema, one reference integration, described precisely
+enough that a second integration could reuse it later without a rewrite.
+
+### Milestone 5.1 - 5.4 (planned only after Milestone 5.0's gate decision)
+
+The concrete shape of contract export (5.1), result import (5.2), git
+authority validation (5.3), and end-to-end integration testing (5.4) depends
+on Milestone 5.0's decision above. A "GO WITH REFRAME" outcome -- the
+likely one given the reference workflow's current surface -- changes what
+5.1-5.4 look like from an earlier draft that assumed a runtime bridge. These
+phases are deliberately not detailed further here until that decision is
+made.
 
 Definition of done:
 
 ```text
-Axiom-PMO can accept execution output as candidate evidence while blocking path
-violations, missing tests, scope deviation, contract-to-result git authority
-violations, and agent self-approval.
+Axiom-PMO can accept execution output as candidate evidence while blocking
+path violations, missing required-test evidence, scope deviation,
+contract-to-result git authority violations, and agent self-approval -- and
+states plainly, in its own documentation, what it cannot verify from local
+repository state alone.
 ```
 
 ## Milestone 6 - Claude Code Integration Experience
