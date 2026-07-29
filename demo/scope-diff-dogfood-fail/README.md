@@ -12,3 +12,5 @@ covered by the approved scope. Its presence in the diff between
 exactly what the `dogfood-scope-diff` job expects to see flagged as
 `SCOPE-DIFF-001`, proving the enforcement path actually blocks a real
 out-of-scope change rather than a synthetic one.
+
+Edited to produce the fail-case delta commit referenced by the dogfood-scope-diff workflow job.
