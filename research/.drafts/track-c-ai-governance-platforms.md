@@ -134,24 +134,29 @@ Sources: [Guardrails AI](https://www.guardrailsai.com/)
 
 ## CalypsoAI (acquired by F5, Sept 2025)
 
-VENDOR-CLAIM (via search results / press, calypsoai.com redirects to f5.com post-
-acquisition, fetched/attempted 2026-07-29): "Proactively secures AI at inference with
-agentic red-teaming, real-time defense, and automated security enforcement." Products:
-Inference Red Team (adversarial testing), Inference Defend (threat detection/prevention),
-Inference Observe (enterprise oversight/audit logs). Targets prompt injection, data leakage,
-and GDPR/EU AI Act runtime compliance.
+**Updated 2026-08 (Sol review follow-up) — first-party source now confirmed, superseding the
+original 403/secondary-only entry below.** CalypsoAI's own support/help-center pages
+(`support.calypsoai.com`, live-fetched, not blocked) describe the platform as covering:
+prompt/input-output scanning, runtime AI security, red teaming, prompt injection detection,
+data leakage prevention, agent behavior monitoring, inference-layer protection, and
+observability/guardrails. **DOCUMENTED**
+([CalypsoAI — Platform Overview](https://support.calypsoai.com/en/articles/10245110-platform-overview)).
 
-Software delivery / code-change governance: **Not found.** Entirely an AI-inference security
-product (red-teaming models/agents, blocking malicious prompts/outputs at runtime), not a
-code-change or requirements-traceability tool. Note: `calypsoai.com/inference-platform/` now
-301-redirects to `f5.com/go/solution/inference-platform` following the F5 acquisition, so the
-original product page content could not be independently re-verified at fetch time — the
-description above is sourced from press coverage and Gartner Peer Insights, not a first-party
-page fetch.
+Software delivery / code-change governance: **Not found**, now confirmed via first-party
+source rather than inferred from press coverage alone. Every documented capability is
+runtime/inference-layer AI security (red-teaming, prompt-injection defense, data-leakage
+prevention, agent-behavior monitoring) — no PR, requirements-traceability, scope, or
+release-gating capability for code changes. This confirms the original conclusion (different
+category from Axiom-PMO) with a stronger source.
+
+Original note (retained for the record): `calypsoai.com/inference-platform/` 301-redirects to
+`f5.com/go/solution/inference-platform` following the F5 acquisition (Sept 2025), so the
+marketing landing page could not be independently fetched; the support/help-center pages above
+were reachable and are used instead as the first-party source.
 
 What they say they don't cover: no explicit exclusion statement found.
 
-Sources: [F5 to acquire CalypsoAI](https://www.f5.com/company/news/press-releases/f5-to-acquire-calypsoai-to-bring-advanced-ai-guardrails-to-large-enterprises), [Gartner Peer Insights — CalypsoAI Inference Platform](https://www.gartner.com/reviews/product/calypsoai-inference-platform)
+Sources: [CalypsoAI — Platform Overview (first-party, DOCUMENTED)](https://support.calypsoai.com/en/articles/10245110-platform-overview), [F5 to acquire CalypsoAI](https://www.f5.com/company/news/press-releases/f5-to-acquire-calypsoai-to-bring-advanced-ai-guardrails-to-large-enterprises), [Gartner Peer Insights — CalypsoAI Inference Platform](https://www.gartner.com/reviews/product/calypsoai-inference-platform)
 
 ---
 
@@ -192,23 +197,26 @@ Sources: [Cisco AI Defense overview blog](https://blogs.cisco.com/ai/cisco-ai-de
 
 ## IBM watsonx.governance
 
-VENDOR-CLAIM (via search summary of ibm.com/products/watsonx-governance and IBM docs;
-direct fetch of both ibm.com pages returned HTTP 403 at fetch time, so this is sourced from
-search-engine-cached snippets, not a verified live fetch): Governs "Gen AI and ML models" in
-three areas — lifecycle governance (model factsheets, stakeholder dashboards), risk
-management (fairness, bias, drift monitoring against pre-set thresholds), and compliance
-reporting. Tracks "machine-learning models and prompt templates from request to production."
+**Updated 2026-08 (Sol review follow-up) — first-party IBM docs now confirmed, superseding
+the original 403/secondary-only entry below.** IBM's own documentation describes
+`watsonx.governance` as tracking and evaluating AI assets, models, prompts, and **agentic
+applications** for compliance, risk management, observability, and runtime monitoring.
+**DOCUMENTED**
+([IBM Docs — Governing AI](https://www.ibm.com/docs/en/watsonx/w-and-w/2.4.x?topic=governing-ai)).
+IBM also documents a governed **agentic catalog** for registering agent/tool code or
+endpoints, with agent onboarding and risk-assessment workflows. **DOCUMENTED**
+([IBM Docs — What's new in watsonx.governance](https://www.ibm.com/docs/en/watsonx/w-and-w/2.2.0?topic=new-watsonxgovernance)).
 
-Software delivery / code-change governance: **Not found** in any summary retrieved. This is
-model-lifecycle and model-risk governance (the classic MRM/ModelOps category extended to
-LLMs), not software-delivery or code-change governance. Caveat: since the official IBM pages
-returned 403 to our fetch tool, this entry rests on third-party/search-summary text rather
-than a directly verified first-party quote — flagged as lower-confidence than other entries.
+Software delivery / code-change governance: **Not found**, now confirmed via first-party
+source rather than search-summary inference. IBM governs AI assets and agent runtime/lifecycle
+(registration, risk scoring, compliance tracking, monitoring) — it does not inspect a code diff
+against an approved software requirement, enforce implementation scope, or gate a release. The
+original conclusion (different category from Axiom-PMO) is confirmed, now with a stronger
+source and higher confidence than the original entry.
 
-What they say they don't cover: no explicit exclusion statement found (and could not be
-independently verified due to fetch access issues).
+What they say they don't cover: no explicit exclusion statement found.
 
-Sources: [IBM watsonx.governance product page](https://www.ibm.com/products/watsonx-governance) (fetch blocked, 403 — cited via search index), [IBM docs — watsonx.governance use case](https://www.ibm.com/docs/en/watsonx/saas?topic=cases-watsonxgovernance-use-case) (fetch blocked, 403)
+Sources: [IBM Docs — Governing AI (first-party, DOCUMENTED)](https://www.ibm.com/docs/en/watsonx/w-and-w/2.4.x?topic=governing-ai), [IBM Docs — What's new in watsonx.governance (first-party, DOCUMENTED)](https://www.ibm.com/docs/en/watsonx/w-and-w/2.2.0?topic=new-watsonxgovernance), [IBM watsonx.governance product page](https://www.ibm.com/products/watsonx-governance) (marketing page — still blocked, 403, at original fetch time; superseded by the docs pages above)
 
 ---
 
@@ -363,10 +371,10 @@ Source: [Modulos AI — AI governance tools in 2026: one category is splitting i
 | Galileo | Yes — agent/RAG evaluation, hallucination guardrails | No — "CI/CD rigor" is a metaphor for eval workflow, not real CI/CD | Being acquired by Cisco |
 | Arize AI | Yes — agent tracing/eval (incl. coding-agent reasoning) | Partial/No — debugs coding-agent *behavior*, not code-change approval or scope | Closest observability vendor to "coding agents," but not delivery governance |
 | Guardrails AI | Yes — LLM input/output validation | No | Open-source + hosted Pro tier |
-| CalypsoAI (F5) | Yes — inference red-teaming, runtime defense | No | Acquired by F5, Sept 2025 |
+| CalypsoAI (F5) | Yes — inference red-teaming, runtime defense | No | Acquired by F5, Sept 2025. First-party-confirmed 2026-08. |
 | Lakera | Yes — prompt injection / DLP at runtime | No | Runtime AI security layer |
 | Robust Intelligence (Cisco AI Defense) | Yes — model/agent red-teaming, runtime guardrails | No | Folded into Cisco AI Defense |
-| IBM watsonx.governance | Yes — model lifecycle, fairness/bias/drift | No (unverified — official pages blocked our fetch; based on search summaries) | Classic MRM extended to GenAI |
+| IBM watsonx.governance | Yes — model/agent lifecycle, fairness/bias/drift, agentic catalog | No | Classic MRM extended to GenAI/agents. First-party-confirmed 2026-08 (was unverified/403 originally). |
 | Microsoft Purview (AI governance) | No (not model-output governance either) | No | Actually a fourth category: enterprise data security/compliance for AI *usage*, not model output or code |
 | AWS Bedrock Guardrails / SageMaker Governance | Yes — content safety, hallucination filtering at inference | No — "code" mention is about filtering malicious code content, not SDLC | |
 | Arthur AI | Yes — agent discovery + runtime governance | No | Same category as Credo AI / Holistic AI |
@@ -417,13 +425,16 @@ claim could not be confirmed and should not be treated as evidence of a direct c
 - [Arize AI](https://arize.com/)
 - [Arize Phoenix (GitHub)](https://github.com/arize-ai/phoenix)
 - [Guardrails AI](https://www.guardrailsai.com/)
+- [CalypsoAI — Platform Overview (first-party, added 2026-08)](https://support.calypsoai.com/en/articles/10245110-platform-overview)
 - [F5 to acquire CalypsoAI](https://www.f5.com/company/news/press-releases/f5-to-acquire-calypsoai-to-bring-advanced-ai-guardrails-to-large-enterprises)
 - [Gartner Peer Insights — CalypsoAI Inference Platform](https://www.gartner.com/reviews/product/calypsoai-inference-platform)
 - [Lakera](https://www.lakera.ai/)
 - [Lakera — Security overview](https://www.lakera.ai/security)
 - [Cisco AI Defense overview blog](https://blogs.cisco.com/ai/cisco-ai-defense-comprehensive-security-for-enterprise-ai-adoption)
 - [Cisco AI Defense product page](https://www.cisco.com/site/us/en/products/security/ai-defense/index.html)
-- [IBM watsonx.governance product page](https://www.ibm.com/products/watsonx-governance) (fetch blocked, 403)
+- [IBM Docs — Governing AI (first-party, added 2026-08)](https://www.ibm.com/docs/en/watsonx/w-and-w/2.4.x?topic=governing-ai)
+- [IBM Docs — What's new in watsonx.governance (first-party, added 2026-08)](https://www.ibm.com/docs/en/watsonx/w-and-w/2.2.0?topic=new-watsonxgovernance)
+- [IBM watsonx.governance product page](https://www.ibm.com/products/watsonx-governance) (marketing page, fetch blocked, 403 — superseded by first-party docs above)
 - [IBM docs — watsonx.governance use case](https://www.ibm.com/docs/en/watsonx/saas?topic=cases-watsonxgovernance-use-case) (fetch blocked, 403)
 - [Microsoft Purview — data security and compliance protections for Copilot and generative AI apps](https://learn.microsoft.com/en-us/purview/ai-microsoft-purview)
 - [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/)
