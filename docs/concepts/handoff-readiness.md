@@ -160,6 +160,6 @@ Open findings cost points in the dimension their lens belongs to, and open actio
 
 - [Artifact map](../guides/artifact-map.md) — which document plays which role
 - [Three-day demo handoff](../guides/three-day-demo-handoff.md) — a worked walkthrough
-- [Rule reference](../rules/) — `HANDOFF-001` to `HANDOFF-012`
+- [Rule reference](../rules/) — `HANDOFF-001` to `HANDOFF-014`
 - [Diagnostics contract](../reference/diagnostics-contract.md) — the machine-readable output
 - [Human authority](human-authority.md) — what an AI may never decide

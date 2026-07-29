@@ -410,12 +410,20 @@ Delivered in 1.1:
 
 Next:
 
-- a GitHub Action that reports governance failures directly in pull requests;
-- one complete Superpowers bridge before broader ecosystem expansion.
+- close Milestone 1 acceptance debt with an independent clean-room walkthrough
+  and a committed terminal recording/GIF;
+- complete Milestone 3.5 by making Windows and Ubuntu PowerShell 7 required,
+  while keeping Windows PowerShell 5.1 compatibility coverage;
+- build a GitHub Action that reports governance failures directly in pull
+  requests.
 
-The roadmap is intended to be reviewed weekly. Suitable community issues,
-integration requests, and developer feedback may be accepted into the roadmap
-when they strengthen the product direction without weakening governance.
+The Superpowers runtime bridge remains blocked until the GitHub Action has
+passed human acceptance. The active roadmap is intentionally limited to
+Milestones 1 through 6.
+
+The roadmap is intended to be reviewed weekly. Engineering findings,
+integration requests, and developer feedback may be accepted when they
+strengthen the product direction without weakening governance.
 
 ## License
 

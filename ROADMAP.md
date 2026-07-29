@@ -1,7 +1,8 @@
 # Axiom-PMO Productization Roadmap
 
-Status: roadmap of record  
-Last updated: 2026-07-14
+Status: roadmap of record
+Current product version: 1.1.1
+Last updated: 2026-07-29
 
 Axiom-PMO is moving from an open-source governance framework into a developer
 workflow tool for AI-assisted software delivery.
@@ -39,8 +40,7 @@ Discover
 -> See a meaningful failure
 -> Fix the issue
 -> Integrate with workflow
--> Share result
--> Contribute
+-> Govern delivery
 ```
 
 A new user should be able to see why Axiom-PMO matters before reading the full
@@ -49,18 +49,29 @@ framework documentation.
 ## Near-Term Strategy
 
 The core validator is already strong enough to productize around. Near-term
-work should focus on adoption, diagnostics, workflow integration, and a single
-real execution-framework bridge.
+work should focus on runtime portability, developer diagnostics, workflow
+integration, and a single real execution-framework bridge.
 
 Recommended effort allocation:
 
 | Area | Allocation |
 |---|---:|
-| Core maintenance | 20% |
-| Developer experience | 30% |
-| Integrations | 25% |
-| Community | 15% |
-| Content and distribution | 10% |
+| Core maintenance | 25% |
+| Runtime and developer experience | 35% |
+| Workflow integrations | 40% |
+
+## Milestone Status
+
+| Milestone | Status | Release / dependency |
+|---|---|---|
+| Milestone 1 - Public Trust + Three-Minute Proof | Acceptance debt | Walkthrough and recording remain open |
+| Milestone 2 - Developer Diagnostics | Delivered | Delivered in 1.1 |
+| Milestone 2.5 - Engineering Handoff Readiness | Delivered | Delivered in 1.1.0; strengthened in 1.1.1 |
+| Milestone 3 - Thin Local CLI | Delivered (Phase A) | Local CLI delivered; public npm package deferred |
+| Milestone 3.5 - Runtime Portability | Next prerequisite | Must complete before Milestone 4 implementation |
+| Milestone 4 - GitHub Action | Planned | Blocked by Milestone 1 acceptance and Milestone 3.5 |
+| Milestone 5 - Superpowers Runtime Bridge | Blocked | Starts only after Milestone 4 human acceptance |
+| Milestone 6 - Claude Code Integration Experience | Planned | Requires separate approval after Milestone 5 |
 
 ## Roadmap Governance
 
@@ -87,22 +98,37 @@ Release decision:
 
 This keeps roadmap execution from expanding into unrelated product work.
 
-Dependency chain:
+Active dependency chain:
 
 ```text
-Milestone 1 -> Milestone 2 -> Milestone 2.5 -> Milestone 3 -> Milestone 4 -> Milestone 5
+Milestone 1 acceptance
+-> Milestone 2 (delivered)
+-> Milestone 2.5 (delivered)
+-> Milestone 3 (delivered)
+-> Milestone 3.5
+-> Milestone 4
+-> Milestone 5
+-> Milestone 6
 ```
 
 Milestone 2.5 sits between diagnostics and the CLI deliberately. The CLI's
 `handoff` verb and the GitHub Action's per-stage reporting both depend on the
 structured diagnostics from Milestone 2 and the stage verdicts from Milestone
 2.5; shipping either earlier would have meant a second, incompatible output
-shape. Milestones 6 to 8 keep their original intent and sequence.
+shape.
+
+Planning issues may be opened for a blocked milestone, but implementation must
+not begin until its preceding acceptance condition is satisfied.
 
 ## Milestone 1 - Public Trust + Three-Minute Proof
 
 Objective: make the repository trustworthy and make the value visible within
 three minutes.
+
+Status: **acceptance debt.** The validator, demo, hygiene tooling, quick start,
+and CI exist. An independent clean-room walkthrough and a committed terminal
+recording/GIF are still required. Issue #8 records this work and must be reopened
+rather than replaced.
 
 Deliverables:
 
@@ -116,12 +142,6 @@ Deliverables:
 - README quick start near the top of the document.
 - GIF or terminal recording showing a failing gate becoming a passing gate.
 - One clean-room usability test with a developer unfamiliar with Axiom-PMO.
-- Basic feedback intake for early visitors:
-  - `good first issue`;
-  - `help wanted`;
-  - bug report template;
-  - feature request template;
-  - demo feedback issue.
 - CI green.
 
 Demo failures should only use behavior that exists today. Good first demo cases:
@@ -154,6 +174,8 @@ Clean-room metrics to capture:
 
 Objective: make validator output feel like a developer tool, not only a PMO
 report.
+
+Status: **delivered in 1.1.**
 
 Deliverables:
 
@@ -230,7 +252,7 @@ people to ignore it.
 
 | Layer | Owns | Mechanism |
 |---|---|---|
-| Deterministic validation | What is provable from the artifacts | `-Gate Handoff`, rules `HANDOFF-001` to `HANDOFF-012` |
+| Deterministic validation | What is provable from the artifacts | `-Gate Handoff`, rules `HANDOFF-001` to `HANDOFF-014` |
 | Semantic handoff review | Whether the complete contract makes sense | `pmo-delivery` intent `handoff_review`, recorded in `HANDOFF-REVIEW.json` |
 
 The deterministic layer reads declarations the author wrote and checks that they
@@ -247,7 +269,7 @@ finding have an owner and a blocking point, and is it still current.
   `Design Ready` approval and introducing no new human sign-off.
 - Canonical artifacts: `HANDOFF.md`, `DESIGN/BUILD-SPEC.md`,
   `HANDOFF-REVIEW.json`.
-- Rules `HANDOFF-001` to `HANDOFF-012`, each with a `docs/rules/` page.
+- Rules `HANDOFF-001` to `HANDOFF-014`, each with a `docs/rules/` page.
 - Twelve semantic review lenses, config-driven in
   `pmo-config/handoff-policy.json`.
 - Review freshness via a Source Snapshot digest: a review speaks only for the
@@ -276,6 +298,9 @@ declared evidence supports each half of that sentence.
 
 Objective: make Axiom-PMO usable without requiring users to understand the
 PowerShell implementation.
+
+Status: **Phase A delivered in 1.1.** Public npm packaging (Phase B) is
+deferred and is not required for the local CLI milestone to remain delivered.
 
 Start local before publishing to npm.
 
@@ -313,9 +338,58 @@ The local CLI works on Windows and through pwsh on macOS/Linux, preserves exit
 codes, and is covered by CI before any public npm release.
 ```
 
+## Milestone 3.5 - Runtime Portability
+
+Objective: make PowerShell 7 the primary portable runtime without dropping
+Windows PowerShell 5.1 compatibility or creating a second validator
+implementation.
+
+Status: **next prerequisite before Milestone 4.**
+
+The runtime already resolves `AXIOM_PWSH`, the current host, `pwsh`,
+`powershell`, and `powershell.exe`. This milestone promotes that runtime
+flexibility into an explicit support and CI contract.
+
+Target support matrix:
+
+| Environment | Target policy |
+|---|---|
+| Windows + PowerShell 7 | Required |
+| Ubuntu + PowerShell 7 | Required |
+| Windows PowerShell 5.1 | Required compatibility regression |
+| macOS + PowerShell 7 | Non-blocking smoke until promotion evidence exists |
+
+Deliverables:
+
+- Required full-suite jobs for Windows PowerShell 7 and Ubuntu PowerShell 7.
+- Continued Windows PowerShell 5.1 regression coverage.
+- A macOS PowerShell 7 smoke/full-suite job, initially non-blocking.
+- Identical diagnostic fields, ordering, summary counts, exit codes, digests,
+  golden results, and line-ending behavior across required hosts.
+- Consistent host selection between the Node CLI and PowerShell child-process
+  helper, including `AXIOM_PWSH` and missing-host exit code `127`.
+- Documentation and issue templates that describe the actual support matrix.
+
+Non-goals:
+
+- Rewriting the validator in TypeScript or another language.
+- Dropping Windows PowerShell 5.1 before compatibility evidence supports it.
+- Promoting macOS to required based on a single successful run.
+
+Definition of done:
+
+```text
+Windows PowerShell 7 and Ubuntu PowerShell 7 are required green jobs, Windows
+PowerShell 5.1 remains green as a compatibility regression, cross-host output
+contracts match, and the support documentation reflects the evidence.
+```
+
 ## Milestone 4 - GitHub Action
 
 Objective: make Axiom-PMO visible directly in pull requests.
+
+Status: **planned; implementation blocked by Milestone 1 acceptance and
+Milestone 3.5.**
 
 Dependency:
 
@@ -359,6 +433,10 @@ failures inside a pull request.
 
 Objective: build one complete, tested integration instead of many shallow
 compatibility claims.
+
+Status: **blocked by Milestone 4 human acceptance.** Experimental schemas may
+remain available for design review, but runtime export/import work must not
+start before that acceptance.
 
 Reference integration:
 
@@ -418,6 +496,8 @@ violations, and agent self-approval.
 Objective: make Axiom-PMO natural for Claude Code users without damaging
 existing repository configuration.
 
+Status: **planned; requires separate approval after Milestone 5.**
+
 Do not assume the final shape is an installer. Prototype and evaluate:
 
 - copyable integration block;
@@ -445,108 +525,6 @@ Claude Code users can add Axiom-PMO to a real repository without losing existing
 Claude, Superpowers, BMAD, or custom agent configuration.
 ```
 
-## Milestone 7 - Community Launch
-
-Objective: move from owner-driven development toward contributor-ready
-development.
-
-Deliverables:
-
-- GitHub Discussions categories:
-  - General
-  - Help
-  - Ideas
-  - Integrations
-  - Show and Tell
-  - Governance Cases
-- Labels:
-  - `good first issue`
-  - `help wanted`
-  - `integration`
-  - `validator`
-  - `documentation`
-  - `cross-platform`
-  - `security`
-  - `governance`
-  - `claude-code`
-  - `superpowers`
-- At least five good first issues.
-- At least five help wanted issues.
-- `CONTRIBUTORS.md`.
-- Contributor recognition in release notes.
-- `integrations/_template/` with:
-  - README template;
-  - contract mapping;
-  - authority matrix;
-  - test fixture;
-  - compatibility declaration.
-
-Definition of done:
-
-```text
-A new contributor can identify useful work, understand the expected test path,
-and start without asking the owner for every step.
-```
-
-## Milestone 8 - Content, Evidence, And Adoption
-
-Objective: grow through proof, not claims.
-
-Content assets:
-
-- 60-90 second demo video.
-- README GIF.
-- Technical article: "Why Prompt-Level Safety Is Not Enough for AI Coding
-  Agents".
-- Comparison article: "Superpowers Builds the Code. Axiom-PMO Governs the
-  Authority."
-- Show HN post.
-- GitHub social preview:
-
-```text
-AI Can Build.
-Humans Still Approve.
-```
-
-Usage evidence to collect:
-
-- unsupported requirements blocked;
-- scope deviations blocked;
-- missing evidence blocked;
-- unauthorized actions detected;
-- release gates failed before production;
-- human approvals recorded;
-- false positives;
-- waivers;
-- time to first successful validation;
-- time to first detected failure.
-
-Case study template:
-
-```text
-Project type:
-Team size:
-Execution framework:
-Axiom mode:
-Failure detected:
-Impact prevented:
-Process overhead:
-Outcome:
-```
-
-Telemetry guardrail:
-
-- no telemetry by default;
-- any telemetry must be opt-in, anonymous, and documented;
-- start with user-submitted diagnostic reports before automated telemetry.
-
-Definition of done:
-
-```text
-External users can see real demonstrations, real failure modes, and real usage
-evidence before adopting Axiom-PMO.
-```
-
 ## Not Now
 
 Do not spend near-term effort on:
@@ -555,7 +533,7 @@ Do not spend near-term effort on:
 - adding validation rules only to increase perceived coverage;
 - supporting many frameworks superficially;
 - claiming compatibility without integration tests;
-- building a web dashboard before CLI and GitHub Action adoption;
+- building a web dashboard before the CLI and GitHub Action are mature;
 - buying stars or using fake engagement;
 - publishing benchmarks without methodology;
 - using "first in the world" positioning;
@@ -563,46 +541,36 @@ Do not spend near-term effort on:
 
 ## Priority Backlog
 
-P0 - before heavy promotion:
+### Done
 
-- public hygiene scan;
-- archive sanitation;
-- branding cleanup;
-- broken link audit;
-- broken/fixed demo;
-- one-command demo;
-- README quick start;
-- GIF.
+- Public hygiene scan, archive sanitation, branding cleanup, and broken-link
+  checks.
+- Broken/fixed demo, one-command demo, and README quick start.
+- Structured diagnostics, stable JSON result schema, and rule documentation.
+- Engineering Handoff Readiness and the local CLI.
 
-P1 - make it usable:
+### Acceptance debt
 
-- structured diagnostics;
-- stable JSON result schema;
-- rule documentation;
-- local CLI;
-- cross-platform CLI tests.
+- Reopen Issue #8.
+- Complete an independent clean-room walkthrough on Windows and macOS.
+- Commit a deterministic terminal recording and README GIF.
+- Record human acceptance of Milestone 1 after the evidence is verified.
 
-P2 - make it visible in workflow:
+### Next
 
-- GitHub Action;
-- PR summary;
-- annotations;
-- report artifacts.
+- Milestone 3.5 required Windows PowerShell 7 and Ubuntu PowerShell 7 CI.
+- Windows PowerShell 5.1 compatibility regression coverage.
+- Non-blocking macOS PowerShell 7 evidence.
+- Milestone 4 tracking issue and child issues for the reusable Action,
+  Job Summary/report artifacts, safe annotations, consumer/privacy tests, and
+  acceptance documentation.
 
-P3 - make it differentiated:
+### Blocked
 
-- Superpowers contract export;
-- Superpowers result import;
-- path, evidence, test, and authority checks;
-- integration test suite.
-
-P4 - make it contributor-ready:
-
-- Claude Code integration experience;
-- Discussions;
-- contributor issues;
-- integration template;
-- public roadmap updates.
+- Milestone 4 implementation, until Milestone 1 and Milestone 3.5 are accepted.
+- Superpowers export/import runtime, until Milestone 4 is accepted.
+- Claude Code integration implementation, until separately approved after
+  Milestone 5.
 
 ## Success Signals
 
@@ -624,6 +592,13 @@ Milestone 3:
 Users can run Axiom-PMO through a developer-friendly command surface.
 ```
 
+Milestone 3.5:
+
+```text
+Required Windows and Ubuntu PowerShell 7 runs produce the same governed output
+as the Windows PowerShell 5.1 compatibility run.
+```
+
 Milestone 4:
 
 ```text
@@ -642,18 +617,4 @@ Milestone 6:
 ```text
 Claude Code users can integrate Axiom-PMO without overwriting or breaking
 existing agent configurations.
-```
-
-Milestone 7:
-
-```text
-External contributors can find, implement, test, and submit meaningful changes
-without owner-led onboarding.
-```
-
-Milestone 8:
-
-```text
-External users and contributors can validate the product value from demos,
-issues, case studies, and workflow evidence.
 ```

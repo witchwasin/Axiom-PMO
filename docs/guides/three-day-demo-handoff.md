@@ -220,4 +220,4 @@ Re-run the gate whenever the sources change. The review goes stale with them, an
 
 - [Handoff readiness](../concepts/handoff-readiness.md) — why the gate is shaped this way
 - [Artifact map](artifact-map.md) — which document plays which role
-- [Rule reference](../rules/) — `HANDOFF-001` to `HANDOFF-012`
+- [Rule reference](../rules/) — `HANDOFF-001` to `HANDOFF-014`
