@@ -71,8 +71,8 @@ that never actually ran would be worse than one that fails loudly.
 | `annotation-mode` | no | `safe` | `safe` emits sanitized `FAIL`/`WARN` annotations on the pull request; `off` emits none. |
 | `enforce` | no | `false` | Whether a governance verdict fails the workflow step. See "Report-only by default" above. |
 | `enable-scope-diff` | no | `false` | Compare changed files against the project's approved `SCOPE.json`. Off by default -- this Action's behavior is unchanged unless a workflow opts in. See `docs/reference/scope-declaration.md`. |
-| `scope-diff-base` | no | (empty) | Base commit SHA for SCOPE-DIFF. Overrides the `pull_request` event's base SHA when set; required on any other event. |
-| `scope-diff-head` | no | (empty) | Head commit SHA for SCOPE-DIFF. Overrides the `pull_request` event's head SHA when set; required on any other event. |
+| `scope-diff-base` | no | (empty) | Base commit SHA for SCOPE-DIFF. Overrides the `pull_request` event's base/head pair when **both** `scope-diff-base` and `scope-diff-head` are set; required on any other event. Setting only one of the two is treated as setting neither -- it falls back to the `pull_request` event (or, on any other event, to an actionable `SCOPE-DIFF-004`), never to a half-overridden pair. |
+| `scope-diff-head` | no | (empty) | Head commit SHA for SCOPE-DIFF. See `scope-diff-base` -- the two are only ever honoured as an explicit pair. |
 
 ## Outputs
 
