@@ -127,8 +127,9 @@ three minutes.
 
 Status: **acceptance debt.** The validator, demo, hygiene tooling, quick start,
 and CI exist. An independent clean-room walkthrough and a committed terminal
-recording/GIF are still required. Issue #8 records this work and must be reopened
-rather than replaced.
+recording/GIF are still required. Issue #8 records this work and is open. Use
+the [M1 walkthrough and recording evidence guide](docs/guides/m1-walkthrough-and-recording.md)
+to capture the required evidence rather than replacing the issue.
 
 Deliverables:
 

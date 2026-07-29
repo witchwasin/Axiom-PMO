@@ -73,9 +73,9 @@ walkthrough.
 ## What this cannot prove
 
 **It is Linux.** Windows PowerShell 5.1 is the reference platform for this
-project; Linux and macOS run PowerShell 7 via `pwsh` as non-blocking CI smoke
-legs (Milestone 3.5). A clean walk in this container closes the Linux half of
-issue #8 and nothing more.
+project; Ubuntu PowerShell 7 is now a blocking CI leg and macOS PowerShell 7 is
+recorded as non-blocking evidence (Milestone 3.5). A clean walk in this
+container is useful Linux evidence for issue #8 and nothing more.
 
 Whoever reports findings should say which platform they walked. "The
 walkthrough passed" without that qualifier is the kind of claim this project
