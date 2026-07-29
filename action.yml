@@ -55,6 +55,24 @@ inputs:
       always fails the step regardless of this setting.
     required: false
     default: "false"
+  enable-scope-diff:
+    description: >-
+      Compare changed files (base..head) against the project's approved
+      implementation_scope (SCOPE.json). Off by default -- M4's own
+      behavior is unchanged unless a workflow opts in. On a pull_request
+      event, base/head are read automatically from the GitHub event
+      context unless scope-diff-base/scope-diff-head override them; on
+      any other event (e.g. push), you must supply both explicitly.
+    required: false
+    default: "false"
+  scope-diff-base:
+    description: "Base commit SHA for scope-diff. Overrides the pull_request event's base SHA when set."
+    required: false
+    default: ""
+  scope-diff-head:
+    description: "Head commit SHA for scope-diff. Overrides the pull_request event's head SHA when set."
+    required: false
+    default: ""
 
 outputs:
   exit-code:
@@ -69,6 +87,9 @@ outputs:
   markdown-report:
     description: "Path to axiom-report.md."
     value: ${{ steps.run.outputs.markdown-report }}
+  scope-diff-verdict:
+    description: "pass, fail, scope_missing, invalid_scope, or git_error -- empty when enable-scope-diff was not set."
+    value: ${{ steps.run.outputs.scope-diff-verdict }}
 
 runs:
   using: "composite"
@@ -95,7 +116,15 @@ runs:
           --fail-on-warning "${{ inputs.fail-on-warning }}" \
           --working-directory "${{ inputs.working-directory }}" \
           --annotation-mode "${{ inputs.annotation-mode }}" \
-          --enforce "${{ inputs.enforce }}"
+          --enforce "${{ inputs.enforce }}" \
+          --enable-scope-diff "${{ inputs.enable-scope-diff }}" \
+          --scope-diff-base "${{ inputs.scope-diff-base }}" \
+          --scope-diff-head "${{ inputs.scope-diff-head }}"
+      env:
+        # run-action.mjs reads this itself to auto-detect base/head on a
+        # pull_request event; GITHUB_EVENT_PATH is already set by the Actions
+        # runtime, this just makes the dependency explicit at the call site.
+        AXIOM_GITHUB_EVENT_NAME: ${{ github.event_name }}
 
     # continue-on-error: the governance verdict already came from the `run`
     # step above and set this composite action's exit status. An unrelated

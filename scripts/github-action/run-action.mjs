@@ -11,7 +11,7 @@
 //     [--json-report-path axiom-report.json] [--md-report-path axiom-report.md]
 
 import { spawnSync } from "node:child_process";
-import { appendFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -36,6 +36,59 @@ const CLI = join(ACTION_ROOT, "cli/axiom.mjs");
 // failing loudly.
 const GOVERNANCE_EXIT_CODES = new Set([0, 1, 2]);
 
+// SCOPE-DIFF-003 (invalid scope declaration) and SCOPE-DIFF-004 (git
+// base/head range unavailable) are, like a missing PowerShell host,
+// infrastructure/configuration failures rather than governance verdicts --
+// the comparison never actually ran, so there is no finding for report-only
+// to soften. Everything else SCOPE-DIFF can emit (001/002/005) is a real
+// governance verdict, subject to --enforce exactly like any other rule.
+const SCOPE_DIFF_INFRA_RULE_IDS = new Set(["SCOPE-DIFF-003", "SCOPE-DIFF-004"]);
+
+// A sentinel, not empty strings: validate-project.ps1's own opt-in check is
+// `if ($ScopeDiffBase -and $ScopeDiffHead)`, so passing "" would make it
+// silently skip the whole check even though the caller explicitly asked for
+// it via enable-scope-diff. This value can never resolve as a real git ref,
+// so it deterministically routes into the existing SCOPE-DIFF-004
+// ("range unavailable") diagnostic with a specific, honest reason instead.
+const SCOPE_DIFF_UNRESOLVED_REF = "AXIOM-SCOPE-DIFF-NO-BASE-OR-HEAD-AVAILABLE";
+
+// On a pull_request event, GitHub always sets GITHUB_EVENT_PATH to a JSON
+// file with the event payload, which is where the PR's actual base/head SHAs
+// live (not the moving branch names). Any failure here (missing env var,
+// unreadable file, unexpected shape) is swallowed and reported as "not
+// found" -- the caller falls back to an explicit override or the unresolved
+// sentinel, never to a guess.
+function readPullRequestShasFromEvent() {
+  try {
+    const eventPath = process.env.GITHUB_EVENT_PATH;
+    if (!eventPath) return null;
+    const event = JSON.parse(readFileSync(eventPath, "utf8"));
+    const base = event?.pull_request?.base?.sha;
+    const head = event?.pull_request?.head?.sha;
+    if (typeof base === "string" && base && typeof head === "string" && head) {
+      return { base, head };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// Precedence: explicit input override > pull_request event context > the
+// unresolved sentinel (which surfaces as a clear SCOPE-DIFF-004, not a
+// silent skip -- enable-scope-diff being true is itself a request that must
+// be honoured with an answer, even a failing one).
+function resolveScopeDiffRefs(options) {
+  if (options.scopeDiffBase && options.scopeDiffHead) {
+    return { base: options.scopeDiffBase, head: options.scopeDiffHead, source: "input-override" };
+  }
+  const fromEvent = readPullRequestShasFromEvent();
+  if (fromEvent) {
+    return { base: fromEvent.base, head: fromEvent.head, source: "pull_request-event" };
+  }
+  return { base: SCOPE_DIFF_UNRESOLVED_REF, head: SCOPE_DIFF_UNRESOLVED_REF, source: "unresolved" };
+}
+
 function parseArgs(argv) {
   const options = {
     project: undefined,
@@ -47,6 +100,9 @@ function parseArgs(argv) {
     enforce: false,
     jsonReportPath: "axiom-report.json",
     mdReportPath: "axiom-report.md",
+    enableScopeDiff: false,
+    scopeDiffBase: "",
+    scopeDiffHead: "",
   };
   const bool = (v) => v === "true" || v === "1" || v === true;
 
@@ -63,6 +119,9 @@ function parseArgs(argv) {
       case "--enforce": options.enforce = bool(next()); break;
       case "--json-report-path": options.jsonReportPath = next(); break;
       case "--md-report-path": options.mdReportPath = next(); break;
+      case "--enable-scope-diff": options.enableScopeDiff = bool(next()); break;
+      case "--scope-diff-base": options.scopeDiffBase = next(); break;
+      case "--scope-diff-head": options.scopeDiffHead = next(); break;
       default:
         process.stderr.write(`run-action.mjs: unrecognised argument ${arg}\n`);
         process.exit(64);
@@ -142,6 +201,26 @@ function main() {
     "--json",
   ];
   if (options.failOnWarning) cliArgs.push("--fail-on-warning");
+
+  let scopeDiffRefs = null;
+  if (options.enableScopeDiff) {
+    scopeDiffRefs = resolveScopeDiffRefs(options);
+    // PowerShell parameter syntax (-Name), not this file's own --kebab-case
+    // argv convention: cli/axiom.mjs's `validate` command forwards any
+    // argument it does not itself recognise straight through, unmodified, to
+    // scripts/validate-project.ps1's own command line (see buildValidate in
+    // cli/axiom.mjs) -- these three have to already be in the form
+    // validate-project.ps1 itself expects.
+    cliArgs.push(
+      "-ScopeDiffBase", scopeDiffRefs.base,
+      "-ScopeDiffHead", scopeDiffRefs.head,
+      // The consumer's own checkout (workingDirectory), not wherever this
+      // Action's own files happen to be checked out -- see validate-project.ps1's
+      // -ScopeDiffRepoRoot comment for why those are two different things
+      // when running as a GitHub Action.
+      "-ScopeDiffRepoRoot", workingDirectory,
+    );
+  }
 
   const child = spawnSync(process.execPath, [CLI, ...cliArgs], {
     cwd: workingDirectory,
@@ -227,27 +306,44 @@ function main() {
     mode: options.annotationMode,
   });
 
+  const scopeDiffVerdict = validatorResult.scope_diff?.verdict ?? "";
+
   writeGithubOutput({
     "exit-code": exitCode,
     outcome,
     "json-report": jsonReportPath,
     "markdown-report": mdReportPath,
+    "scope-diff-verdict": scopeDiffVerdict,
   });
 
+  const scopeDiffNote = options.enableScopeDiff ? ` scope_diff=${scopeDiffVerdict || "(none)"}` : "";
   process.stdout.write(
-    `Axiom-PMO governance report: outcome=${outcome} exit_code=${exitCode} enforce=${options.enforce}\n`,
+    `Axiom-PMO governance report: outcome=${outcome} exit_code=${exitCode} enforce=${options.enforce}${scopeDiffNote}\n`,
+  );
+
+  // A SCOPE-DIFF-003/004 row means the scope comparison itself could not run
+  // (invalid declaration, or the git range was unavailable) -- an
+  // infrastructure/configuration problem, not a governance verdict, so
+  // report-only must not be able to hide it either. Checked independently of
+  // the aggregate exit code, which mixes scope-diff in with every other rule
+  // this validator run evaluated.
+  const hasScopeDiffInfraFailure = (validatorResult.results ?? []).some(
+    (row) => SCOPE_DIFF_INFRA_RULE_IDS.has(row.rule_id),
   );
 
   // Report-only softens a governance verdict (0/1/2) into a passing step.
-  // It never softens an infrastructure failure (127, 64, or anything else) --
-  // see GOVERNANCE_EXIT_CODES above for why.
-  if (!options.enforce && GOVERNANCE_EXIT_CODES.has(exitCode)) {
+  // It never softens an infrastructure failure (127, 64, a SCOPE-DIFF-003/004
+  // row, or anything else) -- see GOVERNANCE_EXIT_CODES above for why.
+  if (!options.enforce && !hasScopeDiffInfraFailure && GOVERNANCE_EXIT_CODES.has(exitCode)) {
     process.exitCode = 0;
     if (exitCode !== 0) {
       process.stdout.write("Report-only mode: findings above did not fail this workflow step. Set enforce: true to change that.\n");
     }
   } else {
     process.exitCode = exitCode;
+    if (hasScopeDiffInfraFailure && !options.enforce) {
+      process.stdout.write("Scope-diff could not run (see SCOPE-DIFF-003/004 above) -- this fails the step even in report-only mode, the same way a missing PowerShell host would.\n");
+    }
   }
 }
 
