@@ -68,7 +68,7 @@ Recommended effort allocation:
 | Milestone 2 - Developer Diagnostics | Delivered | Delivered in 1.1 |
 | Milestone 2.5 - Engineering Handoff Readiness | Delivered | Delivered in 1.1.0; strengthened in 1.1.1 |
 | Milestone 3 - Thin Local CLI | Delivered (Phase A) | Local CLI delivered; public npm package deferred |
-| Milestone 3.5 - Runtime Portability | In progress — first matrix green | Ubuntu required status, branch protection, and human acceptance remain |
+| Milestone 3.5 - Runtime Portability | In progress — Ubuntu promotion pending CI evidence | Two consecutive green main runs, branch protection decision, and human acceptance remain |
 | Milestone 4 - GitHub Action | Planned | Blocked by Milestone 1 acceptance and Milestone 3.5 |
 | Milestone 5 - Superpowers Runtime Bridge | Blocked | Starts only after Milestone 4 human acceptance |
 | Milestone 6 - Claude Code Integration Experience | Planned | Requires separate approval after Milestone 5 |
@@ -359,12 +359,15 @@ Current evidence and gaps:
   and macOS PowerShell 7 at commit `eb50c29`.
 - **Confirmed:** Windows PowerShell 7 is a blocking workflow job, but `main`
   branch protection has not yet made it a required status check.
-- **Confirmed:** Ubuntu PowerShell 7 passed the full suite, but the workflow
-  still marks it `continue-on-error`; this does not satisfy the target policy
-  or definition of done below.
-- **Open question:** how many repeat green Ubuntu runs are required before its
-  promotion. A human must decide the evidence threshold and record milestone
-  acceptance after the required checks are configured.
+- **Confirmed:** Ubuntu PowerShell 7 passed the full suite in the first matrix
+  run. The workflow is being promoted from `continue-on-error` to a blocking
+  job named `pmo-checks-linux-pwsh7`.
+- **Confirmed:** Human-approved threshold: Ubuntu PowerShell 7 must pass two
+  consecutive full CI runs on `main` after `continue-on-error` is removed before
+  M3.5 can be accepted.
+- **Open question:** whether `main` branch protection will be configured for
+  the promoted Ubuntu and Windows PowerShell 7 jobs. This repository setting is
+  deferred and may be skipped by human decision.
 
 Target support matrix:
 
@@ -574,11 +577,11 @@ Do not spend near-term effort on:
 
 ### Next
 
-- Configure `main` branch protection so the blocking Windows PowerShell 7 job
-  is a required status check.
-- Establish the human-approved evidence threshold for Ubuntu PowerShell 7,
-  then remove `continue-on-error` and make the job required after that
-  threshold is met.
+- Remove `continue-on-error` from the Ubuntu PowerShell 7 workflow job and
+  rename it to `pmo-checks-linux-pwsh7`.
+- Collect two consecutive green `main` CI runs after the Ubuntu promotion.
+- Decide whether to configure `main` branch protection for the blocking
+  Windows PowerShell 7 and Ubuntu PowerShell 7 jobs.
 - Record Milestone 3.5 human acceptance only after its definition of done is
   satisfied.
 - Milestone 4 tracking issue and child issues for the reusable Action,

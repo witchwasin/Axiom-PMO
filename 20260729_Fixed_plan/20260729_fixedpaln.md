@@ -2,7 +2,8 @@
 
 Date: 2026-07-29
 Plan ID: `20260729_fixedpaln`
-Status: implementation plan only — no implementation or approval is implied
+Status: implementation plan with 2026-07-29 execution updates; no milestone
+acceptance is implied
 
 ## Purpose
 
@@ -31,12 +32,22 @@ The intended outcome is to:
 - The runtime already discovers `AXIOM_PWSH`, the current PowerShell host,
   `pwsh`, `powershell`, and `powershell.exe`.
 - Windows PowerShell 5.1 is still treated as the reference platform.
-- Linux execution under PowerShell 7 is currently an experimental,
-  non-blocking CI job.
+- CI run
+  [#30432327317](https://github.com/witchwasin/Axiom-PMO/actions/runs/30432327317)
+  passed on Windows PowerShell 5.1, Windows PowerShell 7, Ubuntu PowerShell 7,
+  and macOS PowerShell 7 at commit `eb50c29`.
+- Local documentation commit `aaa5e6b` records the current M3.5 status and
+  PowerShell runtime setup guidance.
+- Ubuntu PowerShell 7 promotion threshold is human-approved: after
+  `continue-on-error` is removed, it must pass two consecutive full CI runs on
+  `main` before M3.5 acceptance.
+- `main` branch protection is intentionally deferred and may be skipped by
+  human decision.
 - Milestone 1 is not accepted: no independent clean-room walkthrough and no
   committed terminal recording/GIF exist.
-- GitHub Issue #8 tracks the walkthrough and recording but is closed as
-  `not planned`.
+- GitHub Issue #8 tracks the walkthrough and recording and is open.
+- GitHub Issue #12 tracks Milestone 4 and must remain blocked until M1
+  acceptance and M3.5 completion.
 - The Superpowers schemas are experimental and are not connected to the
   validator runtime.
 
@@ -48,7 +59,7 @@ The intended outcome is to:
 | M2 — Developer Diagnostics | Delivered |
 | M2.5 — Engineering Handoff Readiness | Delivered in 1.1.0; strengthened in 1.1.1 |
 | M3 — Thin Local CLI | Phase A delivered; npm Phase B deferred |
-| M3.5 — Runtime Portability | Next prerequisite before M4 implementation |
+| M3.5 — Runtime Portability | In progress; Ubuntu promotion pending two green main runs and human acceptance |
 | M4 — GitHub Action | Planned; implementation blocked by M1 and M3.5 |
 | M5 — Superpowers Runtime Bridge | Blocked by M4 acceptance |
 | M6 — Claude Code Integration Experience | Planned |
@@ -219,8 +230,9 @@ contract. Missing PowerShell remains exit code `127`.
 
 1. Keep the Windows PowerShell 5.1 full-suite job.
 2. Add a required Windows PowerShell 7 full-suite job.
-3. Promote the Ubuntu PowerShell 7 full-suite job from non-blocking to required
-   only after it passes the complete suite reliably.
+3. Promote the Ubuntu PowerShell 7 full-suite job by renaming it to
+   `pmo-checks-linux-pwsh7`, removing `continue-on-error`, and keeping the same
+   full-suite contract as the Windows required jobs.
 4. Add a non-blocking macOS PowerShell 7 smoke/full-suite job, depending on
    available runner time.
 5. Pin third-party Actions to reviewed commit SHAs.
@@ -262,6 +274,8 @@ comments, and validation-engine documentation so that:
 - macOS results are recorded honestly as smoke/non-blocking until promoted.
 - Cross-host output and exit-code contracts match.
 - Required documentation describes the real support matrix.
+- Ubuntu PowerShell 7 has passed two consecutive full CI runs on `main` after
+  `continue-on-error` was removed.
 - Human acceptance is recorded.
 
 ## Workstream 4 — Milestone 4 GitHub Action Planning
@@ -460,12 +474,14 @@ test failure or as a passing result.
 
 ```text
 1. Align roadmap and documentation
-2. Reopen and complete Issue #8 with real human evidence
-3. Implement and accept M3.5 runtime portability
-4. Open M4 parent and child issues
-5. Implement and accept M4
-6. Open and implement M5
-7. Continue to M6 only when separately approved
+2. Promote Ubuntu PowerShell 7 from experimental to blocking workflow job
+3. Collect two consecutive green main CI runs after Ubuntu promotion
+4. Decide whether to configure main branch protection
+5. Reopen and complete Issue #8 with real human evidence
+6. Accept M3.5 only after the CI evidence and human decision exist
+7. Keep M4 blocked until M1 and M3.5 are accepted
+8. Open and implement M5 only after M4 human acceptance
+9. Continue to M6 only when separately approved
 ```
 
 The executor must stop at any human approval, walkthrough, release, push, or
