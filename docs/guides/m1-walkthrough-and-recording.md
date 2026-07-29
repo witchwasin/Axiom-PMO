@@ -1,8 +1,9 @@
 # M1 Walkthrough and Recording Evidence
 
-Milestone 1 can close only with real evidence from a clean-room walkthrough and
-a committed demo recording. This guide prepares the evidence packet; it does not
-stand in for the walkthrough, the recording, or human acceptance.
+This guide prepares optional trust evidence from a clean-room walkthrough and a
+committed demo recording. On 2026-07-29, a human decision deferred this evidence
+and removed it as a blocker before Milestone 4. The guide remains here so the
+evidence can be captured later without fabrication.
 
 Tracked issue: [#8](https://github.com/witchwasin/Axiom-PMO/issues/8)
 
@@ -12,12 +13,13 @@ Tracked issue: [#8](https://github.com/witchwasin/Axiom-PMO/issues/8)
   assets, or acceptance decisions.
 - AI may prepare the environment and summarize observations, but must not
   impersonate the human participant.
-- Branch or CI success is supporting evidence only. M1 acceptance requires a
-  human decision after the walkthrough and recording evidence exists.
+- Branch or CI success is supporting evidence only. If this optional evidence is
+  used later for an acceptance claim, a human decision is still required.
 
-## Required Walkthroughs
+## Recommended Walkthroughs
 
-Run at least these two walks:
+If this evidence is picked up later, these two walks give the most useful
+coverage:
 
 | Walk | Required environment | Purpose |
 |---|---|---|
@@ -111,9 +113,9 @@ docs/assets/demo/axiom-pmo-demo.gif
 
 Do not link the GIF from `README.md` until the file exists and opens correctly.
 
-## M1 Exit Checklist
+## Optional Evidence Checklist
 
-M1 may be marked accepted only when:
+If this optional evidence is used later, a complete package should include:
 
 - Windows walkthrough evidence identifies participant role, platform, timing,
   findings, and whether the participant understood the value.

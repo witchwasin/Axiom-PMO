@@ -15,7 +15,8 @@ decisions.
 The intended outcome is to:
 
 - align the roadmap and current documentation with Axiom-PMO `v1.1.1`;
-- close Milestone 1 with a real clean-room walkthrough and recording;
+- keep Milestone 1 walkthrough and recording evidence available as optional
+  trust work;
 - add Milestone 3.5 for portable PowerShell execution;
 - plan and track Milestone 4 as a reusable GitHub Action;
 - keep Milestone 5 blocked until Milestone 4 is accepted;
@@ -55,11 +56,12 @@ The intended outcome is to:
 - Human acceptance for M3.5 was recorded on 2026-07-29 in Codex chat, with
   `main` branch protection deferred and not required for this milestone
   acceptance.
-- Milestone 1 is not accepted: no independent clean-room walkthrough and no
-  committed terminal recording/GIF exist.
-- GitHub Issue #8 tracks the walkthrough and recording and is open.
-- GitHub Issue #12 tracks Milestone 4. M3.5 is accepted; the remaining blocker
-  before M4 implementation is M1 acceptance.
+- Milestone 1 walkthrough and recording evidence is deferred by human decision
+  on 2026-07-29 and is not a blocker before M4 implementation.
+- GitHub Issue #8 tracks the optional walkthrough and recording evidence and is
+  open.
+- GitHub Issue #12 tracks Milestone 4. M3.5 is accepted and M1 evidence is
+  deferred, so M4 may move into implementation planning.
 - The Superpowers schemas are experimental and are not connected to the
   validator runtime.
 
@@ -67,12 +69,12 @@ The intended outcome is to:
 
 | Milestone | Target status |
 |---|---|
-| M1 — Public Trust and Three-Minute Proof | Acceptance debt: walkthrough and recording required |
+| M1 — Public Trust and Three-Minute Proof | Delivered with deferred optional trust evidence |
 | M2 — Developer Diagnostics | Delivered |
 | M2.5 — Engineering Handoff Readiness | Delivered in 1.1.0; strengthened in 1.1.1 |
 | M3 — Thin Local CLI | Phase A delivered; npm Phase B deferred |
 | M3.5 — Runtime Portability | Accepted on 2026-07-29 |
-| M4 — GitHub Action | Planned; implementation blocked by M1 acceptance |
+| M4 — GitHub Action | Planned; ready for implementation planning |
 | M5 — Superpowers Runtime Bridge | Blocked by M4 acceptance |
 | M6 — Claude Code Integration Experience | Planned |
 | M7 — Community Launch | Remove from roadmap |
@@ -81,7 +83,7 @@ The intended outcome is to:
 The active dependency chain must become:
 
 ```text
-M1 acceptance
+M1 delivered, with walkthrough/recording evidence deferred
 -> M2 delivered
 -> M2.5 delivered
 -> M3 delivered
@@ -114,13 +116,13 @@ implementation is not.
    v1.1.0 rule set.
 4. Update the README roadmap summary so it states:
    - what was delivered in v1.1;
-   - that M1 still has acceptance debt;
-   - that M3.5 is the next engineering prerequisite;
-   - that M4 follows M3.5;
+   - that M1 walkthrough/recording evidence is deferred optional trust work;
+   - that M3.5 is accepted;
+   - that M4 follows M3.5 and may move into implementation planning;
    - that M5 remains blocked by M4.
 5. Split the roadmap backlog into:
    - `Done`;
-   - `Acceptance debt`;
+   - `Deferred trust evidence`;
    - `Next`;
    - `Blocked`.
 
@@ -134,25 +136,28 @@ implementation is not.
 
 ## Workstream 2 — Milestone 1 Walkthrough and Recording
 
+Status: **deferred optional trust evidence.** This workstream was originally a
+Milestone 4 blocker. On 2026-07-29, the human decision removed it from the
+blocker chain. Keep the evidence packet and Issue #8 available if the work is
+picked up later, but do not block M4 on it.
+
 ### Issue handling
 
-Reopen GitHub Issue #8. Do not create a duplicate issue.
+GitHub Issue #8 is open. Do not create a duplicate issue. Add a comment that
+records the deferred-evidence decision and preserves the existing history.
 
-Change the state reason from `not planned` to `reopened`. Retain the existing
-history and add a comment referencing this plan.
+### Optional human walkthrough
 
-### Human walkthrough
+If picked up later, the walkthrough should be performed by a developer who is
+unfamiliar with this repository. An AI may prepare the environment and record
+observations but may not impersonate the human participant.
 
-The walkthrough must be performed by a developer who is unfamiliar with this
-repository. An AI may prepare the environment and record observations but may
-not impersonate the human participant.
-
-Required environments:
+Recommended environments:
 
 - Windows reference environment;
 - clean macOS environment.
 
-Required path:
+Recommended path:
 
 ```text
 clone repository
@@ -174,7 +179,7 @@ Every confirmed documentation problem must either be fixed or remain in an
 open issue with an owner. Do not close M1 while a blocking walkthrough finding
 is unresolved.
 
-### Recording
+### Optional recording
 
 After walkthrough findings are fixed, record the deterministic demo using:
 
@@ -197,9 +202,10 @@ Link the GIF near the README quick-start/demo section and link the `.cast` as
 the source recording. Add a local check that fails if README references a
 missing recording asset.
 
-### M1 exit criteria
+### Optional evidence completeness
 
-M1 may be changed to `Delivered` only when:
+If the deferred evidence is picked up later, treat the evidence package as
+complete only when:
 
 - the human walkthrough evidence identifies participant role and platforms;
 - results and timings are recorded without fabrication;
@@ -207,7 +213,8 @@ M1 may be changed to `Delivered` only when:
 - the `.cast` and GIF exist and open correctly;
 - the README links resolve;
 - required CI checks pass;
-- a human records the acceptance decision.
+- a human records the acceptance decision that relies on this optional
+  evidence.
 
 ## Workstream 3 — Milestone 3.5 Runtime Portability
 
@@ -299,7 +306,8 @@ Open one tracking issue:
 ```
 
 Do not assign an owner unless a human has named one. Record that M3.5 is
-accepted and that M1 acceptance remains the blocker before implementation.
+accepted and that M1 walkthrough/recording evidence was deferred by human
+decision before implementation.
 
 Create these child issues and link them from the parent checklist.
 
@@ -489,9 +497,9 @@ test failure or as a passing result.
 2. Promote Ubuntu PowerShell 7 from experimental to blocking workflow job
 3. Record the two consecutive green main CI runs after Ubuntu promotion
 4. Record branch protection as deferred for M3.5 acceptance
-5. Reopen and complete Issue #8 with real human evidence
-6. Keep M4 blocked until M1 is accepted
-7. Start M4 planning only after the remaining blocker is cleared
+5. Record Issue #8 as optional deferred trust evidence
+6. Start M4 planning after the deferred-evidence decision is recorded
+7. Keep M4 acceptance human-gated
 8. Open and implement M5 only after M4 human acceptance
 9. Continue to M6 only when separately approved
 ```
