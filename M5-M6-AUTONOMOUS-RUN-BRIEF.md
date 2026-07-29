@@ -141,8 +141,8 @@ problem once. Keep them all:
   privacy fix and M4.5's `renames`/exempt-bucket work are the reference
   examples -- read them if you need a template.
 - Before calling anything "done," run the full local suite and expect all
-  of it green (use `AXIOM_PWSH=/Users/arm/tools/pwsh/pwsh` -- pwsh 7.6.4 is
-  installed there):
+  of it green (see §5 for getting `pwsh` available in a fresh sandbox; set
+  `AXIOM_PWSH=<path to your pwsh>` if it's not on `PATH`):
   ```bash
   pwsh -NoProfile -ExecutionPolicy Bypass -File tests/helpers/scope-diff-tests.ps1
   pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1
@@ -185,11 +185,34 @@ problem once. Keep them all:
 
 ## 5. Quick reference
 
-- Repo: `/Users/arm/Documents/GitHub/Axiom-PMO`, remote `witchwasin/Axiom-PMO`
-  on GitHub, currently public.
-- PowerShell 7 for local validation: `/Users/arm/tools/pwsh/pwsh` (portable
-  install, not on PATH by default -- set `AXIOM_PWSH` or pass the full path).
-- `gh` CLI is authenticated as the repo owner already.
-- This repo's working directory may be shared with a parallel session --
-  `git status` and `git fetch` before trusting any assumption about what's
-  checked out, same caution this session learned the hard way tonight.
+- Remote: `https://github.com/witchwasin/Axiom-PMO`, currently public.
+- **This session almost certainly runs in a fresh, isolated sandbox, not on
+  the Human Owner's own Mac.** Do not assume any local tool is pre-installed
+  beyond what a bare Linux environment gives you. In particular:
+  - **PowerShell 7 (`pwsh`) is required** for `scripts/*.ps1` and
+    `tests/helpers/*.ps1` -- check `command -v pwsh` first; if missing,
+    install it yourself (Microsoft's official install script for Linux,
+    e.g. via the `packages.microsoft.com` apt repo, or the portable
+    tar.gz release from
+    `https://github.com/PowerShell/PowerShell/releases` -- pick whichever
+    your sandbox's network access actually allows). Do not skip or fake
+    PowerShell-dependent tests because the binary is inconvenient to get --
+    that is exactly the kind of "skip a test to get green" this brief's
+    §3 forbids.
+  - Verify `git` and `gh` are present and `gh auth status` actually shows an
+    authenticated, write-capable account before assuming push/merge/tag will
+    work. If `gh`/`git` push fails for a credentials reason, that's a real
+    blocker -- stop, record it clearly (§4), and do not silently downgrade to
+    "report only, don't actually push" without saying so in your final
+    summary. The Human Owner needs to know if nothing actually shipped.
+  - Node.js is needed for `tests/helpers/github-action-tests.mjs` and
+    everything under `scripts/github-action/` -- verify `node -v` early.
+- If you *are* somehow resuming inside the Human Owner's own local
+  environment after all (check `hostname`, `whoami`, and whether
+  `/Users/arm/tools/pwsh/pwsh` exists, as a quick signal), then that local
+  pwsh install is available and `AXIOM_PWSH=/Users/arm/tools/pwsh/pwsh` can
+  be set directly -- but don't assume this; verify first.
+- This repo's working directory (if local) may be shared with a parallel
+  session -- `git status` and `git fetch` before trusting any assumption
+  about what's checked out, same caution this session learned the hard way
+  tonight.
