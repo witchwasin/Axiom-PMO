@@ -62,8 +62,8 @@ in a search-based survey.
 
 ## 1. What already exists for governing AI coding-agent output in the PR/CI path?
 
-No tool combines deterministic scope enforcement, evidence verification, and a hard release
-gate. The pieces are split across products:
+No off-the-shelf tool identified in this survey combines deterministic scope enforcement,
+evidence verification, and a hard release gate. The pieces are split across products:
 
 - **Scope-vs-ticket comparison (semantic, not structural):** CodeRabbit's "Issue Assessment"
   Pre-Merge Check compares a PR's diff against its linked issue's free-text description via LLM
@@ -82,11 +82,11 @@ gate. The pieces are split across products:
   [policy-bot README](https://github.com/palantir/policy-bot/blob/develop/README.md)). Both are
   static, repo/org-level configuration or reviewer-routing — neither expresses "this specific
   PR, implementing this specific requirement, may only touch these specific paths."
-- **The gap SCOPE-DIFF would fill, precisely:** no tool combines (a) a deterministic path-list
-  comparison, (b) a scope that was declared and approved per-requirement (not inferred live
-  from ticket prose by an LLM), and (c) a hard PR failure on violation. CodeRabbit/Qodo have
-  (a)-adjacent and (c); GitHub rulesets/policy-bot have (a) but not (b) or a real (c) for
-  scope specifically.
+- **The gap SCOPE-DIFF would fill, precisely:** among the tools surveyed, no tool combines
+  (a) a deterministic path-list comparison, (b) a scope that was declared and approved
+  per-requirement (not inferred live from ticket prose by an LLM), and (c) a hard PR failure on
+  violation. CodeRabbit/Qodo have (a)-adjacent and (c); GitHub rulesets/policy-bot have (a) but
+  not (b) or a real (c) for scope specifically.
 - **Evidence binding:** GitHub's required-status-checks system structurally ties a check's
   pass/fail state to an exact commit SHA — a stale or wrong-commit "passed" status cannot
   satisfy the requirement. **DOCUMENTED**
@@ -167,7 +167,7 @@ AWS Bedrock Guardrails' one "code-related" mention is inference-time filtering o
 code *content*, not SDLC governance **DOCUMENTED**
 ([aws.amazon.com/bedrock/guardrails](https://aws.amazon.com/bedrock/guardrails/)).
 
-**Updated 2026-08:** IBM watsonx.governance and CalypsoAI were originally flagged
+**Updated 2026-07-29:** IBM watsonx.governance and CalypsoAI were originally flagged
 lower-confidence here because their marketing pages returned HTTP 403 to direct fetch. A
 follow-up pass (prompted by Sol's review) found first-party documentation/support pages for
 both that were reachable — IBM's own docs describe governing "AI assets, models, prompts, and
@@ -214,7 +214,7 @@ Two adjacent-but-not-matching finds:
   A further 5 issue titles suggesting the same pattern (including configured approval gates
   being bypassed) were found via search but never individually fetched for date or resolution
   status — these are kept in an **unverified appendix**, not counted as confirmed incidents,
-  and not used to claim a specific total incident count. Regraded 2026-08 per Sol's review;
+  and not used to claim a specific total incident count. Regraded 2026-07-29 per Sol's review;
   the earlier draft of this brief incorrectly implied all 8 were confirmed within a tight date
   window.
 - **The Replit production-database deletion** (July 2025): an AI agent deleted a live
@@ -311,10 +311,10 @@ what was already planned.
   competitor.
 - Two Track C entries (IBM watsonx.governance, CalypsoAI) originally rested on secondary/press
   sourcing because their marketing pages returned HTTP 403 to direct fetch; both were upgraded
-  to first-party sourcing in a 2026-08 follow-up (see section 4 update above) — the conclusions
+  to first-party sourcing in a 2026-07-29 follow-up (see section 4 update above) — the conclusions
   did not change.
 - Track D's strongest bug-report evidence (3 confirmed GitHub issues, 2026-02-26 to
-  2026-04-06, plus 5 unverified appendix leads — regraded 2026-08, see section 6) is
+  2026-04-06, plus 5 unverified appendix leads — regraded 2026-07-29, see section 6) is
   concentrated on a single vendor's issue tracker; this is a research-coverage gap, not a
   finding that the underlying behavior is vendor-specific.
 - Track B's "closest analogue" (CodeRabbit Issue Assessment) blocking behavior is documented in
@@ -327,7 +327,7 @@ what was already planned.
   reaches an evidence-attestation phase.
 - Cursor and Devin's own issue trackers were not researched with the same depth as Claude
   Code's for developer-pain evidence (section 6 caveat).
-- **Resolved during review (2026-08):** a Track D secondary blog described GitHub as having
+- **Resolved during review (2026-07-29):** a Track D secondary blog described GitHub as having
   shipped a "kill switch for AI-generated PRs" in response to the incidents in section 6. A
   follow-up check against GitHub's own documentation did not confirm this as a real,
   AI-source-aware feature. It found three distinct, narrower, confirmed capabilities instead:

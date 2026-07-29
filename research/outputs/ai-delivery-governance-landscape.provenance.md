@@ -10,7 +10,7 @@
 - **Rounds:** 1 planning round (user-approved), 4 parallel research tracks, 1 synthesis pass, 1
   self-review pass (1 correction applied: Track D date-range overstatement), 1 external review
   by a second reviewer ("Sol," a separate AI collaborator) with a verdict of ACCEPT WITH MAJOR
-  CORRECTIONS, and 1 correction round applied in response (2026-08) — see "Correction round"
+  CORRECTIONS, and 1 correction round applied in response (2026-07-29) — see "Correction round"
   below.
 - **Sources consulted:** 145 distinct URLs across the 4 tracks, before cross-track
   deduplication — see the `## Sources` section of each `research/.drafts/track-*.md` file for
@@ -31,10 +31,10 @@
     unverified, not counted as a competitor.
   - 5 of the original 8 Claude Code GitHub issues (Track D) — found via search but not
     individually fetched; moved to an unverified appendix and no longer counted as confirmed
-    incidents (2026-08 correction round).
+    incidents (2026-07-29 correction round).
   - A third-party blog's claim that GitHub shipped a "kill switch for AI-generated PRs" (Track
     D, item 11) — could not be corroborated against GitHub's own documentation; downgraded to
-    unverified (2026-08 correction round).
+    unverified (2026-07-29 correction round).
 - **Verification:** PASS WITH NOTES.
   - One correction applied during self-review (2026-07-29): the delivered brief originally
     stated all 8 Claude Code GitHub issues (section 6) fell within "February–April 2026." On
@@ -46,7 +46,7 @@
   - Not covered by this research pass at all: the supply-chain/provenance question (original
     research plan Q7) — flagged as an open question in the delivered brief rather than answered
     with unverified inference.
-- **Correction round (2026-08), in response to Sol's external review (verdict: ACCEPT WITH
+- **Correction round (2026-07-29), in response to Sol's external review (verdict: ACCEPT WITH
   MAJOR CORRECTIONS):**
   - **FATAL, fixed:** removed an absolute local filesystem path that had been recorded in this
     file's Method line, pointing at a directory on the researcher's own machine; replaced with
@@ -89,7 +89,22 @@
   - All corrections were verified on-disk via `grep`/targeted reads confirming the corrected
     wording is present and the superseded wording is gone before this provenance entry was
     written.
-- **Plan:** [research/PLAN.md](../PLAN.md)
+- **Correction round 2 (2026-07-29), in response to Sol's second review (verdict: REQUEST
+  CHANGES, 2 items):**
+  - **MAJOR, fixed — future-dated provenance:** the first correction round had been mislabeled
+    `2026-08` throughout (in this file and in Track C/Track D), even though the actual date of
+    that work was 2026-07-29. Every occurrence was replaced with the exact date `2026-07-29`
+    across all four modified research files. This was a real dating error, not a display
+    formatting issue — flagged correctly by Sol as an audit/provenance-correctness defect.
+  - **MINOR, fixed — remaining unscoped market claims:** the synthesis brief's section 1 opened
+    with an unscoped "No tool combines deterministic scope enforcement, evidence verification,
+    and a hard release gate" and a later bullet said "no tool combines (a)...(b)...(c)." Both
+    were rescoped to match the executive summary's already-correct survey-scoped language:
+    "No off-the-shelf tool identified in this survey combines..." and "among the tools
+    surveyed, no tool combines...".
+  - Verified on-disk before this entry was written: `grep -rn "2026-08" research/` returns
+    nothing; the two section-1 claims read as survey-scoped in the delivered brief; `git status`
+    confirms only the four files listed above changed.
 - **Research files:**
   - [research/.drafts/track-a-native-agent-governance.md](../.drafts/track-a-native-agent-governance.md)
   - [research/.drafts/track-b-pr-ci-policy-tooling.md](../.drafts/track-b-pr-ci-policy-tooling.md)
