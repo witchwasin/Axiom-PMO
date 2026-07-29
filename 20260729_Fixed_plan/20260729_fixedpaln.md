@@ -38,6 +38,13 @@ The intended outcome is to:
   and macOS PowerShell 7 at commit `eb50c29`.
 - Local documentation commit `aaa5e6b` records the current M3.5 status and
   PowerShell runtime setup guidance.
+- Workflow promotion commit `24d8b99` renames the Ubuntu job to
+  `pmo-checks-linux-pwsh7`, removes `continue-on-error`, and makes the Ubuntu
+  PowerShell 7 path a blocking workflow job.
+- CI run
+  [#30434956117](https://github.com/witchwasin/Axiom-PMO/actions/runs/30434956117)
+  passed on `main` at commit `24d8b99` after the Ubuntu promotion. This is
+  Ubuntu promoted green run 1 of 2.
 - Ubuntu PowerShell 7 promotion threshold is human-approved: after
   `continue-on-error` is removed, it must pass two consecutive full CI runs on
   `main` before M3.5 acceptance.
