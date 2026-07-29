@@ -106,7 +106,10 @@ For a given changed file, in order:
    repo-wide exemption (below) — a project's own, more specific and more
    recently reviewed decision overrides a global default.
 2. Matches a repo-wide exemption → **exempt**. Reported in the output with
-   its reason, counted as clean (not a violation).
+   its reason, counted as clean (not a violation), and kept in its own
+   `exempt` bucket — **not** added to `changed_in_scope` as well. The two
+   buckets are disjoint so that summing them (or any other consumer-side
+   reconciliation against the total changed-file count) is accurate.
 3. Matches `include` → **in scope**. Clean.
 4. Otherwise → **out of scope** (`SCOPE-DIFF-001`).
 
@@ -139,6 +142,16 @@ allowlist anywhere in SCOPE-DIFF. Every entry:
   "repo-wide exempt" case, and the matching "non-exempt unrelated file
   still fails" case proving the exemption does not leak beyond what it
   actually lists.
+
+`Read-ScopeDiffPolicy` (`scripts/lib/scope-diff-matcher.ps1`) rejects the
+file outright — a hard error, the same severity as a missing config file —
+if any entry has an empty or missing `reason`, a pattern that fails the
+same `Test-ScopeGlobSyntax` gate `SCOPE.json` patterns go through, a
+duplicate pattern, or a pattern broad enough to match effectively every
+file (`**`, `*`, `**/*`, `**/**`). A repo-wide exemption is only as safe as
+its narrowest reading; a pattern this broad would silently disable
+SCOPE-DIFF for every project at once, which defeats the point of the check
+existing.
 
 If a project needs its *own* project-specific exception (its own governance
 files updated alongside the code, generated files specific to that project,
@@ -174,7 +187,18 @@ magic list this design avoids.
   `excluded > out_of_scope > exempt > in_scope`: renaming an in-scope file
   to an out-of-scope location — or the reverse — is exactly the kind of
   scope drift this check exists to catch, regardless of which direction the
-  rename went.
+  rename went. The `scope_diff.renames` array in the report (below) records
+  both paths and both individual verdicts for every rename, so external
+  tooling does not have to parse the `(renamed from ...)` note out of a
+  diagnostic message to know which side actually caused a failing verdict.
+- **Rename detection itself does not depend on ambient git configuration.**
+  The diff is run with explicit `-c diff.renames=true -c
+  diff.renameLimit=32767 --find-renames` rather than relying on the
+  runner's or repository's own `diff.renames`/`diff.renameLimit` settings,
+  so the same change is reported with the same status (`R100 old new`
+  vs. `D old` + `A new`) regardless of which machine or CI image runs the
+  check. The rename *similarity index* (git's default, roughly 50%) is not
+  overridden — see "Known limitations" below.
 - **A shallow checkout, or a base/head that cannot be resolved**, produces
   `SCOPE-DIFF-004` with an actionable message (most commonly: increase
   `actions/checkout`'s `fetch-depth`), never a crash and never a guessed
@@ -197,6 +221,17 @@ PowerShell 7 on Windows, and PowerShell 7 on Linux/macOS — proven by
 `tests/helpers/scope-diff-tests.ps1` running unchanged across all of them in
 this repository's own CI matrix, not by separate OS-specific test code.
 
+### Path matching is case-sensitive
+
+`Resolve-ScopeVerdict` compares every path with PowerShell's `-cmatch`
+(case-sensitive), never the case-insensitive `-match`. `SRC/PAYMENTS/x.ts`
+does **not** satisfy `include: ["src/payments/**"]` — this matters because a
+case-insensitive comparison would let a file whose path differs only in
+case pass a scope check on a case-sensitive filesystem or Git checkout
+(Linux, macOS, and most CI runners) even though it is, byte-for-byte, a
+different path than the one that was approved. This holds for `include`,
+`exclude`, and repo-wide exemption matching alike.
+
 ## What the report shows
 
 `axiom-report.json`'s `scope_diff` object (present only when SCOPE-DIFF was
@@ -214,10 +249,27 @@ shape is unchanged):
     "changed_out_of_scope": ["src/auth/permissions.ts"],
     "changed_excluded": ["src/payments/generated/client.ts"],
     "exempt": [{ "path": "package-lock.json", "reason": "Lockfile maintained automatically by dependency tooling." }],
+    "renames": [
+      {
+        "status": "R100",
+        "old_path": "src/forbidden/file.ts",
+        "new_path": "src/payments/file.ts",
+        "old_verdict": "out_of_scope",
+        "new_verdict": "in_scope"
+      }
+    ],
     "verdict": "fail"
   }
 }
 ```
+
+`exempt` and `changed_in_scope` are disjoint — an exempt file never also
+appears in `changed_in_scope`. `renames` is additive and only ever contains
+entries for changes `git diff` reported as a rename or copy (an `R`/`C`
+status); a renamed file's `new_path` still also appears in exactly one of
+`changed_in_scope`/`changed_out_of_scope`/`changed_excluded`/`exempt`
+per the combined-verdict rule above — `renames` exists to show *both* paths
+and *both* individual verdicts, not to replace those buckets.
 
 `verdict` is one of `pass`, `fail`, `scope_missing`, `invalid_scope`, or
 `git_error`. The same information renders into `axiom-report.md`, the GitHub
@@ -258,13 +310,15 @@ PowerShell host always failing the step regardless of `enforce`.
   scopes, `SCOPE.json` currently expresses one combined scope for the whole
   project, not a scope per `D-###` row. Widen `include` to cover the union,
   or validate the narrower work item as its own project.
-- **Rename detection depends on git's own default similarity threshold**
-  (`git diff`'s implicit `-M`, roughly 50% by default). A file rewritten
-  heavily enough that git reports it as a plain delete + add, rather than a
-  rename, is evaluated as two independent changes -- each checked against
-  its own single path -- rather than one rename with the combined
-  old-path/new-path verdict described above. SCOPE-DIFF does not pass a
-  custom similarity threshold to `git diff`.
+- **Rename detection uses git's own default similarity threshold**
+  (`git diff`'s implicit `-M`, roughly 50% by default — SCOPE-DIFF does not
+  override the threshold itself, only whether detection runs at all and the
+  candidate-pair search limit, both pinned via explicit `-c` overrides so
+  they cannot vary by environment; see "Git range semantics" above). A file
+  rewritten heavily enough that git reports it as a plain delete + add,
+  rather than a rename, is evaluated as two independent changes -- each
+  checked against its own single path -- rather than one rename with the
+  combined old-path/new-path verdict described above.
 - **Copies (`git diff`'s `C` status) are not specially detected.** `git diff
   --name-status` without `-C` (which SCOPE-DIFF does not pass, to keep the
   invocation simple and its output predictable) reports a copied-then-kept

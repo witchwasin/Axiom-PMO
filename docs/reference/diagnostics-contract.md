@@ -85,6 +85,7 @@ full shape and semantics:
     "changed_out_of_scope": ["src/auth/permissions.ts"],
     "changed_excluded": [],
     "exempt": [],
+    "renames": [],
     "verdict": "fail"
   }
 }
