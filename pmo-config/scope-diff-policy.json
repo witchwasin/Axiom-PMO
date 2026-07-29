@@ -1,0 +1,19 @@
+{
+  "version": "1.1.1",
+  "schema_version": "1.0",
+  "purpose": "Repo-wide, explicit exemptions for the SCOPE-DIFF check (scripts/lib/scope-diff-validator.ps1). A path matching an entry here is never counted as a scope violation, in any project, without needing to be repeated in every project's own SCOPE.json. This is a reviewable allowlist a human edits and sees in a diff -- not an implicit default, and not a way to bypass the check for anything project-specific.",
+  "repo_wide_exempt": [
+    {
+      "pattern": "CHANGELOG.md",
+      "reason": "Repository-wide changelog, expected to be touched alongside most changes."
+    },
+    {
+      "pattern": "package-lock.json",
+      "reason": "Lockfile maintained automatically by dependency tooling, not hand-authored implementation."
+    },
+    {
+      "pattern": "**/package-lock.json",
+      "reason": "Lockfile maintained automatically by dependency tooling, not hand-authored implementation, at any nesting depth."
+    }
+  ]
+}
