@@ -14,7 +14,28 @@ param(
   [ValidateSet("Text", "Json")]
   [string]$Format = "Text",
 
-  [switch]$FailOnWarning
+  [switch]$FailOnWarning,
+
+  # SCOPE-DIFF (M4.5) is opt-in: it only runs when BOTH refs are supplied.
+  # Every existing caller -- the CLI, the GitHub Action's non-scope-diff
+  # path, every example/demo/fixture invocation, every golden-master
+  # capture -- passes neither, so this feature changes nothing for them.
+  # Refs are anything `git rev-parse` accepts: a SHA, a branch name, HEAD~1,
+  # etc. A GitHub Actions PR run should pass the PR's actual base and head
+  # SHAs (not branch names, which move), obtained from the event context.
+  [string]$ScopeDiffBase = $null,
+  [string]$ScopeDiffHead = $null,
+
+  # Deliberately separate from the $repoRoot this script already computes
+  # below (Join-Path $PSScriptRoot ".."), which is always the Axiom-PMO
+  # framework's own checkout -- correct for loading pmo-config/*.json, but
+  # WRONG for git diff when this script runs as the GitHub Action. As an
+  # Action, this file is checked out to github.action_path while the
+  # consumer's own repository (the one with the PR history to diff) is
+  # checked out separately at $GITHUB_WORKSPACE. Defaults to the framework
+  # root for local/CLI use, where "the project being validated" and "the
+  # repo with the git history" are the same checkout.
+  [string]$ScopeDiffRepoRoot = $null
 )
 
 $ErrorActionPreference = "Stop"
@@ -46,6 +67,9 @@ $repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
 . (Join-Path $PSScriptRoot "lib/rtm-validator.ps1")
 . (Join-Path $PSScriptRoot "lib/release-validator.ps1")
 . (Join-Path $PSScriptRoot "lib/handoff-validator.ps1")
+. (Join-Path $PSScriptRoot "lib/scope-diff-matcher.ps1")
+. (Join-Path $PSScriptRoot "lib/scope-diff-git-adapter.ps1")
+. (Join-Path $PSScriptRoot "lib/scope-diff-validator.ps1")
 
 $cfg = Import-PmoConfig -RepoRoot $repoRoot
 $policy = $cfg.Policy
@@ -124,9 +148,18 @@ Test-SensitiveFilenames -AllProjectFiles $allProjectFiles
 
 Test-Links -GovernedFiles $governedFiles -UserSourceFiles $userSourceFiles -Gate $Gate
 
+# SCOPE-DIFF (M4.5): opt-in, gate-independent. Runs at whatever gate the
+# caller requested, alongside every other check that gate already runs --
+# it is one more finding in the same results array, not a separate pass.
+$scopeDiffResult = $null
+if ($ScopeDiffBase -and $ScopeDiffHead) {
+  $scopeDiffGitRoot = if ($ScopeDiffRepoRoot) { (Resolve-Path -LiteralPath $ScopeDiffRepoRoot).Path } else { $repoRoot }
+  $scopeDiffResult = Invoke-ScopeDiffCheck -ProjectPath $project -RepoRoot $scopeDiffGitRoot -BaseRef $ScopeDiffBase -HeadRef $ScopeDiffHead
+}
+
 $exitCode = Get-ExitCode -Fail $fail -WarnBlocking $warnBlocking -FailOnWarning:$FailOnWarning
 
-Write-ValidationOutput -Format $Format -Project $project -RequestedMode $requestedMode -EffectiveMode $effectiveMode -Gate $Gate -Pass $pass -Warn $warn -WarnBlocking $warnBlocking -Fail $fail -Messages $messages -ExitCode $exitCode
+Write-ValidationOutput -Format $Format -Project $project -RequestedMode $requestedMode -EffectiveMode $effectiveMode -Gate $Gate -Pass $pass -Warn $warn -WarnBlocking $warnBlocking -Fail $fail -Messages $messages -ExitCode $exitCode -ScopeDiff $scopeDiffResult
 
 if ($exitCode -ne 0) {
   exit $exitCode

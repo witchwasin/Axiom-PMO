@@ -161,11 +161,21 @@ function Write-ValidationOutput {
     [int]$WarnBlocking,
     [int]$Fail,
     $Messages,
-    [int]$ExitCode
+    [int]$ExitCode,
+    # Optional, additive envelope field. Deliberately NOT following the
+    # per-diagnostic-row "always present, sometimes null" policy: that policy
+    # is frozen for the results[] row shape (see the schema comment above).
+    # scope_diff is a whole different thing -- an opt-in check that most
+    # invocations of this script never ask for -- so when it was not
+    # requested the key is omitted entirely rather than emitted as null.
+    # Omitting it (instead of always adding it, even as null) is what keeps
+    # every existing golden-master JSON fixture byte-for-byte unchanged for
+    # every call site that does not pass -ScopeDiffBase/-ScopeDiffHead.
+    $ScopeDiff = $null
   )
 
   if ($Format -eq "Json") {
-    [pscustomobject]@{
+    $envelope = [ordered]@{
       schema_version = $script:DiagnosticsSchemaVersion
       project = $Project
       requested_mode = $RequestedMode
@@ -179,7 +189,11 @@ function Write-ValidationOutput {
         exit_code = $ExitCode
       }
       results = $Messages
-    } | ConvertTo-Json -Depth 6
+    }
+    if ($null -ne $ScopeDiff) {
+      $envelope["scope_diff"] = $ScopeDiff
+    }
+    [pscustomobject]$envelope | ConvertTo-Json -Depth 6
   } else {
     Write-Host "Axiom-PMO Project Validation: $Project"
     Write-Host "Requested Mode: $RequestedMode"
@@ -211,5 +225,14 @@ function Write-ValidationOutput {
     }
     Write-Host ""
     Write-Host "Summary: PASS=$Pass WARN=$Warn ($WarnBlocking blocking) FAIL=$Fail"
+    if ($null -ne $ScopeDiff) {
+      Write-Host ""
+      Write-Host "Scope-diff: $($ScopeDiff.base_sha) -> $($ScopeDiff.head_sha), verdict=$($ScopeDiff.verdict)"
+      Write-Host "  approved include: $($ScopeDiff.approved_include -join ', ')"
+      if ($ScopeDiff.approved_exclude.Count -gt 0) {
+        Write-Host "  approved exclude: $($ScopeDiff.approved_exclude -join ', ')"
+      }
+      Write-Host "  in scope: $($ScopeDiff.changed_in_scope.Count)  out of scope: $($ScopeDiff.changed_out_of_scope.Count)  excluded: $($ScopeDiff.changed_excluded.Count)  exempt: $($ScopeDiff.exempt.Count)"
+    }
   }
 }
