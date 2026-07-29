@@ -68,7 +68,7 @@ Recommended effort allocation:
 | Milestone 2 - Developer Diagnostics | Delivered | Delivered in 1.1 |
 | Milestone 2.5 - Engineering Handoff Readiness | Delivered | Delivered in 1.1.0; strengthened in 1.1.1 |
 | Milestone 3 - Thin Local CLI | Delivered (Phase A) | Local CLI delivered; public npm package deferred |
-| Milestone 3.5 - Runtime Portability | Next prerequisite | Must complete before Milestone 4 implementation |
+| Milestone 3.5 - Runtime Portability | In progress — first matrix green | Ubuntu required status, branch protection, and human acceptance remain |
 | Milestone 4 - GitHub Action | Planned | Blocked by Milestone 1 acceptance and Milestone 3.5 |
 | Milestone 5 - Superpowers Runtime Bridge | Blocked | Starts only after Milestone 4 human acceptance |
 | Milestone 6 - Claude Code Integration Experience | Planned | Requires separate approval after Milestone 5 |
@@ -344,11 +344,27 @@ Objective: make PowerShell 7 the primary portable runtime without dropping
 Windows PowerShell 5.1 compatibility or creating a second validator
 implementation.
 
-Status: **next prerequisite before Milestone 4.**
+Status: **in progress; first cross-host matrix is green, but acceptance is
+pending.**
 
 The runtime already resolves `AXIOM_PWSH`, the current host, `pwsh`,
 `powershell`, and `powershell.exe`. This milestone promotes that runtime
 flexibility into an explicit support and CI contract.
+
+Current evidence and gaps:
+
+- **Confirmed:** CI run
+  [#30432327317](https://github.com/witchwasin/Axiom-PMO/actions/runs/30432327317)
+  passed on Windows PowerShell 5.1, Windows PowerShell 7, Ubuntu PowerShell 7,
+  and macOS PowerShell 7 at commit `eb50c29`.
+- **Confirmed:** Windows PowerShell 7 is a blocking workflow job, but `main`
+  branch protection has not yet made it a required status check.
+- **Confirmed:** Ubuntu PowerShell 7 passed the full suite, but the workflow
+  still marks it `continue-on-error`; this does not satisfy the target policy
+  or definition of done below.
+- **Open question:** how many repeat green Ubuntu runs are required before its
+  promotion. A human must decide the evidence threshold and record milestone
+  acceptance after the required checks are configured.
 
 Target support matrix:
 
@@ -558,9 +574,13 @@ Do not spend near-term effort on:
 
 ### Next
 
-- Milestone 3.5 required Windows PowerShell 7 and Ubuntu PowerShell 7 CI.
-- Windows PowerShell 5.1 compatibility regression coverage.
-- Non-blocking macOS PowerShell 7 evidence.
+- Configure `main` branch protection so the blocking Windows PowerShell 7 job
+  is a required status check.
+- Establish the human-approved evidence threshold for Ubuntu PowerShell 7,
+  then remove `continue-on-error` and make the job required after that
+  threshold is met.
+- Record Milestone 3.5 human acceptance only after its definition of done is
+  satisfied.
 - Milestone 4 tracking issue and child issues for the reusable Action,
   Job Summary/report artifacts, safe annotations, consumer/privacy tests, and
   acceptance documentation.
