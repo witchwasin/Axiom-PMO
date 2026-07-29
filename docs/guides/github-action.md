@@ -67,6 +67,7 @@ that never actually ran would be worse than one that fails loudly.
 | `fail-on-warning` | no | `true` | Whether a blocking `WARN` counts toward the governance verdict (validator exit `2` instead of `0`). This is independent of `enforce` -- it changes what the validator decides, not whether the Action step propagates that decision. |
 | `working-directory` | no | `.` | Directory the Action resolves `project` and report paths from. |
 | `upload-artifact` | no | `true` | Whether to upload `axiom-report.json` and `axiom-report.md` as a workflow artifact. |
+| `artifact-name` | no | `axiom-pmo-report` | Name for the uploaded artifact. `actions/upload-artifact` v4 rejects a second artifact with the same name in one workflow run, so give each call a distinct name if this Action runs more than once in the same run (a matrix of projects, or a report-only pass and an enforced pass). |
 | `annotation-mode` | no | `safe` | `safe` emits sanitized `FAIL`/`WARN` annotations on the pull request; `off` emits none. |
 | `enforce` | no | `false` | Whether a governance verdict fails the workflow step. See "Report-only by default" above. |
 

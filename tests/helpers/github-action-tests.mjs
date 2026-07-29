@@ -234,20 +234,38 @@ if (POWERSHELL_AVAILABLE) {
     // Simulate a PowerShell host that runs but emits garbage instead of JSON
     // (e.g. a corrupted profile writing to stdout). The wrapper must still
     // produce a useful, non-crashing failure report rather than throwing.
+    //
+    // AXIOM_PWSH is spawned directly by axiom.mjs -- not through a shell --
+    // so the shim has to be something the OS can execute on its own: a
+    // shebang script on POSIX, a .cmd file on Windows (Node's child_process
+    // auto-wraps .cmd/.bat through cmd.exe on win32; a bare extensionless
+    // "shebang" file is not executable there at all).
+    const GARBAGE = "not json at all";
     const shimDir = mkdtempSync(join(tmpdir(), "axiom-fake-pwsh-"));
-    const shimPath = join(shimDir, "fake-pwsh.mjs");
-    writeFileSync(shimPath, "#!/usr/bin/env node\nprocess.stdout.write('not json at all');\nprocess.exit(0);\n");
-    chmodSync(shimPath, 0o755);
-    const wrapperPath = join(shimDir, "fake-pwsh");
-    writeFileSync(wrapperPath, `#!/bin/sh\nexec node "${shimPath}" "$@"\n`);
-    chmodSync(wrapperPath, 0o755);
+    let wrapperPath;
+    if (process.platform === "win32") {
+      wrapperPath = join(shimDir, "fake-pwsh.cmd");
+      writeFileSync(wrapperPath, `@echo off\r\necho ${GARBAGE}\r\n`);
+    } else {
+      wrapperPath = join(shimDir, "fake-pwsh");
+      writeFileSync(wrapperPath, `#!/bin/sh\nprintf '%s' '${GARBAGE}'\n`);
+      chmodSync(wrapperPath, 0o755);
+    }
 
     const r = runAction(["--project", "examples/STANDARD-FEATURE"], { AXIOM_PWSH: wrapperPath });
     assert("malformed JSON from validator: wrapper does not crash", r.status !== null);
     assert("malformed JSON: report files still exist", existsSync(r.jsonPath) && existsSync(r.mdPath));
     const json = JSON.parse(readFileSync(r.jsonPath, "utf8"));
     assert("malformed JSON: synthetic FAIL row is present", json.results.some((row) => row.rule_id === "ACTION-PARSE-ERROR"));
-    assert("malformed JSON: raw stdout preview is captured for debugging", json.action.raw_stdout_preview === "not json at all");
+    // .trim(): the Windows .cmd shim's `echo` appends CRLF; the POSIX
+    // shim's `printf` does not. Both are correct captures of "the garbage
+    // the fake host printed" -- the trailing newline is a shell artifact,
+    // not something run-action.mjs should be judged on.
+    assert(
+      "malformed JSON: raw stdout preview is captured for debugging",
+      json.action.raw_stdout_preview.trim() === GARBAGE,
+      `got ${JSON.stringify(json.action.raw_stdout_preview)}`,
+    );
     cleanup(r.outDir);
     rmSync(shimDir, { recursive: true, force: true });
   }
