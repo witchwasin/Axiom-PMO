@@ -37,7 +37,7 @@ body:
       options:
         - Windows PowerShell 5.1
         - PowerShell 7 (Windows)
-        - pwsh (Linux/macOS, experimental)
+        - pwsh (Linux/macOS)
         - Other / unsure
     validations:
       required: true

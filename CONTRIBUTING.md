@@ -25,10 +25,11 @@ most important contribution rule follows from that.
 ## Development environment
 
 - **PowerShell.** The validator is the reference implementation. Supported:
-  - Windows PowerShell 5.1 (used by CI, `windows-latest`).
-  - PowerShell 7 (`pwsh`).
-  - Linux/macOS via `pwsh` is **experimental** — the wrappers run, but the suite
-    is not yet verified there.
+  - PowerShell 7 (`pwsh`) — the recommended portable runtime.
+  - Windows PowerShell 5.1 — reference platform and required compatibility
+    coverage.
+  - Linux/macOS via `pwsh` — supported; verified in CI as non-blocking until it
+    earns a track record (Milestone 3.5).
 - No build step and no runtime dependencies beyond PowerShell. Optional:
   `make` for the convenience targets, PSScriptAnalyzer for lint.
 

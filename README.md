@@ -15,7 +15,7 @@ gates.**
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.1.1-blue.svg)](CHANGELOG.md)
 
-<sub>Version <code>1.1.1</code> · MIT License · Windows PowerShell reference implementation (Linux/macOS via <code>pwsh</code>, experimental)</sub>
+<sub>Version <code>1.1.1</code> · MIT License · PowerShell reference implementation (Windows PowerShell 5.1 and PowerShell 7; Linux/macOS via <code>pwsh</code>)</sub>
 
 </div>
 
@@ -237,8 +237,8 @@ Or start from a worked example: [`examples/LITE-BUGFIX`](examples/LITE-BUGFIX),
 [`examples/P01-DEMO`](examples/P01-DEMO).
 
 On Linux/macOS or with `make` installed, the same checks are available through
-convenience wrappers (experimental — they call the PowerShell reference
-implementation via `pwsh`):
+convenience wrappers (they call the PowerShell reference implementation via
+`pwsh`):
 
 ```bash
 make check      # doctor + validation + mutation + e2e

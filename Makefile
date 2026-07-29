@@ -1,10 +1,12 @@
 # Axiom-PMO convenience targets.
 #
 # These wrap the PowerShell reference implementation; they do not reimplement any
-# validation logic. PWSH defaults to `pwsh` (PowerShell 7). On Windows PowerShell
-# 5.1, override it:  make check PWSH=powershell
+# validation logic. PWSH defaults to `pwsh` (PowerShell 7), the recommended
+# portable runtime. On Windows PowerShell 5.1, override it:
+#   make check PWSH=powershell
 #
-# Linux/macOS execution via pwsh is EXPERIMENTAL.
+# CI verifies Windows PowerShell 5.1 (reference) and Windows PowerShell 7
+# (required), with Ubuntu and macOS PowerShell 7 as non-blocking smoke legs.
 
 PWSH ?= pwsh
 PS := $(PWSH) -NoProfile -ExecutionPolicy Bypass -File

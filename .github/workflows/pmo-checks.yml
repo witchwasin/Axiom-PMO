@@ -10,6 +10,9 @@ permissions:
   contents: read
 
 jobs:
+  # Windows PowerShell 5.1 (the OS-bundled powershell.exe) is the long-standing
+  # reference platform. It stays a required, blocking regression so behaviour
+  # cannot drift away from the environment most Windows developers still have.
   pmo-checks:
     runs-on: windows-2025
     timeout-minutes: 15
@@ -54,11 +57,53 @@ jobs:
           Write-Host "Fault injection correctly propagated as exit $LASTEXITCODE"
           exit 0
 
-  # Linux/macOS execution via PowerShell 7 is EXPERIMENTAL. This leg exists to
-  # produce evidence for that claim rather than assertions about it, and is
-  # deliberately non-blocking: Windows PowerShell 5.1 above stays the supported
-  # reference platform. Promote it to a required leg only once it has a track
-  # record, not because it happens to be green today.
+  # Windows PowerShell 7 (pwsh). Milestone 3.5 makes PowerShell 7 the primary
+  # portable runtime, and Windows is a reference platform, so this leg is
+  # required too. It proves the validator behaves identically on PowerShell 7
+  # and Windows PowerShell 5.1: a failure here points at a real cross-host
+  # difference (JSON depth, encoding, regex), not at this leg. Confirm it is
+  # green on the first CI run before relying on it; branch protection must add
+  # it as a required check separately (a human action).
+  pmo-checks-windows-pwsh7:
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24.18.0'
+          package-manager-cache: false
+
+      - name: Run PMO framework checks
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts\run-all-checks.ps1 -RepoPath .
+
+      - name: Run public hygiene checks
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts\check-public-hygiene.ps1 -RepoPath .
+
+      - name: Verify fault injection propagates as a failure
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts\run-all-checks.ps1 -RepoPath . -TestChildScript tests\helpers\exit-1.ps1
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "FAULT INJECTION DID NOT PROPAGATE: run-all-checks.ps1 exited 0 with a failing -TestChildScript"
+            exit 1
+          }
+          Write-Host "Fault injection correctly propagated as exit $LASTEXITCODE"
+          exit 0
+
+  # Ubuntu + PowerShell 7. PowerShell 7 is the documented minimum for Linux.
+  # This leg stays deliberately non-blocking until it has a reliable track
+  # record across the whole suite -- promote it to required (branch protection)
+  # only once it has passed repeatedly, not because it is green today.
   pmo-checks-linux-experimental:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -78,7 +123,32 @@ jobs:
       # Golden masters are stored in a form independent of the PowerShell host's
       # JSON pretty-printer (see scripts/lib/golden-normalizer.ps1). This leg is
       # what proves it: run-all-checks verifies the same golden files here under
-      # pwsh 7 that the Windows PowerShell 5.1 job verifies above.
+      # pwsh 7 that the Windows jobs verify above.
+      - name: Run PMO framework checks under pwsh
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -RepoPath .
+
+  # macOS + PowerShell 7 smoke test (Milestone 3.5). Non-blocking: macOS is a
+  # developer convenience surface, not a reference platform. It exists to gather
+  # cross-host evidence, not to gate releases. Promote only with a reliable
+  # track record.
+  pmo-checks-macos-pwsh7:
+    runs-on: macos-15
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24.18.0'
+          package-manager-cache: false
+
       - name: Run PMO framework checks under pwsh
         shell: pwsh
         run: |
