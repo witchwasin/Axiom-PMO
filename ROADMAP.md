@@ -69,7 +69,8 @@ Recommended effort allocation:
 | Milestone 2.5 - Engineering Handoff Readiness | Delivered | Delivered in 1.1.0; strengthened in 1.1.1 |
 | Milestone 3 - Thin Local CLI | Delivered (Phase A) | Local CLI delivered; public npm package deferred |
 | Milestone 3.5 - Runtime Portability | Accepted | CI threshold met; branch protection deferred by human decision |
-| Milestone 4 - GitHub Action | Planned | Next implementation milestone |
+| Milestone 4 - GitHub Action | Delivered | Merged to `main` at `31d1e25`; child issues #12-#17 closed |
+| Milestone 4.5 - SCOPE-DIFF | Delivered | Human Owner accepted 2026-07-30 after two independent AI review rounds; merged to `main` at `6b42643` |
 | Milestone 5 - Execution Contract Verification MVP | Blocked | Starts only after Milestone 4 and Milestone 4.5 human acceptance |
 | Milestone 6 - Claude Code Integration Experience | Planned | Requires separate approval after Milestone 5 |
 
@@ -105,8 +106,9 @@ Milestone 1 delivered, with walkthrough/recording evidence deferred
 -> Milestone 2 (delivered)
 -> Milestone 2.5 (delivered)
 -> Milestone 3 (delivered)
--> Milestone 3.5
--> Milestone 4
+-> Milestone 3.5 (accepted)
+-> Milestone 4 (delivered)
+-> Milestone 4.5 (delivered)
 -> Milestone 5
 -> Milestone 6
 ```
@@ -418,7 +420,11 @@ contracts match, and the support documentation reflects the evidence.
 
 Objective: make Axiom-PMO visible directly in pull requests.
 
-Status: **planned; ready for implementation planning.**
+Status: **delivered.** Parent tracking issue #12 and child issues #13
+([M4-1] reusable Action), #14 ([M4-2] Job Summary and reports), #15
+([M4-3] safe PR annotations), #16 ([M4-4] consumer/failure-path/privacy
+tests), and #17 ([M4-5] documentation and acceptance) are all closed.
+Merged to `main` in commit `31d1e254216aaf1112a92c01fd3b42f12d3a2468`.
 
 Dependency:
 
@@ -456,6 +462,52 @@ Definition of done:
 ```text
 A repository can add Axiom-PMO to CI quickly and see actionable governance
 failures inside a pull request.
+```
+
+## Milestone 4.5 - SCOPE-DIFF
+
+Objective: let the GitHub Action answer, deterministically, whether a pull
+request's changed files stayed inside a project's pre-approved
+implementation scope -- the "changed-file scope enforcement" explicitly
+deferred out of Milestone 1's demo and out of Milestone 4's own deliverable
+list into "the bridge or GitHub Action work."
+
+Status: **delivered.** Human Owner acceptance recorded 2026-07-30, after
+two independent AI review rounds (Sol). The first round found two MAJOR
+issues -- case-insensitive path matching (a real scope bypass on a
+case-sensitive checkout) and rename detection that depended on ambient git
+configuration instead of being pinned explicitly -- both fixed and
+re-reviewed as ACCEPT before acceptance. Merged to `main` in commit
+`6b42643`; final reviewed branch commit was
+`7d2358b89882871b1300d2c711315f2217a8ddbb`.
+
+Deliverables:
+
+- `SCOPE.json`: one approved `implementation_scope` (`include`/`exclude`)
+  per project, a small deterministic glob grammar, no LLM interpretation.
+- `pmo-config/scope-diff-policy.json`: a reviewable, explicit, narrow
+  repo-wide exemption list (lockfiles, `CHANGELOG.md`), validated against
+  empty/duplicate/overly-broad entries.
+- Deterministic `git diff --name-status` comparison, opt-in
+  (`-ScopeDiffBase`/`-ScopeDiffHead`, or `enable-scope-diff: true` on the
+  Action), with explicit rename-detection configuration so the same change
+  is never reported differently across machines or CI images.
+- A missing `SCOPE.json` always fails closed (`SCOPE-DIFF-002`) -- never
+  treated as "everything is approved."
+- `scope_diff` envelope field (JSON report), Job Summary section, and
+  safe PR annotations, following the same infra-failure-vs-governance-verdict
+  and privacy rules as Milestone 4.
+- `dogfood-scope-diff` CI job exercising the real Action (`uses: ./`)
+  against real fixtures: in-scope, out-of-scope, report-only, and enforced.
+
+See `docs/reference/scope-declaration.md` for the full contract.
+
+Definition of done:
+
+```text
+A pull request that touches a file outside its project's approved
+implementation scope is reported, deterministically and without leaking
+source content, and can optionally block the workflow.
 ```
 
 ## Milestone 5 - Execution Contract Verification MVP
