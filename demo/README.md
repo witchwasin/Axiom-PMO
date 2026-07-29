@@ -65,7 +65,9 @@ Everything under `broken-project/source/` and `fixed-project/source/` is synthet
 `scripts/demo.ps1 -Plain -NoPause` prints the same transcript with no pauses and no timing, which is the form to record:
 
 ```bash
-asciinema rec demo.cast -c "pwsh -NoProfile -File scripts/demo.ps1 -Plain -NoPause"
+asciinema rec docs/assets/demo/axiom-pmo-demo.cast -c "pwsh -NoProfile -File scripts/demo.ps1 -Plain -NoPause"
 ```
 
-No recording is committed to this repository. The command above is the reproducible way to make one; nothing here claims an asset that does not exist.
+After recording, generate `docs/assets/demo/axiom-pmo-demo.gif` from the cast
+and link both assets from the README. No recording is committed to this
+repository yet; nothing here claims an asset that does not exist.

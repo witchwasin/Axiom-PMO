@@ -382,7 +382,7 @@ Typography: Tahoma / Arial (sans-serif) for voice; Consolas / Courier New
 | | |
 |---|---|
 | **Concepts** | [handoff readiness](docs/concepts/handoff-readiness.md) · [anti-hallucination](docs/concepts/anti-hallucination.md) · [evidence-based execution](docs/concepts/evidence-based-execution.md) · [risk modes](docs/concepts/risk-modes.md) · [human authority](docs/concepts/human-authority.md) |
-| **Guides** | [artifact map](docs/guides/artifact-map.md) · [PowerShell runtime setup](docs/guides/powershell-runtime.md) · [three-day demo handoff](docs/guides/three-day-demo-handoff.md) |
+| **Guides** | [artifact map](docs/guides/artifact-map.md) · [M1 walkthrough and recording evidence](docs/guides/m1-walkthrough-and-recording.md) · [PowerShell runtime setup](docs/guides/powershell-runtime.md) · [three-day demo handoff](docs/guides/three-day-demo-handoff.md) |
 | **Reference** | [diagnostics contract](docs/reference/diagnostics-contract.md) · [rule reference](docs/rules/) |
 | **Architecture** | [control plane](docs/architecture/control-plane.md) · [validation engine](docs/architecture/validation-engine.md) |
 | **Governance** | [release readiness](docs/governance/release-readiness.md) · [source ownership](docs/governance/source-ownership.md) |
