@@ -45,6 +45,10 @@ The intended outcome is to:
   [#30434956117](https://github.com/witchwasin/Axiom-PMO/actions/runs/30434956117)
   passed on `main` at commit `24d8b99` after the Ubuntu promotion. This is
   Ubuntu promoted green run 1 of 2.
+- CI run
+  [#30436344213](https://github.com/witchwasin/Axiom-PMO/actions/runs/30436344213)
+  passed on `main` at commit `016f1d9` after the Ubuntu promotion. This is
+  Ubuntu promoted green run 2 of 2; the CI threshold is met.
 - Ubuntu PowerShell 7 promotion threshold is human-approved: after
   `continue-on-error` is removed, it must pass two consecutive full CI runs on
   `main` before M3.5 acceptance.
@@ -66,7 +70,7 @@ The intended outcome is to:
 | M2 — Developer Diagnostics | Delivered |
 | M2.5 — Engineering Handoff Readiness | Delivered in 1.1.0; strengthened in 1.1.1 |
 | M3 — Thin Local CLI | Phase A delivered; npm Phase B deferred |
-| M3.5 — Runtime Portability | In progress; Ubuntu promotion pending two green main runs and human acceptance |
+| M3.5 — Runtime Portability | In progress; CI threshold met, human acceptance pending |
 | M4 — GitHub Action | Planned; implementation blocked by M1 and M3.5 |
 | M5 — Superpowers Runtime Bridge | Blocked by M4 acceptance |
 | M6 — Claude Code Integration Experience | Planned |
@@ -482,7 +486,7 @@ test failure or as a passing result.
 ```text
 1. Align roadmap and documentation
 2. Promote Ubuntu PowerShell 7 from experimental to blocking workflow job
-3. Collect two consecutive green main CI runs after Ubuntu promotion
+3. Record the two consecutive green main CI runs after Ubuntu promotion
 4. Decide whether to configure main branch protection
 5. Reopen and complete Issue #8 with real human evidence
 6. Accept M3.5 only after the CI evidence and human decision exist

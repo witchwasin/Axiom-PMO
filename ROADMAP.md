@@ -68,7 +68,7 @@ Recommended effort allocation:
 | Milestone 2 - Developer Diagnostics | Delivered | Delivered in 1.1 |
 | Milestone 2.5 - Engineering Handoff Readiness | Delivered | Delivered in 1.1.0; strengthened in 1.1.1 |
 | Milestone 3 - Thin Local CLI | Delivered (Phase A) | Local CLI delivered; public npm package deferred |
-| Milestone 3.5 - Runtime Portability | In progress — Ubuntu promotion pending CI evidence | Two consecutive green main runs, branch protection decision, and human acceptance remain |
+| Milestone 3.5 - Runtime Portability | In progress — CI threshold met | Branch protection decision and human acceptance remain |
 | Milestone 4 - GitHub Action | Planned | Blocked by Milestone 1 acceptance and Milestone 3.5 |
 | Milestone 5 - Superpowers Runtime Bridge | Blocked | Starts only after Milestone 4 human acceptance |
 | Milestone 6 - Claude Code Integration Experience | Planned | Requires separate approval after Milestone 5 |
@@ -344,7 +344,7 @@ Objective: make PowerShell 7 the primary portable runtime without dropping
 Windows PowerShell 5.1 compatibility or creating a second validator
 implementation.
 
-Status: **in progress; first cross-host matrix is green, but acceptance is
+Status: **in progress; promoted Ubuntu CI threshold is met, but acceptance is
 pending.**
 
 The runtime already resolves `AXIOM_PWSH`, the current host, `pwsh`,
@@ -366,6 +366,10 @@ Current evidence and gaps:
   [#30434956117](https://github.com/witchwasin/Axiom-PMO/actions/runs/30434956117)
   passed on `main` at commit `24d8b99` after the Ubuntu job was promoted. This
   is Ubuntu promoted green run 1 of 2 for the M3.5 threshold.
+- **Confirmed:** CI run
+  [#30436344213](https://github.com/witchwasin/Axiom-PMO/actions/runs/30436344213)
+  passed on `main` at commit `016f1d9` after the Ubuntu promotion. This is
+  Ubuntu promoted green run 2 of 2; the CI threshold is met.
 - **Confirmed:** Human-approved threshold: Ubuntu PowerShell 7 must pass two
   consecutive full CI runs on `main` after `continue-on-error` is removed before
   M3.5 can be accepted.
@@ -583,7 +587,7 @@ Do not spend near-term effort on:
 
 - Remove `continue-on-error` from the Ubuntu PowerShell 7 workflow job and
   rename it to `pmo-checks-linux-pwsh7`.
-- Collect two consecutive green `main` CI runs after the Ubuntu promotion.
+- Record the two consecutive green `main` CI runs after the Ubuntu promotion.
 - Decide whether to configure `main` branch protection for the blocking
   Windows PowerShell 7 and Ubuntu PowerShell 7 jobs.
 - Record Milestone 3.5 human acceptance only after its definition of done is
