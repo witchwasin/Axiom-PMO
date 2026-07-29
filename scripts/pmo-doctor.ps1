@@ -7,6 +7,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 . (Join-Path $PSScriptRoot "lib/ordinal-sort.ps1")
+. (Join-Path $PSScriptRoot "lib/markdown-files.ps1")
 
 $root = Resolve-Path -LiteralPath $RepoPath
 $repo = $root.Path
@@ -85,7 +86,7 @@ function Get-MarkdownTableDiagnostics {
   param([string]$Path)
 
   $diagnostics = @()
-  $lines = Get-Content -LiteralPath $Path -ErrorAction SilentlyContinue
+  $lines = Read-MarkdownText -Path $Path
   $tableStart = -1
   $tableLines = @()
 
@@ -129,7 +130,7 @@ function Test-SkillFrontmatter {
       continue
     }
 
-    $text = Get-Content -LiteralPath $skillFile -Raw
+    $text = Read-MarkdownText -Path $skillFile -Raw
     if ($text -notmatch '(?s)^---\s*\r?\n(.*?)\r?\n---') {
       $problems += "$skill missing YAML frontmatter"
       continue
@@ -160,7 +161,7 @@ function Test-MarkdownTables {
 
   $problems = @()
   if (Test-Path -LiteralPath $RootPath) {
-    foreach ($file in Get-ChildItem -LiteralPath $RootPath -Recurse -File -Include *.md -ErrorAction SilentlyContinue) {
+    foreach ($file in Get-MarkdownFiles -RootPath $RootPath) {
       $problems += Get-MarkdownTableDiagnostics $file.FullName
     }
   }
@@ -256,7 +257,7 @@ if ($validationRules -and $validationRules.rules.'STRUCT-001' -and $validationRu
 
 $versionText = (Get-Content -LiteralPath (Join-Path $repo "VERSION") -Raw).Trim()
 $changelogFirstVersion = ""
-$changelogText = Get-Content -LiteralPath (Join-Path $repo "CHANGELOG.md") -Raw
+$changelogText = Read-MarkdownText -Path (Join-Path $repo "CHANGELOG.md") -Raw
 if ($changelogText -match '(?m)^##\s+([^\s]+)\s+-') {
   $changelogFirstVersion = $Matches[1]
 }
@@ -461,8 +462,8 @@ if (Test-Path -LiteralPath $gitignorePath -PathType Leaf) {
   }
 }
 
-$claude = Get-Content -LiteralPath (Join-Path $repo "CLAUDE.md") -Raw
-$agent = Get-Content -LiteralPath (Join-Path $repo "AGENTS.md") -Raw
+$claude = Read-MarkdownText -Path (Join-Path $repo "CLAUDE.md") -Raw
+$agent = Read-MarkdownText -Path (Join-Path $repo "AGENTS.md") -Raw
 
 $legacySkillNames = @(
   "pmo-analyze-new-mom", "pmo-gap-analysis", "pmo-activity-diagram", "pmo-dev-handoff",
@@ -484,8 +485,8 @@ $loggingEveryPattern = "Logging every|log every"
 foreach ($skill in $actualSkills) {
   $skillPath = Join-Path $skillsRoot $skill
   $hits = @()
-  foreach ($file in Get-ChildItem -LiteralPath $skillPath -Recurse -File -Include *.md -ErrorAction SilentlyContinue) {
-    $content = Get-Content -LiteralPath $file.FullName -Raw -ErrorAction SilentlyContinue
+  foreach ($file in Get-MarkdownFiles -RootPath $skillPath) {
+    $content = Read-MarkdownText -Path $file.FullName -Raw
     foreach ($pattern in $legacyPatterns) {
       if ($content -match [regex]::Escape($pattern)) {
         $hits += "$skill/$($file.Name):$pattern"
@@ -503,34 +504,23 @@ foreach ($skill in $actualSkills) {
 }
 
 $links = @()
-foreach ($file in Get-ChildItem -LiteralPath $repo -Recurse -File -Include *.md -ErrorAction SilentlyContinue) {
+foreach ($file in Get-MarkdownFiles -RootPath $repo) {
   if ($file.FullName -match "\\.git\\") { continue }
   $relativeFile = $file.FullName.Substring($repo.Length).TrimStart('\', '/')
   if ($relativeFile -match "^tests[\\/]fixtures[\\/]invalid-") { continue }
   if ($relativeFile -match "(^|[\\/])(source|MOM|REQ|Transcript)[\\/]") { continue }
 
-  # -Encoding UTF8 is required on Windows PowerShell 5.1, whose default ANSI
-  # codepage turns non-ASCII (Thai, emoji) markdown into mojibake. The regex
-  # below then matched spurious links inside that mojibake, producing targets
-  # with illegal path characters that crashed Test-Path and failed all of CI.
-  $content = Get-Content -LiteralPath $file.FullName -Raw -Encoding UTF8 -ErrorAction SilentlyContinue
+  $content = Read-MarkdownText -Path $file.FullName -Raw
   $linkMatches = [regex]::Matches($content, "\[[^\]]+\]\((?!https?://)([^)#]+)(?:#[^)]+)?\)")
   foreach ($match in $linkMatches) {
     $target = $match.Groups[1].Value
     if ($target -match "^\s*$|^mailto:|^<") { continue }
     $base = Split-Path -Parent $file.FullName
-    $resolved = Join-Path $base $target
-    # A malformed target -- illegal path characters (a stray colon, control
-    # bytes), or mojibake that slipped past the encoding read -- makes Test-Path
-    # throw instead of returning false. Treat any exception as a broken link so
-    # one bad target is reported, not allowed to abort the whole doctor run.
-    $linkMissing = $false
-    try {
-      $linkMissing = -not (Test-Path -LiteralPath $resolved -ErrorAction Stop)
-    } catch {
-      $linkMissing = $true
-    }
-    if ($linkMissing) {
+    $pathResult = Test-MarkdownLocalLinkPath -BasePath $base -Target $target
+    if (-not $pathResult.valid_path) {
+      $lineNumber = 1 + [regex]::Matches($content.Substring(0, $match.Index), "\r\n|\n|\r").Count
+      $links += "$relativeFile line $lineNumber -> invalid local link target"
+    } elseif (-not $pathResult.exists) {
       $links += "$relativeFile -> $target"
     }
   }
