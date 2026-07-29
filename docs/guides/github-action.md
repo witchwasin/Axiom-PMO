@@ -70,6 +70,9 @@ that never actually ran would be worse than one that fails loudly.
 | `artifact-name` | no | `axiom-pmo-report` | Name for the uploaded artifact. `actions/upload-artifact` v4 rejects a second artifact with the same name in one workflow run, so give each call a distinct name if this Action runs more than once in the same run (a matrix of projects, or a report-only pass and an enforced pass). |
 | `annotation-mode` | no | `safe` | `safe` emits sanitized `FAIL`/`WARN` annotations on the pull request; `off` emits none. |
 | `enforce` | no | `false` | Whether a governance verdict fails the workflow step. See "Report-only by default" above. |
+| `enable-scope-diff` | no | `false` | Compare changed files against the project's approved `SCOPE.json`. Off by default -- this Action's behavior is unchanged unless a workflow opts in. See `docs/reference/scope-declaration.md`. |
+| `scope-diff-base` | no | (empty) | Base commit SHA for SCOPE-DIFF. Overrides the `pull_request` event's base/head pair when **both** `scope-diff-base` and `scope-diff-head` are set; required on any other event. Setting only one of the two is treated as setting neither -- it falls back to the `pull_request` event (or, on any other event, to an actionable `SCOPE-DIFF-004`), never to a half-overridden pair. |
+| `scope-diff-head` | no | (empty) | Head commit SHA for SCOPE-DIFF. See `scope-diff-base` -- the two are only ever honoured as an explicit pair. |
 
 ## Outputs
 
@@ -79,6 +82,7 @@ that never actually ran would be worse than one that fails loudly.
 | `outcome` | `success`, `failure`, `warning`, or `runtime-missing`. Reflects the real result even in report-only mode, so a later step can branch on it. |
 | `json-report` | Path to `axiom-report.json`. |
 | `markdown-report` | Path to `axiom-report.md`. |
+| `scope-diff-verdict` | `pass`, `fail`, `scope_missing`, `invalid_scope`, or `git_error`. Empty when `enable-scope-diff` was not set. |
 
 ## Report contract
 
@@ -99,6 +103,11 @@ Summary caps each of the FAIL/WARN sections at 10 rows (GitHub also caps
 annotations at 10 per level per step) and points to the full uncapped
 Markdown/JSON artifact for the rest.
 
+When `enable-scope-diff: true`, the JSON report also carries a `scope_diff`
+object (approved paths, changed files by bucket, base/head SHA, verdict) --
+omitted entirely, not present-as-null, when SCOPE-DIFF was not requested.
+See [docs/reference/scope-declaration.md](../reference/scope-declaration.md).
+
 ## Annotations
 
 Only `FAIL` and `WARN` diagnostics become PR annotations. `PASS` and `INFO`
@@ -114,6 +123,42 @@ resolves inside the job's working directory; a path that would resolve
 outside it (for example via `../`) degrades to a locationless annotation
 instead of pointing at an unrelated file.
 
+## SCOPE-DIFF: is this change inside its approved scope?
+
+Off by default. Set `enable-scope-diff: true` to also compare the PR's
+changed files against the project's `SCOPE.json`:
+
+```yaml
+- uses: witchwasin/Axiom-PMO@<pinned-sha-or-tag>
+  with:
+    project: projects/P02-MYPROJECT
+    gate: Release
+    enable-scope-diff: "true"
+```
+
+That's the whole example -- on a `pull_request` event, base and head are
+read automatically from the GitHub event context, no SHAs to supply by
+hand. SCOPE-DIFF needs full git history to resolve the base commit, so
+also give the checkout step `fetch-depth: 0` (the default `fetch-depth: 1`
+only fetches the current commit):
+
+```yaml
+- uses: actions/checkout@v7
+  with:
+    fetch-depth: 0
+- uses: witchwasin/Axiom-PMO@<pinned-sha-or-tag>
+  with:
+    project: projects/P02-MYPROJECT
+    gate: Release
+    enable-scope-diff: "true"
+```
+
+**SCOPE-DIFF checks *where* a change happened, not *what* it changed.** A
+passing SCOPE-DIFF result means every changed file was in the approved
+list -- it says nothing about whether the code inside those files is
+correct. Full syntax, precedence rules, the repo-wide exemption mechanism,
+and git range semantics: [docs/reference/scope-declaration.md](../reference/scope-declaration.md).
+
 ## Troubleshooting
 
 - **`exit-code: 127`, `outcome: runtime-missing`** -- no PowerShell host was
@@ -125,3 +170,11 @@ instead of pointing at an unrelated file.
   the uploaded artifact, or the `outcome`/`exit-code` outputs.
 - **No annotations on the PR** -- confirm `annotation-mode` is not set to
   `off`, and check the Job Summary/artifact for the full result regardless.
+- **`scope-diff-verdict: git_error` (`SCOPE-DIFF-004`)** -- almost always a
+  shallow checkout. Add `fetch-depth: 0` to the `actions/checkout` step, as
+  shown above.
+- **`scope-diff-verdict: scope_missing` (`SCOPE-DIFF-002`)** -- the project
+  has no `SCOPE.json`. `enable-scope-diff: true` is a real request that
+  must get a real answer; a missing declaration is never silently treated
+  as "everything is approved." Add `SCOPE.json` (`templates/SCOPE.json`) or
+  turn `enable-scope-diff` back off for this project.

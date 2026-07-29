@@ -60,16 +60,37 @@ function clamp(value) {
 // either render nothing or point at an unrelated file, so those degrade to a
 // locationless annotation instead -- still visible in the run log, just not
 // pinned to a line.
-function safeWorkspacePath(artifact, { workspace, projectPath }) {
+//
+// `artifact` is project-relative for every rule except SCOPE-DIFF's, which is
+// the one documented exception in the diagnostics contract: its paths are
+// repo-root-relative, because a changed file it reports (from `git diff`)
+// routinely lives outside the project folder entirely (the project's own
+// PROJECT.md/DELIVERY.md tree and the application source tree it governs are
+// frequently in different parts of the repository -- see
+// docs/reference/scope-declaration.md). Resolving a SCOPE-DIFF artifact
+// against `projectPath` the same way as every other rule either doubles the
+// project prefix (when the changed file happens to sit inside the project
+// folder) or silently points at the wrong file entirely (when it does not,
+// which is the documented common case) -- caught by inspecting a real
+// annotation GitHub rendered from this repository's own dogfood CI run, not
+// by local testing alone.
+function safeWorkspacePath(artifact, { workspace, projectPath, repoRootRelative = false }) {
   if (!artifact || typeof artifact !== "string") return null;
   if (!workspace) return null;
 
-  const absolute = isAbsolute(artifact) ? artifact : resolve(projectPath ?? workspace, artifact);
+  const base = repoRootRelative ? workspace : (projectPath ?? workspace);
+  const absolute = isAbsolute(artifact) ? artifact : resolve(base, artifact);
   const rel = relative(resolve(workspace), absolute);
   if (!rel || rel.startsWith("..") || isAbsolute(rel)) return null;
 
   // Workflow commands are POSIX-path oriented even on Windows runners.
   return rel.split(/[\\/]/).join("/");
+}
+
+// The one rule-id family whose `artifact` field is repo-root-relative
+// instead of project-relative -- see safeWorkspacePath's comment above.
+function isRepoRootRelativeRule(ruleId) {
+  return typeof ruleId === "string" && ruleId.startsWith("SCOPE-DIFF-");
 }
 
 // The human-readable half of an annotation: what is wrong, then what to do.
@@ -115,7 +136,11 @@ export function buildAnnotations(results, { workspace, projectPath, mode = "safe
     emitted[level] += 1;
 
     const properties = [`title=${escapeProperty(buildTitle(result))}`];
-    const file = safeWorkspacePath(result.artifact, { workspace, projectPath });
+    const file = safeWorkspacePath(result.artifact, {
+      workspace,
+      projectPath,
+      repoRootRelative: isRepoRootRelativeRule(result.rule_id),
+    });
     if (file) properties.push(`file=${escapeProperty(file)}`);
 
     lines.push(`::${level} ${properties.join(",")}::${escapeData(buildBody(result))}`);
@@ -143,4 +168,4 @@ export function emitAnnotations(results, options = {}) {
   return lines.length;
 }
 
-export const __testing = { escapeData, escapeProperty, safeWorkspacePath, buildTitle, buildBody, clamp, PER_LEVEL_LIMIT, MAX_FIELD_CHARS };
+export const __testing = { escapeData, escapeProperty, safeWorkspacePath, isRepoRootRelativeRule, buildTitle, buildBody, clamp, PER_LEVEL_LIMIT, MAX_FIELD_CHARS };

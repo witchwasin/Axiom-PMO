@@ -58,6 +58,46 @@ v1.1 answers four more questions for every finding: **where** (artifact, item, f
 | `suggestion` | 1.1 | What to do about it. `null` on `PASS`/`INFO`. |
 | `documentation_url` | 1.1 | Rule reference page. `null` on `PASS`/`INFO`, and `null` for rules with no page yet. |
 
+### `scope_diff` (optional envelope field, M4.5)
+
+Present only when `-ScopeDiffBase`/`-ScopeDiffHead` were both supplied to
+`scripts/validate-project.ps1` (or `enable-scope-diff: true` on the GitHub
+Action) — **omitted from the envelope entirely otherwise**, not present as
+`null`. Every existing call site that does not opt into SCOPE-DIFF produces
+byte-for-byte the same JSON it always has; this is why the field is omitted
+rather than following the "always present, sometimes null" rule the five
+per-row fields above follow. That rule governs the frozen, golden-master-
+tested `results[]` row shape; `scope_diff` is a new, conditional,
+top-level sibling of `results`, and always adding it — even as `null` —
+to every one of this framework's ~150 existing golden-master fixtures for
+a field none of them requested was rejected as an unnecessary blast radius
+for an additive feature. See `docs/reference/scope-declaration.md` for the
+full shape and semantics:
+
+```json
+{
+  "scope_diff": {
+    "base_sha": "d09e0ee...",
+    "head_sha": "824300e...",
+    "approved_include": ["src/payments/**"],
+    "approved_exclude": [],
+    "changed_in_scope": ["src/payments/checkout.ts"],
+    "changed_out_of_scope": ["src/auth/permissions.ts"],
+    "changed_excluded": [],
+    "exempt": [],
+    "renames": [],
+    "verdict": "fail"
+  }
+}
+```
+
+No `diagnostics_schema_version` bump was needed for this addition: the
+per-row diagnostic shape (`results[]`) is unchanged, and the JSON Schema in
+`pmo-config/diagnostics-schema.json` never declared `additionalProperties:
+false` on the envelope, so a new, optional, documented top-level key is
+exactly the kind of addition "ignore what you do not know" (below) already
+covers for existing consumers.
+
 ---
 
 ## Compatibility policy
