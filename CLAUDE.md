@@ -129,7 +129,7 @@ Required artifacts (see `pmo-config/artifact-policy.json`):
 
 Two layers, deliberately separate:
 
-1. **Deterministic** (`HANDOFF-001` to `HANDOFF-012`) checks what the artifacts
+1. **Deterministic** (`HANDOFF-001` to `HANDOFF-014`) checks what the artifacts
    declare. It never infers domain meaning -- it will not decide that a photo is
    PII or that a scanner needs HTTPS.
 2. **Semantic review** (`pmo-delivery`, intent `handoff_review`) supplies

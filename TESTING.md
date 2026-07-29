@@ -41,6 +41,11 @@ resolves its host through `scripts/lib/pwsh-host.ps1`, which honours
 `AXIOM_PWSH` and then probes `pwsh`, `powershell`, `powershell.exe` in that
 order.
 
+This is the current support state, not the target state. Roadmap Milestone 3.5
+will make Windows and Ubuntu PowerShell 7 required CI environments, retain
+Windows PowerShell 5.1 as required compatibility coverage, and collect
+non-blocking macOS evidence before any promotion claim.
+
 ```bash
 AXIOM_PWSH=/path/to/pwsh pwsh -File scripts/run-all-checks.ps1 -RepoPath .
 ```
