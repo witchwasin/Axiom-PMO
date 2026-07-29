@@ -5,6 +5,10 @@ on:
   push:
     branches:
       - main
+  # Lets a maintainer run this workflow against a feature branch (for example
+  # to gather real CI evidence for a milestone under review) without
+  # widening the automatic push trigger above.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -168,3 +172,73 @@ jobs:
         shell: pwsh
         run: |
           pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -RepoPath .
+
+  # Milestone 4 dogfooding: exercise action.yml itself, via `uses: ./`, the
+  # same way an external consumer would -- not just the Node scripts behind
+  # it (tests/helpers/github-action-tests.mjs already covers those directly).
+  # This is the evidence that the composite action definition -- inputs,
+  # outputs, the upload-artifact step -- actually works end to end.
+  dogfood-github-action:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Real, known-broken fixture. Default enforce is false (report-only),
+      # so this step must succeed even though the project fails validation --
+      # that is what report-only means. Its outputs are checked next.
+      - name: Governance check, report-only, on a project with real findings
+        id: report_only
+        uses: ./
+        with:
+          project: demo/broken-project
+          mode: Standard
+          gate: Handoff
+          artifact-name: axiom-pmo-report-dogfood-report-only
+
+      - name: Verify report-only recorded the real result without failing the step
+        shell: bash
+        run: |
+          echo "outcome=${{ steps.report_only.outputs.outcome }} exit-code=${{ steps.report_only.outputs.exit-code }}"
+          if [ "${{ steps.report_only.outputs.outcome }}" != "failure" ]; then
+            echo "::error::Expected outputs.outcome=failure for demo/broken-project (it has real FAIL rows); got '${{ steps.report_only.outputs.outcome }}'. Report-only mode may not be reading the validator result at all."
+            exit 1
+          fi
+
+      # Same broken fixture, enforcement on. continue-on-error catches the
+      # expected failure so the job can assert on it, exactly like the
+      # existing "Verify fault injection propagates as a failure" steps
+      # above assert on run-all-checks.ps1 -TestChildScript.
+      - name: Governance check, enforced, on the same broken project
+        id: enforced_fail
+        continue-on-error: true
+        uses: ./
+        with:
+          project: demo/broken-project
+          mode: Standard
+          gate: Handoff
+          enforce: "true"
+          artifact-name: axiom-pmo-report-dogfood-enforced-fail
+
+      - name: Verify enforcement actually blocks
+        shell: bash
+        run: |
+          if [ "${{ steps.enforced_fail.outcome }}" != "failure" ]; then
+            echo "::error::Expected the enforced step against demo/broken-project to fail; its outcome was '${{ steps.enforced_fail.outcome }}'. Enforcement is not blocking."
+            exit 1
+          fi
+          echo "Enforcement correctly failed the step for a real governance violation."
+
+      # A clean project with enforcement on must actually pass -- proves
+      # enforcement does not false-positive on a project with no findings.
+      - name: Governance check, enforced, on a clean project
+        uses: ./
+        with:
+          project: examples/STANDARD-FEATURE
+          mode: Standard
+          gate: Release
+          enforce: "true"
+          artifact-name: axiom-pmo-report-dogfood-enforced-clean

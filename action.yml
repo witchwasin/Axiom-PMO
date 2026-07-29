@@ -1,0 +1,123 @@
+name: "Axiom-PMO Governance Check"
+description: "Verify a project's requirements, scope, evidence, and release authority with Axiom-PMO's PowerShell validator."
+author: "Axiom-PMO"
+branding:
+  icon: "shield"
+  color: "blue"
+
+inputs:
+  project:
+    description: "Project path to validate, relative to the consumer repository workspace (or absolute)."
+    required: true
+  mode:
+    description: "PMO mode: Lite, Standard, or Strict."
+    required: false
+    default: "Standard"
+  gate:
+    description: "Validation gate: Draft, Scope, Design, Handoff, or Release."
+    required: false
+    default: "Release"
+  fail-on-warning:
+    description: "Whether a blocking WARN counts toward the governance verdict (validator exit code 2 instead of 0)."
+    required: false
+    default: "true"
+  working-directory:
+    description: "Directory the Action resolves --project and report paths from. Defaults to the job's workspace."
+    required: false
+    default: "."
+  upload-artifact:
+    description: "Whether to upload axiom-report.json and axiom-report.md as a workflow artifact."
+    required: false
+    default: "true"
+  artifact-name:
+    description: >-
+      Name for the uploaded artifact. actions/upload-artifact v4 rejects a
+      second artifact with the same name in one workflow run, so a workflow
+      that calls this Action more than once (for example, once per project
+      in a matrix, or once for a report-only pass and once enforced) must
+      give each call a distinct name.
+    required: false
+    default: "axiom-pmo-report"
+  annotation-mode:
+    description: "'safe' emits sanitized FAIL/WARN annotations on the pull request; 'off' emits none."
+    required: false
+    default: "safe"
+  enforce:
+    description: >-
+      Whether a governance verdict (FAIL, or a blocking WARN under
+      fail-on-warning) fails this workflow step. Defaults to false
+      (report-only): findings are still reported in full -- Job Summary,
+      annotations, and the JSON/Markdown report -- but the step exits 0 so a
+      first-time install cannot break a pull request nobody has configured
+      yet. Set to true once your team has reviewed a few report-only runs
+      and wants the check to actually block. This default does not soften an
+      infrastructure failure (for example, no PowerShell host found): that
+      always fails the step regardless of this setting.
+    required: false
+    default: "false"
+
+outputs:
+  exit-code:
+    description: "The underlying validator's exit code (0 pass, 1 fail, 2 blocking warning, 127 no PowerShell host)."
+    value: ${{ steps.run.outputs.exit-code }}
+  outcome:
+    description: "success, failure, warning, or runtime-missing."
+    value: ${{ steps.run.outputs.outcome }}
+  json-report:
+    description: "Path to axiom-report.json."
+    value: ${{ steps.run.outputs.json-report }}
+  markdown-report:
+    description: "Path to axiom-report.md."
+    value: ${{ steps.run.outputs.markdown-report }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: "24.18.0"
+        package-manager-cache: false
+
+    # GitHub-hosted Ubuntu, Windows, and macOS runner images all ship
+    # PowerShell 7 (pwsh) already, and Windows additionally ships Windows
+    # PowerShell 5.1. Nothing here installs a PowerShell runtime -- the
+    # consumer's runner already has one, which is the whole point of running
+    # this as an Action instead of a local script.
+    - name: Run Axiom-PMO governance check
+      id: run
+      shell: bash
+      run: |
+        node "${{ github.action_path }}/scripts/github-action/run-action.mjs" \
+          --project "${{ inputs.project }}" \
+          --mode "${{ inputs.mode }}" \
+          --gate "${{ inputs.gate }}" \
+          --fail-on-warning "${{ inputs.fail-on-warning }}" \
+          --working-directory "${{ inputs.working-directory }}" \
+          --annotation-mode "${{ inputs.annotation-mode }}" \
+          --enforce "${{ inputs.enforce }}"
+
+    # continue-on-error: the governance verdict already came from the `run`
+    # step above and set this composite action's exit status. An unrelated
+    # artifact-storage problem (quota, a transient API error, or -- before
+    # `artifact-name` existed -- a name collision from calling this Action
+    # more than once in one workflow run) must not overwrite that verdict
+    # with an unrelated "failed" outcome.
+    - name: Upload governance report
+      id: upload
+      if: ${{ inputs.upload-artifact == 'true' && !cancelled() }}
+      continue-on-error: true
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: |
+          ${{ steps.run.outputs.json-report }}
+          ${{ steps.run.outputs.markdown-report }}
+        if-no-files-found: warn
+        retention-days: 30
+
+    - name: Note a failed artifact upload
+      if: ${{ inputs.upload-artifact == 'true' && steps.upload.outcome == 'failure' }}
+      shell: bash
+      run: |
+        echo "::warning title=Axiom-PMO report artifact not uploaded::The governance check itself completed (see outputs.outcome); only the report-artifact upload failed. If this workflow calls the Action more than once, give each call a distinct 'artifact-name'."
