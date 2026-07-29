@@ -362,6 +362,10 @@ Current evidence and gaps:
 - **Confirmed:** Ubuntu PowerShell 7 passed the full suite in the first matrix
   run. The workflow is being promoted from `continue-on-error` to a blocking
   job named `pmo-checks-linux-pwsh7`.
+- **Confirmed:** CI run
+  [#30434956117](https://github.com/witchwasin/Axiom-PMO/actions/runs/30434956117)
+  passed on `main` at commit `24d8b99` after the Ubuntu job was promoted. This
+  is Ubuntu promoted green run 1 of 2 for the M3.5 threshold.
 - **Confirmed:** Human-approved threshold: Ubuntu PowerShell 7 must pass two
   consecutive full CI runs on `main` after `continue-on-error` is removed before
   M3.5 can be accepted.
