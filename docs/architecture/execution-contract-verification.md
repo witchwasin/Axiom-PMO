@@ -29,12 +29,13 @@ memory or assumption is a claim about the past until re-verified:
 - `SCOPE.json` and Milestone 4.5's diagnostic contract
   (`docs/reference/scope-declaration.md`, `docs/reference/diagnostics-contract.md`)
   — the closest existing precedent for a deterministic, git-grounded check.
-- **A real, current local clone of the `superpowers` plugin** at
-  `<local-path>/superpowers`, commit `44c9b2d6e889982ac18c27d05a19fefe335194e1`
-  (2026-07-27), `.claude-plugin/plugin.json` version `6.2.0`. This is the
-  actual upstream project (`https://github.com/obra/superpowers`), inspected
-  directly rather than assumed from the earlier experimental schemas'
-  own commentary.
+- **A real, current local clone of the `superpowers` plugin** — the actual
+  upstream project (`https://github.com/obra/superpowers`) at commit
+  `44c9b2d6e889982ac18c27d05a19fefe335194e1` (2026-07-27),
+  `.claude-plugin/plugin.json` version `6.2.0` — inspected directly rather
+  than assumed from the earlier experimental schemas' own commentary. The
+  commit and version are what make this reproducible; the checkout location
+  is a detail of one machine and is deliberately not recorded.
 
 ### 2.1 The real hook/event surface
 
