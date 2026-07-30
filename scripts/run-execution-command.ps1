@@ -117,14 +117,34 @@ $shellArgs = if ($onWindows) { @("/c", $Command) } else { @("-c", $Command) }
 # Output captured, never persisted raw -- only its digest is sealed into the
 # record, so a secret a test happens to print does not end up committed in
 # .execution/.
+#
+# $ErrorActionPreference drops to "Continue" for the duration of the child
+# process, and this is load-bearing rather than tidiness. This script sets
+# "Stop" at the top, and Windows PowerShell 5.1 converts *any* native
+# command's stderr into a terminating error under "Stop" -- `2>&1` merges the
+# streams but does not stop the conversion there. The entire point of this
+# script is running someone's test command, and real test runners (npm,
+# pytest, jest) write progress and warnings to stderr constantly, so on 5.1
+# this would have killed the runner before it captured the exit code or
+# sealed a record -- turning an ordinary passing test suite into a crash.
+#
+# The local test suite never caught it because its fixture commands are
+# `echo ok` and `exit 1`, neither of which writes to stderr. Found by
+# auditing for this failure mode after the same class of bug broke the
+# ci-check adapter on the 5.1 CI leg; it is the third time this specific
+# PowerShell 5.1 behaviour has caused a defect in this milestone, which is
+# why every native invocation in M5 now carries an explicit guard.
 $previousLocation = Get-Location
 Set-Location -LiteralPath $cwdFull
 $startedAt = [DateTimeOffset]::UtcNow.ToString("o")
+$previousEap = $ErrorActionPreference
 try {
+  $ErrorActionPreference = "Continue"
   $output = & $shellExe @shellArgs 2>&1
   $capturedText = ($output | Out-String)
   $exitCode = [int]$LASTEXITCODE
 } finally {
+  $ErrorActionPreference = $previousEap
   Set-Location -LiteralPath $previousLocation
 }
 $endedAt = [DateTimeOffset]::UtcNow.ToString("o")

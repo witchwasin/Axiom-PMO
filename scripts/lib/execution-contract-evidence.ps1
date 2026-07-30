@@ -128,6 +128,34 @@ function Get-GitHubOwnerRepo {
   return $null
 }
 
+# Runs a native command and returns its stdout, with stderr discarded and
+# $LASTEXITCODE preserved, without letting the command's stderr terminate the
+# caller.
+#
+# This exists because of a real crash, not defensiveness. Windows PowerShell
+# 5.1 turns any native command's stderr into a *terminating* error when
+# $ErrorActionPreference is "Stop" -- which verify-execution-result.ps1 sets
+# -- and `2>$null` does not prevent it there (only in pwsh 7). `git remote
+# get-url origin` on a repository with no remote writes "error: No such
+# remote 'origin'" to stderr, so the entire verification script died before
+# emitting any JSON: a user on Windows PowerShell 5.1 whose result carried a
+# ci-check entry got a crash instead of an "unverified" verdict. Caught by
+# CI on the 5.1 leg only, after the same failure mode had already been fixed
+# once in tests/helpers/execution-contract-tests.ps1 -- the lesson did not
+# transfer to product code the first time, hence a named helper rather than
+# another inline save/restore to forget.
+function Invoke-NativeCapture {
+  param([scriptblock]$Command)
+  $previousEap = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try {
+    $output = & $Command 2>$null
+    return [pscustomobject]@{ Output = $output; ExitCode = $LASTEXITCODE }
+  } finally {
+    $ErrorActionPreference = $previousEap
+  }
+}
+
 function Test-CiCheckEvidence {
   param($Entry, [Parameter(Mandatory = $true)][string]$GitRepoRoot)
 
@@ -149,8 +177,10 @@ function Test-CiCheckEvidence {
     return $result
   }
 
-  $remoteUrl = & git -C $GitRepoRoot remote get-url origin 2>$null
-  if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace([string]$remoteUrl)) {
+  $remote = Invoke-NativeCapture { git -C $GitRepoRoot remote get-url origin }
+  $remoteUrl = $remote.Output
+  if ($remoteUrl -is [array]) { $remoteUrl = $remoteUrl[0] }
+  if ($remote.ExitCode -ne 0 -or [string]::IsNullOrWhiteSpace([string]$remoteUrl)) {
     $result.Reason = "could not resolve a git remote to query -- cannot independently verify"
     return $result
   }
@@ -161,15 +191,12 @@ function Test-CiCheckEvidence {
   }
 
   $apiPath = "repos/$ownerRepo/commits/$commitSha/check-runs"
-  $previousEap = $ErrorActionPreference
-  $ErrorActionPreference = "Continue"
-  $raw = & gh api $apiPath 2>$null
-  $exitCode = $LASTEXITCODE
-  $ErrorActionPreference = $previousEap
-  if ($exitCode -ne 0) {
+  $api = Invoke-NativeCapture { gh api $apiPath }
+  if ($api.ExitCode -ne 0) {
     $result.Reason = "the GitHub API query for commit $commitSha failed -- cannot independently verify (network, auth, or the commit is not on GitHub)"
     return $result
   }
+  $raw = $api.Output
 
   try {
     $data = ($raw | Out-String) | ConvertFrom-Json
