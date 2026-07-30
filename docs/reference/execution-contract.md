@@ -105,7 +105,7 @@ field alongside `results`.
   "git_actions_performed": ["commit"],
   "test_evidence": [
     { "type": "runner-exit-record", "name": "unit tests",
-      "command": "npm test", "exit_code": 0, "recorded_by": "axiom-runner" }
+      "run_record_path": ".execution/D-001/runs/<run-id>.json" }
   ],
   "authority_claims": [
     { "type": "implementation-complete", "actor": "agent", "claim": "done" }
@@ -119,16 +119,28 @@ Required: `contract_version`, `work_item_id`, `contract_sha256`, `base_sha`,
 
 ### Test evidence adapters
 
-| Adapter | Verifiable | Requires |
+Each adapter is **independently verified**, not accepted on field presence
+alone -- see [`EXEC-005`](../rules/EXEC-005.md) for exactly what each check
+does.
+
+| Adapter | Requires | Verified by |
 |---|---|---|
-| `runner-exit-record` | yes | `command`, `exit_code`, `recorded_by` |
-| `ci-check` | yes | `name`, `commit_sha`, `conclusion` |
-| `junit-artifact` | yes | `path`, `sha256` |
-| `agent-assertion` | **no** | `name` |
+| `runner-exit-record` | `run_record_path` | Reopening the sealed file `axiom run` produced, recomputing its digest against the `.sha256` sidecar, and confirming it binds to this work item and contract with a sealed exit code of `0`. |
+| `ci-check` | `name`, `commit_sha` | A live query to the GitHub API for a check run matching `name` on that commit. The **observed** conclusion must be `success`; a `conclusion` field on the entry itself, if present, is informational only and never trusted. No `gh` CLI, no auth, or no resolvable remote all mean *unverified*. |
+| `junit-artifact` | `path`, `sha256` | Resolving `path` inside the project root, hashing the real file, comparing to the claimed `sha256`, safely parsing the XML, and confirming `failures + errors` sum to zero across every `<testsuite>`. |
+| `agent-assertion` | `name` | Nothing -- never verifiable by design. |
 
 An `agent-assertion` is recorded but never satisfies a `required_tests` entry
 on its own. Naming a verifiable adapter without its evidence fields does not
-count either.
+count either, and neither does naming one with fields that merely look right
+-- see EXEC-005 for the fabrication cases this actually catches (wrong hash,
+missing file, path traversal, unsealed record, wrong work item).
+
+Produce `runner-exit-record` evidence with:
+
+```bash
+axiom run --project <path> --work-item D-001 --name "unit tests" --command "npm test"
+```
 
 ### Authority claims
 
@@ -139,14 +151,21 @@ count either.
 
 `"actor": "human"` inside an agent-authored file is not self-proving, and commit
 authorship is not proof either — `user.name` is an arbitrary string. The claim
-must anchor to `decision-log.md`.
+must resolve to exactly one row in `decision-log.md` -- not merely name one;
+`DEC-999-NOT-REAL` is rejected the same as an empty `decision_ref`. It must
+also not have been added or edited **within the commit range under
+verification**: a row the execution's own commits could have introduced is
+not independent authority for that same execution. See
+[`EXEC-007`](../rules/EXEC-007.md).
 
 ## Contract immutability
 
 `axiom export` writes the contract **and** `EXECUTION-CONTRACT.json.sha256`, a
 digest of the contract file's exact bytes. Verification requires all three to
 agree: the contract's current hash, the sidecar, and the result's
-`contract_sha256`.
+`contract_sha256`. The sidecar is **mandatory** -- deleting it fails
+verification (`EXEC-002`, verdict `contract_digest_missing`) rather than
+skipping the tamper check.
 
 This is what stops an agent widening `allowed_paths` or flipping
 `git_authority.push` in the approved contract and then conforming to its own

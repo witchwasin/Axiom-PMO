@@ -71,7 +71,7 @@ Recommended effort allocation:
 | Milestone 3.5 - Runtime Portability | Accepted | CI threshold met; branch protection deferred by human decision |
 | Milestone 4 - GitHub Action | Delivered | Merged to `main` at `31d1e25`; child issues #12-#17 closed |
 | Milestone 4.5 - SCOPE-DIFF | Delivered | Human Owner accepted 2026-07-30 after two independent AI review rounds; merged to `main` at `6b42643` |
-| Milestone 5 - Execution Contract Verification MVP | Delivered (5.0 decided GO WITH REFRAME; 5.1-5.4 built and tested) | `docs/reference/execution-contract.md`; decision `DEC-002` |
+| Milestone 5 - Execution Contract Verification MVP | 5.0 decided (GO WITH REFRAME); 5.1-5.4 fixes applied for Independent AI Reviewer's REQUEST CHANGES, awaiting re-review -- not yet accepted | `docs/reference/execution-contract.md`; decision `DEC-002`; findings and fixes tracked below |
 | Milestone 6 - Claude Code Integration Experience | Planned | Requires separate approval after Milestone 5 |
 
 ## Roadmap Governance
@@ -663,16 +663,52 @@ enough that a second integration could reuse it later without a rewrite.
 
 ### Milestone 5.1 - 5.4
 
-Status: **delivered 2026-07-30**, against the "GO WITH REFRAME" design in
-`docs/architecture/execution-contract-verification.md` §4. User-facing
-reference: [`docs/reference/execution-contract.md`](docs/reference/execution-contract.md).
+Status: **Fixes applied for Independent AI Reviewer's 2026-07-30 REQUEST CHANGES; awaiting
+re-review and Human Owner acceptance.** Not yet delivered -- do not treat
+Milestone 5 as shipped until this section says the re-review passed and
+Human Owner accepted.
 
-| Phase | Delivered |
+Independent AI Reviewer's review (against the real `main` checkout, not just green CI) found
+1 FATAL and 2 MAJOR gaps between what the design/docs claimed and what the
+implementation actually checked. Each is fixed, with tests reproducing the
+original gap and confirming the fix, plus one MINOR:
+
+- **FATAL, fixed:** test-evidence adapters checked field presence only. Now
+  `scripts/lib/execution-contract-evidence.ps1` performs the real checks --
+  JUnit: repo-root containment, real `Get-FileHash` compared against the
+  claimed digest, DTD-prohibited safe XML parse, `failures+errors == 0`.
+  CI-check: a live `gh api .../check-runs` query matched by name, never the
+  result's own claimed `conclusion`; no `gh`/auth/remote means *unverified*,
+  never a pass. Runner: `scripts/run-execution-command.ps1` actually
+  executes the command as a real child process (not `Invoke-Expression`,
+  which runs in-process and would let a command's own `exit` kill the
+  runner -- found by testing, not reasoned about) and seals a record via the
+  same file+sidecar digest pattern the contract already uses.
+- **MAJOR, fixed:** the contract digest sidecar is now mandatory --
+  `EXEC-002` fails closed (`contract_digest_missing` /
+  `contract_digest_malformed`) instead of skipping the tamper check when the
+  sidecar is absent. `EXEC-007`'s human-authority check now resolves
+  `decision_ref` against a real `Resolve-DecisionRecord` parse of
+  `decision-log.md` -- exists, unique, and **not itself added or edited
+  within the commit range under verification** (the self-forged-approval
+  case), not merely non-empty.
+- **MINOR, fixed:** `EXEC-008` now checks both directions -- a file the
+  result claims changed that git shows no evidence of is reported, not only
+  the reverse.
+
+67 new/expanded adversarial tests (`tests/helpers/execution-contract-tests.ps1`,
+88 total) reproduce each original gap and confirm the fix: fabricated
+JUnit hash, missing/traversal path, real failures with a correct hash,
+hand-typed run record with no sidecar, tampered/mismatched-work-item run
+records, no-remote `ci-check`, deleted/empty/malformed sidecars, fake and
+ambiguous `DEC-###` references, and the self-forged-decision attack.
+
+| Phase | Status |
 |---|---|
-| 5.1 contract export | `axiom export --project <p> --work-item D-### [--grant commit,push]` -> `.execution/D-###/EXECUTION-CONTRACT.json` plus a `.sha256` digest sidecar. Contract fields are derived from the approved `DELIVERY.md` row and `SCOPE.json`; a project without an approved scope cannot be exported from. |
-| 5.2 result import | `axiom verify --project <p> --result <path>`: schema validation, contract-digest immutability (three-way agreement between the contract's live hash, the sidecar, and the result's `contract_sha256`), work-item/base/requirement matching with asymmetric requirement drift. |
-| 5.3 authority + scope + evidence | Git ground-truth adapter (ancestry, commit range, remote containment as a tri-state), allowed-path validation reusing M4.5's glob engine and case-sensitivity, three machine-verifiable test-evidence adapters, typed authority-claim records blocking agent self-approval. |
-| 5.4 integration tests | `tests/helpers/execution-contract-tests.ps1`, 57 cases against disposable real-git fixtures, wired into `run-all-checks.ps1`. Written adversarially: tampered contracts, orphan-branch ancestry, undeclared changes, hollow evidence, self-approval, unknown actors. |
+| 5.1 contract export | Built |
+| 5.2 result import | Fixed: mandatory sidecar |
+| 5.3 authority + scope + evidence | Fixed: real evidence verification, real decision resolution |
+| 5.4 integration tests | Expanded: 88 cases, including the adversarial cases the review's own findings named |
 
 Rules `EXEC-001` to `EXEC-008`, each with a `docs/rules/` page. Policy lives
 in `pmo-config/execution-contract-policy.json`.
@@ -822,11 +858,6 @@ Do not spend near-term effort on:
   `v1.2.0`.
 - Milestone 5.0 research and go/no-go decision (GO WITH REFRAME), recorded
   2026-07-30.
-- Milestone 5.1-5.4 Execution Contract Verification MVP: `axiom export` /
-  `axiom verify`, rules `EXEC-001` to `EXEC-008`, contract-digest
-  immutability, git ground-truth validation, three machine-verifiable
-  test-evidence adapters, typed authority claims, and 57 adversarial
-  integration tests.
 
 ### Deferred trust evidence
 
@@ -836,8 +867,13 @@ Do not spend near-term effort on:
 
 ### Next
 
-- Milestone 6 prototyping (copyable integration block, skill pack, command
-  set, plugin, MCP command, or hook -- shape not yet decided).
+- Independent AI Reviewer re-review of Milestone 5.1-5.4's fixes (real evidence verification,
+  mandatory contract-digest sidecar, real `decision-log.md` resolver, 88
+  adversarial tests). Milestone 5 is not accepted until the re-review passes
+  and the Human Owner accepts.
+- Milestone 6.0 research (integration shape: HYBRID) is done and under
+  review; Milestone 6.1 implementation does not start until Milestone 5 is
+  accepted, per Roadmap Governance.
 - External-user validation of the v1.2.0 GitHub Action and SCOPE-DIFF. This
   needs the Human Owner personally and cannot be delegated; it is the main
   source of independent signal about whether the shipped features are usable
@@ -845,8 +881,8 @@ Do not spend near-term effort on:
 
 ### Blocked
 
-- Claude Code integration implementation (Milestone 6), until separately
-  approved after Milestone 5.
+- Claude Code integration implementation (Milestone 6.1+), until Milestone
+  5 is accepted and Milestone 6 is separately approved.
 
 ## Success Signals
 

@@ -87,14 +87,38 @@ function Invoke-ExecutionContractVerification {
   # and result consistently is not caught here -- only git history shows that.
   # Stated plainly in docs/reference/execution-contract.md rather than
   # implied to be covered.)
+  #
+  # The sidecar is mandatory, not merely checked-if-present. `if (Test-Path
+  # $sidecarPath)` was the first FATAL/MAJOR-class gap Independent AI Reviewer's review found in
+  # this file: deleting the sidecar skipped the tamper check entirely rather
+  # than failing closed, which is a strictly easier bypass than the
+  # rewrite-both-files attack the code comment above already documents as a
+  # known limit. A missing approved-digest record is exactly as unverifiable
+  # as a missing contract (EXEC-002 above) -- there is no approved version to
+  # compare against, so there is nothing to verify.
   $sidecarPath = "$ContractPath.sha256"
-  if (Test-Path -LiteralPath $sidecarPath -PathType Leaf) {
-    $sidecarText = (Get-Content -LiteralPath $sidecarPath -Raw).Trim().ToLowerInvariant()
-    if ($sidecarText -ne $contract.Digest) {
-      Add-Result FAIL "The execution contract's contents no longer match the digest recorded when it was exported. The contract was modified after approval." "EXEC-002" -Artifact "EXECUTION-CONTRACT.json" -ItemId $verdict.work_item_id -Field "contract_sha256"
-      $verdict.verdict = "contract_tampered"
-      return [pscustomobject]$verdict
-    }
+  if (-not (Test-Path -LiteralPath $sidecarPath -PathType Leaf)) {
+    Add-Result FAIL "No digest sidecar found for the execution contract ($sidecarPath). Without the digest recorded at export time, there is no approved version to check the contract against -- a missing sidecar is treated the same as a missing contract, not as an unverified pass." "EXEC-002" -Artifact "EXECUTION-CONTRACT.json.sha256" -ItemId $verdict.work_item_id
+    $verdict.verdict = "contract_digest_missing"
+    return [pscustomobject]$verdict
+  }
+  # Get-Content -Raw on a zero-byte file returns $null (not an empty
+  # string), and -- confirmed by direct repro, not assumed -- casting that
+  # particular null with [string](...) does not reliably produce a normal
+  # .NET string on this host either: `$x -is [string]` came back $false for
+  # it even though it printed as empty. An explicit $null check, rather than
+  # a cast, is what actually handles this safely.
+  $sidecarRaw = Get-Content -LiteralPath $sidecarPath -Raw
+  $sidecarText = if ($null -eq $sidecarRaw) { "" } else { $sidecarRaw.Trim().ToLowerInvariant() }
+  if ($sidecarText -notmatch '^[0-9a-f]{64}$') {
+    Add-Result FAIL "The digest sidecar ($sidecarPath) does not contain a well-formed SHA-256 digest." "EXEC-002" -Artifact "EXECUTION-CONTRACT.json.sha256" -ItemId $verdict.work_item_id
+    $verdict.verdict = "contract_digest_malformed"
+    return [pscustomobject]$verdict
+  }
+  if ($sidecarText -ne $contract.Digest) {
+    Add-Result FAIL "The execution contract's contents no longer match the digest recorded when it was exported. The contract was modified after approval." "EXEC-002" -Artifact "EXECUTION-CONTRACT.json" -ItemId $verdict.work_item_id -Field "contract_sha256"
+    $verdict.verdict = "contract_tampered"
+    return [pscustomobject]$verdict
   }
 
   # --- 2. Result well-formed (EXEC-001) ------------------------------------
@@ -201,16 +225,46 @@ function Invoke-ExecutionContractVerification {
   }
   $verdict.changed_files_observed = $observedPaths.ToArray()
 
-  # The result's own changed_files list is a claim; the diff is evidence. A
-  # file the agent changed but did not declare is the interesting direction --
-  # an undeclared change is exactly what a result would omit if it were hiding
-  # something, so it is reported even though the scope check below would also
-  # catch it when it falls outside allowed_paths.
+  # Repo-root-relative path of this project's decision-log.md, computed once
+  # here so section 8 (EXEC-007) can check whether it falls inside the
+  # observed changed-file set -- i.e. whether the execution under
+  # verification touched the very log a human-authority claim cites. $null
+  # when the project path is not actually inside $GitRepoRoot (an unusual
+  # setup this check simply does not apply to; it degrades to "cannot tell",
+  # never to a false pass).
+  $decisionLogRelPath = $null
+  $decisionLogFullPath = Join-Path $ProjectPath "decision-log.md"
+  $normalizedGitRoot = $GitRepoRoot.TrimEnd('/', '\')
+  if ($decisionLogFullPath.StartsWith($normalizedGitRoot, [System.StringComparison]::Ordinal)) {
+    $decisionLogRelPath = $decisionLogFullPath.Substring($normalizedGitRoot.Length).TrimStart('/', '\') -replace '\\', '/'
+  }
+
+  # The result's own changed_files list is a claim; the diff is evidence.
+  # Checked in both directions -- Independent AI Reviewer's review noted the original only checked
+  # one:
+  #
+  #   observed, not claimed -- the more important direction. An undeclared
+  #   change is exactly what a result would omit if it were hiding something,
+  #   so it is reported even though the scope check below would also catch it
+  #   when the path falls outside allowed_paths.
+  #
+  #   claimed, not observed -- a false claim. Not a scope bypass (scope is
+  #   decided from the git-observed set, never from this list), but a result
+  #   naming a file git shows no evidence of touching is a result asserting
+  #   something that did not happen, which this milestone's whole premise is
+  #   about catching regardless of which direction it points.
   if ($doc.PSObject.Properties["changed_files"]) {
     $claimedPaths = @($doc.changed_files | ForEach-Object { [string]$_ })
     foreach ($observed in $observedPaths) {
       if ($claimedPaths -cnotcontains $observed) {
         Add-Result FAIL "A file changed between the approved base and the reported head is not declared in the result's changed_files: $observed" "EXEC-008" -Artifact $observed -ItemId $verdict.work_item_id -Field "changed_files"
+      }
+    }
+    $observedSet = @($observedPaths | Select-Object -Unique)
+    foreach ($claimed in $claimedPaths) {
+      if ([string]::IsNullOrWhiteSpace($claimed)) { continue }
+      if ($observedSet -cnotcontains $claimed) {
+        Add-Result FAIL "The result's changed_files claims a file that git shows no evidence of changing between the approved base and the reported head: $claimed" "EXEC-008" -Artifact $claimed -ItemId $verdict.work_item_id -Field "changed_files"
       }
     }
   }
@@ -251,6 +305,16 @@ function Invoke-ExecutionContractVerification {
   $verdict.changed_files_out_of_scope = $outOfScope.ToArray()
 
   # --- 6. Required-test evidence (EXEC-005) --------------------------------
+  #
+  # Real verification, not a field-presence check: Test-EvidenceEntryVerified
+  # (execution-contract-evidence.ps1) opens the JUnit file and rehashes it,
+  # queries the GitHub API for a ci-check, or reopens and rehashes a sealed
+  # runner-exit-record. This is the FATAL fix from Independent AI Reviewer's review -- the
+  # previous version trusted `policy.test_evidence_adapters[].verifiable`
+  # (a property of the adapter *type*) as if it were a property of the
+  # *entry*, so an agent could satisfy any required test by naming a
+  # verifiable-looking adapter and filling in plausible fields, none of which
+  # were ever actually checked.
 
   $evidence = Resolve-TestEvidenceEntries -Result $doc -Policy $policy
   $unverified = New-Object System.Collections.Generic.List[string]
@@ -267,13 +331,11 @@ function Invoke-ExecutionContractVerification {
         Add-Result FAIL "A test the contract requires has no evidence entry in the result at all: $requiredName" "EXEC-005" -Artifact "EXECUTION-RESULT.json" -ItemId $requiredName -Field "test_evidence"
         continue
       }
-      if (-not $match.Verifiable) {
+
+      $verification = Test-EvidenceEntryVerified -Entry $match -ProjectPath $ProjectPath -GitRepoRoot $GitRepoRoot -ContractSha256 $contract.Digest -WorkItemId $verdict.work_item_id
+      if (-not $verification.Verified) {
         $unverified.Add($requiredName) | Out-Null
-        $detail = "its evidence is '$($match.Type)', which Axiom-PMO cannot independently verify"
-        if ($match.MissingFields.Count -gt 0) {
-          $detail = "its '$($match.Type)' evidence is missing the field(s) that would make it verifiable: $($match.MissingFields -join ', ')"
-        }
-        Add-Result FAIL "A test the contract requires is not backed by verifiable evidence -- $detail. An agent's own assertion that a test passed is a claim, not evidence." "EXEC-005" -Artifact "EXECUTION-RESULT.json" -ItemId $requiredName -Field "test_evidence"
+        Add-Result FAIL "A test the contract requires is not backed by verified evidence -- its '$($match.Type)' entry did not verify: $($verification.Reason). An agent's own assertion that a test passed is a claim, not evidence." "EXEC-005" -Artifact "EXECUTION-RESULT.json" -ItemId $requiredName -Field "test_evidence"
       }
     }
   }
@@ -359,9 +421,28 @@ function Invoke-ExecutionContractVerification {
       if ($typePolicy -and [bool]$typePolicy.human_only) {
         $decisionRef = $null
         if ($claim.PSObject.Properties["decision_ref"]) { $decisionRef = [string]$claim.decision_ref }
+
         if ([string]::IsNullOrWhiteSpace($decisionRef)) {
           $violations.Add("authority:$claimType") | Out-Null
           Add-Result FAIL "A human-only authority claim ('$claimType') cites no decision record. Commit authorship alone does not prove a human actor; the claim must reference a DEC-### in decision-log.md." "EXEC-007" -Artifact "EXECUTION-RESULT.json" -ItemId $claimType -Field "authority_claims.decision_ref"
+        } else {
+          # Resolved for real, not just checked for non-emptiness: this used
+          # to accept "DEC-999-NOT-REAL" outright. See
+          # execution-contract-schema.ps1's Resolve-DecisionRecord docstring
+          # for the exact contract.
+          $resolved = Resolve-DecisionRecord -ProjectPath $ProjectPath -DecisionRef $decisionRef
+          if (-not $resolved.Found) {
+            $violations.Add("authority:$claimType") | Out-Null
+            Add-Result FAIL "A human-only authority claim ('$claimType') cites decision record '$decisionRef', which could not be resolved: $($resolved.Reason). A citation that does not resolve to a real, unique row is not authority." "EXEC-007" -Artifact "EXECUTION-RESULT.json" -ItemId $claimType -Field "authority_claims.decision_ref"
+          } elseif ($decisionLogRelPath -and ($observedPaths -contains $decisionLogRelPath)) {
+            # The decision record exists -- but decision-log.md was itself
+            # changed within the exact commit range this verification is
+            # checking. A row the execution's own commits could have added or
+            # edited is not independent of the thing it is supposed to
+            # authorize; it is the agent writing its own permission slip.
+            $violations.Add("authority:$claimType") | Out-Null
+            Add-Result FAIL "A human-only authority claim ('$claimType') cites decision record '$decisionRef', but decision-log.md was itself changed within the commit range under verification. A decision the execution's own commits could have introduced cannot serve as independent human authority for that same execution." "EXEC-007" -Artifact "decision-log.md" -ItemId $claimType -Field "authority_claims.decision_ref"
+          }
         }
       }
     }
