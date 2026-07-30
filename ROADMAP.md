@@ -71,7 +71,7 @@ Recommended effort allocation:
 | Milestone 3.5 - Runtime Portability | Accepted | CI threshold met; branch protection deferred by human decision |
 | Milestone 4 - GitHub Action | Delivered | Merged to `main` at `31d1e25`; child issues #12-#17 closed |
 | Milestone 4.5 - SCOPE-DIFF | Delivered | Human Owner accepted 2026-07-30 after two independent AI review rounds; merged to `main` at `6b42643` |
-| Milestone 5 - Execution Contract Verification MVP | 5.0 decided (GO WITH REFRAME); 5.1-5.4 **REQUEST CHANGES** from Independent AI Reviewer review 2026-07-30 -- not accepted | `docs/reference/execution-contract.md`; decision `DEC-002`; review findings tracked below |
+| Milestone 5 - Execution Contract Verification MVP | 5.0 decided (GO WITH REFRAME); 5.1-5.4 fixes applied for Independent AI Reviewer's REQUEST CHANGES, awaiting re-review -- not yet accepted | `docs/reference/execution-contract.md`; decision `DEC-002`; findings and fixes tracked below |
 | Milestone 6 - Claude Code Integration Experience | Planned | Requires separate approval after Milestone 5 |
 
 ## Roadmap Governance
@@ -663,46 +663,52 @@ enough that a second integration could reuse it later without a rewrite.
 
 ### Milestone 5.1 - 5.4
 
-Status: **REQUEST CHANGES from Independent AI Reviewer's implementation review, 2026-07-30 --
-not accepted, not delivered.** Built against the "GO WITH REFRAME" design in
-`docs/architecture/execution-contract-verification.md` §4; CI was green on
-all 6 jobs, but a code-level review against the real `main` checkout found
-1 FATAL and 2 MAJOR gaps between what the design and docs claimed and what
-the implementation actually checked. User-facing reference:
-[`docs/reference/execution-contract.md`](docs/reference/execution-contract.md)
-(also under revision -- see below).
+Status: **Fixes applied for Independent AI Reviewer's 2026-07-30 REQUEST CHANGES; awaiting
+re-review and Human Owner acceptance.** Not yet delivered -- do not treat
+Milestone 5 as shipped until this section says the re-review passed and
+Human Owner accepted.
 
-**FATAL, confirmed:** the three "machine-verifiable" test-evidence adapters
-only checked that an evidence entry's *fields were present*, never that a
-JUnit file exists and hashes to its claimed digest, that a CI check's
-conclusion was independently queried, or that a `runner-exit-record` was
-produced by anything other than the agent's own assertion. `Resolve-TestEvidenceEntries`
-had no `Get-FileHash`, XML parse, or API call anywhere in it. An agent could
-satisfy a required test by filling in plausible-looking fields for evidence
-that never existed.
+Independent AI Reviewer's review (against the real `main` checkout, not just green CI) found
+1 FATAL and 2 MAJOR gaps between what the design/docs claimed and what the
+implementation actually checked. Each is fixed, with tests reproducing the
+original gap and confirming the fix, plus one MINOR:
 
-**MAJOR, confirmed:** the contract digest sidecar (`EXECUTION-CONTRACT.json.sha256`)
-was checked only `if (Test-Path $sidecarPath)` -- deleting it skipped the
-tamper check entirely rather than failing closed. And `EXEC-007`'s
-human-authority check verified only that a `decision_ref` was non-empty,
-never that the cited `DEC-###` actually exists in `decision-log.md` --
-`"decision_ref": "DEC-999-NOT-REAL"` passed.
+- **FATAL, fixed:** test-evidence adapters checked field presence only. Now
+  `scripts/lib/execution-contract-evidence.ps1` performs the real checks --
+  JUnit: repo-root containment, real `Get-FileHash` compared against the
+  claimed digest, DTD-prohibited safe XML parse, `failures+errors == 0`.
+  CI-check: a live `gh api .../check-runs` query matched by name, never the
+  result's own claimed `conclusion`; no `gh`/auth/remote means *unverified*,
+  never a pass. Runner: `scripts/run-execution-command.ps1` actually
+  executes the command as a real child process (not `Invoke-Expression`,
+  which runs in-process and would let a command's own `exit` kill the
+  runner -- found by testing, not reasoned about) and seals a record via the
+  same file+sidecar digest pattern the contract already uses.
+- **MAJOR, fixed:** the contract digest sidecar is now mandatory --
+  `EXEC-002` fails closed (`contract_digest_missing` /
+  `contract_digest_malformed`) instead of skipping the tamper check when the
+  sidecar is absent. `EXEC-007`'s human-authority check now resolves
+  `decision_ref` against a real `Resolve-DecisionRecord` parse of
+  `decision-log.md` -- exists, unique, and **not itself added or edited
+  within the commit range under verification** (the self-forged-approval
+  case), not merely non-empty.
+- **MINOR, fixed:** `EXEC-008` now checks both directions -- a file the
+  result claims changed that git shows no evidence of is reported, not only
+  the reverse.
 
-**MINOR, confirmed:** the changed-files check only caught a git-observed
-file the result failed to declare, not a file the result *claimed* changed
-that git does not show.
-
-Full findings, fixes, and re-verification tracked as this status updates.
-Do not treat any Milestone 5 capability described elsewhere in this document
-as shipped until this section says REQUEST CHANGES resolved and Human Owner
-accepted.
+67 new/expanded adversarial tests (`tests/helpers/execution-contract-tests.ps1`,
+88 total) reproduce each original gap and confirm the fix: fabricated
+JUnit hash, missing/traversal path, real failures with a correct hash,
+hand-typed run record with no sidecar, tampered/mismatched-work-item run
+records, no-remote `ci-check`, deleted/empty/malformed sidecars, fake and
+ambiguous `DEC-###` references, and the self-forged-decision attack.
 
 | Phase | Status |
 |---|---|
-| 5.1 contract export | Built; not independently re-reviewed after 5.2/5.3 fixes land |
-| 5.2 result import | Contract-digest check was bypassable via sidecar deletion -- fix required before acceptance |
-| 5.3 authority + scope + evidence | Test-evidence adapters and human-authority claims were checking claim shape, not ground truth -- fix required before acceptance |
-| 5.4 integration tests | 57 cases existed but had no adversarial case for a fabricated-but-well-formed evidence entry, a deleted sidecar, or a fake decision reference -- the exact three gaps found. Coverage, not just implementation, needs to grow. |
+| 5.1 contract export | Built |
+| 5.2 result import | Fixed: mandatory sidecar |
+| 5.3 authority + scope + evidence | Fixed: real evidence verification, real decision resolution |
+| 5.4 integration tests | Expanded: 88 cases, including the adversarial cases the review's own findings named |
 
 Rules `EXEC-001` to `EXEC-008`, each with a `docs/rules/` page. Policy lives
 in `pmo-config/execution-contract-policy.json`.
@@ -802,11 +808,10 @@ Do not spend near-term effort on:
 
 ### Next
 
-- Resolve Milestone 5.1-5.4's REQUEST CHANGES: real evidence verification
-  for all three test-evidence adapters, a mandatory contract-digest sidecar,
-  a real `decision-log.md` resolver for human-authority claims, and the
-  adversarial tests each gap needs. Milestone 5 is not accepted until this
-  is re-reviewed and passes.
+- Independent AI Reviewer re-review of Milestone 5.1-5.4's fixes (real evidence verification,
+  mandatory contract-digest sidecar, real `decision-log.md` resolver, 88
+  adversarial tests). Milestone 5 is not accepted until the re-review passes
+  and the Human Owner accepts.
 - Milestone 6.0 research (integration shape: HYBRID) is done and under
   review; Milestone 6.1 implementation does not start until Milestone 5 is
   accepted, per Roadmap Governance.

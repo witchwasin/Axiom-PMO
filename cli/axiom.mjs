@@ -174,6 +174,12 @@ const COMMANDS = {
     usage: "axiom verify --project <path> --result <path> [--contract <path>] [--json]",
     build: (args) => buildVerify(args),
   },
+
+  run: {
+    summary: "Run a command for real and seal a verifiable runner-exit-record",
+    usage: "axiom run --project <path> --work-item <D-###> --name <test-name> --command <cmd> [--cwd <dir>]",
+    build: (args) => buildRun(args),
+  },
 };
 
 function buildValidate(args) {
@@ -335,6 +341,31 @@ function buildVerify(args) {
   if (json.present) scriptArgs.push("-Format", "Json");
   if (failOnWarning.present) scriptArgs.push("-FailOnWarning");
   return { script: "scripts/verify-execution-result.ps1", scriptArgs: [...scriptArgs, ...rest] };
+}
+
+function buildRun(args) {
+  let rest = args;
+  const project = takeOption(rest, "project");
+  rest = project.rest;
+  const workItem = takeOption(rest, "work-item");
+  rest = workItem.rest;
+  const name = takeOption(rest, "name");
+  rest = name.rest;
+  const command = takeOption(rest, "command");
+  rest = command.rest;
+  const cwd = takeOption(rest, "cwd");
+  rest = cwd.rest;
+
+  if (!project.value) return { usageError: "run requires --project <path>" };
+  if (!workItem.value) return { usageError: "run requires --work-item <D-###>" };
+  if (!name.value) return { usageError: "run requires --name <test-name>, matching a required_tests entry" };
+  if (!command.value) return { usageError: "run requires --command <cmd>" };
+  const projectPath = resolveProjectPath(project.value);
+  if (!projectPath) return { usageError: `project directory not found: ${project.value}` };
+
+  const scriptArgs = ["-ProjectPath", projectPath, "-WorkItemId", workItem.value, "-Name", name.value, "-Command", command.value];
+  if (cwd.value) scriptArgs.push("-WorkingDirectory", cwd.value);
+  return { script: "scripts/run-execution-command.ps1", scriptArgs: [...scriptArgs, ...rest] };
 }
 
 function buildInit(args) {

@@ -286,8 +286,8 @@
     },
     "EXEC-002": {
       "severity": "fail",
-      "description": "The approved execution contract is missing or invalid, or the result answers a contract version other than the approved one -- its contract_sha256 does not match the contract's digest, or the contract's bytes no longer match the digest recorded at export.",
-      "suggestion": "Verify the result against the contract it was exported from, unmodified. If the contract genuinely needs to change, re-export it (which mints a new digest) and re-run the work against the new version rather than editing an approved contract in place.",
+      "description": "The approved execution contract is missing or invalid; its digest sidecar is missing or malformed (mandatory, not best-effort); the contract's bytes no longer match the digest recorded at export; or the result answers a contract version other than the approved one.",
+      "suggestion": "Verify the result against the contract it was exported from, unmodified, with its .sha256 sidecar intact. If the contract genuinely needs to change, re-export it (which mints a new digest) and re-run the work against the new version rather than editing an approved contract in place.",
       "documentation": "docs/rules/EXEC-002.md"
     },
     "EXEC-003": {
@@ -304,8 +304,8 @@
     },
     "EXEC-005": {
       "severity": "fail",
-      "description": "A test the contract requires has no evidence entry, or its evidence is not machine-verifiable (an agent's own assertion rather than a checksummed artifact, a CI check bound to the commit SHA, or a runner-produced exit record).",
-      "suggestion": "Attach verifiable evidence for each required test: a junit-artifact with a sha256, a ci-check naming the exact commit_sha and conclusion, or a runner-exit-record. An agent stating that a test passed is a claim, not evidence.",
+      "description": "A test the contract requires has no evidence entry, or its evidence does not independently verify: a junit-artifact whose file is missing, whose hash does not match, or whose report has failures/errors; a ci-check whose conclusion cannot be queried live or is not success; a runner-exit-record with no sealed file, a broken digest, a binding to a different work item/contract, or a nonzero sealed exit code; or an agent's own unverifiable assertion.",
+      "suggestion": "Attach real evidence: a junit-artifact with a real sha256 of a real zero-failure report, a ci-check naming the exact commit_sha (its conclusion is queried live via the GitHub API, never read from the result), or a runner-exit-record produced by `axiom run` (its run_record_path, not inline command/exit_code fields). An agent stating that a test passed is a claim, not evidence.",
       "documentation": "docs/rules/EXEC-005.md"
     },
     "EXEC-006": {
@@ -316,13 +316,13 @@
     },
     "EXEC-007": {
       "severity": "fail",
-      "description": "The result carries an authority claim its actor cannot grant -- an execution agent approving its own work, an unrecognized actor type, or a human-only claim citing no decision record.",
-      "suggestion": "An execution agent may report implementation-complete and nothing more. Approvals are human authority and must cite a DEC-### that exists in decision-log.md; commit authorship alone does not prove a human actor.",
+      "description": "The result carries an authority claim its actor cannot grant -- an execution agent approving its own work, an unrecognized actor type, a human-only claim citing no decision record or one that does not resolve to a real, unique row in decision-log.md, or one that resolves but was itself added or edited within the commit range under verification.",
+      "suggestion": "An execution agent may report implementation-complete and nothing more. Approvals are human authority and must cite an existing, unambiguous DEC-### in decision-log.md that was not introduced by the same execution's own commits; commit authorship alone does not prove a human actor.",
       "documentation": "docs/rules/EXEC-007.md"
     },
     "EXEC-008": {
       "severity": "fail",
-      "description": "The result's claims cannot be reconciled with observed git state: an unresolvable base or head commit, a head that does not descend from the approved base, or a file changed in the diff that the result does not declare.",
+      "description": "The result's claims cannot be reconciled with observed git state: an unresolvable base or head commit, a head that does not descend from the approved base, a file changed in the diff that the result does not declare, or a file the result claims changed that the diff shows no evidence of.",
       "suggestion": "Report the actual base and head commits and the complete changed-file list. If a commit cannot be resolved, the checkout is likely shallow -- fetch enough history for the base commit to be present before verifying.",
       "documentation": "docs/rules/EXEC-008.md"
     },

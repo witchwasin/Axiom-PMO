@@ -12,7 +12,15 @@ Each entry in the result's `authority_claims` is checked against `pmo-config/exe
 
 1. The `actor` is a recognized type. An unknown actor is rejected, never defaulted to permitted.
 2. The `type` is one that actor `may_grant`.
-3. A `human_only` claim type cites a `decision_ref`.
+3. A `human_only` claim type cites a `decision_ref` that:
+   - is present (not empty);
+   - is shaped like `DEC-###`;
+   - resolves to **exactly one** row in the project's `decision-log.md` (zero is "not found," more than one is "ambiguous" -- neither counts);
+   - was **not itself added or edited within the commit range under verification**.
+
+The last check is what stops the obvious workaround: an agent that cannot cite a real decision simply writing one into `decision-log.md` as part of its own commits, then citing it. A row the execution's own commits could have introduced is not independent of the thing it is supposed to authorize.
+
+**This rule was corrected.** An earlier version only checked that `decision_ref` was non-empty -- `"decision_ref": "DEC-999-NOT-REAL"` passed outright, because nothing ever looked inside `decision-log.md`. A code review found this before it was accepted; `scripts/lib/execution-contract-schema.ps1`'s `Resolve-DecisionRecord` is the real resolver that replaced it.
 
 ## Why it exists
 

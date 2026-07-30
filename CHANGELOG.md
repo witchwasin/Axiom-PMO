@@ -2,26 +2,44 @@
 
 ## Unreleased
 
-### In progress — not yet accepted
+### In progress — fixed, awaiting re-review, not yet accepted
 
 - **Execution contract verification (Milestone 5).** Under active
-  development on `main`, **not accepted**. `axiom export` turns an approved
-  `DELIVERY.md` work item into an `EXECUTION-CONTRACT.json` an AI execution
-  workflow can be handed; `axiom verify` checks the returned
+  development on `main`, **not yet accepted**. `axiom export` turns an
+  approved `DELIVERY.md` work item into an `EXECUTION-CONTRACT.json` an AI
+  execution workflow can be handed; `axiom verify` checks the returned
   `EXECUTION-RESULT.json` against that contract and against observed git
-  state. Rules `EXEC-001` to `EXEC-008`; policy in
+  state; `axiom run` executes a command for real and seals a verifiable
+  runner-exit-record. Rules `EXEC-001` to `EXEC-008`; policy in
   `pmo-config/execution-contract-policy.json`; reference in
   `docs/reference/execution-contract.md`.
 
   A 2026-07-30 code review (Independent AI Reviewer) found the initial implementation checked
-  claim *shape*, not ground truth, in three places: test-evidence adapters
-  verified that fields were present rather than that the evidence was real;
-  the contract-digest sidecar was checked only when present, so deleting it
-  skipped the tamper check; and a human-authority claim's `decision_ref` was
-  checked for non-emptiness only, never resolved against `decision-log.md`.
-  Fixes are in progress. This entry will be corrected to describe what
-  actually ships once that review is resolved and the milestone is accepted
-  — see `ROADMAP.md`'s Milestone 5.1-5.4 section for current status.
+  claim *shape*, not ground truth, in three places. All three are now fixed:
+
+  - Test-evidence adapters now verify for real, not on field presence:
+    JUnit evidence is opened, its real SHA-256 checked against the claimed
+    digest, its XML parsed with DTD processing prohibited, and its
+    failures+errors summed to zero; `ci-check` evidence is queried live via
+    the GitHub API and matched by name, never trusting the result's own
+    claimed conclusion; `runner-exit-record` evidence must point at a file
+    `axiom run` actually produced by running the command as a real child
+    process, sealed with the same file+`.sha256`-sidecar digest pattern the
+    contract itself uses.
+  - The contract's digest sidecar is now mandatory -- a missing or
+    malformed sidecar fails closed (`EXEC-002`) instead of silently
+    skipping the tamper check.
+  - A human-authority claim's `decision_ref` is now resolved against a real
+    parse of `decision-log.md` -- must exist, be unique, and **not have
+    been added or edited within the commit range under verification**,
+    closing the self-forged-approval path.
+
+  Also fixed: the changed-files check now catches a result *claiming* a
+  file changed that git shows no evidence of, not only the reverse.
+
+  88 adversarial tests (up from 57) reproduce each original gap and confirm
+  the fix. Awaiting Independent AI Reviewer's re-review and Human Owner acceptance — see
+  `ROADMAP.md`'s Milestone 5.1-5.4 section for current status.
 
 ## 1.2.0 - 2026-07-30
 
