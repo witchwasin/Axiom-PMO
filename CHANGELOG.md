@@ -2,35 +2,26 @@
 
 ## Unreleased
 
-### Added
+### In progress — not yet accepted
 
-- **Execution contract verification (Milestone 5).** `axiom export` turns an
-  approved `DELIVERY.md` work item into an `EXECUTION-CONTRACT.json` an AI
-  execution workflow can be handed; `axiom verify` checks the returned
-  `EXECUTION-RESULT.json` against that contract *and* against what the
-  repository can be observed to show actually happened. Rules `EXEC-001` to
-  `EXEC-008`, each with a `docs/rules/` page; policy in
+- **Execution contract verification (Milestone 5).** Under active
+  development on `main`, **not accepted**. `axiom export` turns an approved
+  `DELIVERY.md` work item into an `EXECUTION-CONTRACT.json` an AI execution
+  workflow can be handed; `axiom verify` checks the returned
+  `EXECUTION-RESULT.json` against that contract and against observed git
+  state. Rules `EXEC-001` to `EXEC-008`; policy in
   `pmo-config/execution-contract-policy.json`; reference in
   `docs/reference/execution-contract.md`.
 
-  The governing idea: an execution result is authored by the actor being
-  verified, so it is a claim, not evidence. Changed files come from `git
-  diff`, not from the result's own list. Commits and pushes are detected from
-  history, not from the result's admission. A required test is satisfied only
-  by machine-verifiable evidence — a checksummed artifact, a CI check bound to
-  the exact commit SHA, or an exit record Axiom's own runner produced — never
-  by the agent asserting that a test passed. Approval is modelled as a typed
-  authority claim so a validator can reject it on the strength of *who is
-  claiming*, which is what blocks an agent approving its own work.
-
-  Contracts are pinned by a digest of their exact bytes, written at export
-  time, so widening `allowed_paths` or `git_authority` in an already-approved
-  contract is reported rather than silently honoured.
-
-  Stated limits, in the docs rather than left to be discovered: this does not
-  prove the absence of git side effects outside the available repository
-  context, and an actor that rewrites contract, sidecar, and result
-  consistently defeats the digest check — only git history shows that.
+  A 2026-07-30 code review (Sol) found the initial implementation checked
+  claim *shape*, not ground truth, in three places: test-evidence adapters
+  verified that fields were present rather than that the evidence was real;
+  the contract-digest sidecar was checked only when present, so deleting it
+  skipped the tamper check; and a human-authority claim's `decision_ref` was
+  checked for non-emptiness only, never resolved against `decision-log.md`.
+  Fixes are in progress. This entry will be corrected to describe what
+  actually ships once that review is resolved and the milestone is accepted
+  — see `ROADMAP.md`'s Milestone 5.1-5.4 section for current status.
 
 ## 1.2.0 - 2026-07-30
 

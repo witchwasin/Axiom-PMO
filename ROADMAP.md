@@ -71,7 +71,7 @@ Recommended effort allocation:
 | Milestone 3.5 - Runtime Portability | Accepted | CI threshold met; branch protection deferred by human decision |
 | Milestone 4 - GitHub Action | Delivered | Merged to `main` at `31d1e25`; child issues #12-#17 closed |
 | Milestone 4.5 - SCOPE-DIFF | Delivered | Human Owner accepted 2026-07-30 after two independent AI review rounds; merged to `main` at `6b42643` |
-| Milestone 5 - Execution Contract Verification MVP | Delivered (5.0 decided GO WITH REFRAME; 5.1-5.4 built and tested) | `docs/reference/execution-contract.md`; decision `DEC-002` |
+| Milestone 5 - Execution Contract Verification MVP | 5.0 decided (GO WITH REFRAME); 5.1-5.4 **REQUEST CHANGES** from Sol review 2026-07-30 -- not accepted | `docs/reference/execution-contract.md`; decision `DEC-002`; review findings tracked below |
 | Milestone 6 - Claude Code Integration Experience | Planned | Requires separate approval after Milestone 5 |
 
 ## Roadmap Governance
@@ -663,16 +663,46 @@ enough that a second integration could reuse it later without a rewrite.
 
 ### Milestone 5.1 - 5.4
 
-Status: **delivered 2026-07-30**, against the "GO WITH REFRAME" design in
-`docs/architecture/execution-contract-verification.md` §4. User-facing
-reference: [`docs/reference/execution-contract.md`](docs/reference/execution-contract.md).
+Status: **REQUEST CHANGES from Sol's implementation review, 2026-07-30 --
+not accepted, not delivered.** Built against the "GO WITH REFRAME" design in
+`docs/architecture/execution-contract-verification.md` §4; CI was green on
+all 6 jobs, but a code-level review against the real `main` checkout found
+1 FATAL and 2 MAJOR gaps between what the design and docs claimed and what
+the implementation actually checked. User-facing reference:
+[`docs/reference/execution-contract.md`](docs/reference/execution-contract.md)
+(also under revision -- see below).
 
-| Phase | Delivered |
+**FATAL, confirmed:** the three "machine-verifiable" test-evidence adapters
+only checked that an evidence entry's *fields were present*, never that a
+JUnit file exists and hashes to its claimed digest, that a CI check's
+conclusion was independently queried, or that a `runner-exit-record` was
+produced by anything other than the agent's own assertion. `Resolve-TestEvidenceEntries`
+had no `Get-FileHash`, XML parse, or API call anywhere in it. An agent could
+satisfy a required test by filling in plausible-looking fields for evidence
+that never existed.
+
+**MAJOR, confirmed:** the contract digest sidecar (`EXECUTION-CONTRACT.json.sha256`)
+was checked only `if (Test-Path $sidecarPath)` -- deleting it skipped the
+tamper check entirely rather than failing closed. And `EXEC-007`'s
+human-authority check verified only that a `decision_ref` was non-empty,
+never that the cited `DEC-###` actually exists in `decision-log.md` --
+`"decision_ref": "DEC-999-NOT-REAL"` passed.
+
+**MINOR, confirmed:** the changed-files check only caught a git-observed
+file the result failed to declare, not a file the result *claimed* changed
+that git does not show.
+
+Full findings, fixes, and re-verification tracked as this status updates.
+Do not treat any Milestone 5 capability described elsewhere in this document
+as shipped until this section says REQUEST CHANGES resolved and Human Owner
+accepted.
+
+| Phase | Status |
 |---|---|
-| 5.1 contract export | `axiom export --project <p> --work-item D-### [--grant commit,push]` -> `.execution/D-###/EXECUTION-CONTRACT.json` plus a `.sha256` digest sidecar. Contract fields are derived from the approved `DELIVERY.md` row and `SCOPE.json`; a project without an approved scope cannot be exported from. |
-| 5.2 result import | `axiom verify --project <p> --result <path>`: schema validation, contract-digest immutability (three-way agreement between the contract's live hash, the sidecar, and the result's `contract_sha256`), work-item/base/requirement matching with asymmetric requirement drift. |
-| 5.3 authority + scope + evidence | Git ground-truth adapter (ancestry, commit range, remote containment as a tri-state), allowed-path validation reusing M4.5's glob engine and case-sensitivity, three machine-verifiable test-evidence adapters, typed authority-claim records blocking agent self-approval. |
-| 5.4 integration tests | `tests/helpers/execution-contract-tests.ps1`, 57 cases against disposable real-git fixtures, wired into `run-all-checks.ps1`. Written adversarially: tampered contracts, orphan-branch ancestry, undeclared changes, hollow evidence, self-approval, unknown actors. |
+| 5.1 contract export | Built; not independently re-reviewed after 5.2/5.3 fixes land |
+| 5.2 result import | Contract-digest check was bypassable via sidecar deletion -- fix required before acceptance |
+| 5.3 authority + scope + evidence | Test-evidence adapters and human-authority claims were checking claim shape, not ground truth -- fix required before acceptance |
+| 5.4 integration tests | 57 cases existed but had no adversarial case for a fabricated-but-well-formed evidence entry, a deleted sidecar, or a fake decision reference -- the exact three gaps found. Coverage, not just implementation, needs to grow. |
 
 Rules `EXEC-001` to `EXEC-008`, each with a `docs/rules/` page. Policy lives
 in `pmo-config/execution-contract-policy.json`.
@@ -763,11 +793,6 @@ Do not spend near-term effort on:
   `v1.2.0`.
 - Milestone 5.0 research and go/no-go decision (GO WITH REFRAME), recorded
   2026-07-30.
-- Milestone 5.1-5.4 Execution Contract Verification MVP: `axiom export` /
-  `axiom verify`, rules `EXEC-001` to `EXEC-008`, contract-digest
-  immutability, git ground-truth validation, three machine-verifiable
-  test-evidence adapters, typed authority claims, and 57 adversarial
-  integration tests.
 
 ### Deferred trust evidence
 
@@ -777,8 +802,14 @@ Do not spend near-term effort on:
 
 ### Next
 
-- Milestone 6 prototyping (copyable integration block, skill pack, command
-  set, plugin, MCP command, or hook -- shape not yet decided).
+- Resolve Milestone 5.1-5.4's REQUEST CHANGES: real evidence verification
+  for all three test-evidence adapters, a mandatory contract-digest sidecar,
+  a real `decision-log.md` resolver for human-authority claims, and the
+  adversarial tests each gap needs. Milestone 5 is not accepted until this
+  is re-reviewed and passes.
+- Milestone 6.0 research (integration shape: HYBRID) is done and under
+  review; Milestone 6.1 implementation does not start until Milestone 5 is
+  accepted, per Roadmap Governance.
 - External-user validation of the v1.2.0 GitHub Action and SCOPE-DIFF. This
   needs the Human Owner personally and cannot be delegated; it is the main
   source of independent signal about whether the shipped features are usable
@@ -786,8 +817,8 @@ Do not spend near-term effort on:
 
 ### Blocked
 
-- Claude Code integration implementation (Milestone 6), until separately
-  approved after Milestone 5.
+- Claude Code integration implementation (Milestone 6.1+), until Milestone
+  5 is accepted and Milestone 6 is separately approved.
 
 ## Success Signals
 
