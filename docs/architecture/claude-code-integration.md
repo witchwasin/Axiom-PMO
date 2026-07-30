@@ -99,6 +99,34 @@ UX and whether it requires a marketplace or accepts a direct repository
 reference. Milestone 6.1 must confirm these against the current Claude Code
 release before depending on any of them.
 
+Also not verified, specifically about running *this* framework's own
+multi-file PowerShell validator from inside a plugin -- `${CLAUDE_PLUGIN_ROOT}`
+being available to a hook script (confirmed above) is a narrower fact than "a
+skill can invoke an executable at that path and have it work end-to-end under
+the current permission model." Before §8's directory move happens for real,
+Milestone 6.1 needs a spike proving:
+
+- a skill can actually invoke an executable at `${CLAUDE_PLUGIN_ROOT}` under
+  the current Claude Code permission model;
+- PowerShell host resolution (`scripts/lib/pwsh-host.ps1`'s
+  `AXIOM_PWSH`/current-host/PATH fallback chain) still works when invoked
+  from a plugin's install location, which is not necessarily a plain git
+  checkout;
+- relative paths and `. (Join-Path $PSScriptRoot ...)` dot-sourcing survive
+  that location;
+- `$FrameworkRoot` (framework config) and `$ProjectPath`/`$GitRepoRoot` (the
+  user's own repo) stay correctly distinguished, the same distinction M4's
+  GitHub Action already has to make between `github.action_path` and
+  `GITHUB_WORKSPACE`;
+- a plugin update does not silently drift a pinned version out from under a
+  project mid-work;
+- Windows path quoting behaves the same as it does today;
+- `templates/` is readable from a plugin install without needing to be
+  writable there.
+
+This spike is Milestone 6.1's first deliverable, not an assumption 6.1 starts
+from.
+
 ## 3. The thing being distributed is not one thing
 
 This is the finding that decides the milestone. "Install Axiom-PMO" is
@@ -145,11 +173,13 @@ namespaced, report conflicts, support uninstall) were written for.
 |---|---|
 | **Plugin** | **Adopt** for items 1–4. Native distribution, installs and uninstalls without touching a single file in the user's repository, versioned independently, and the reference implementation proves it carries both skills and executable content. |
 | **Claude skill pack** | Not a separate option — the skill pack *is* the plugin's `skills/` directory, and it already exists in conforming shape (§2.2). |
-| **Copyable integration block** | **Adopt** for item 5, as the honest minimum. A short, namespaced block the user pastes (or a command appends) into `CLAUDE.md`/`AGENTS.md`. Zero-risk, works for every harness, and is the fallback when any automation is declined. |
+| **Copyable integration block** | **Adopt** for item 5, as the honest minimum. A short, namespaced block the user pastes (or a command appends) into the repository-level `AGENTS.md` (the intended cross-agent governance source), which harness-specific files such as `CLAUDE.md` may reference or supplement. Zero-risk and is the fallback when any automation is declined -- but see the caveat below before calling it universal. |
 | **`axiom setup claude` installer** | **Adopt narrowly**, and only as a convenience wrapper around the copyable block plus `axiom init`. Its blast radius shrinks to one appended section once items 1–4 live in the plugin — which is the whole reason to sequence it this way rather than build a big installer first. |
 | **Hook** | **Defer to a separate, opt-in milestone.** Genuinely new capability, not packaging (§6), and the riskiest thing on the list. |
 | **Command set** | **Defer, unverified.** The reference plugin ships none, and plugin `commands/` support was not confirmed (§2.3). Revisit in 6.1 once verified. |
-| **MCP command** | **Reject for now.** An MCP server is a running process wrapping a validator the CLI and GitHub Action already expose. It adds a delivery mechanism, not a capability, and `docs/architecture/control-plane.md` already warns against surface area without a proven need. |
+| **MCP command** | **Deferred -- no proven need for the M6 MVP**, not rejected outright. An MCP server today would be a running process wrapping a validator the CLI and GitHub Action already expose, which is a delivery mechanism, not a capability, and `docs/architecture/control-plane.md` already warns against surface area without a proven need. That could change: a structured diagnostics resource, a safe read-only contract lookup, or an exact schema-driven tool call could plausibly reduce prompt-parsing surface later. Revisit if a concrete need appears; do not treat this line as closing the door permanently. |
+
+**Caveat on "works for every harness":** a file's mere presence in a repository does not prove every harness reads and obeys it -- `AGENTS.md` is written to be the shared cross-agent source, but each harness's own discovery and precedence rules (which files it looks for, in what order, how it merges them with a harness-specific file) are a separate, unverified question per harness. Compatibility with each one must be checked directly, not inferred from the file existing. This is exactly the kind of claim §2.3 already disciplines itself to separate from verified fact; the table entry above should be read with the same discipline.
 
 ## 6. The hook, considered separately
 
@@ -205,25 +235,33 @@ Rationale, in the order that decided it:
 
 ## 8. What Milestone 6.1+ would build
 
-Not authorized by this document; recorded so the scope is visible before anyone
-approves it.
+Not authorized by this document; recorded so the scope is visible before
+anyone approves it. Sequenced as separately acceptable steps rather than one
+milestone, so a spike finding (§2.3) can change later steps without having
+already built on top of a wrong assumption:
 
-1. **Verify the unknowns in §2.3** against the current Claude Code release
-   before building on them.
-2. **Plugin packaging**: `.claude-plugin/plugin.json`, `marketplace.json`, and
-   whatever restructuring lets the plugin root carry `skills/` — decided
-   against the constraint that this repository's own CI, tests, and layout keep
-   working unchanged.
-3. **The namespaced repo block**: fenced Axiom-PMO markers, idempotent append,
-   backup before touching an existing file, conflict report, uninstall that
-   removes exactly what was added and nothing else.
-4. **`axiom setup claude`**: convenience wrapper over 2 and 3, with a
-   `--dry-run` that prints what it would do and changes nothing, and refusal to
-   proceed on an unclean working tree.
-5. **A clean-room test**: install into a repository that already has its own
-   `CLAUDE.md`, its own skills, and Superpowers installed, and prove nothing of
-   theirs was lost. This is the milestone's definition of done and it cannot be
-   satisfied by unit tests.
+1. **Plugin packaging** (M6.1): the §2.3 spike first, then, only once it
+   passes, `.claude-plugin/plugin.json`, `marketplace.json`, and whatever
+   restructuring lets the plugin root carry `skills/` — decided against the
+   constraint that this repository's own CI, tests, and layout keep working
+   unchanged.
+2. **Namespaced repo integration** (M6.2): the copyable `AGENTS.md` block --
+   fenced Axiom-PMO markers, idempotent append, backup before touching an
+   existing file, conflict report.
+3. **Setup/uninstall safety** (M6.3): `axiom setup claude` as a convenience
+   wrapper over 1 and 2, with a `--dry-run` that prints what it would do and
+   changes nothing, refusal to proceed on an unclean working tree, and
+   uninstall that removes exactly what was added and nothing else.
+4. **Clean-room compatibility** (M6.4): install into a repository that
+   already has its own `CLAUDE.md`, its own skills, and Superpowers
+   installed, and prove nothing of theirs was lost. This is the packaging
+   work's definition of done and it cannot be satisfied by unit tests.
+5. **Human acceptance of the integration MVP**, then, only after that:
+6. **Optional preventive hook pilot** (M6.5): the §6 hook, opt-in and
+   report-only by default like SCOPE-DIFF and the GitHub Action, with its
+   own separate acceptance and a transparent bypass/disable path. Not
+   bundled into 1–4 -- it is new capability, not packaging, and ships only
+   once the packaging MVP itself is accepted.
 
 ## 9. What this does not change
 
