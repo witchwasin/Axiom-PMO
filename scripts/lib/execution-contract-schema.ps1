@@ -179,11 +179,23 @@ function Read-ExecutionResult {
   return $result
 }
 
-# Normalizes `test_evidence` entries into a uniform shape with an explicit
-# verifiable/not-verifiable verdict taken from policy, so the validator never
-# has to special-case adapter types inline.
+# Normalizes `test_evidence` entries into a uniform shape: which adapter type
+# it claims to be, whether policy knows that type, and whether the fields the
+# adapter requires are even present. Deliberately does NOT decide whether the
+# evidence actually verifies -- that requires opening files, hashing bytes,
+# parsing XML, and querying a live API, none of which belong in a "pure bytes
+# to structure" schema file (see this file's own header comment). Real
+# verification is scripts/lib/execution-contract-evidence.ps1's
+# Test-EvidenceEntryVerified, called once per entry by the validator.
 #
-# An unknown adapter type is treated as NOT verifiable rather than rejected
+# This function's job is narrower than its previous version's: it used to
+# also set a `Verifiable` flag straight from `policy.test_evidence_adapters[].verifiable`,
+# which is exactly the FATAL gap Sol's review found -- that flag meant "this
+# adapter type is capable of being verified," not "this entry was verified,"
+# and the validator was trusting it as the latter. Renamed to `FieldsPresent`
+# so a future reader cannot make the same mistake by reading the field name.
+#
+# An unknown adapter type is treated as unverifiable rather than rejected
 # outright: a future adapter appearing in a result produced by a newer
 # toolchain should degrade to "this does not satisfy a required test," which is
 # safe, instead of failing the whole run, which would make adding an adapter a
@@ -201,10 +213,8 @@ function Resolve-TestEvidenceEntries {
       if ([string]$candidate.type -eq $type) { $adapter = $candidate; break }
     }
 
-    $verifiable = $false
     $missingFields = @()
     if ($adapter) {
-      $verifiable = [bool]$adapter.verifiable
       foreach ($required in @($adapter.requires)) {
         $prop = $item.PSObject.Properties[[string]$required]
         if ((-not $prop) -or [string]::IsNullOrWhiteSpace([string]$prop.Value)) {
@@ -213,20 +223,92 @@ function Resolve-TestEvidenceEntries {
       }
     }
 
-    # A verifiable adapter that is missing the fields making it verifiable is
-    # not verifiable. Otherwise `{"type": "ci-check"}` with nothing else would
-    # satisfy a required test by naming an adapter rather than by carrying
-    # evidence.
-    if ($missingFields.Count -gt 0) { $verifiable = $false }
-
     $entries.Add([pscustomobject]@{
       Type = $type
       Name = [string]$item.name
       Known = ($null -ne $adapter)
-      Verifiable = $verifiable
+      FieldsPresent = ($adapter -and $missingFields.Count -eq 0)
       MissingFields = $missingFields
       Raw = $item
     }) | Out-Null
   }
   return $entries
+}
+
+# --- decision-record resolution (M5, MAJOR fix) ------------------------------
+#
+# A human-only authority claim citing a decision_ref used to be accepted the
+# moment the field was non-empty -- "DEC-999-NOT-REAL" passed. Resolving it
+# for real means answering three separate questions, and the answer to each
+# has to be a hard no, not a best-effort maybe:
+#
+#   1. Is the reference even shaped like a decision id?
+#   2. Does exactly one row with that id exist in the project's
+#      decision-log.md? (Zero is not found; more than one is ambiguous, and
+#      an ambiguous citation is not a resolved one.)
+#   3. Requires the caller separately check whether decision-log.md itself
+#      was among the files changed in the execution range under
+#      verification -- a decision the same commits could have introduced
+#      cannot serve as independent human authority for those commits. That
+#      check needs the git observation and lives in the validator, not here.
+#
+# Depends on markdown-table-parser.ps1 (Get-TableRowsAfterHeading) and
+# markdown-files.ps1 (Read-MarkdownText) -- callers must dot-source both.
+
+function Read-DecisionLog {
+  param([Parameter(Mandatory = $true)][string]$ProjectPath)
+
+  $path = Join-Path $ProjectPath "decision-log.md"
+  if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+    return [pscustomobject]@{ Present = $false; Rows = @(); Path = $path }
+  }
+
+  $text = Read-MarkdownText -Path $path -Raw
+  # Matches both the framework-level heading ("# Decision Log - Axiom-PMO
+  # (framework-level)") and the project template's ("# Decision Log -
+  # <PROJECT-CODE>") -- the table always follows the document's single H1,
+  # never a nested "## " section, so anchoring on "# Decision Log" is the
+  # stable part of both.
+  $rows = Get-TableRowsAfterHeading -Text $text -HeadingPattern '(?m)^#\s+Decision Log'
+  return [pscustomobject]@{ Present = $true; Rows = $rows; Path = $path }
+}
+
+function Resolve-DecisionRecord {
+  param(
+    [Parameter(Mandatory = $true)][string]$ProjectPath,
+    [string]$DecisionRef
+  )
+
+  $result = [pscustomobject]@{ Found = $false; Row = $null; Reason = $null; LogPath = $null }
+
+  $trimmed = "$DecisionRef".Trim()
+  if ([string]::IsNullOrWhiteSpace($trimmed)) {
+    $result.Reason = "empty"
+    return $result
+  }
+  if ($trimmed -notmatch '^DEC-\d+$') {
+    $result.Reason = "'$trimmed' is not a well-formed DEC-### id"
+    return $result
+  }
+
+  $log = Read-DecisionLog -ProjectPath $ProjectPath
+  $result.LogPath = $log.Path
+  if (-not $log.Present) {
+    $result.Reason = "no decision-log.md exists in this project"
+    return $result
+  }
+
+  $matches = @($log.Rows | Where-Object { ([string]$_.'Decision ID').Trim() -eq $trimmed })
+  if ($matches.Count -eq 0) {
+    $result.Reason = "'$trimmed' does not appear in decision-log.md"
+    return $result
+  }
+  if ($matches.Count -gt 1) {
+    $result.Reason = "'$trimmed' appears $($matches.Count) times in decision-log.md, which is ambiguous"
+    return $result
+  }
+
+  $result.Found = $true
+  $result.Row = $matches[0]
+  return $result
 }

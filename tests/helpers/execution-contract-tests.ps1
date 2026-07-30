@@ -173,12 +173,36 @@ function Get-ContractDigest {
   return (Get-Content -LiteralPath (Join-Path $Dir ".execution/D-001/EXECUTION-CONTRACT.json.sha256") -Raw).Trim()
 }
 
+$runExecutionScript = Join-Path $repo "scripts/run-execution-command.ps1"
+
+# Produces a REAL sealed runner-exit-record by actually invoking
+# scripts/run-execution-command.ps1 -- not a hand-typed claim shape. This is
+# deliberate: the FATAL finding this file's tests exist to guard against was
+# exactly a hand-typed evidence entry with plausible fields passing as
+# verified. Using the real runner for every case's default evidence, rather
+# than a fixture shortcut, means the "clean" case actually exercises
+# Test-RunnerExitEvidence's real path -- containment, digest recomputation,
+# work-item/contract binding, exit code -- instead of assuming it works.
+function New-RealRunRecord {
+  param([string]$Dir)
+  $previous = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+  $output = & $pwshExe -NoProfile -ExecutionPolicy Bypass -File $runExecutionScript `
+    -ProjectPath $Dir -WorkItemId "D-001" -Name "unit tests" -Command "echo ok" 2>&1
+  $ErrorActionPreference = $previous
+  $runsDir = Join-Path $Dir ".execution/D-001/runs"
+  $recordFile = @(Get-ChildItem -LiteralPath $runsDir -Filter "*.json" -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -notmatch '\.sha256$' })[0]
+  if (-not $recordFile) { throw "New-RealRunRecord: no run record produced. Runner output: $($output | Out-String)" }
+  return ".execution/D-001/runs/$($recordFile.Name)"
+}
+
 function New-Result {
   param([string]$Dir, [hashtable]$Overrides = @{})
 
   $digest = Get-ContractDigest -Dir $Dir
   $contract = Get-Content -LiteralPath (Join-Path $Dir ".execution/D-001/EXECUTION-CONTRACT.json") -Raw | ConvertFrom-Json
   $head = Get-FixtureGit $Dir rev-parse HEAD
+  $relRunRecordPath = New-RealRunRecord -Dir $Dir
 
   $doc = [ordered]@{
     contract_version = "1.0"
@@ -189,7 +213,7 @@ function New-Result {
     execution_status = "completed"
     changed_files = @()
     test_evidence = @(
-      [ordered]@{ type = "runner-exit-record"; name = "unit tests"; command = "npm test"; exit_code = 0; recorded_by = "axiom-runner" }
+      [ordered]@{ type = "runner-exit-record"; name = "unit tests"; run_record_path = $relRunRecordPath }
     )
   }
   foreach ($key in $Overrides.Keys) { $doc[$key] = $Overrides[$key] }
@@ -716,6 +740,478 @@ Write-Host ""
     Assert-True "diagnostics: FAIL rows carry a documentation url" (-not [string]::IsNullOrWhiteSpace([string]$row.documentation_url))
     Assert-True "diagnostics: summary counters agree with the results array" `
       ($r.Json.summary.fail -eq @($r.Json.results | Where-Object { $_.level -eq "FAIL" }).Count)
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# =============================================================================
+# Sol's 2026-07-30 code review found the tests above proved the shape of
+# verification worked without proving the checks were real: every case's
+# default evidence had all the right fields, and none of them tried
+# fabricating an artifact that merely *looked* like evidence. These cases are
+# the direct response -- 1 FATAL and 2 MAJOR findings, each reproduced first,
+# then confirmed fixed.
+# =============================================================================
+
+function Get-BaseResultFields {
+  param([string]$Dir)
+  return [pscustomobject]@{
+    Digest = (Get-ContractDigest -Dir $Dir)
+    Contract = (Get-Content -LiteralPath (Join-Path $Dir ".execution/D-001/EXECUTION-CONTRACT.json") -Raw | ConvertFrom-Json)
+    Head = (Get-FixtureGit $Dir rev-parse HEAD).Trim()
+  }
+}
+
+function Write-ResultDoc {
+  param([string]$Dir, [System.Collections.Specialized.OrderedDictionary]$Doc)
+  $path = Join-Path $Dir ".execution/D-001/EXECUTION-RESULT.json"
+  Set-Content -LiteralPath $path -Value ($Doc | ConvertTo-Json -Depth 12) -NoNewline
+  return $path
+}
+
+# ---- FATAL fix: junit-artifact must be real, not just present-fielded ------
+
+# ---- Case: junit-artifact with a fabricated sha256 -> EXEC-005 ------------
+{
+  $dir = New-ExecFixture
+  try {
+    Write-ExecFile $dir "reports/junit.xml" '<testsuite name="s" tests="1" failures="0" errors="0"><testcase name="a"/></testsuite>'
+    & git -C $dir add -A 2>$null | Out-Null; & git -C $dir commit -q -m junit 2>$null | Out-Null
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $f = Get-BaseResultFields -Dir $dir
+    $doc = [ordered]@{
+      contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
+      changed_files = @()
+      test_evidence = @([ordered]@{ type = "junit-artifact"; name = "unit tests"; path = "reports/junit.xml"; sha256 = ("0" * 64) })
+    }
+    Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "junit fabricated hash: EXEC-005 raised" ((Get-Rules $r.Json) -contains "EXEC-005")
+    Assert-True "junit fabricated hash: reason names the real vs. claimed mismatch" `
+      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-005" })[0]).message -match "does not match the claimed")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: junit-artifact naming a file that does not exist -> EXEC-005 ---
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $f = Get-BaseResultFields -Dir $dir
+    $doc = [ordered]@{
+      contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
+      changed_files = @()
+      test_evidence = @([ordered]@{ type = "junit-artifact"; name = "unit tests"; path = "reports/does-not-exist.xml"; sha256 = ("a" * 64) })
+    }
+    Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "junit missing file: EXEC-005 raised" ((Get-Rules $r.Json) -contains "EXEC-005")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: junit-artifact path traversal -> EXEC-005, never opened outside project
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $f = Get-BaseResultFields -Dir $dir
+    $doc = [ordered]@{
+      contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
+      changed_files = @()
+      test_evidence = @([ordered]@{ type = "junit-artifact"; name = "unit tests"; path = "../../../../etc/passwd"; sha256 = ("a" * 64) })
+    }
+    Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "junit path traversal: EXEC-005 raised" ((Get-Rules $r.Json) -contains "EXEC-005")
+    Assert-True "junit path traversal: reported as a containment breach, not silently resolved" `
+      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-005" })[0]).message -match "containment breach")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: junit-artifact with real hash but failures>0 -> EXEC-005 -------
+{
+  $dir = New-ExecFixture
+  try {
+    Write-ExecFile $dir "reports/junit.xml" '<testsuite name="s" tests="2" failures="1" errors="0"><testcase name="a"/><testcase name="b"><failure/></testcase></testsuite>'
+    & git -C $dir add -A 2>$null | Out-Null; & git -C $dir commit -q -m junit 2>$null | Out-Null
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $f = Get-BaseResultFields -Dir $dir
+    $realHash = (Get-FileHash -LiteralPath (Join-Path $dir "reports/junit.xml") -Algorithm SHA256).Hash.ToLowerInvariant()
+    $doc = [ordered]@{
+      contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
+      changed_files = @()
+      test_evidence = @([ordered]@{ type = "junit-artifact"; name = "unit tests"; path = "reports/junit.xml"; sha256 = $realHash })
+    }
+    Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "junit real failures: EXEC-005 raised even with a correct hash" ((Get-Rules $r.Json) -contains "EXEC-005")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: junit-artifact real path, real hash, zero failures -> passes ---
+{
+  $dir = New-ExecFixture
+  try {
+    Write-ExecFile $dir "reports/junit.xml" '<testsuite name="s" tests="3" failures="0" errors="0"><testcase name="a"/><testcase name="b"/><testcase name="c"/></testsuite>'
+    & git -C $dir add -A 2>$null | Out-Null; & git -C $dir commit -q -m junit 2>$null | Out-Null
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $f = Get-BaseResultFields -Dir $dir
+    $realHash = (Get-FileHash -LiteralPath (Join-Path $dir "reports/junit.xml") -Algorithm SHA256).Hash.ToLowerInvariant()
+    $doc = [ordered]@{
+      contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
+      changed_files = @()
+      test_evidence = @([ordered]@{ type = "junit-artifact"; name = "unit tests"; path = "reports/junit.xml"; sha256 = $realHash })
+    }
+    Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "junit real pass: verdict pass" ($r.Json.execution_verification.verdict -eq "pass") `
+      ("fails=" + ((Get-Rules $r.Json) -join ","))
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- FATAL fix: runner-exit-record must be a real sealed record -----------
+
+# ---- Case: hand-typed runner-exit-record with no sidecar -> EXEC-005 ------
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $f = Get-BaseResultFields -Dir $dir
+    $fakeRecordDir = Join-Path $dir ".execution/D-001/runs"
+    New-Item -ItemType Directory -Path $fakeRecordDir -Force | Out-Null
+    $fakeRecord = [ordered]@{
+      run_id = "fake"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      command = "npm test"; cwd = "."; exit_code = 0
+      started_at = "x"; ended_at = "x"; stdout_sha256 = "x"; sealed_by = "axiom-runner"
+    }
+    Set-Content -LiteralPath (Join-Path $fakeRecordDir "fake.json") -Value ($fakeRecord | ConvertTo-Json) -NoNewline
+    # Deliberately no fake.json.sha256 sidecar -- this is exactly the "agent
+    # hand-types a plausible JSON object" attack the FATAL finding described.
+    $doc = [ordered]@{
+      contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
+      changed_files = @()
+      test_evidence = @([ordered]@{ type = "runner-exit-record"; name = "unit tests"; run_record_path = ".execution/D-001/runs/fake.json" })
+    }
+    Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "hand-typed run record: EXEC-005 raised (no sidecar = unsealed)" ((Get-Rules $r.Json) -contains "EXEC-005")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: run record edited after sealing (sidecar now stale) -> EXEC-005
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $relRunRecordPath = New-RealRunRecord -Dir $dir
+    $recordFull = Join-Path $dir $relRunRecordPath
+    $record = Get-Content -LiteralPath $recordFull -Raw | ConvertFrom-Json
+    $record.exit_code = 1
+    Set-Content -LiteralPath $recordFull -Value ($record | ConvertTo-Json) -NoNewline
+    # Sidecar left untouched -- it still reflects the pre-edit bytes.
+
+    $f = Get-BaseResultFields -Dir $dir
+    $doc = [ordered]@{
+      contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
+      changed_files = @()
+      test_evidence = @([ordered]@{ type = "runner-exit-record"; name = "unit tests"; run_record_path = $relRunRecordPath })
+    }
+    Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "tampered run record: EXEC-005 raised (digest no longer matches)" ((Get-Rules $r.Json) -contains "EXEC-005")
+    Assert-True "tampered run record: reason names the mismatch" `
+      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-005" })[0]).message -match "modified after")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: real sealed record, but bound to a different work item ---------
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $relRunRecordPath = New-RealRunRecord -Dir $dir
+    $recordFull = Join-Path $dir $relRunRecordPath
+    # Re-seal with a different work_item_id, the same way run-execution-command.ps1
+    # would if invoked for other work -- proves the binding check, not just presence.
+    $record = Get-Content -LiteralPath $recordFull -Raw | ConvertFrom-Json
+    $record.work_item_id = "D-999"
+    Set-Content -LiteralPath $recordFull -Value ($record | ConvertTo-Json) -NoNewline
+    $newDigest = (Get-FileHash -LiteralPath $recordFull -Algorithm SHA256).Hash.ToLowerInvariant()
+    Set-Content -LiteralPath "$recordFull.sha256" -Value ($newDigest + "`n") -NoNewline
+
+    $f = Get-BaseResultFields -Dir $dir
+    $doc = [ordered]@{
+      contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
+      changed_files = @()
+      test_evidence = @([ordered]@{ type = "runner-exit-record"; name = "unit tests"; run_record_path = $relRunRecordPath })
+    }
+    Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "run record for wrong work item: EXEC-005 raised" ((Get-Rules $r.Json) -contains "EXEC-005")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: real sealed record with a real nonzero exit code -> EXEC-005 ---
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $previous = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+    & $pwshExe -NoProfile -ExecutionPolicy Bypass -File $runExecutionScript `
+      -ProjectPath $dir -WorkItemId "D-001" -Name "unit tests" -Command "exit 1" 2>&1 | Out-Null
+    $ErrorActionPreference = $previous
+    $recordFile = @(Get-ChildItem -LiteralPath (Join-Path $dir ".execution/D-001/runs") -Filter "*.json" |
+      Where-Object { $_.Name -notmatch '\.sha256$' })[0]
+    $relRunRecordPath = ".execution/D-001/runs/$($recordFile.Name)"
+
+    $f = Get-BaseResultFields -Dir $dir
+    $doc = [ordered]@{
+      contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
+      changed_files = @()
+      test_evidence = @([ordered]@{ type = "runner-exit-record"; name = "unit tests"; run_record_path = $relRunRecordPath })
+    }
+    Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "real failing command: EXEC-005 raised (sealed exit code was 1)" ((Get-Rules $r.Json) -contains "EXEC-005")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- FATAL fix: ci-check must query live, never trust the result's claim --
+
+# ---- Case: ci-check with no resolvable GitHub remote -> unverified --------
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $f = Get-BaseResultFields -Dir $dir
+    $doc = [ordered]@{
+      contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
+      changed_files = @()
+      # A disposable fixture repo has no "origin" remote at all -- this is the
+      # deterministic, offline-testable half of Test-CiCheckEvidence; a live
+      # GitHub-API-verified positive case is out of scope for this offline suite.
+      test_evidence = @([ordered]@{ type = "ci-check"; name = "unit tests"; commit_sha = $f.Head; conclusion = "success" })
+    }
+    Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "ci-check no remote: EXEC-005 raised, never a silent pass on the claimed conclusion" `
+      ((Get-Rules $r.Json) -contains "EXEC-005")
+    Assert-True "ci-check no remote: the result's own claimed conclusion is never read as authoritative" `
+      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-005" })[0]).message -notmatch "success.*success")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- MAJOR fix: contract digest sidecar is mandatory, not best-effort -----
+
+# ---- Case: sidecar deleted after export -> EXEC-002, not a silent pass ----
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir | Out-Null
+    Remove-Item -LiteralPath (Join-Path $dir ".execution/D-001/EXECUTION-CONTRACT.json.sha256") -Force
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "deleted sidecar: EXEC-002 raised" ((Get-Rules $r.Json) -contains "EXEC-002")
+    Assert-True "deleted sidecar: verdict names the missing digest, not a pass" `
+      ($r.Json.execution_verification.verdict -eq "contract_digest_missing")
+    Assert-True "deleted sidecar: exit code is non-zero" ($r.ExitCode -ne 0)
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: sidecar present but empty -> EXEC-002 --------------------------
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir | Out-Null
+    Set-Content -LiteralPath (Join-Path $dir ".execution/D-001/EXECUTION-CONTRACT.json.sha256") -Value "" -NoNewline
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "empty sidecar: EXEC-002 raised" ((Get-Rules $r.Json) -contains "EXEC-002")
+    Assert-True "empty sidecar: verdict names malformed, not tampered or missing" `
+      ($r.Json.execution_verification.verdict -eq "contract_digest_malformed")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: sidecar present but not a well-formed digest -> EXEC-002 -------
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir | Out-Null
+    Set-Content -LiteralPath (Join-Path $dir ".execution/D-001/EXECUTION-CONTRACT.json.sha256") -Value "not-a-digest" -NoNewline
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "malformed sidecar: EXEC-002 raised" ((Get-Rules $r.Json) -contains "EXEC-002")
+    Assert-True "malformed sidecar: verdict is contract_digest_malformed" `
+      ($r.Json.execution_verification.verdict -eq "contract_digest_malformed")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: sidecar digest in uppercase / with surrounding whitespace still matches
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir | Out-Null
+    $digest = Get-ContractDigest -Dir $dir
+    Set-Content -LiteralPath (Join-Path $dir ".execution/D-001/EXECUTION-CONTRACT.json.sha256") -Value "  $($digest.ToUpperInvariant())  `n" -NoNewline
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "uppercase/whitespace sidecar: still resolves to a pass, not a false tamper report" `
+      ($r.Json.execution_verification.verdict -eq "pass") `
+      ("verdict=" + $r.Json.execution_verification.verdict)
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- MAJOR fix: human decision_ref must resolve against decision-log.md ---
+
+# ---- Case: decision_ref that does not exist anywhere -> EXEC-007 ----------
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir -Overrides @{
+      authority_claims = @([ordered]@{ type = "release-approval"; actor = "human"; claim = "approved"; decision_ref = "DEC-999-NOT-REAL" })
+    } | Out-Null
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "fake decision ref, no decision-log.md at all: EXEC-007 raised" ((Get-Rules $r.Json) -contains "EXEC-007")
+    Assert-True "fake decision ref: reason says it did not resolve" `
+      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-007" })[0]).message -match "could not be resolved")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: decision_ref not shaped like DEC-### -> EXEC-007 ---------------
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir -Overrides @{
+      authority_claims = @([ordered]@{ type = "release-approval"; actor = "human"; claim = "approved"; decision_ref = "see the chat log" })
+    } | Out-Null
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "non-DEC decision ref: EXEC-007 raised" ((Get-Rules $r.Json) -contains "EXEC-007")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: decision_ref resolves in a real decision-log.md -> passes ------
+{
+  $dir = New-ExecFixture
+  try {
+    $decisionLog = @(
+      "# Decision Log - T",
+      "",
+      "| Date | Decision ID | Topic | Options Presented | User Choice | Rationale | Source Ref | Impact |",
+      "|---|---|---|---|---|---|---|---|",
+      "| 2026-07-30 | DEC-001 | ship it | A/B | A | because | src | ok |"
+    ) -join "`n"
+    Write-ExecFile $dir "decision-log.md" $decisionLog
+    & git -C $dir add -A 2>$null | Out-Null; & git -C $dir commit -q -m "record decision" 2>$null | Out-Null
+
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir -Overrides @{
+      authority_claims = @([ordered]@{ type = "release-approval"; actor = "human"; claim = "approved"; decision_ref = "DEC-001" })
+    } | Out-Null
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "real decision ref, log committed before the export: verdict pass" `
+      ($r.Json.execution_verification.verdict -eq "pass") `
+      ("fails=" + ((Get-Rules $r.Json) -join ","))
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: decision_ref resolves, but appears twice (ambiguous) -----------
+{
+  $dir = New-ExecFixture
+  try {
+    $decisionLog = @(
+      "# Decision Log - T",
+      "",
+      "| Date | Decision ID | Topic | Options Presented | User Choice | Rationale | Source Ref | Impact |",
+      "|---|---|---|---|---|---|---|---|",
+      "| 2026-07-30 | DEC-001 | first | A | A | x | src | ok |",
+      "| 2026-07-30 | DEC-001 | duplicate id | A | A | x | src | ok |"
+    ) -join "`n"
+    Write-ExecFile $dir "decision-log.md" $decisionLog
+    & git -C $dir add -A 2>$null | Out-Null; & git -C $dir commit -q -m "record decision" 2>$null | Out-Null
+
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir -Overrides @{
+      authority_claims = @([ordered]@{ type = "release-approval"; actor = "human"; claim = "approved"; decision_ref = "DEC-001" })
+    } | Out-Null
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "ambiguous decision ref (appears twice): EXEC-007 raised" ((Get-Rules $r.Json) -contains "EXEC-007")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: the self-referential attack -- agent forges its own approval ---
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $f = Get-BaseResultFields -Dir $dir
+    $relRunRecordPath = New-RealRunRecord -Dir $dir
+
+    # The attack: within the SAME commit range under verification, the agent
+    # adds a decision-log.md row approving its own release, then cites it.
+    $decisionLog = @(
+      "# Decision Log - T",
+      "",
+      "| Date | Decision ID | Topic | Options Presented | User Choice | Rationale | Source Ref | Impact |",
+      "|---|---|---|---|---|---|---|---|",
+      "| 2026-07-30 | DEC-001 | forged | A | A | agent wrote this | none | none |"
+    ) -join "`n"
+    Write-ExecFile $dir "decision-log.md" $decisionLog
+    Write-ExecFile $dir "src/payments/app.ts" "implemented"
+    & git -C $dir add -A 2>$null | Out-Null
+    & git -C $dir commit -q -m "impl + self-forged decision" 2>$null | Out-Null
+    $head = (Get-FixtureGit $dir rev-parse HEAD).Trim()
+
+    $doc = [ordered]@{
+      contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      base_sha = [string]$f.Contract.base_sha; head_sha = $head; execution_status = "completed"
+      changed_files = @("src/payments/app.ts", "decision-log.md")
+      git_actions_performed = @("commit")
+      test_evidence = @([ordered]@{ type = "runner-exit-record"; name = "unit tests"; run_record_path = $relRunRecordPath })
+      authority_claims = @([ordered]@{ type = "release-approval"; actor = "human"; claim = "approved"; decision_ref = "DEC-001" })
+    }
+    Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "self-forged decision: EXEC-007 raised even though DEC-001 resolves" `
+      ((Get-Rules $r.Json) -contains "EXEC-007")
+    Assert-True "self-forged decision: reason names decision-log.md as changed within the verified range" `
+      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-007" -and $_.artifact -eq "decision-log.md" })[0]).message -match "changed within the commit range")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- MINOR fix: claimed-not-observed direction -----------------------------
+
+# ---- Case: result claims a changed file git shows no evidence of ----------
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir -Overrides @{
+      changed_files = @("src/payments/never-touched.ts")
+    } | Out-Null
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "claimed-not-observed: EXEC-008 raised" ((Get-Rules $r.Json) -contains "EXEC-008")
+    Assert-True "claimed-not-observed: message names the false claim" `
+      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-008" })[0]).message -match "claims a file that git shows no evidence")
   } finally { Remove-ExecFixture $dir }
 }.Invoke()
 
