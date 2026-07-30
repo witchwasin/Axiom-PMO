@@ -162,6 +162,18 @@ const COMMANDS = {
     usage: "axiom init --code <PROJECT-CODE> [--mode Standard] [--handoff] [--target demo] [--horizon-days 14]",
     build: (args) => buildInit(args),
   },
+
+  export: {
+    summary: "Export an approved work item as an execution contract for an agent",
+    usage: "axiom export --project <path> --work-item <D-###> [--grant commit,push] [--output <dir>] [--force]",
+    build: (args) => buildExport(args),
+  },
+
+  verify: {
+    summary: "Verify an execution result against its contract and observed git state",
+    usage: "axiom verify --project <path> --result <path> [--contract <path>] [--json]",
+    build: (args) => buildVerify(args),
+  },
 };
 
 function buildValidate(args) {
@@ -245,6 +257,84 @@ function buildHandoff(args) {
       },
     ],
   };
+}
+
+// `export` and `verify` are the two halves of Milestone 5: hand an approved
+// work item to an execution workflow, then check what came back. Both forward
+// to PowerShell like every other verb -- no verification logic lives here, for
+// the same reason stated at the top of this file.
+function buildExport(args) {
+  let rest = args;
+  const project = takeOption(rest, "project");
+  rest = project.rest;
+  const workItem = takeOption(rest, "work-item");
+  rest = workItem.rest;
+  const grant = takeOption(rest, "grant");
+  rest = grant.rest;
+  const output = takeOption(rest, "output");
+  rest = output.rest;
+  const format = takeOption(rest, "format");
+  rest = format.rest;
+  const force = takeFlag(rest, "force");
+  rest = force.rest;
+
+  if (!project.value) {
+    return { usageError: "export requires --project <path>" };
+  }
+  if (!workItem.value) {
+    return { usageError: "export requires --work-item <D-###>" };
+  }
+  const projectPath = resolveProjectPath(project.value);
+  if (!projectPath) {
+    return { usageError: `project directory not found: ${project.value}` };
+  }
+
+  const scriptArgs = ["-ProjectPath", projectPath, "-WorkItemId", workItem.value];
+  if (grant.value) scriptArgs.push("-Grant", grant.value);
+  if (output.value) scriptArgs.push("-OutputPath", output.value);
+  if (format.value) scriptArgs.push("-Format", format.value);
+  if (force.present) scriptArgs.push("-Force");
+  return { script: "scripts/export-execution-contract.ps1", scriptArgs: [...scriptArgs, ...rest] };
+}
+
+function buildVerify(args) {
+  let rest = args;
+  const project = takeOption(rest, "project");
+  rest = project.rest;
+  const result = takeOption(rest, "result");
+  rest = result.rest;
+  const contract = takeOption(rest, "contract");
+  rest = contract.rest;
+  const json = takeFlag(rest, "json");
+  rest = json.rest;
+  const failOnWarning = takeFlag(rest, "fail-on-warning");
+  rest = failOnWarning.rest;
+
+  if (!project.value) {
+    return { usageError: "verify requires --project <path>" };
+  }
+  if (!result.value) {
+    return { usageError: "verify requires --result <path to EXECUTION-RESULT.json>" };
+  }
+  const projectPath = resolveProjectPath(project.value);
+  if (!projectPath) {
+    return { usageError: `project directory not found: ${project.value}` };
+  }
+
+  // The result path is resolved against the caller's cwd rather than the repo
+  // root: unlike --project (a governed directory that may sensibly be named
+  // relative to the repository), a result is a file the user just produced and
+  // is almost always pointing at from where they are standing.
+  const resultPath = isAbsolute(result.value) ? result.value : resolve(process.cwd(), result.value);
+
+  const scriptArgs = ["-ProjectPath", projectPath, "-ResultPath", resultPath];
+  if (contract.value) {
+    const contractPath = isAbsolute(contract.value) ? contract.value : resolve(process.cwd(), contract.value);
+    scriptArgs.push("-ContractPath", contractPath);
+  }
+  if (json.present) scriptArgs.push("-Format", "Json");
+  if (failOnWarning.present) scriptArgs.push("-FailOnWarning");
+  return { script: "scripts/verify-execution-result.ps1", scriptArgs: [...scriptArgs, ...rest] };
 }
 
 function buildInit(args) {

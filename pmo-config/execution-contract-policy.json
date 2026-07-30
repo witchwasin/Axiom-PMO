@@ -1,0 +1,89 @@
+{
+  "version": "1.2.0",
+  "schema_version": "1.0",
+  "purpose": "Runtime policy for Milestone 5 execution-contract verification (scripts/lib/execution-contract-*.ps1). Defines what an execution result may claim, which claims Axiom-PMO can verify against observable ground truth, and which actors may grant which authority. Design rationale: docs/architecture/execution-contract-verification.md.",
+
+  "core_principle": "An agent-authored EXECUTION-RESULT.json is written by the same actor being verified. It is a claim, not evidence, until Axiom-PMO independently confirms it against git ground truth or a checked CI run.",
+
+  "evidence_origins": {
+    "agent-claimed": "Written by the execution agent. Never sufficient on its own to satisfy a required check.",
+    "git-observed": "Confirmed by Axiom-PMO against the repository's own git state (commits, diffs, refs).",
+    "runner-observed": "Produced by Axiom-PMO's own runner executing a command, not by the agent.",
+    "ci-observed": "A CI check conclusion tied to an exact commit SHA."
+  },
+
+  "test_evidence_adapters": [
+    {
+      "type": "junit-artifact",
+      "verifiable": true,
+      "requires": ["path", "sha256"],
+      "reason": "A JUnit XML file on disk whose checksum is recorded, so a later edit is detectable."
+    },
+    {
+      "type": "ci-check",
+      "verifiable": true,
+      "requires": ["name", "commit_sha", "conclusion"],
+      "reason": "A CI check conclusion bound to an exact commit SHA, independently queryable."
+    },
+    {
+      "type": "runner-exit-record",
+      "verifiable": true,
+      "requires": ["command", "exit_code", "recorded_by"],
+      "reason": "An exit record Axiom-PMO's own runner produced. The strongest MVP evidence: Axiom observed the command run."
+    },
+    {
+      "type": "agent-assertion",
+      "verifiable": false,
+      "requires": ["name"],
+      "reason": "A free-text claim from the agent. Recorded for context, never sufficient to satisfy a required test."
+    }
+  ],
+
+  "git_authority_defaults": {
+    "create_branch": true,
+    "commit": false,
+    "push": false,
+    "merge": false,
+    "deploy": false,
+    "note": "An action is permitted only when the approved contract explicitly grants it. Absent or false means not granted; the result claiming that action anyway is a violation."
+  },
+
+  "authority_claim_types": {
+    "release-approval": { "human_only": true },
+    "qa-approval": { "human_only": true },
+    "security-approval": { "human_only": true },
+    "scope-change": { "human_only": true },
+    "risk-mode-downgrade": { "human_only": true },
+    "implementation-complete": { "human_only": false }
+  },
+
+  "actor_authority": {
+    "agent": {
+      "may_grant": ["implementation-complete"],
+      "note": "An execution agent may report that it finished implementing. It may never grant an approval, change approved scope, or downgrade a risk mode -- those are human authority, and a claim otherwise is rejected regardless of its wording."
+    },
+    "human": {
+      "may_grant": ["release-approval", "qa-approval", "security-approval", "scope-change", "risk-mode-downgrade", "implementation-complete"],
+      "note": "A claim with actor 'human' is not self-proving. It must cite a decision record (decision_ref) that resolves in the project's decision-log.md; commit authorship alone is not proof of a human actor because it can be set to any value."
+    }
+  },
+
+  "verification_exempt_paths": [
+    {
+      "pattern": ".execution/**",
+      "reason": "The execution contract, its digest sidecar, and the result itself are governance bookkeeping, not implementation output. They are committed so the audit trail lives in git history, which means they appear in the very diff being verified -- treating them as unapproved implementation would make every verification fail on its own artifacts. Narrow by construction: this exempts the contract directory only, never source paths."
+    }
+  ],
+
+  "verification_exempt_note": "Exempt paths are excluded from scope analysis (EXEC-004) and from the undeclared-changed-file check (EXEC-008). They are NOT excluded from git-authority checks (EXEC-006): committing a contract file is still a commit, and if the contract withheld commit authority that remains a violation.",
+
+  "verification_limits": {
+    "statement": "Axiom-PMO verifies observable Git claims within the available repository and remote context. It does not prove the absence of all external Git side effects.",
+    "cannot_verify": [
+      "a push to a remote this checkout does not know about",
+      "a remote ref that was force-moved after the fact",
+      "a branch that was pushed and then deleted",
+      "anything that happened outside this repository"
+    ]
+  }
+}
