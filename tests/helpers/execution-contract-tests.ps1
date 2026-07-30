@@ -368,9 +368,19 @@ Write-Host ""
     # The attack this exists to stop: widen the granted authority in the
     # already-approved contract, leaving the sidecar (written at approval
     # time) behind as the only witness.
+    #
+    # Edited through the parsed object, not by string-replacing JSON text.
+    # Windows PowerShell 5.1's ConvertTo-Json writes `"key":  value` with two
+    # spaces after the colon where PowerShell 7 writes one, so a literal
+    # '"push": false' match silently found nothing on the 5.1 leg, left the
+    # file untouched, and the digest correctly still matched -- the test
+    # failed while the product was behaving exactly as designed. Asserting on
+    # a JSON document's incidental whitespace is testing the serializer, not
+    # the contract.
     $contractPath = Join-Path $dir ".execution/D-001/EXECUTION-CONTRACT.json"
-    $text = Get-Content -LiteralPath $contractPath -Raw
-    Set-Content -LiteralPath $contractPath -Value ($text -replace '"push": false', '"push": true') -NoNewline
+    $doc = Get-Content -LiteralPath $contractPath -Raw | ConvertFrom-Json
+    $doc.git_authority.push = $true
+    Set-Content -LiteralPath $contractPath -Value ($doc | ConvertTo-Json -Depth 12) -NoNewline
 
     $r = Invoke-Verify -Dir $dir
     Assert-True "tampered contract: EXEC-002 raised" ((Get-Rules $r.Json) -contains "EXEC-002")
