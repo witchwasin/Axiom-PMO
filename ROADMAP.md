@@ -702,17 +702,50 @@ repository state alone.
 Objective: make Axiom-PMO natural for Claude Code users without damaging
 existing repository configuration.
 
-Status: **planned; requires separate approval after Milestone 5.**
+Status: **Milestone 6.0 decided 2026-07-30 (HYBRID); 6.1+ still requires
+separate human approval before implementation.**
 
-Do not assume the final shape is an installer. Prototype and evaluate:
+### Milestone 6.0 - Integration shape decision
 
-- copyable integration block;
-- Claude skill pack;
-- command set;
-- plugin;
-- MCP command;
-- hook;
-- `axiom setup claude`.
+Research and reasoning:
+[`docs/architecture/claude-code-integration.md`](docs/architecture/claude-code-integration.md).
+Decision recorded as `DEC-003` in `decision-log.md`.
+
+The seven candidate shapes were evaluated against a real clone of the
+`superpowers` plugin (commit `44c9b2d6`, v6.2.0) rather than assumed. The
+decisive finding: "install Axiom-PMO" is six kinds of content, and only two
+of them must live in the user's repository.
+
+```text
+Claude Code plugin  (installed once, outside the user's repo)
+  skills/pmo-*            the 7 existing skills, already in conforming shape
+  scripts/, cli/          the validator, invoked via ${CLAUDE_PLUGIN_ROOT}
+  pmo-config/*.json       framework runtime config
+  templates/              scaffolding source
+
+User's repository  (created or appended, always reviewably)
+  CLAUDE.md / AGENTS.md   one short namespaced Axiom-PMO section
+  PROJECT.md, DELIVERY.md, SCOPE.json, ...   the user's governed artifacts
+```
+
+The behavioural rules cannot move into the plugin: `AGENTS.md` targets Codex,
+Cursor, and Copilot as well as Claude, and a Claude-only plugin would quietly
+narrow a multi-agent framework into a single-vendor one.
+
+Adopted: **plugin** (framework), **copyable integration block** (the honest
+minimum for the repo files), **`axiom setup claude`** (a thin convenience
+wrapper over those two, not a large installer). The **skill pack** was not a
+separate option -- it already exists and already conforms. **Command set**
+deferred as unverified; **MCP** rejected for now as a delivery mechanism for a
+validator the CLI and Action already expose.
+
+The **hook** -- a `PreToolUse` guard that would make governance preventive
+rather than detective -- is carved out as a separate, later, opt-in milestone.
+It is genuine new capability, but it is also the only option that can make a
+user's editor feel broken, so it must ship report-only by default like
+SCOPE-DIFF and the GitHub Action did, with its own acceptance.
+
+### Milestone 6.1+ (requires separate approval)
 
 If an installer is built, it must:
 
