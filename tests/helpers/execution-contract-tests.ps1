@@ -48,6 +48,46 @@ function Assert-True {
 
 # --- fixture ----------------------------------------------------------------
 
+# Every fixture git call goes through these two helpers. Both exist because of
+# one Windows PowerShell 5.1 behaviour that cost a red CI run:
+#
+# With $ErrorActionPreference = "Stop", PowerShell 5.1 turns *any* native
+# command's stderr output into a terminating error -- including git's purely
+# informational "LF will be replaced by CRLF" notice. This file's fixtures
+# write multi-line DELIVERY.md and PROJECT.md content, so `git add` emits that
+# notice on a Windows runner with core.autocrlf on, and the whole test file
+# died on it while passing everywhere else. (tests/helpers/scope-diff-tests.ps1
+# never hit this only because its fixture files contain no newlines at all --
+# an accident, not a design, and not one to rely on again here.)
+#
+# Two independent defences, deliberately both:
+#   1. New-ExecFixture disables autocrlf/safecrlf, so the notice is never
+#      emitted in the first place and fixture bytes stay identical on every
+#      platform -- which also matters because SCOPE-DIFF and this verifier
+#      compare paths and digests byte-for-byte.
+#   2. These helpers drop to "Continue" around the call, so any *other*
+#      informational git stderr (advice hints, detached-HEAD notices) cannot
+#      resurrect the same failure mode in a future case.
+function Invoke-FixtureGit {
+  param([string]$Dir, [Parameter(ValueFromRemainingArguments = $true)]$GitArgs)
+  $previous = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try { & git -C $Dir @GitArgs 2>&1 | Out-Null } finally { $ErrorActionPreference = $previous }
+}
+
+# Same, for the calls whose stdout is the point (rev-parse, hash-object).
+# stderr is discarded rather than merged so it cannot contaminate the value.
+function Get-FixtureGit {
+  param([string]$Dir, [Parameter(ValueFromRemainingArguments = $true)]$GitArgs)
+  $previous = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try {
+    $out = & git -C $Dir @GitArgs 2>$null
+    if ($out -is [array]) { $out = $out[0] }
+    return ([string]$out).Trim()
+  } finally { $ErrorActionPreference = $previous }
+}
+
 function New-ExecFixture {
   $dir = Join-Path ([System.IO.Path]::GetTempPath()) ("axiom-exec-" + [System.Guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Path $dir -Force | Out-Null
@@ -67,12 +107,25 @@ function New-ExecFixture {
   Set-Content -LiteralPath (Join-Path $dir "DELIVERY.md") -Value $delivery -NoNewline
   Set-Content -LiteralPath (Join-Path $dir "src/payments/app.ts") -Value "seed" -NoNewline
 
+  # Not Invoke-FixtureGit: this one needs $LASTEXITCODE to pick the fallback
+  # for git versions predating --initial-branch. Same "Continue" guard though,
+  # since that unknown-option error is exactly the stderr that would otherwise
+  # terminate the run before the fallback could execute.
+  $previousEap = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
   & git -C $dir init -q --initial-branch=main 2>$null
   if ($LASTEXITCODE -ne 0) { & git -C $dir init -q 2>$null }
-  & git -C $dir config user.email "test@axiom-pmo.local" | Out-Null
-  & git -C $dir config user.name "Axiom Exec Tests" | Out-Null
-  & git -C $dir add -A 2>$null | Out-Null
-  & git -C $dir commit -q -m "base" 2>$null | Out-Null
+  $ErrorActionPreference = $previousEap
+
+  Invoke-FixtureGit $dir config user.email "test@axiom-pmo.local"
+  Invoke-FixtureGit $dir config user.name "Axiom Exec Tests"
+  # Keep fixture bytes identical on every platform: this verifier compares
+  # paths and file digests exactly, so a Windows checkout silently rewriting
+  # LF to CRLF would change what is being asserted, not just how git reports it.
+  Invoke-FixtureGit $dir config core.autocrlf false
+  Invoke-FixtureGit $dir config core.safecrlf false
+  Invoke-FixtureGit $dir add -A
+  Invoke-FixtureGit $dir commit -q -m "base"
   return $dir
 }
 
@@ -125,8 +178,7 @@ function New-Result {
 
   $digest = Get-ContractDigest -Dir $Dir
   $contract = Get-Content -LiteralPath (Join-Path $Dir ".execution/D-001/EXECUTION-CONTRACT.json") -Raw | ConvertFrom-Json
-  $head = (& git -C $Dir rev-parse HEAD 2>$null)
-  if ($head -is [array]) { $head = $head[0] }
+  $head = Get-FixtureGit $Dir rev-parse HEAD
 
   $doc = [ordered]@{
     contract_version = "1.0"
@@ -219,8 +271,8 @@ Write-Host ""
     Invoke-Export -Dir $dir -Grant "commit" | Out-Null
     Write-ExecFile $dir "src/payments/app.ts" "implemented"
     Write-ExecFile $dir "tests/payments/app.test.ts" "tested"
-    & git -C $dir add -A 2>$null | Out-Null
-    & git -C $dir commit -q -m "impl" 2>$null | Out-Null
+    Invoke-FixtureGit $dir add -A
+    Invoke-FixtureGit $dir commit -q -m "impl"
     New-Result -Dir $dir -Overrides @{
       changed_files = @("src/payments/app.ts", "tests/payments/app.test.ts")
       git_actions_performed = @("commit")
@@ -243,8 +295,8 @@ Write-Host ""
     Invoke-Export -Dir $dir -Grant "commit" | Out-Null
     Write-ExecFile $dir "src/payments/app.ts" "implemented"
     Write-ExecFile $dir "src/auth/tokens.ts" "wandered off"
-    & git -C $dir add -A 2>$null | Out-Null
-    & git -C $dir commit -q -m "impl" 2>$null | Out-Null
+    Invoke-FixtureGit $dir add -A
+    Invoke-FixtureGit $dir commit -q -m "impl"
     New-Result -Dir $dir -Overrides @{
       changed_files = @("src/payments/app.ts", "src/auth/tokens.ts")
       git_actions_performed = @("commit")
@@ -264,8 +316,8 @@ Write-Host ""
   try {
     Invoke-Export -Dir $dir -Grant "commit" | Out-Null
     Write-ExecFile $dir "src/payments/generated/client.ts" "touched a carve-out"
-    & git -C $dir add -A 2>$null | Out-Null
-    & git -C $dir commit -q -m "impl" 2>$null | Out-Null
+    Invoke-FixtureGit $dir add -A
+    Invoke-FixtureGit $dir commit -q -m "impl"
     New-Result -Dir $dir -Overrides @{
       changed_files = @("src/payments/generated/client.ts")
       git_actions_performed = @("commit")
@@ -286,11 +338,15 @@ Write-Host ""
     # case-insensitive filesystem writing SRC/PAYMENTS/ would silently land in
     # the existing src/payments/ and hide the very bug this asserts against.
     # Same technique and the same reason as the SCOPE-DIFF case-sensitivity test.
-    & git -C $dir add -A 2>$null | Out-Null
-    $blob = ("case" | & git -C $dir hash-object -w --stdin)
+    Invoke-FixtureGit $dir add -A
+    $previousEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    $blob = ("case" | & git -C $dir hash-object -w --stdin 2>$null)
+    $ErrorActionPreference = $previousEap
     if ($blob -is [array]) { $blob = $blob[0] }
-    & git -C $dir update-index --add --cacheinfo "100644,$(([string]$blob).Trim()),SRC/PAYMENTS/sneaky.ts" 2>$null | Out-Null
-    & git -C $dir commit -q -m "impl" 2>$null | Out-Null
+    $blob = ([string]$blob).Trim()
+    Invoke-FixtureGit $dir update-index --add --cacheinfo "100644,$blob,SRC/PAYMENTS/sneaky.ts"
+    Invoke-FixtureGit $dir commit -q -m "impl"
     New-Result -Dir $dir -Overrides @{
       changed_files = @("SRC/PAYMENTS/sneaky.ts")
       git_actions_performed = @("commit")
@@ -375,8 +431,8 @@ Write-Host ""
   try {
     Invoke-Export -Dir $dir | Out-Null   # no -Grant: commit stays denied
     Write-ExecFile $dir "src/payments/app.ts" "implemented"
-    & git -C $dir add -A 2>$null | Out-Null
-    & git -C $dir commit -q -m "impl" 2>$null | Out-Null
+    Invoke-FixtureGit $dir add -A
+    Invoke-FixtureGit $dir commit -q -m "impl"
     New-Result -Dir $dir -Overrides @{ changed_files = @("src/payments/app.ts") } | Out-Null
 
     $r = Invoke-Verify -Dir $dir
@@ -525,8 +581,8 @@ Write-Host ""
     Invoke-Export -Dir $dir -Grant "commit" | Out-Null
     Write-ExecFile $dir "src/payments/app.ts" "implemented"
     Write-ExecFile $dir "src/payments/quiet.ts" "changed but not declared"
-    & git -C $dir add -A 2>$null | Out-Null
-    & git -C $dir commit -q -m "impl" 2>$null | Out-Null
+    Invoke-FixtureGit $dir add -A
+    Invoke-FixtureGit $dir commit -q -m "impl"
     New-Result -Dir $dir -Overrides @{
       changed_files = @("src/payments/app.ts")   # quiet.ts omitted
       git_actions_performed = @("commit")
@@ -547,12 +603,11 @@ Write-Host ""
     $contract = Get-Content -LiteralPath (Join-Path $dir ".execution/D-001/EXECUTION-CONTRACT.json") -Raw | ConvertFrom-Json
 
     # An orphan branch: real commits, real SHAs, no ancestry to the approved base.
-    & git -C $dir checkout -q --orphan elsewhere 2>$null | Out-Null
+    Invoke-FixtureGit $dir checkout -q --orphan elsewhere
     Write-ExecFile $dir "src/payments/app.ts" "built somewhere else entirely"
-    & git -C $dir add -A 2>$null | Out-Null
-    & git -C $dir commit -q -m "orphan" 2>$null | Out-Null
-    $orphanHead = (& git -C $dir rev-parse HEAD 2>$null)
-    if ($orphanHead -is [array]) { $orphanHead = $orphanHead[0] }
+    Invoke-FixtureGit $dir add -A
+    Invoke-FixtureGit $dir commit -q -m "orphan"
+    $orphanHead = Get-FixtureGit $dir rev-parse HEAD
 
     $resultPath = Join-Path $dir ".execution/D-001/EXECUTION-RESULT.json"
     $doc = [ordered]@{
