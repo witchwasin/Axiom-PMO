@@ -71,7 +71,7 @@ Recommended effort allocation:
 | Milestone 3.5 - Runtime Portability | Accepted | CI threshold met; branch protection deferred by human decision |
 | Milestone 4 - GitHub Action | Delivered | Merged to `main` at `31d1e25`; child issues #12-#17 closed |
 | Milestone 4.5 - SCOPE-DIFF | Delivered | Human Owner accepted 2026-07-30 after two independent AI review rounds; merged to `main` at `6b42643` |
-| Milestone 5 - Execution Contract Verification MVP | Unblocked; open for planning | Milestone 4 and Milestone 4.5 human acceptance both satisfied 2026-07-30 |
+| Milestone 5 - Execution Contract Verification MVP | Milestone 5.0 decided (GO WITH REFRAME); 5.1-5.4 open for planning | See `docs/architecture/execution-contract-verification.md` and `decision-log.md` `DEC-002` |
 | Milestone 6 - Claude Code Integration Experience | Planned | Requires separate approval after Milestone 5 |
 
 ## Roadmap Governance
@@ -634,16 +634,22 @@ safely.
 
 ### Milestone 5.0 - Research and go/no-go gate
 
-Milestone 5.0 is not a research document that milestone 5.1 starts
-automatically after. It ends with an explicit decision record choosing one
-of:
+Status: **decided, 2026-07-30 -- GO WITH REFRAME.** Full research, threat
+model, target schema design, and reasoning are in
+[`docs/architecture/execution-contract-verification.md`](docs/architecture/execution-contract-verification.md);
+the decision itself is recorded as `DEC-002` in `decision-log.md`.
 
-```text
-GO              - a native, verifiable integration surface exists
-GO WITH REFRAME - no native surface; proceed as git-ground-truth contract
-                  verification instead
-NO-GO           - no meaningful verification boundary can be established
-```
+Verified directly against a real local clone of the reference execution
+workflow (`superpowers`, commit `44c9b2d6`, plugin version `6.2.0`) rather
+than assumed: it registers only a `SessionStart` hook that injects a static
+skill file as context, and its own porting guide states "the bootstrap is
+the entire integration" as intentional design. No contract-ingestion or
+result-emission surface exists to bridge to. Milestone 5 therefore proceeds
+as a **git-ground-truth execution-contract verifier** -- Axiom-PMO validates
+an `EXECUTION-RESULT.json` an agent writes into the repo against an
+approved contract and against what git actually shows happened, rather than
+a native runtime handshake. No change to Superpowers itself is required or
+proposed.
 
 Milestone 5.0 must inspect: the experimental schemas already in
 `integrations/superpowers/`; the current work item and requirement
@@ -658,12 +664,18 @@ enough that a second integration could reuse it later without a rewrite.
 ### Milestone 5.1 - 5.4 (planned only after Milestone 5.0's gate decision)
 
 The concrete shape of contract export (5.1), result import (5.2), git
-authority validation (5.3), and end-to-end integration testing (5.4) depends
-on Milestone 5.0's decision above. A "GO WITH REFRAME" outcome -- the
-likely one given the reference workflow's current surface -- changes what
-5.1-5.4 look like from an earlier draft that assumed a runtime bridge. These
-phases are deliberately not detailed further here until that decision is
-made.
+authority validation (5.3), and end-to-end integration testing (5.4) follows
+the "GO WITH REFRAME" design in
+`docs/architecture/execution-contract-verification.md` §4: contract
+immutability via content digest and exact base/head SHAs (never a branch
+name), per-field evidence provenance (`evidence_origin` /
+`verification_status`), three machine-verifiable test-evidence adapters
+(JUnit artifact with checksum, CI check tied to the exact commit SHA, or an
+exit record Axiom's own runner produced), and typed authority-claim records
+in place of a single approval boolean. `integrations/superpowers/*.json`
+stay experimental and unmodified until an implementation milestone actually
+builds against these refined shapes -- Milestone 5.0's decision does not
+itself authorize starting 5.1.
 
 Definition of done:
 
@@ -736,6 +748,11 @@ Do not spend near-term effort on:
   PowerShell 7 are blocking workflow jobs, Ubuntu passed two promoted `main`
   runs, Windows PowerShell 5.1 remains green, and human acceptance was recorded
   on 2026-07-29 with branch protection deferred.
+- Milestone 4 (reusable GitHub Action) and Milestone 4.5 (SCOPE-DIFF): both
+  merged to `main`, Human Owner accepted 2026-07-30, released together as
+  `v1.2.0`.
+- Milestone 5.0 research and go/no-go decision (GO WITH REFRAME), recorded
+  2026-07-30.
 
 ### Deferred trust evidence
 
@@ -745,15 +762,17 @@ Do not spend near-term effort on:
 
 ### Next
 
-- Milestone 4 tracking issue and child issues for the reusable Action,
-  Job Summary/report artifacts, safe annotations, consumer/privacy tests, and
-  acceptance documentation.
+- Milestone 5.1-5.4: contract export, result import, git-authority
+  validation, and end-to-end integration tests, against the design in
+  `docs/architecture/execution-contract-verification.md`.
+- Milestone 6 prototyping (copyable integration block, skill pack, command
+  set, plugin, MCP command, or hook -- shape not yet decided), once M5 is far
+  enough along to warrant it.
 
 ### Blocked
 
-- Superpowers export/import runtime, until Milestone 4 is accepted.
-- Claude Code integration implementation, until separately approved after
-  Milestone 5.
+- Claude Code integration implementation (Milestone 6), until separately
+  approved after Milestone 5.
 
 ## Success Signals
 
