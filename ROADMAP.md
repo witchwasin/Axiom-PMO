@@ -71,7 +71,7 @@ Recommended effort allocation:
 | Milestone 3.5 - Runtime Portability | Accepted | CI threshold met; branch protection deferred by human decision |
 | Milestone 4 - GitHub Action | Delivered | Merged to `main` at `31d1e25`; child issues #12-#17 closed |
 | Milestone 4.5 - SCOPE-DIFF | Delivered | Human Owner accepted 2026-07-30 after two independent AI review rounds; merged to `main` at `6b42643` |
-| Milestone 5 - Execution Contract Verification MVP | Milestone 5.0 decided (GO WITH REFRAME); 5.1-5.4 open for planning | See `docs/architecture/execution-contract-verification.md` and `decision-log.md` `DEC-002` |
+| Milestone 5 - Execution Contract Verification MVP | Delivered (5.0 decided GO WITH REFRAME; 5.1-5.4 built and tested) | `docs/reference/execution-contract.md`; decision `DEC-002` |
 | Milestone 6 - Claude Code Integration Experience | Planned | Requires separate approval after Milestone 5 |
 
 ## Roadmap Governance
@@ -109,7 +109,7 @@ Milestone 1 delivered, with walkthrough/recording evidence deferred
 -> Milestone 3.5 (accepted)
 -> Milestone 4 (delivered)
 -> Milestone 4.5 (delivered)
--> Milestone 5 (unblocked, open for planning)
+-> Milestone 5 (delivered)
 -> Milestone 6
 ```
 
@@ -661,21 +661,31 @@ intermediate representation to make this milestone's design feel more
 general -- one schema, one reference integration, described precisely
 enough that a second integration could reuse it later without a rewrite.
 
-### Milestone 5.1 - 5.4 (planned only after Milestone 5.0's gate decision)
+### Milestone 5.1 - 5.4
 
-The concrete shape of contract export (5.1), result import (5.2), git
-authority validation (5.3), and end-to-end integration testing (5.4) follows
-the "GO WITH REFRAME" design in
-`docs/architecture/execution-contract-verification.md` §4: contract
-immutability via content digest and exact base/head SHAs (never a branch
-name), per-field evidence provenance (`evidence_origin` /
-`verification_status`), three machine-verifiable test-evidence adapters
-(JUnit artifact with checksum, CI check tied to the exact commit SHA, or an
-exit record Axiom's own runner produced), and typed authority-claim records
-in place of a single approval boolean. `integrations/superpowers/*.json`
-stay experimental and unmodified until an implementation milestone actually
-builds against these refined shapes -- Milestone 5.0's decision does not
-itself authorize starting 5.1.
+Status: **delivered 2026-07-30**, against the "GO WITH REFRAME" design in
+`docs/architecture/execution-contract-verification.md` §4. User-facing
+reference: [`docs/reference/execution-contract.md`](docs/reference/execution-contract.md).
+
+| Phase | Delivered |
+|---|---|
+| 5.1 contract export | `axiom export --project <p> --work-item D-### [--grant commit,push]` -> `.execution/D-###/EXECUTION-CONTRACT.json` plus a `.sha256` digest sidecar. Contract fields are derived from the approved `DELIVERY.md` row and `SCOPE.json`; a project without an approved scope cannot be exported from. |
+| 5.2 result import | `axiom verify --project <p> --result <path>`: schema validation, contract-digest immutability (three-way agreement between the contract's live hash, the sidecar, and the result's `contract_sha256`), work-item/base/requirement matching with asymmetric requirement drift. |
+| 5.3 authority + scope + evidence | Git ground-truth adapter (ancestry, commit range, remote containment as a tri-state), allowed-path validation reusing M4.5's glob engine and case-sensitivity, three machine-verifiable test-evidence adapters, typed authority-claim records blocking agent self-approval. |
+| 5.4 integration tests | `tests/helpers/execution-contract-tests.ps1`, 57 cases against disposable real-git fixtures, wired into `run-all-checks.ps1`. Written adversarially: tampered contracts, orphan-branch ancestry, undeclared changes, hollow evidence, self-approval, unknown actors. |
+
+Rules `EXEC-001` to `EXEC-008`, each with a `docs/rules/` page. Policy lives
+in `pmo-config/execution-contract-policy.json`.
+
+`integrations/superpowers/*.json` remain experimental and unmodified: the
+shipped schema supersedes them, and rewriting them now would imply a native
+integration that 5.0 established does not exist.
+
+Not built, deliberately: no normalized intermediate representation, no
+per-workflow dialects (`--format` is accepted and recorded but does not change
+output), and no attempt to prove the absence of git side effects -- the
+verification limits are stated in the policy config and the user-facing
+reference rather than discovered by a user.
 
 Definition of done:
 
@@ -753,6 +763,11 @@ Do not spend near-term effort on:
   `v1.2.0`.
 - Milestone 5.0 research and go/no-go decision (GO WITH REFRAME), recorded
   2026-07-30.
+- Milestone 5.1-5.4 Execution Contract Verification MVP: `axiom export` /
+  `axiom verify`, rules `EXEC-001` to `EXEC-008`, contract-digest
+  immutability, git ground-truth validation, three machine-verifiable
+  test-evidence adapters, typed authority claims, and 57 adversarial
+  integration tests.
 
 ### Deferred trust evidence
 
@@ -762,12 +777,12 @@ Do not spend near-term effort on:
 
 ### Next
 
-- Milestone 5.1-5.4: contract export, result import, git-authority
-  validation, and end-to-end integration tests, against the design in
-  `docs/architecture/execution-contract-verification.md`.
 - Milestone 6 prototyping (copyable integration block, skill pack, command
-  set, plugin, MCP command, or hook -- shape not yet decided), once M5 is far
-  enough along to warrant it.
+  set, plugin, MCP command, or hook -- shape not yet decided).
+- External-user validation of the v1.2.0 GitHub Action and SCOPE-DIFF. This
+  needs the Human Owner personally and cannot be delegated; it is the main
+  source of independent signal about whether the shipped features are usable
+  by anyone who did not build them.
 
 ### Blocked
 

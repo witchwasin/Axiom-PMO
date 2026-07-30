@@ -1,5 +1,37 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Execution contract verification (Milestone 5).** `axiom export` turns an
+  approved `DELIVERY.md` work item into an `EXECUTION-CONTRACT.json` an AI
+  execution workflow can be handed; `axiom verify` checks the returned
+  `EXECUTION-RESULT.json` against that contract *and* against what the
+  repository can be observed to show actually happened. Rules `EXEC-001` to
+  `EXEC-008`, each with a `docs/rules/` page; policy in
+  `pmo-config/execution-contract-policy.json`; reference in
+  `docs/reference/execution-contract.md`.
+
+  The governing idea: an execution result is authored by the actor being
+  verified, so it is a claim, not evidence. Changed files come from `git
+  diff`, not from the result's own list. Commits and pushes are detected from
+  history, not from the result's admission. A required test is satisfied only
+  by machine-verifiable evidence — a checksummed artifact, a CI check bound to
+  the exact commit SHA, or an exit record Axiom's own runner produced — never
+  by the agent asserting that a test passed. Approval is modelled as a typed
+  authority claim so a validator can reject it on the strength of *who is
+  claiming*, which is what blocks an agent approving its own work.
+
+  Contracts are pinned by a digest of their exact bytes, written at export
+  time, so widening `allowed_paths` or `git_authority` in an already-approved
+  contract is reported rather than silently honoured.
+
+  Stated limits, in the docs rather than left to be discovered: this does not
+  prove the absence of git side effects outside the available repository
+  context, and an actor that rewrites contract, sidecar, and result
+  consistently defeats the digest check — only git history shows that.
+
 ## 1.2.0 - 2026-07-30
 
 **GitHub Action, with changed-file scope enforcement.** Axiom-PMO can now run

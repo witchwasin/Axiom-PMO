@@ -278,6 +278,54 @@
       "suggestion": "This path was deliberately excluded from the approved scope. If it genuinely needs to change as part of this work, get the exclusion removed (or narrowed) through the same review that approved the rest of the scope -- do not just delete the exclude entry unreviewed.",
       "documentation": "docs/rules/SCOPE-DIFF-005.md"
     },
+    "EXEC-001": {
+      "severity": "fail",
+      "description": "The execution result is missing, unparseable, or does not carry the fields verification requires. Also the PASS row when a result verifies cleanly against its contract and observed git state.",
+      "suggestion": "Produce EXECUTION-RESULT.json against the schema in docs/reference/execution-contract.md. It must carry contract_version, work_item_id, contract_sha256, base_sha, and execution_status at minimum.",
+      "documentation": "docs/rules/EXEC-001.md"
+    },
+    "EXEC-002": {
+      "severity": "fail",
+      "description": "The approved execution contract is missing or invalid, or the result answers a contract version other than the approved one -- its contract_sha256 does not match the contract's digest, or the contract's bytes no longer match the digest recorded at export.",
+      "suggestion": "Verify the result against the contract it was exported from, unmodified. If the contract genuinely needs to change, re-export it (which mints a new digest) and re-run the work against the new version rather than editing an approved contract in place.",
+      "documentation": "docs/rules/EXEC-002.md"
+    },
+    "EXEC-003": {
+      "severity": "fail",
+      "description": "The result's identity does not match the contract's: a different work item, a different base commit, or a requirement the contract does not cover.",
+      "suggestion": "A result may satisfy fewer requirements than approved, but never more, and must name the same work item and base commit the contract does. Correct the result, or export a contract that actually covers the work performed and get it approved.",
+      "documentation": "docs/rules/EXEC-003.md"
+    },
+    "EXEC-004": {
+      "severity": "fail",
+      "description": "A file changed between the contract's base commit and the result's head commit lies outside the contract's allowed_paths, or matches a prohibited_paths entry.",
+      "suggestion": "Either the change belongs to different work, or the approved scope needs widening -- get SCOPE.json reviewed and re-export the contract. Do not widen allowed_paths in an already-approved contract.",
+      "documentation": "docs/rules/EXEC-004.md"
+    },
+    "EXEC-005": {
+      "severity": "fail",
+      "description": "A test the contract requires has no evidence entry, or its evidence is not machine-verifiable (an agent's own assertion rather than a checksummed artifact, a CI check bound to the commit SHA, or a runner-produced exit record).",
+      "suggestion": "Attach verifiable evidence for each required test: a junit-artifact with a sha256, a ci-check naming the exact commit_sha and conclusion, or a runner-exit-record. An agent stating that a test passed is a claim, not evidence.",
+      "documentation": "docs/rules/EXEC-005.md"
+    },
+    "EXEC-006": {
+      "severity": "fail",
+      "description": "The execution exceeded the git authority the contract granted: commits exist where commit authority was withheld, the head commit is present on a remote where push was withheld, or the result reports performing an ungranted action.",
+      "suggestion": "git_authority in the contract is the full grant; commit, push, merge, and deploy default to false. If the work genuinely needs an action, have a human grant it in the contract and re-export before the work runs -- not after.",
+      "documentation": "docs/rules/EXEC-006.md"
+    },
+    "EXEC-007": {
+      "severity": "fail",
+      "description": "The result carries an authority claim its actor cannot grant -- an execution agent approving its own work, an unrecognized actor type, or a human-only claim citing no decision record.",
+      "suggestion": "An execution agent may report implementation-complete and nothing more. Approvals are human authority and must cite a DEC-### that exists in decision-log.md; commit authorship alone does not prove a human actor.",
+      "documentation": "docs/rules/EXEC-007.md"
+    },
+    "EXEC-008": {
+      "severity": "fail",
+      "description": "The result's claims cannot be reconciled with observed git state: an unresolvable base or head commit, a head that does not descend from the approved base, or a file changed in the diff that the result does not declare.",
+      "suggestion": "Report the actual base and head commits and the complete changed-file list. If a commit cannot be resolved, the checkout is likely shallow -- fetch enough history for the base commit to be present before verifying.",
+      "documentation": "docs/rules/EXEC-008.md"
+    },
     "HANDOFF-001": {
       "severity": "fail",
       "description": "A required handoff artifact is missing or its metadata contract is incomplete.",
