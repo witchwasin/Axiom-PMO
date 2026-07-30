@@ -1,5 +1,51 @@
 # Changelog
 
+## 1.2.0 - 2026-07-30
+
+**GitHub Action, with changed-file scope enforcement.** Axiom-PMO can now run
+directly inside a pull request instead of requiring a local CLI invocation,
+and can prove a PR's changed files stayed inside a project's pre-approved
+implementation scope.
+
+Backward compatible. Every existing local invocation (`validate-project.ps1`,
+`assess-handoff.ps1`, the CLI) is byte-for-byte unchanged; the Action and
+SCOPE-DIFF are both opt-in additions.
+
+### Added
+
+- **Reusable GitHub Action** (`action.yml`, `uses: witchwasin/Axiom-PMO@v1.2.0`
+  in ten lines or fewer). Wraps the existing validator/CLI with no duplicated
+  validation logic. Produces a GitHub Job Summary, `axiom-report.json` and
+  `axiom-report.md` artifacts, and PR annotations mapped to file, item, field,
+  and rule id. `enforce` defaults to `false` (report-only); logs and reports
+  never contain source-sensitive content or raw local paths.
+- **SCOPE-DIFF** (`SCOPE.json`, opt-in via `enable-scope-diff: true` or
+  `-ScopeDiffBase`/`-ScopeDiffHead`): compares a PR's actual changed files
+  against a project's approved `implementation_scope` using a small
+  deterministic glob grammar and a real `git diff --name-status`. A missing
+  `SCOPE.json` always fails closed (`SCOPE-DIFF-002`), never "everything is
+  approved." Rules `SCOPE-DIFF-001` through `SCOPE-DIFF-005`, each documented
+  under `docs/rules/`. Renames are checked at both the old and new path, with
+  a structured `scope_diff.renames[]` field carrying both paths and both
+  per-side verdicts. `pmo-config/scope-diff-policy.json` holds a small,
+  reviewable, explicitly-validated repo-wide exemption list (lockfiles,
+  `CHANGELOG.md`) — entries with an empty pattern/reason, a duplicate
+  pattern, or a pattern broad enough to match effectively everything (`**`,
+  `*`, `**/*`) are rejected outright. Path matching is case-sensitive and
+  rename detection is pinned via explicit `git diff` options, independent of
+  the runner's own git configuration. See `docs/reference/scope-declaration.md`.
+- **Diagnostics contract**: new optional `scope_diff` envelope field, present
+  only when SCOPE-DIFF was requested. See `docs/reference/diagnostics-contract.md`.
+
+### Notes
+
+- No breaking changes to the JSON result contract; `diagnostics_schema_version`
+  stays at `1.1`.
+- `axiom-report.json`/`.md` are uploaded even when validation fails, and the
+  Action never persists raw validator stdout or git stderr into a report,
+  annotation, or Job Summary — only a small set of known, safe diagnostic
+  messages, with the underlying detail going to the workflow run log only.
+
 ## 1.1.1 - 2026-07-26
 
 A patch release: two validation rules that were deferred from 1.1.0, and a CI

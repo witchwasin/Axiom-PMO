@@ -13,9 +13,9 @@ human-controlled release gates.**
 
 [![Axiom-PMO Checks](https://github.com/witchwasin/Axiom-PMO/actions/workflows/pmo-checks.yml/badge.svg)](https://github.com/witchwasin/Axiom-PMO/actions/workflows/pmo-checks.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.1.1-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](CHANGELOG.md)
 
-<sub>Version <code>1.1.1</code> · MIT License · PowerShell reference implementation (Windows PowerShell 5.1 and PowerShell 7; Linux/macOS via <code>pwsh</code>)</sub>
+<sub>Version <code>1.2.0</code> · MIT License · PowerShell reference implementation (Windows PowerShell 5.1 and PowerShell 7; Linux/macOS via <code>pwsh</code>)</sub>
 
 </div>
 
@@ -477,7 +477,7 @@ Typography: Tahoma / Arial (sans-serif) for voice; Consolas / Courier New
 | **Process** | [Lite](docs/process/lite.md) · [Standard](docs/process/standard.md) · [Strict](docs/process/strict.md) |
 | **Tutorials** | [your first project](docs/tutorials/first-project.md) · [using it with an AI agent](docs/tutorials/using-with-an-ai-agent.md) |
 | **Integrations** | [overview](docs/integrations/overview.md) · [Superpowers](docs/integrations/superpowers.md) · [BMAD](docs/integrations/bmad.md) · [spec-kit](docs/integrations/spec-kit.md) · [OpenSpec](docs/integrations/openspec.md) |
-| **Releases** | [1.1.1](docs/releases/v1.1.1.md) · [1.1.0](docs/releases/v1.1.0.md) · [1.0.0](docs/releases/v1.0.0.md) · [changelog](CHANGELOG.md) |
+| **Releases** | [1.2.0](docs/releases/v1.2.0.md) · [1.1.1](docs/releases/v1.1.1.md) · [1.1.0](docs/releases/v1.1.0.md) · [1.0.0](docs/releases/v1.0.0.md) · [changelog](CHANGELOG.md) |
 
 If you are an AI agent working in this repository, start with
 [`AGENTS.md`](AGENTS.md), [`CLAUDE.md`](CLAUDE.md), and
@@ -496,19 +496,25 @@ Delivered in 1.1:
 - engineering handoff readiness (Milestone 2.5);
 - a thin local CLI — deliberately before any public npm package.
 
+Delivered in 1.2:
+
+- a reusable GitHub Action that reports governance failures directly in pull
+  requests (Milestone 4);
+- SCOPE-DIFF, a deterministic check that a pull request's changed files
+  stayed inside a project's pre-approved implementation scope (Milestone
+  4.5).
+
 Next:
 
 - keep the optional Milestone 1 walkthrough and recording evidence packet
   available for future trust work;
-- use the accepted Milestone 3.5 runtime portability matrix: Windows and Ubuntu
-  PowerShell 7 are blocking workflow jobs, with Windows PowerShell 5.1
-  compatibility coverage retained;
-- build a GitHub Action that reports governance failures directly in pull
-  requests.
+- Milestone 5, Execution Contract Verification MVP — verify that an AI
+  agent's execution output stayed inside an approved contract, using
+  observable ground truth rather than trusting the agent's own report.
+  Unblocked as of Milestone 4.5's acceptance; see [`ROADMAP.md`](ROADMAP.md)
+  for the research-first (Milestone 5.0) sequencing.
 
-The Superpowers runtime bridge remains blocked until the GitHub Action has
-passed human acceptance. The active roadmap is intentionally limited to
-Milestones 1 through 6.
+The active roadmap is intentionally limited to Milestones 1 through 6.
 
 The roadmap is intended to be reviewed weekly. Engineering findings,
 integration requests, and developer feedback may be accepted when they
@@ -520,12 +526,14 @@ strengthen the product direction without weakening governance.
 
 ## Project status
 
-Version `1.1.1` — *Handoff-Ready*. The validation engine, governance model, and
-diagnostic contract are stable. 1.1 adds the `Handoff` gate between `Design` and
-`Release`, so the framework can say — with evidence — whether documentation is
-sufficient for a developer to start, integrate, and demonstrate. Interoperability
-automation remains on the [roadmap](ROADMAP.md).
+Version `1.2.0`. The validation engine, governance model, and diagnostic
+contract are stable. 1.1 added the `Handoff` gate between `Design` and
+`Release`; 1.2 adds a reusable GitHub Action and SCOPE-DIFF changed-file scope
+enforcement, so a pull request can be checked — and, optionally, blocked —
+directly in CI. Interoperability automation (Milestone 5) remains on the
+[roadmap](ROADMAP.md).
 
-Upgrading from 1.0 requires no migration: projects that do not request the new
-gate validate exactly as before. Migrating from the previous private layout? See
+Upgrading from 1.1 requires no migration: the Action and SCOPE-DIFF are both
+opt-in, and every existing local invocation is unaffected. Migrating from the
+previous private layout? See
 [`docs/migration/from-pmo-template-personal.md`](docs/migration/from-pmo-template-personal.md).
