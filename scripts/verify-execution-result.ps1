@@ -43,10 +43,13 @@ $gitRoot = (Resolve-Path -LiteralPath $GitRepoRoot).Path
 
 . (Join-Path $PSScriptRoot "lib/config-loader.ps1")
 . (Join-Path $PSScriptRoot "lib/result-writer.ps1")
+. (Join-Path $PSScriptRoot "lib/markdown-files.ps1")
+. (Join-Path $PSScriptRoot "lib/markdown-table-parser.ps1")
 . (Join-Path $PSScriptRoot "lib/scope-diff-matcher.ps1")
 . (Join-Path $PSScriptRoot "lib/scope-diff-git-adapter.ps1")
 . (Join-Path $PSScriptRoot "lib/execution-contract-schema.ps1")
 . (Join-Path $PSScriptRoot "lib/execution-contract-git.ps1")
+. (Join-Path $PSScriptRoot "lib/execution-contract-evidence.ps1")
 . (Join-Path $PSScriptRoot "lib/execution-contract-validator.ps1")
 
 $script:messages = New-Object System.Collections.Generic.List[object]

@@ -12,24 +12,26 @@
     "ci-observed": "A CI check conclusion tied to an exact commit SHA."
   },
 
+  "verification_note_2026_07_30": "Sol's review of the first implementation found `verifiable: true` above was aspirational, not actual -- the code only checked that these required fields were present, never that a JUnit file exists and hashes correctly, that a CI check was independently queried, or that a runner-exit-record was produced by anything but the agent's own assertion. scripts/lib/execution-contract-evidence.ps1 now performs the real checks described per adapter below; this field continues to mean 'a real, independent check exists for this type,' and is enforced by tests/helpers/execution-contract-tests.ps1's adversarial cases (fabricated hash, fabricated conclusion, hand-typed run record).",
+
   "test_evidence_adapters": [
     {
       "type": "junit-artifact",
       "verifiable": true,
       "requires": ["path", "sha256"],
-      "reason": "A JUnit XML file on disk whose checksum is recorded, so a later edit is detectable."
+      "reason": "A JUnit XML file, resolved with the same repo-root containment check as a FILE: reference (REF-002), whose real SHA-256 (computed from the file's bytes) must equal the claimed sha256, whose XML is parsed with DTD processing prohibited (no XXE), and whose reported failures+errors across every testsuite must sum to zero."
     },
     {
       "type": "ci-check",
       "verifiable": true,
-      "requires": ["name", "commit_sha", "conclusion"],
-      "reason": "A CI check conclusion bound to an exact commit SHA, independently queryable."
+      "requires": ["name", "commit_sha"],
+      "reason": "A CI check queried live via `gh api repos/<owner>/<repo>/commits/<sha>/check-runs`, matched by name, whose *observed* conclusion (never the result's own claimed `conclusion` field, which is informational only) must be `success`. No `gh` CLI, no authentication, or no resolvable GitHub remote all mean 'unverified,' never a silent pass."
     },
     {
       "type": "runner-exit-record",
       "verifiable": true,
-      "requires": ["command", "exit_code", "recorded_by"],
-      "reason": "An exit record Axiom-PMO's own runner produced. The strongest MVP evidence: Axiom observed the command run."
+      "requires": ["run_record_path"],
+      "reason": "A record scripts/run-execution-command.ps1 produced by actually running the command: a repo-root-contained JSON file plus a `.sha256` sidecar of its exact bytes (the same file+sidecar pattern EXECUTION-CONTRACT.json uses), whose recomputed digest must match, whose work_item_id and contract_sha256 must bind to the contract under verification, and whose sealed exit_code must be 0. The strongest MVP evidence: Axiom observed the command run. `command`/`exit_code` fields on the test_evidence entry itself, if present, are informational only -- the sealed record is authoritative."
     },
     {
       "type": "agent-assertion",
