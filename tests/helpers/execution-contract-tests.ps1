@@ -1003,10 +1003,21 @@ function Write-ResultDoc {
     }
     Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
     $r = Invoke-Verify -Dir $dir
-    Assert-True "ci-check no remote: EXEC-005 raised, never a silent pass on the claimed conclusion" `
-      ((Get-Rules $r.Json) -contains "EXEC-005")
+    $exec005 = (Get-Rules $r.Json) -contains "EXEC-005"
+    if (-not $exec005) {
+      # Diagnostic dump, not asserted on: this case has failed unexplained on
+      # one CI platform before. If it fails again, this prints exactly what
+      # Test-CiCheckEvidence actually decided instead of leaving a bare
+      # pass/fail to guess from -- see whether gh was found, what remote (if
+      # any) resolved, and the full verdict.
+      Write-Host "  DIAGNOSTIC: verdict=$($r.Json.execution_verification.verdict)"
+      Write-Host "  DIAGNOSTIC: fixture remote (should be none): $(Get-FixtureGit $dir remote -v)"
+      Write-Host "  DIAGNOSTIC: gh on PATH: $((Get-Command gh -ErrorAction SilentlyContinue) -ne $null)"
+      Write-Host "  DIAGNOSTIC: all results: $($r.Json.results | ConvertTo-Json -Depth 6 -Compress)"
+    }
+    Assert-True "ci-check no remote: EXEC-005 raised, never a silent pass on the claimed conclusion" $exec005
     Assert-True "ci-check no remote: the result's own claimed conclusion is never read as authoritative" `
-      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-005" })[0]).message -notmatch "success.*success")
+      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-005" }) | Select-Object -First 1).message -notmatch "success.*success")
   } finally { Remove-ExecFixture $dir }
 }.Invoke()
 
