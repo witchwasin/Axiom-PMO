@@ -132,7 +132,7 @@
     "why": "The actor being verified has write access to everything under .execution/** and to the working tree. Any local artifact it can produce, it can forge -- including digests, which prove integrity-since-writing and never provenance. Only an external observer it cannot impersonate, or a human accepting responsibility on the record, changes that.",
     "human_vouch_claim_type": "test-evidence-accepted",
     "vouch_binding": {
-      "_note": "A vouch that names nothing cannot be wrong about anything. The first version of this was a single boolean -- any resolvable decision_ref promoted every artifact-observed entry in the execution, demonstrated with a fabricated JUnit report vouched by a decision about which logging library to use. Bindings are therefore mandatory, and one of them lives outside the actor's reach.",
+      "_note": "A vouch that names nothing cannot be wrong about anything. The first version of this was a single boolean -- any resolvable decision_ref promoted every artifact-observed entry in the execution, demonstrated with a fabricated JUnit report vouched by a decision about which logging library to use. The second version anchored in the decision row but searched it for the digest as a SUBSTRING, which answers 'does this row mention these bytes', not 'did a human approve this artifact for this test' -- a row approving a report for 'unit tests' was reusable for 'integration tests' by relabelling the result document. Bindings are therefore structured, mandatory, and anchored where the actor cannot write.",
       "required_claim_fields": [
         "actor",
         "decision_ref",
@@ -145,9 +145,23 @@
         "contract_sha256"
       ],
       "matching": "Promotion is per evidence entry, never global. Every field present on the claim must match the entry actually being promoted: test_name against the required test, evidence_sha256 against the digest the adapter really computed, and any optional field against its counterpart.",
-      "decision_row_must_name_the_digest": true,
-      "why_the_decision_row": "Claim fields are written by the actor being verified, so binding in the claim alone does not close the bypass -- forge the artifact, hash it, copy that hash into the claim, cite the same unrelated decision, and every field 'matches'. The decision row is the one input the actor cannot author within the verified commit range (decision-log.md must not change inside it), so the row itself must name the artifact's digest.",
-      "residual_limit": "An actor could plant a digest in a decision row during an EARLIER execution for an artifact it intends to forge later. That requires the earlier execution to have passed review carrying an unexplained digest. Narrower and more visible, but not closed."
+      "why_the_decision_row": "Claim fields are written by the actor being verified, so binding in the claim alone does not close the bypass -- forge the artifact, hash it, copy that hash into the claim, cite the same unrelated decision, and every field 'matches'. The decision row is the one input the actor cannot author within the verified commit range (decision-log.md must not change inside it), so the row itself must state what it authorizes, in a form that can be checked field by field.",
+      "residual_limit": "An actor could plant a digest in a decision row during an EARLIER execution for an artifact it intends to forge later. That requires the earlier execution to have passed review carrying an unexplained digest. Narrower and more visible, but not closed.",
+      "decision_row_binding_token": {
+        "syntax": "axiom-authority: type=<claim-type>; work_item=<id>; contract=<contract sha256>; test=<test name>; evidence=<artifact sha256>",
+        "placement": "Anywhere in the decision row. The token runs to the end of the cell it appears in, so put it last in that cell; it is parsed per cell, never across the concatenated row.",
+        "required_fields_all_claims": [
+          "type",
+          "work_item",
+          "contract"
+        ],
+        "required_fields_test_vouch": [
+          "test",
+          "evidence"
+        ],
+        "parsing": "Field by field, exact match (case-insensitive for the two digests). A digest appearing in the row's prose authorizes nothing.",
+        "applies_to": "Every human_only authority claim, not only test-evidence-accepted. A release-approval citing a decision that says nothing about releasing this work item is rejected."
+      }
     }
   }
 }

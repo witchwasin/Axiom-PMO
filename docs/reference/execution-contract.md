@@ -167,13 +167,29 @@ must resolve to exactly one row in `decision-log.md` -- not merely name one;
 `DEC-999-NOT-REAL` is rejected the same as an empty `decision_ref`. It must
 also not have been added or edited **within the commit range under
 verification**: a row the execution's own commits could have introduced is
-not independent authority for that same execution. See
+not independent authority for that same execution.
+
+Resolving is not enough. The row must also **state what it authorizes**, via
+an `axiom-authority:` binding token — otherwise any decision in the log
+satisfies any claim:
+
+```text
+| 2026-07-31 | DEC-014 | Approve release of D-001 | ship / hold | ship |
+  axiom-authority: type=release-approval; work_item=D-001;
+  contract=<contract sha256> | none | approved |
+```
+
+`type`, `work_item` and `contract` are required on every human-only claim. The
+token is parsed field by field, per table cell, and runs to the end of the cell
+it appears in — put it last in that cell. See
 [`EXEC-007`](../rules/EXEC-007.md).
 
 #### Vouching for artifact evidence
 
 `test-evidence-accepted` is the claim type that promotes `artifact-observed`
-evidence so it can satisfy a required test:
+evidence so it can satisfy a required test. It is bound on both sides — the
+claim names the test and the artifact digest, and the decision row's token
+names the same pair:
 
 ```json
 {
@@ -183,15 +199,28 @@ evidence so it can satisfy a required test:
   ],
   "authority_claims": [
     { "type": "test-evidence-accepted", "actor": "human",
-      "claim": "accepted", "decision_ref": "DEC-014" }
+      "claim": "accepted", "decision_ref": "DEC-014",
+      "test_name": "unit tests", "evidence_sha256": "<the same real digest>" }
   ]
 }
 ```
 
-It is held to every condition above — an agent vouching for its own evidence
-is rejected on actor authority, and a `DEC-###` that does not resolve, is
-ambiguous, or was written by this execution's own commits does not promote
-anything.
+```text
+| 2026-07-31 | DEC-014 | Accept unit test evidence for D-001 | ... | accepted |
+  axiom-authority: type=test-evidence-accepted; work_item=D-001;
+  contract=<contract sha256>; test=unit tests; evidence=<the same real digest> | ... |
+```
+
+Both sides are necessary. The claim is written by the actor being verified, so
+claim-side binding alone lets a forger hash their own artifact and copy the
+result into their own claim; the decision row is the one input the actor cannot
+author inside `base..head`. Promotion is per evidence entry, never global: a
+vouch for `unit tests` does nothing for `integration tests`, and a row
+approving one artifact does not carry over to another.
+
+An agent vouching for its own evidence is rejected on actor authority, and a
+`DEC-###` that does not resolve, is ambiguous, was written by this execution's
+own commits, or carries no matching token, promotes nothing.
 
 Deliberately a claim rather than a config flag: a weakening that is
 per-execution, attributable, and recorded in a governed artifact can be

@@ -324,3 +324,114 @@ function Resolve-DecisionRecord {
   $result.Row = $matches[0]
   return $result
 }
+
+# --- Authority binding carried inside a decision row ------------------------
+#
+# Review round 4 found the previous anchor -- "does the digest appear anywhere
+# in the row?" -- proved only that a human had *mentioned* a digest, not that
+# they approved it for anything in particular. Demonstrated: a human accepted
+# a JUnit artifact for "unit tests", the agent reused the same artifact and
+# digest, relabelled the evidence entry and its claim "integration tests", and
+# every check passed. A substring hit is not a binding.
+#
+# The fix is a small structured token the human writes inside the decision
+# row, parsed deterministically field by field rather than searched:
+#
+#   axiom-authority: type=test-evidence-accepted; work_item=D-001;
+#                    contract=<contract-sha256>; test=unit tests;
+#                    evidence=<evidence-sha256>
+#
+# A row may carry several tokens (one decision covering several claims); each
+# is parsed independently and a claim needs exactly one of them to match on
+# every applicable field.
+#
+# Why a token rather than new columns in decision-log.md: the table's column
+# set is a published contract (pmo-config/policy.json table_schemas) that
+# other checks and every existing project depend on. A token inside an
+# existing cell adds machine-readable precision without a schema migration,
+# and reads acceptably to a human reviewing the row.
+#
+# A row with no token binds nothing, so any claim citing it fails closed --
+# which is the correct treatment for decisions written before this existed.
+function Read-DecisionAuthorityBindings {
+  param($Row)
+
+  $bindings = New-Object System.Collections.Generic.List[object]
+  if (-not $Row) { return $bindings }
+
+  # Parsed per cell, not across the whole row concatenated together. The
+  # token runs to the end of the cell it appears in, so gluing cells into one
+  # string makes the following cells' text land inside the last field's value
+  # -- which is exactly how the first version of this silently mangled the
+  # evidence digest. Which column an author uses is still a free choice.
+  $cellTexts = @()
+  foreach ($prop in $Row.PSObject.Properties) { $cellTexts += [string]$prop.Value }
+
+  $payloads = @()
+  foreach ($cell in $cellTexts) {
+    foreach ($m in [regex]::Matches($cell, '(?i)axiom-authority\s*:\s*(.+)$')) {
+      $payloads += $m.Groups[1].Value
+    }
+  }
+
+  foreach ($payload in $payloads) {
+    $fields = @{}
+    foreach ($pair in ($payload -split ';')) {
+      $kv = $pair -split '=', 2
+      if ($kv.Count -ne 2) { continue }
+      $k = $kv[0].Trim().ToLowerInvariant()
+      $v = $kv[1].Trim()
+      if ($k) { $fields[$k] = $v }
+    }
+    if ($fields.Count -gt 0) { $bindings.Add($fields) | Out-Null }
+  }
+  return $bindings
+}
+
+# Does any binding on this decision row authorize this specific claim?
+# Returns $null when one does, or a human-readable reason when none does.
+function Test-DecisionAuthorityBinding {
+  param(
+    $Row,
+    [string]$ClaimType,
+    [string]$WorkItemId,
+    [string]$ContractSha256,
+    # Only meaningful for a test-evidence vouch; ignored otherwise.
+    [string]$TestName = $null,
+    [string]$EvidenceSha256 = $null
+  )
+
+  $bindings = Read-DecisionAuthorityBindings -Row $Row
+  if ($bindings.Count -eq 0) {
+    return "the decision record carries no 'axiom-authority:' binding, so it does not state what it approves. A decision that only mentions a value does not authorize a claim about it -- add a binding token naming the claim type, work item, contract, and (for test evidence) the test and artifact digest."
+  }
+
+  $lastReason = $null
+  foreach ($b in $bindings) {
+    if (-not $b.ContainsKey("type")) { $lastReason = "a binding on the decision record names no claim type"; continue }
+    if ([string]$b["type"] -ne $ClaimType) { $lastReason = "the decision record authorizes '$([string]$b['type'])', not '$ClaimType'"; continue }
+
+    if (-not $b.ContainsKey("work_item")) { $lastReason = "the decision record's binding names no work_item"; continue }
+    if ([string]$b["work_item"] -ne $WorkItemId) { $lastReason = "the decision record authorizes work item '$([string]$b['work_item'])', not '$WorkItemId'"; continue }
+
+    if (-not $b.ContainsKey("contract")) { $lastReason = "the decision record's binding names no contract digest"; continue }
+    if (([string]$b["contract"]).ToLowerInvariant() -ne ([string]$ContractSha256).ToLowerInvariant()) {
+      $lastReason = "the decision record authorizes a different contract digest than the one being verified"
+      continue
+    }
+
+    if ($TestName) {
+      if (-not $b.ContainsKey("test")) { $lastReason = "the decision record's binding names no test"; continue }
+      if ([string]$b["test"] -ne $TestName) { $lastReason = "the decision record approves evidence for test '$([string]$b['test'])', not '$TestName'"; continue }
+    }
+    if ($EvidenceSha256) {
+      if (-not $b.ContainsKey("evidence")) { $lastReason = "the decision record's binding names no evidence digest"; continue }
+      if (([string]$b["evidence"]).ToLowerInvariant() -ne ([string]$EvidenceSha256).ToLowerInvariant()) {
+        $lastReason = "the decision record approves a different artifact digest than the evidence presented"
+        continue
+      }
+    }
+    return $null
+  }
+  return $lastReason
+}
