@@ -492,9 +492,9 @@ Typography: Tahoma / Arial (sans-serif) for voice; Consolas / Courier New
 | | |
 |---|---|
 | **Concepts** | [handoff readiness](docs/concepts/handoff-readiness.md) · [anti-hallucination](docs/concepts/anti-hallucination.md) · [evidence-based execution](docs/concepts/evidence-based-execution.md) · [risk modes](docs/concepts/risk-modes.md) · [human authority](docs/concepts/human-authority.md) |
-| **Guides** | [artifact map](docs/guides/artifact-map.md) · [GitHub Action](docs/guides/github-action.md) · [M1 walkthrough and recording evidence](docs/guides/m1-walkthrough-and-recording.md) · [PowerShell runtime setup](docs/guides/powershell-runtime.md) · [three-day demo handoff](docs/guides/three-day-demo-handoff.md) |
+| **Guides** | [Claude Code integration](docs/guides/claude-code-integration.md) · [Claude Code walkthrough](docs/guides/claude-code-walkthrough.md) · [artifact map](docs/guides/artifact-map.md) · [GitHub Action](docs/guides/github-action.md) · [M1 walkthrough and recording evidence](docs/guides/m1-walkthrough-and-recording.md) · [PowerShell runtime setup](docs/guides/powershell-runtime.md) · [three-day demo handoff](docs/guides/three-day-demo-handoff.md) |
 | **Reference** | [diagnostics contract](docs/reference/diagnostics-contract.md) · [scope declaration (SCOPE-DIFF)](docs/reference/scope-declaration.md) · [execution contract](docs/reference/execution-contract.md) · [rule reference](docs/rules/) |
-| **Architecture** | [control plane](docs/architecture/control-plane.md) · [validation engine](docs/architecture/validation-engine.md) · [execution contract verification](docs/architecture/execution-contract-verification.md) |
+| **Architecture** | [control plane](docs/architecture/control-plane.md) · [M6 threat model](docs/architecture/m6-threat-model.md) · [plugin packaging spike](docs/architecture/plugin-packaging-spike.md) · [validation engine](docs/architecture/validation-engine.md) · [execution contract verification](docs/architecture/execution-contract-verification.md) |
 | **Governance** | [release readiness](docs/governance/release-readiness.md) · [source ownership](docs/governance/source-ownership.md) |
 | **Process** | [Lite](docs/process/lite.md) · [Standard](docs/process/standard.md) · [Strict](docs/process/strict.md) |
 | **Tutorials** | [your first project](docs/tutorials/first-project.md) · [using it with an AI agent](docs/tutorials/using-with-an-ai-agent.md) |
@@ -539,9 +539,13 @@ Next:
 - keep the optional Milestone 1 walkthrough and recording evidence packet
   available for future trust work;
 - Milestone 6, Claude Code integration — **optional, not part of the core
-  product**, not authorized for implementation. Planned only so that a
-  verified handoff can be continued in Claude Code without re-interpreting
-  the documents.
+  product**. Implemented and **under review**; not accepted, not released, and
+  not published to any marketplace. It packages the framework as a Claude Code
+  plugin and adds one fenced block to a repository's `AGENTS.md` so a verified
+  handoff can be continued without re-interpreting the documents. It hands the
+  agent governed context; it does not enforce scope. See
+  [the integration guide](docs/guides/claude-code-integration.md) and
+  [the 15-minute walkthrough](docs/guides/claude-code-walkthrough.md).
 
 The active roadmap is intentionally limited to Milestones 1 through 6, of
 which **1 through 5 are the product** and 6 is an optional integration.
@@ -563,8 +567,8 @@ enforcement, so a pull request can be checked — and, optionally, blocked —
 directly in CI. **Milestones 1–5 — the core governance and
 development-handoff framework — are complete**, with Milestone 5 (execution
 contract verification) accepted and closed on 2026-07-31. Milestone 6, the
-optional Claude Code integration bridge, remains on the
-[roadmap](ROADMAP.md) and is not authorized for implementation.
+optional Claude Code integration bridge, is implemented and **under review** --
+not accepted, not released, and not published.
 
 Upgrading from 1.1 requires no migration: the Action and SCOPE-DIFF are both
 opt-in, and every existing local invocation is unaffected. Migrating from the

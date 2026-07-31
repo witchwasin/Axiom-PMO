@@ -108,7 +108,7 @@ Recommended effort allocation:
 | Milestone 4 - GitHub Action | Delivered | Merged to `main` at `31d1e25`; child issues #12-#17 closed |
 | Milestone 4.5 - SCOPE-DIFF | Delivered | Human Owner accepted 2026-07-30 after two independent AI review rounds; merged to `main` at `6b42643` |
 | Milestone 5 - Execution Contract Verification MVP | **Delivered / CLOSED** -- Sol ACCEPT at round 5 after four REQUEST CHANGES rounds; Human Owner accepted and closed 2026-07-31 (`DEC-004`) | Core product. `docs/reference/execution-contract.md`; decisions `DEC-002`, `DEC-004`; commit `2888769`, CI run `30643605031` 7/7 |
-| Milestone 6 - Claude Code Integration Experience | Planned; **optional integration, not core product** | Implementation blocked pending a separate Human Owner instruction |
+| Milestone 6 - Claude Code Integration Experience | 6.0 decided; 6.1 spike accepted; **6.2-6.5 implemented and under review** -- not accepted, not released, not published | Optional integration, not core product. `docs/guides/claude-code-integration.md`; `docs/architecture/m6-threat-model.md`; decision `DEC-003` |
 
 ## Roadmap Governance
 
@@ -146,7 +146,7 @@ Milestone 1 delivered, with walkthrough/recording evidence deferred
 -> Milestone 4 (delivered)
 -> Milestone 4.5 (delivered)
 -> Milestone 5 (delivered -- closed 2026-07-31)     <- end of core product
--> Milestone 6 (optional integration; not authorized for implementation)
+-> Milestone 6 (optional integration; implemented, under review)
 ```
 
 Milestone 2.5 sits between diagnostics and the CLI deliberately. The CLI's
@@ -872,16 +872,51 @@ Non-goals, stated because the framing is easy to lose:
 - It is not a requirement for using Axiom-PMO.
 - It does not move any authority, evidence, or approval logic out of the core.
 
-Status: **Milestone 6.0 (the integration-shape decision) decided 2026-07-30
-(HYBRID)**, reviewed by Sol as **ACCEPT WITH MINOR REVISIONS** (revisions
-applied: wording on cross-harness compatibility, MCP reframed from rejected to
-deferred, hook sequenced explicitly as M6.5 after the packaging MVP).
+Status: **6.2-6.5 implemented; under review.** Not accepted, not delivered,
+not released, and not published to any marketplace. Authorized by the Human
+Owner on 2026-07-31 after the 6.1 spike was accepted.
 
-**Milestone 6.1 and beyond are blocked pending a separate instruction from the
-Human Owner** -- Milestone 5's acceptance does not unblock them. 6.1+ is itself
-sequenced as M6.1-M6.5 rather than one milestone (see the architecture doc's
-§8) so a packaging spike finding does not get built on top of before it is
-checked.
+| Phase | Status |
+|---|---|
+| 6.0 integration shape decision | Decided (HYBRID); Sol: ACCEPT WITH MINOR REVISIONS, applied |
+| 6.1 packaging spike | **Accepted** by the Human Owner, 2026-07-31 |
+| 6.2 plugin packaging + drift gate | Implemented |
+| 6.3 setup / uninstall / rollback | Implemented |
+| 6.4 clean-room compatibility | Implemented, with a real plugin-load transcript |
+| 6.5 optional advisory hook | Implemented, report-only and off by default |
+
+What it does: packages the seven skills, the validators, the config and the
+templates as a Claude Code plugin (installed outside the user's repository),
+and appends one fenced, namespaced block to the repository's `AGENTS.md`.
+
+What it does **not** do, stated because this is the easiest thing to
+misrepresent:
+
+> Claude Code receives the approved scope and authority as governed context.
+> Axiom-PMO verifies afterwards whether the implementation remained within
+> them. Nothing in Milestone 6 prevents an out-of-scope edit.
+
+Detection stays where it was -- SCOPE-DIFF and the `EXEC-*` rules, after
+execution. No authority, evidence, or approval logic moved out of Milestones
+1-5, and `tests/helpers/clean-room-tests.ps1` asserts that rather than leaving
+it as prose.
+
+The layout deviates from the shape this milestone was authorized with, on
+evidence. The authorization proposed a `plugin/` subdirectory installed via
+`git-subdir`; building it that way would have required copying `scripts/`,
+`cli/`, `pmo-config/` and `templates/` into that subdirectory, because a
+`git-subdir` install fetches only that subdirectory -- which is duplicating the
+validator, and the same authorization forbids it. The plugin root is therefore
+the repository root (`source: "./"`), nothing moves, and the only generated
+directory is `skills/`, gated against drift in CI.
+
+Known limitations are listed in
+[`docs/guides/claude-code-integration.md`](docs/guides/claude-code-integration.md#known-limitations),
+residual risks in
+[`docs/architecture/m6-threat-model.md`](docs/architecture/m6-threat-model.md).
+Three deserve a reviewer's attention: plugin update/version drift is untested,
+cross-plugin hook ordering is unverified, and a git-source install carries the
+whole repository.
 
 ### Milestone 6.0 - Integration shape decision
 

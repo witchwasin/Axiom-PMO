@@ -2,6 +2,58 @@
 
 ## Unreleased
 
+### Implemented, under review — not accepted, not released
+
+- **Claude Code integration (Milestone 6).** Optional. Milestones 1-5 are the
+  product; this is a bridge for teams who choose to continue implementation in
+  Claude Code after a handoff is verified, and nothing in Milestones 1-5
+  requires it.
+
+  The framework installs as a Claude Code plugin, outside the user's
+  repository. One fenced, namespaced block goes into the repository's
+  `AGENTS.md` -- that file has to be a file, because Codex and Cursor read it
+  too and a Claude-only plugin would not reach them.
+
+  **What it does not do, stated first because it is the easiest thing to
+  misrepresent:** it hands Claude Code the approved scope and authority as
+  governed context. It does not enforce them. Nothing in Milestone 6 prevents
+  an out-of-scope edit; SCOPE-DIFF and the `EXEC-*` rules detect one
+  afterwards, exactly as before. No authority, evidence, or approval logic
+  moved out of Milestones 1-5.
+
+  - **6.1 spike** established what a plugin can actually do, from a real
+    installed marketplace rather than recollection, and proved the framework
+    runs from a non-checkout, non-cwd, read-only install root. Accepted by the
+    Human Owner 2026-07-31. It also found that no directory move is needed and
+    that the approved fallback was not needed.
+  - **6.2 packaging.** Plugin root is the repository root, so `scripts/`,
+    `cli/`, `pmo-config/` and `templates/` stay exactly where they are and the
+    validator is not duplicated. Claude Code discovers skills only from
+    `<plugin-root>/skills/`, so that directory is a generated mirror of
+    `.claude/skills/` with a CI drift gate covering four separate directions.
+    Maintainer-only tools now fail with `FRAMEWORK-001` outside a checkout
+    instead of a raw exception.
+  - **6.3 setup and uninstall.** One fenced block, ownership proven by a
+    digest in the marker, atomic writes, backups, idempotent, byte-identical
+    round trip including CRLF and BOM. Refuses rather than guessing when
+    markers are malformed or the block was hand-edited.
+  - **6.4 clean-room.** Ten pre-existing repository shapes -- CLAUDE.md,
+    AGENTS.md, both, custom skills and commands, Superpowers, BMAD, malformed
+    markers, already-installed, edits-after-setup -- fingerprinted file by
+    file. Plus a real `claude plugin` install transcript: 7 skills, 1 hook.
+  - **6.5 advisory hook.** Opt-in per project, report-only, ~9 ms disabled and
+    ~230 ms enabled. It cannot emit a permission decision, and that is
+    asserted against its source rather than only its output.
+
+  Three residual risks are named rather than buried: plugin update/version
+  drift is untested, cross-plugin hook ordering is unverified, and a
+  git-source install carries the whole repository (~10 MB, mostly `tests/`).
+  Full list in `docs/architecture/m6-threat-model.md`.
+
+  Tests added: 17 spike, 33 packaging, 90 setup, 61 clean-room, 46 hook.
+  No external-user validation yet -- `docs/guides/claude-code-walkthrough.md`
+  exists for exactly that and has not been run by anyone outside the team.
+
 ### Accepted and closed
 
 - **Execution contract verification (Milestone 5).** Reviewed by Sol across
