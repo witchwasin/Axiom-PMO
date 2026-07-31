@@ -180,8 +180,9 @@ satisfies any claim:
 ```
 
 `type`, `work_item` and `contract` are required on every human-only claim. The
-token is parsed field by field, per table cell, and runs to the end of the cell
-it appears in — put it last in that cell. See
+token is parsed field by field, per table cell, and runs until the next
+`axiom-authority:` or the end of its cell — so one row may carry several
+bindings, sharing a cell or not. See
 [`EXEC-007`](../rules/EXEC-007.md).
 
 #### Vouching for artifact evidence

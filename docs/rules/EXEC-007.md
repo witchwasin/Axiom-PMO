@@ -43,8 +43,10 @@ axiom-authority: type=release-approval; work_item=D-001; contract=<contract sha2
 | `test` | test vouches | the required test name |
 | `evidence` | test vouches | the artifact digest the adapter computed |
 
-Parsed field by field, per table cell — the token runs to the end of the cell
-it appears in, so put it last in that cell. A row that merely *mentions* a
+Parsed field by field, per table cell. A token runs until the next
+`axiom-authority:` or the end of its cell, so one row can carry several — a
+decision that both accepts test evidence and approves a release needs two, and
+they may share a cell. A row that merely *mentions* a
 digest or a work item in prose authorizes nothing; that substring search was
 the round-4 bypass, and [`EXEC-005`](EXEC-005.md) records how it was exploited.
 A row with no token fails closed.

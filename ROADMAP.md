@@ -21,6 +21,9 @@ work.
 Axiom-PMO should be presented as:
 
 > The governance control plane for AI-assisted software delivery.
+>
+> **Axiom-PMO prepares and verifies development handoffs. It does not replace
+> developers or execution frameworks.**
 
 Axiom-PMO owns policy, evidence, traceability, approval gates, release
 readiness, and agent authority. Execution frameworks such as Superpowers, BMAD,
@@ -29,6 +32,39 @@ implementation mechanics.
 
 Axiom-PMO should not compete with execution frameworks. It should define the
 control layer they operate inside.
+
+### Core product versus optional integration
+
+Set by the Human Owner (Witchwasin K., 2026-07-31) and binding on how this
+repository is documented and presented.
+
+> **Milestones 1-5 are the core Axiom-PMO product: a governance and
+> development-handoff framework. Milestone 6 is an optional bridge for users
+> who later choose to continue implementation with Claude Code.**
+
+| | Core product - Milestones 1 to 5 | Optional integration - Milestone 6 |
+|---|---|---|
+| What it is | Governance, handoff readiness, scope and evidence verification, a developer-ready delivery package | A bridge from a verified handoff to Claude Code |
+| Who it serves | PM, Product Owner, or an AI acting as one, preparing work a developer can pick up | Teams who decide to continue implementation with an AI execution tool |
+| Required to use Axiom-PMO | Yes | **No** |
+| What it does *not* do | Write the system | Turn Axiom-PMO into a coding framework |
+
+What the core exists to do:
+
+- prepare a development handoff that is complete;
+- let a PM, Product Owner, or AI hand a work package to a developer who can
+  pick it up and build;
+- check requirements, scope, design readiness, traceability, tests, evidence
+  and authority;
+- check that what an AI *reports* it did matches the evidence and the actual
+  repository state.
+
+Milestone 6 exists so that a verified handoff can be continued in Claude Code
+without re-interpreting the documents or rebuilding an integration from
+scratch. It is an execution integration, not a change of product.
+
+This repository is **not** primarily a place for developers to come and write
+the system. Documentation must not read that way.
 
 ## North Star User Journey
 
@@ -71,8 +107,8 @@ Recommended effort allocation:
 | Milestone 3.5 - Runtime Portability | Accepted | CI threshold met; branch protection deferred by human decision |
 | Milestone 4 - GitHub Action | Delivered | Merged to `main` at `31d1e25`; child issues #12-#17 closed |
 | Milestone 4.5 - SCOPE-DIFF | Delivered | Human Owner accepted 2026-07-30 after two independent AI review rounds; merged to `main` at `6b42643` |
-| Milestone 5 - Execution Contract Verification MVP | 5.0 decided (GO WITH REFRAME); 5.1-5.4 through four REQUEST CHANGES rounds, fixes applied, awaiting re-review -- **not accepted, not delivered** | `docs/reference/execution-contract.md`; decision `DEC-002`; findings and fixes tracked below |
-| Milestone 6 - Claude Code Integration Experience | Planned | Requires separate approval after Milestone 5 |
+| Milestone 5 - Execution Contract Verification MVP | **Reviewed / ACCEPT** at round 5 (Independent AI Reviewer, 2026-07-31) after four REQUEST CHANGES rounds; Human Owner closure confirmation pending | `docs/reference/execution-contract.md`; decision `DEC-002`; commit `87d3a7c`, CI run `30640858800` 7/7 |
+| Milestone 6 - Claude Code Integration Experience | Planned; **optional integration, not core product** | Implementation blocked pending a separate Human Owner instruction |
 
 ## Roadmap Governance
 
@@ -663,10 +699,18 @@ enough that a second integration could reuse it later without a rewrite.
 
 ### Milestone 5.1 - 5.4
 
-Status: **Fixes applied for a fourth REQUEST CHANGES round; awaiting
-re-review and Human Owner acceptance.** Not yet delivered -- do not treat
-Milestone 5 as shipped until this section says the re-review passed and
-Human Owner accepted.
+Status: **Reviewed -- ACCEPT (Independent AI Reviewer, round 5, 2026-07-31).** Certified at commit
+`87d3a7cb526bb93ea617e9574df2d19fa85cef87`, CI run `30640858800`, 7/7 jobs
+green including Windows PowerShell 5.1.
+
+**Human Owner closure confirmation is still pending**, so this is recorded as
+reviewed and accepted by independent review, not as closed. Do not mark
+Milestone 5 delivered until a Human Owner acceptance record exists, the way
+Milestone 4.5 has one.
+
+It took five rounds and four REQUEST CHANGES to get here. The findings below
+are kept in full rather than summarized away, because the sequence is the
+useful part.
 
 **Round 2 (2026-07-30) found the round-1 FATAL fix incomplete**, and the
 finding is worth stating plainly because it is the most important thing this
@@ -717,8 +761,8 @@ original gap and confirming the fix, plus one MINOR:
   result claims changed that git shows no evidence of is reported, not only
   the reverse.
 
-118 adversarial cases (`tests/helpers/execution-contract-tests.ps1`, up from
-57) reproduce each gap across all four rounds and confirm each fix: fabricated
+120 adversarial cases (`tests/helpers/execution-contract-tests.ps1`, up from
+57) reproduce each gap across all five rounds and confirm each fix: fabricated
 JUnit hash, missing/traversal path, real failures with a correct hash,
 tampered and mismatched-work-item run records, no-remote `ci-check`,
 deleted/empty/malformed sidecars, fake and ambiguous `DEC-###` references,
@@ -758,12 +802,25 @@ slightly different question than the one that mattered. Field presence
 instead of ground truth (round 1); integrity instead of provenance (round
 2); resolvability instead of relevance (rounds 3 and 4).
 
+**Round 5 (2026-07-31): ACCEPT.** No security finding. One non-blocking
+documentation/runtime mismatch: the docs said a decision row could carry
+several `axiom-authority` tokens, while the parser matched greedily to
+end-of-cell and read two tokens sharing a cell as one malformed payload.
+Fixed in the parser rather than the docs -- a token now runs until the next
+`axiom-authority:` or the end of its cell -- with two cases added: two
+bindings in one cell both resolving, and two near-miss bindings not combining
+into an authorization.
+
+Still open and unchanged, non-blocking by reviewer agreement: `ci-check`
+matches a check run by *name*, so a check that failed and was later re-run
+green produces a permanent false negative.
+
 | Phase | Status |
 |---|---|
 | 5.1 contract export | Built |
 | 5.2 result import | Fixed: mandatory sidecar |
 | 5.3 authority + scope + evidence | Fixed: provenance tiers (artifact-observed evidence no longer satisfies a required test alone), real decision resolution |
-| 5.4 integration tests | Expanded: 118 cases, including the forged-record bypass (round 2), the unbound-vouch bypass (round 3), and the substring-anchor and unbound-non-test-claim bypasses (round 4) |
+| 5.4 integration tests | Expanded: 120 cases, including the forged-record bypass (round 2), the unbound-vouch bypass (round 3), the substring-anchor and unbound-non-test-claim bypasses (round 4), and multi-token decision rows (round 5, non-blocking) |
 
 Rules `EXEC-001` to `EXEC-008`, each with a `docs/rules/` page. Policy lives
 in `pmo-config/execution-contract-policy.json`.
@@ -790,10 +847,28 @@ repository state alone.
 
 ## Milestone 6 - Claude Code Integration Experience
 
-Objective: make Axiom-PMO natural for Claude Code users without damaging
-existing repository configuration.
+> **Optional integration. Not part of the core product.**
+>
+> Milestones 1-5 are the core Axiom-PMO product. A team can adopt Axiom-PMO,
+> run every gate, and hand verified work to a developer without ever touching
+> Milestone 6. This milestone exists only for teams who then choose to
+> continue implementation with Claude Code, so that a verified handoff can be
+> picked up directly instead of re-interpreted.
 
-Status: **planned; requires separate approval after Milestone 5.**
+Objective: let a verified Axiom-PMO handoff be continued in Claude Code
+without re-interpreting the documents or rebuilding an integration -- without
+damaging existing repository configuration, and without turning Axiom-PMO into
+a coding framework.
+
+Non-goals, stated because the framing is easy to lose:
+
+- Milestone 6 does not make Axiom-PMO a development framework or a repo
+  developers come to in order to write systems.
+- It is not a requirement for using Axiom-PMO.
+- It does not move any authority, evidence, or approval logic out of the core.
+
+Status: **planned. Implementation blocked pending a separate instruction from
+the Human Owner** -- Milestone 5 acceptance does not unblock it.
 
 Do not assume the final shape is an installer. Prototype and evaluate:
 
