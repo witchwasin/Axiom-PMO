@@ -81,6 +81,10 @@ Invoke-Check "plugin-skills-drift" { & $ps -NoProfile -ExecutionPolicy Bypass -F
 # owns. Adversarial by design -- malformed markers, hand edits, CRLF, BOM,
 # symlinks, read-only targets, and content trying to manufacture authority.
 Invoke-Check "setup-integration" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/setup-integration-tests.ps1") -RepoPath $repo }
+# Milestone 6.5: the optional advisory hook. Weighted towards what it must NOT
+# do -- speak when nobody opted in, emit a permission decision, or break a tool
+# call when anything goes wrong.
+Invoke-Check "hook-advisory" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/hook-advisory-tests.ps1") -RepoPath $repo }
 # Milestone 6.1 spike: the framework must keep working when its files are not
 # in a git checkout, not the cwd, and not writable -- the way a Claude Code
 # plugin is installed. Run on every host, because the failure mode this guards

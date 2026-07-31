@@ -1,0 +1,17 @@
+{
+  "description": "Axiom-PMO scope advisory. Report-only and opt-in: with no .axiom/hooks.json in the project declaring scope_advisory: true, this exits immediately and says nothing. It never returns a permission decision -- SCOPE-DIFF and the EXEC-* rules remain the checks that decide anything.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/scope-advisory.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
