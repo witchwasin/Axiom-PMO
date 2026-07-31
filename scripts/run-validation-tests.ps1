@@ -16,6 +16,11 @@ $ErrorActionPreference = "Stop"
 
 $root = Resolve-Path -LiteralPath $RepoPath
 $repo = $root.Path
+
+# Maintainer-only: audits the framework's own checkout, so it fails with a
+# diagnostic rather than a raw exception when run from a packaged install.
+. (Join-Path $PSScriptRoot "lib/framework-checkout.ps1")
+Assert-FrameworkCheckout -Root $repo -ToolName "run-validation-tests" -Alternative "scripts/validate-project.ps1 -ProjectPath <your project>"
 $validator = Join-Path $repo "scripts/validate-project.ps1"
 
 $pwshExe = Get-PowerShellHost

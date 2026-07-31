@@ -1,0 +1,17 @@
+{
+  "name": "axiom-pmo",
+  "owner": {
+    "name": "WITCHWASIN K.",
+    "url": "https://github.com/witchwasin"
+  },
+  "plugins": [
+    {
+      "name": "axiom-pmo",
+      "description": "Governance and development-handoff skills for Axiom-PMO. Optional: Milestones 1-5 work without it.",
+      "author": { "name": "WITCHWASIN K." },
+      "category": "workflow",
+      "source": "./",
+      "homepage": "https://github.com/witchwasin/Axiom-PMO"
+    }
+  ]
+}

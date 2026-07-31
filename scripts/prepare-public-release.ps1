@@ -31,6 +31,11 @@ if (-not $pwshExe) {
 }
 if (-not $RepoPath) { $RepoPath = Join-Path $PSScriptRoot ".." }
 $repo = (Resolve-Path -LiteralPath $RepoPath).Path
+
+# Maintainer-only: audits the framework's own checkout, so it fails with a
+# diagnostic rather than a raw exception when run from a packaged install.
+. (Join-Path $PSScriptRoot "lib/framework-checkout.ps1")
+Assert-FrameworkCheckout -Root $repo -ToolName "prepare-public-release" -Alternative "scripts/validate-project.ps1 -ProjectPath <your project>"
 # Derived from VERSION, never hardcoded. A release helper that suggests a tag
 # from a previous release is worse than one that suggests none: it reads as
 # authoritative, and the version it names is the one that gets typed.

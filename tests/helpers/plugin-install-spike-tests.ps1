@@ -188,12 +188,17 @@ try {
   Assert-True "pmo-doctor is a maintainer tool and does not survive a plugin install" `
     ($doctor.ExitCode -ne 0) `
     ("pmo-doctor unexpectedly succeeded; if it no longer needs a checkout, this split has changed")
-  # It fails, correctly -- but it fails with a raw PowerShell exception rather
-  # than a diagnostic. Recorded as a finding for M6.2, not fixed here: the
-  # spike's job is to establish what is true, not to start the implementation.
-  Assert-True "…and today it fails with a raw exception rather than a diagnostic (known finding)" `
-    ($doctor.Text -match "(?i)Get-Content|Cannot find path|FileNotFound") `
-    ("if this now fails cleanly, the M6.2 finding is resolved and this case should be inverted")
+  # M6.2 closed the half of this that WAS a defect: it still fails, correctly,
+  # but now with a diagnostic naming the tool, what it looked for, why a plugin
+  # install cannot satisfy it, and which command the user probably wanted.
+  Assert-True "…and fails with a FRAMEWORK-001 diagnostic, not a raw exception" `
+    ($doctor.Text -match "FRAMEWORK-001") `
+    ($doctor.Text.Substring(0, [Math]::Min(400, $doctor.Text.Length)))
+  Assert-True "…and the diagnostic redirects to the user-facing command" `
+    ($doctor.Text -match "validate-project\.ps1")
+  Assert-True "…and no raw PowerShell exception leaks alongside it" `
+    ($doctor.Text -notmatch "(?i)Get-Content:|Cannot find path|FileNotFoundException") `
+    ($doctor.Text.Substring(0, [Math]::Min(400, $doctor.Text.Length)))
 
   # ---- Q: framework root vs project root, kept distinct? -----------------
   $validate = Invoke-Framework -InstallRoot $install -RelativeScript "scripts/validate-project.ps1" `

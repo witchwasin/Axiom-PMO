@@ -10,6 +10,11 @@ $ErrorActionPreference = "Stop"
 $root = Resolve-Path -LiteralPath $RepoPath
 $repo = $root.Path
 
+# Maintainer-only: audits the framework's own checkout, so it fails with a
+# diagnostic rather than a raw exception when run from a packaged install.
+. (Join-Path $PSScriptRoot "lib/framework-checkout.ps1")
+Assert-FrameworkCheckout -Root $repo -ToolName "run-all-checks" -Alternative "scripts/validate-project.ps1 -ProjectPath <your project>"
+
 $ps = Get-PowerShellHost
 if (-not $ps) {
   Write-Host (Get-PowerShellHostMissingMessage)
@@ -67,6 +72,11 @@ Invoke-Check "handoff-assessment" { & $ps -NoProfile -ExecutionPolicy Bypass -Fi
 Invoke-Check "scope-diff" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/scope-diff-tests.ps1") -RepoPath $repo }
 Invoke-Check "execution-contract" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/execution-contract-tests.ps1") -RepoPath $repo }
 Invoke-Check "demo-smoke" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/demo-smoke-tests.ps1") -RepoPath $repo }
+# Milestone 6.2: the plugin manifests, and the drift gate on the generated
+# skills/ mirror. A mirror maintained by convention drifts; this makes it a
+# build failure instead.
+Invoke-Check "plugin-package" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/plugin-package-tests.ps1") -RepoPath $repo }
+Invoke-Check "plugin-skills-drift" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/build-plugin-package.ps1") -Check }
 # Milestone 6.1 spike: the framework must keep working when its files are not
 # in a git checkout, not the cwd, and not writable -- the way a Claude Code
 # plugin is installed. Run on every host, because the failure mode this guards
