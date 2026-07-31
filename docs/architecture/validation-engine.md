@@ -97,6 +97,15 @@ contract is [`docs/reference/diagnostics-contract.md`](../reference/diagnostics-
 - **Generator-to-release E2E** exercises a real generated project end to end,
   including the Handoff gate, and asserts that an unfilled generated scaffold
   *fails* that gate.
+- **Cross-host guard** (`DOCTOR-010`) fails the build when a script under
+  `scripts/` invokes a native command without protecting against Windows
+  PowerShell 5.1's stderr-as-terminating-error behaviour. It exists because
+  that one difference caused three separate shipped defects, each invisible
+  on the host they were written on. The wider set of cross-host pitfalls that
+  have actually bitten this codebase — `ConvertTo-Json` spacing, `Get-Content
+  -Raw` returning `$null`, `Invoke-Expression` running in-process,
+  case-insensitive `-match` — is written up in
+  [powershell-portability.md](powershell-portability.md).
 
 See [risk modes](../concepts/risk-modes.md) for effective-mode resolution and
 [evidence-based execution](../concepts/evidence-based-execution.md) for reference

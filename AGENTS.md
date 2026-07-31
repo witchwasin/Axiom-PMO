@@ -208,3 +208,13 @@ powershell -ExecutionPolicy Bypass -File scripts/assess-handoff.ps1 -ProjectPath
 ```
 
 Validation checks structure, placeholders, source references, approval authenticity, task source consistency, blockers, sensitive file pre-checks, basic local links, negative fixtures, and -- at the Handoff gate -- scope contract, build order, ownership, build-spec completeness, acceptance testability, declared data classification, declared runtime capabilities, and semantic review freshness.
+
+### Before changing PowerShell under `scripts/`
+
+Read [`docs/architecture/powershell-portability.md`](docs/architecture/powershell-portability.md) first.
+
+The required hosts are Windows PowerShell 5.1 and PowerShell 7 on Windows, Linux, and macOS. Constructs that look ordinary behave differently across them, silently, and a green local run proves less than it appears to -- the maintainer machine cannot run 5.1 at all. Every pitfall in that document caused a real shipped defect here, and one of them shipped **three times** because the lesson lived only in a commit message.
+
+The highest-frequency one: under `$ErrorActionPreference = "Stop"`, Windows PowerShell 5.1 turns *any* native command's stderr into a terminating error -- including informational output, and despite `2>$null`. `DOCTOR-010` enforces this for `scripts/`; the reasoning and the other pitfalls are in the document.
+
+When a check fails only on a host you cannot run, read the CI log rather than guessing a fix. If the log is not conclusive, push a diagnostic that prints the real state first -- a wrong guess costs a full CI round-trip, and this milestone lost three to exactly that.

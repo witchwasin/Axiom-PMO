@@ -84,6 +84,12 @@ function Get-FixtureGit {
   try {
     $out = & git -C $Dir @GitArgs 2>$null
     if ($out -is [array]) { $out = $out[0] }
+    # Explicit $null check, not a [string] cast: a git command that outputs
+    # nothing (e.g. `remote -v` on a repo with no remotes) yields $null, and
+    # casting that null does not reliably produce a real .NET string on
+    # Windows PowerShell 5.1 -- the diagnostic added for the ci-check case
+    # crashed on exactly this before it could print anything useful.
+    if ($null -eq $out) { return "" }
     return ([string]$out).Trim()
   } finally { $ErrorActionPreference = $previous }
 }
@@ -984,6 +990,50 @@ function Write-ResultDoc {
   } finally { Remove-ExecFixture $dir }
 }.Invoke()
 
+# ---- Case: a passing command that writes to stderr still seals and verifies
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+
+    # The command writes to stderr AND exits 0 -- the shape of essentially
+    # every real test runner (npm, pytest, jest all emit progress/warnings on
+    # stderr while passing). Every other case in this file uses `echo ok` or
+    # `exit 1`, neither of which writes to stderr, which is exactly why a real
+    # defect here went unnoticed: run-execution-command.ps1 sets
+    # ErrorActionPreference = "Stop", and Windows PowerShell 5.1 turns native
+    # stderr into a terminating error under "Stop", so on that host the runner
+    # would die before sealing a record -- an ordinary passing test suite
+    # reported as a crash. Asserting on a stderr-writing command is what keeps
+    # that fixed.
+    $previous = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+    & $pwshExe -NoProfile -ExecutionPolicy Bypass -File $runExecutionScript `
+      -ProjectPath $dir -WorkItemId "D-001" -Name "unit tests" `
+      -Command "echo 'warning: noisy but fine' 1>&2; echo ok" 2>&1 | Out-Null
+    $ErrorActionPreference = $previous
+
+    $recordFile = @(Get-ChildItem -LiteralPath (Join-Path $dir ".execution/D-001/runs") -Filter "*.json" -ErrorAction SilentlyContinue |
+      Where-Object { $_.Name -notmatch '\.sha256$' })[0]
+    Assert-True "stderr-writing command: a sealed record was still produced" ($null -ne $recordFile)
+
+    if ($recordFile) {
+      $relRunRecordPath = ".execution/D-001/runs/$($recordFile.Name)"
+      $f = Get-BaseResultFields -Dir $dir
+      $doc = [ordered]@{
+        contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+        base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
+        changed_files = @()
+        test_evidence = @([ordered]@{ type = "runner-exit-record"; name = "unit tests"; run_record_path = $relRunRecordPath })
+      }
+      Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
+      $r = Invoke-Verify -Dir $dir
+      Assert-True "stderr-writing command: verdict pass (stderr is not failure)" `
+        ($r.Json.execution_verification.verdict -eq "pass") `
+        ("verdict=" + $r.Json.execution_verification.verdict + " fails=" + ((Get-Rules $r.Json) -join ","))
+    }
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
 # ---- FATAL fix: ci-check must query live, never trust the result's claim --
 
 # ---- Case: ci-check with no resolvable GitHub remote -> unverified --------
@@ -1003,10 +1053,21 @@ function Write-ResultDoc {
     }
     Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
     $r = Invoke-Verify -Dir $dir
-    Assert-True "ci-check no remote: EXEC-005 raised, never a silent pass on the claimed conclusion" `
-      ((Get-Rules $r.Json) -contains "EXEC-005")
+    $exec005 = (Get-Rules $r.Json) -contains "EXEC-005"
+    if (-not $exec005) {
+      # Diagnostic dump, not asserted on: this case has failed unexplained on
+      # one CI platform before. If it fails again, this prints exactly what
+      # Test-CiCheckEvidence actually decided instead of leaving a bare
+      # pass/fail to guess from -- see whether gh was found, what remote (if
+      # any) resolved, and the full verdict.
+      Write-Host "  DIAGNOSTIC: verdict=$($r.Json.execution_verification.verdict)"
+      Write-Host "  DIAGNOSTIC: fixture remote (should be none): $(Get-FixtureGit $dir remote -v)"
+      Write-Host "  DIAGNOSTIC: gh on PATH: $((Get-Command gh -ErrorAction SilentlyContinue) -ne $null)"
+      Write-Host "  DIAGNOSTIC: all results: $($r.Json.results | ConvertTo-Json -Depth 6 -Compress)"
+    }
+    Assert-True "ci-check no remote: EXEC-005 raised, never a silent pass on the claimed conclusion" $exec005
     Assert-True "ci-check no remote: the result's own claimed conclusion is never read as authoritative" `
-      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-005" })[0]).message -notmatch "success.*success")
+      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-005" }) | Select-Object -First 1).message -notmatch "success.*success")
   } finally { Remove-ExecFixture $dir }
 }.Invoke()
 
