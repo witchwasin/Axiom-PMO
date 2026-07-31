@@ -348,3 +348,36 @@ jobs:
             exit 1
           fi
           echo "Enforcement correctly failed the step for a real SCOPE-DIFF violation."
+
+  # The one adapter with a real external trust boundary is also the one that
+  # cannot be tested offline: verifying a ci-check means querying the GitHub
+  # API for a check run on an exact commit. The offline suite therefore only
+  # covers the negative path (no remote -> unverified), which review correctly
+  # called a MAJOR test gap -- the positive path, where a real check run is
+  # found and its observed conclusion decides the verdict, had never executed.
+  #
+  # This job closes that. It runs where a real API, a real repository, and real
+  # check runs exist, and asserts all four directions: a genuine passing check
+  # verifies; a check name that does not exist does not; a commit SHA with no
+  # such check does not; and -- the one that matters most -- a result claiming
+  # `conclusion: success` for a check the API reports otherwise is still
+  # rejected, because the claimed conclusion is never read.
+  dogfood-ci-check-evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    # Read access to check runs on this repository's own commits.
+    permissions:
+      contents: read
+      checks: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Verify the ci-check adapter against the real GitHub API
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File tests/helpers/ci-check-evidence-live-tests.ps1 -RepoPath .

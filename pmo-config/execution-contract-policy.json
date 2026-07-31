@@ -2,45 +2,48 @@
   "version": "1.2.0",
   "schema_version": "1.0",
   "purpose": "Runtime policy for Milestone 5 execution-contract verification (scripts/lib/execution-contract-*.ps1). Defines what an execution result may claim, which claims Axiom-PMO can verify against observable ground truth, and which actors may grant which authority. Design rationale: docs/architecture/execution-contract-verification.md.",
-
   "core_principle": "An agent-authored EXECUTION-RESULT.json is written by the same actor being verified. It is a claim, not evidence, until Axiom-PMO independently confirms it against git ground truth or a checked CI run.",
-
-  "evidence_origins": {
-    "agent-claimed": "Written by the execution agent. Never sufficient on its own to satisfy a required check.",
-    "git-observed": "Confirmed by Axiom-PMO against the repository's own git state (commits, diffs, refs).",
-    "runner-observed": "Produced by Axiom-PMO's own runner executing a command, not by the agent.",
-    "ci-observed": "A CI check conclusion tied to an exact commit SHA."
-  },
-
-  "verification_note_2026_07_30": "Sol's review of the first implementation found `verifiable: true` above was aspirational, not actual -- the code only checked that these required fields were present, never that a JUnit file exists and hashes correctly, that a CI check was independently queried, or that a runner-exit-record was produced by anything but the agent's own assertion. scripts/lib/execution-contract-evidence.ps1 now performs the real checks described per adapter below; this field continues to mean 'a real, independent check exists for this type,' and is enforced by tests/helpers/execution-contract-tests.ps1's adversarial cases (fabricated hash, fabricated conclusion, hand-typed run record).",
-
+  "review_history": "Two review rounds shaped the model below, both worth keeping visible. Round 1 found the original `verifiable: true` flag was aspirational: the code checked only that an adapter's required fields were present, never that a JUnit file existed and hashed correctly, that a CI check was independently queried, or that a runner record came from anything but the agent's own assertion. Round 2 found the fix for that was still incomplete -- the new runner-exit-record check opened the file, verified its .sha256 sidecar, and confirmed its bindings, but record and sidecar both live under .execution/**, which the verified actor can write, so an actor can author both and never invoke the runner. That was demonstrated, not theorised. The lesson is the reason `verifiable` no longer exists as a single boolean: 'Axiom-PMO can structurally check this' and 'this proves who ran the test' are different questions, and conflating them is what produced the same defect twice. They are now `structurally_checkable` and `provenance` respectively.",
   "test_evidence_adapters": [
     {
       "type": "junit-artifact",
-      "verifiable": true,
-      "requires": ["path", "sha256"],
-      "reason": "A JUnit XML file, resolved with the same repo-root containment check as a FILE: reference (REF-002), whose real SHA-256 (computed from the file's bytes) must equal the claimed sha256, whose XML is parsed with DTD processing prohibited (no XXE), and whose reported failures+errors across every testsuite must sum to zero."
+      "provenance": "artifact-observed",
+      "requires": [
+        "path",
+        "sha256"
+      ],
+      "reason": "A JUnit XML file, resolved with the same repo-root containment check as a FILE: reference (REF-002), whose real SHA-256 (computed from the file's bytes) must equal the claimed sha256, whose XML is parsed with DTD processing prohibited (no XXE), and whose reported failures+errors across every testsuite must sum to zero. This verifies the artifact, not the execution: an actor with write access can author a passing JUnit report and compute its digest. It proves a machine-readable artifact exists whose bytes match its declared digest and whose contents report passing tests -- not that a test runner produced it.",
+      "structurally_checkable": true
     },
     {
       "type": "ci-check",
-      "verifiable": true,
-      "requires": ["name", "commit_sha"],
-      "reason": "A CI check queried live via `gh api repos/<owner>/<repo>/commits/<sha>/check-runs`, matched by name, whose *observed* conclusion (never the result's own claimed `conclusion` field, which is informational only) must be `success`. No `gh` CLI, no authentication, or no resolvable GitHub remote all mean 'unverified,' never a silent pass."
+      "provenance": "externally-observed",
+      "requires": [
+        "name",
+        "commit_sha"
+      ],
+      "reason": "A CI check queried live via `gh api repos/<owner>/<repo>/commits/<sha>/check-runs`, matched by name, whose *observed* conclusion (never the result's own claimed `conclusion` field, which is informational only) must be `success`. No `gh` CLI, no authentication, or no resolvable GitHub remote all mean 'unverified,' never a silent pass.",
+      "structurally_checkable": true
     },
     {
       "type": "runner-exit-record",
-      "verifiable": true,
-      "requires": ["run_record_path"],
-      "reason": "A record scripts/run-execution-command.ps1 produced by actually running the command: a repo-root-contained JSON file plus a `.sha256` sidecar of its exact bytes (the same file+sidecar pattern EXECUTION-CONTRACT.json uses), whose recomputed digest must match, whose work_item_id and contract_sha256 must bind to the contract under verification, and whose sealed exit_code must be 0. The strongest MVP evidence: Axiom observed the command run. `command`/`exit_code` fields on the test_evidence entry itself, if present, are informational only -- the sealed record is authoritative."
+      "provenance": "artifact-observed",
+      "requires": [
+        "run_record_path"
+      ],
+      "reason": "A record scripts/run-execution-command.ps1 produced by actually running the command: a repo-root-contained JSON file plus a `.sha256` sidecar of its exact bytes, whose recomputed digest must match, whose work_item_id and contract_sha256 must bind to the contract under verification, and whose sealed exit_code must be 0. IMPORTANT: this is artifact-observed, not runner-observed. The record and its sidecar both live under .execution/**, which the verified actor can write and which is exempt from scope analysis, so an actor can author both without ever invoking the runner -- a code review demonstrated exactly that. The digest proves the record was not edited after it was written; it does not prove who wrote it. Treat it as a structured, tamper-evident claim, not as proof of execution.",
+      "structurally_checkable": true
     },
     {
       "type": "agent-assertion",
-      "verifiable": false,
-      "requires": ["name"],
-      "reason": "A free-text claim from the agent. Recorded for context, never sufficient to satisfy a required test."
+      "provenance": "agent-claimed",
+      "requires": [
+        "name"
+      ],
+      "reason": "A free-text claim from the agent. Recorded for context, never sufficient to satisfy a required test.",
+      "structurally_checkable": false
     }
   ],
-
   "git_authority_defaults": {
     "create_branch": true,
     "commit": false,
@@ -49,36 +52,56 @@
     "deploy": false,
     "note": "An action is permitted only when the approved contract explicitly grants it. Absent or false means not granted; the result claiming that action anyway is a violation."
   },
-
   "authority_claim_types": {
-    "release-approval": { "human_only": true },
-    "qa-approval": { "human_only": true },
-    "security-approval": { "human_only": true },
-    "scope-change": { "human_only": true },
-    "risk-mode-downgrade": { "human_only": true },
-    "implementation-complete": { "human_only": false }
+    "release-approval": {
+      "human_only": true
+    },
+    "qa-approval": {
+      "human_only": true
+    },
+    "security-approval": {
+      "human_only": true
+    },
+    "scope-change": {
+      "human_only": true
+    },
+    "risk-mode-downgrade": {
+      "human_only": true
+    },
+    "implementation-complete": {
+      "human_only": false
+    },
+    "test-evidence-accepted": {
+      "human_only": true
+    }
   },
-
   "actor_authority": {
     "agent": {
-      "may_grant": ["implementation-complete"],
+      "may_grant": [
+        "implementation-complete"
+      ],
       "note": "An execution agent may report that it finished implementing. It may never grant an approval, change approved scope, or downgrade a risk mode -- those are human authority, and a claim otherwise is rejected regardless of its wording."
     },
     "human": {
-      "may_grant": ["release-approval", "qa-approval", "security-approval", "scope-change", "risk-mode-downgrade", "implementation-complete"],
+      "may_grant": [
+        "release-approval",
+        "qa-approval",
+        "security-approval",
+        "scope-change",
+        "risk-mode-downgrade",
+        "implementation-complete",
+        "test-evidence-accepted"
+      ],
       "note": "A claim with actor 'human' is not self-proving. It must cite a decision record (decision_ref) that resolves in the project's decision-log.md; commit authorship alone is not proof of a human actor because it can be set to any value."
     }
   },
-
   "verification_exempt_paths": [
     {
       "pattern": ".execution/**",
       "reason": "The execution contract, its digest sidecar, and the result itself are governance bookkeeping, not implementation output. They are committed so the audit trail lives in git history, which means they appear in the very diff being verified -- treating them as unapproved implementation would make every verification fail on its own artifacts. Narrow by construction: this exempts the contract directory only, never source paths."
     }
   ],
-
   "verification_exempt_note": "Exempt paths are excluded from scope analysis (EXEC-004) and from the undeclared-changed-file check (EXEC-008). They are NOT excluded from git-authority checks (EXEC-006): committing a contract file is still a commit, and if the contract withheld commit authority that remains a violation.",
-
   "verification_limits": {
     "statement": "Axiom-PMO verifies observable Git claims within the available repository and remote context. It does not prove the absence of all external Git side effects.",
     "cannot_verify": [
@@ -87,5 +110,26 @@
       "a branch that was pushed and then deleted",
       "anything that happened outside this repository"
     ]
+  },
+  "evidence_provenance": {
+    "_note": "What a piece of evidence actually proves about WHO produced it -- distinct from whether Axiom-PMO could parse and structurally validate it. A digest proves a file has not changed since the digest was taken; it proves nothing about who took it. Everything the verified actor can write is therefore at most artifact-observed, however well-formed.",
+    "agent-claimed": {
+      "proves": "Nothing. The actor being verified wrote it.",
+      "satisfies_required_test": false
+    },
+    "artifact-observed": {
+      "proves": "An artifact exists inside the project, its bytes match the digest declared for it, and its contents report success. It does NOT prove a test runner produced it -- an actor with write access can author the artifact and compute its digest in the same breath.",
+      "satisfies_required_test": false,
+      "may_be_promoted_by": "a human authority claim of type test-evidence-accepted citing a decision record that resolves in decision-log.md"
+    },
+    "externally-observed": {
+      "proves": "A third party the verified actor cannot impersonate confirmed it. The only tier that clears a required test on its own.",
+      "satisfies_required_test": true
+    }
+  },
+  "required_test_satisfaction": {
+    "rule": "A required test is satisfied only by evidence whose provenance tier declares satisfies_required_test: true (today: externally-observed / ci-check), OR by artifact-observed evidence that a human has explicitly vouched for via a test-evidence-accepted authority claim citing a resolving decision record.",
+    "why": "The actor being verified has write access to everything under .execution/** and to the working tree. Any local artifact it can produce, it can forge -- including digests, which prove integrity-since-writing and never provenance. Only an external observer it cannot impersonate, or a human accepting responsibility on the record, changes that.",
+    "human_vouch_claim_type": "test-evidence-accepted"
   }
 }

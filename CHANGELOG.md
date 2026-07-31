@@ -14,32 +14,58 @@
   `pmo-config/execution-contract-policy.json`; reference in
   `docs/reference/execution-contract.md`.
 
-  A 2026-07-30 code review (Sol) found the initial implementation checked
-  claim *shape*, not ground truth, in three places. All three are now fixed:
+  Two review rounds (Sol, 2026-07-30) shaped what this actually does, and
+  both are worth recording because the second corrected the first.
 
-  - Test-evidence adapters now verify for real, not on field presence:
-    JUnit evidence is opened, its real SHA-256 checked against the claimed
-    digest, its XML parsed with DTD processing prohibited, and its
-    failures+errors summed to zero; `ci-check` evidence is queried live via
-    the GitHub API and matched by name, never trusting the result's own
-    claimed conclusion; `runner-exit-record` evidence must point at a file
-    `axiom run` actually produced by running the command as a real child
-    process, sealed with the same file+`.sha256`-sidecar digest pattern the
-    contract itself uses.
-  - The contract's digest sidecar is now mandatory -- a missing or
-    malformed sidecar fails closed (`EXEC-002`) instead of silently
-    skipping the tamper check.
-  - A human-authority claim's `decision_ref` is now resolved against a real
-    parse of `decision-log.md` -- must exist, be unique, and **not have
-    been added or edited within the commit range under verification**,
-    closing the self-forged-approval path.
+  **Round 1** found the implementation checked claim *shape*, not ground
+  truth: test-evidence adapters confirmed an entry's fields were present
+  without opening a file, hashing anything, or querying an API; the
+  contract's digest sidecar was checked only when present, so deleting it
+  skipped the tamper check; and a human-authority claim's `decision_ref`
+  was checked for non-emptiness, never resolved against `decision-log.md`.
 
-  Also fixed: the changed-files check now catches a result *claiming* a
-  file changed that git shows no evidence of, not only the reverse.
+  **Round 2** found the fix for the first of those was still incomplete.
+  The new `runner-exit-record` check did real work -- containment, digest
+  recomputation against a `.sha256` sidecar, contract and work-item
+  binding, exit code -- but record and sidecar both live under
+  `.execution/**`, which the verified actor can write. A fully hand-forged
+  record with a genuinely matching sidecar passed, with `axiom run` never
+  invoked. Computing a SHA-256 is exactly as easy as writing the JSON it
+  summarises.
 
-  88 adversarial tests (up from 57) reproduce each original gap and confirm
-  the fix. Awaiting Sol's re-review and Human Owner acceptance — see
-  `ROADMAP.md`'s Milestone 5.1-5.4 section for current status.
+  The correction is not a better check on the file. **No check on a file
+  the verified actor can write establishes who wrote it** -- a digest
+  proves integrity from the moment it was taken and never provenance. So
+  evidence now carries an explicit provenance tier:
+
+  - `externally-observed` (`ci-check`, queried live from the GitHub API,
+    matched to an exact commit SHA, never reading the result's own claimed
+    conclusion) satisfies a required test on its own;
+  - `artifact-observed` (`junit-artifact`, `runner-exit-record`) is real,
+    digest-checked and tamper-evident, but does **not** satisfy a required
+    test alone;
+  - `agent-claimed` (`agent-assertion`) never does.
+
+  `artifact-observed` evidence is promoted only when a human accepts it on
+  the record, via a `test-evidence-accepted` authority claim citing a
+  `DEC-###` that resolves in `decision-log.md` and was not written by the
+  execution's own commits. Deliberately a claim rather than a config flag:
+  a weakening that is per-execution, attributable, and recorded in a
+  governed artifact can be reviewed later; a boolean cannot. It proves
+  accountability, not inspection.
+
+  Also fixed across the two rounds: the contract's digest sidecar is now
+  mandatory and fails closed (`EXEC-002`); `decision_ref` resolves against
+  a real parse of `decision-log.md`, must be unique, and must not have been
+  added or edited within the commit range under verification; and the
+  changed-files check now catches a result *claiming* a file changed that
+  git shows no evidence of, not only the reverse.
+
+  99 adversarial tests (up from 57) reproduce each gap and confirm each
+  fix, including the decisive one: a hand-forged run record with a valid
+  sidecar, and a genuine record without a vouch, both rejected. Awaiting
+  re-review and Human Owner acceptance -- see `ROADMAP.md`'s Milestone
+  5.1-5.4 section for current status.
 
 ## 1.2.0 - 2026-07-30
 

@@ -41,7 +41,13 @@ is rejected because `agent` is not authorized to grant `release-approval` — no
 | `agent` | `implementation-complete` only |
 | `human` | all claim types, **with a decision record** |
 
-An execution agent may report that it finished implementing. It may never grant an approval, change approved scope, or downgrade a risk mode.
+An execution agent may report that it finished implementing. It may never grant an approval, change approved scope, downgrade a risk mode, or vouch for its own test evidence.
+
+### `test-evidence-accepted`
+
+This claim type promotes `artifact-observed` test evidence — a JUnit file or an `axiom run` record — so it can satisfy a required test (see [`EXEC-005`](EXEC-005.md)). Such evidence is written where the verified actor can write it, so on its own it proves the artifact is internally consistent, not that a test ran.
+
+It is a human-only claim and gets no special treatment: an `actor: "agent"` vouch is rejected on authority, and its `decision_ref` must resolve to a real, unique row that this execution's own commits did not introduce. The obvious next forgery after "forge the artifact" is "claim to be the human who accepted it," and that is what these conditions close.
 
 ### Why `actor: "human"` is not self-proving
 

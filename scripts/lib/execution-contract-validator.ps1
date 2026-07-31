@@ -306,17 +306,80 @@ function Invoke-ExecutionContractVerification {
 
   # --- 6. Required-test evidence (EXEC-005) --------------------------------
   #
-  # Real verification, not a field-presence check: Test-EvidenceEntryVerified
-  # (execution-contract-evidence.ps1) opens the JUnit file and rehashes it,
-  # queries the GitHub API for a ci-check, or reopens and rehashes a sealed
-  # runner-exit-record. This is the FATAL fix from Sol's review -- the
-  # previous version trusted `policy.test_evidence_adapters[].verifiable`
-  # (a property of the adapter *type*) as if it were a property of the
-  # *entry*, so an agent could satisfy any required test by naming a
-  # verifiable-looking adapter and filling in plausible fields, none of which
-  # were ever actually checked.
+  # Two independent questions per entry, and collapsing them is what let the
+  # same defect ship twice:
+  #
+  #   Does the artifact check out?  -> Test-EvidenceEntryVerified. Opens the
+  #                                    JUnit file and rehashes it, queries the
+  #                                    GitHub API, reopens the sealed run
+  #                                    record. Real work, not field presence.
+  #   Does it prove WHO ran it?     -> $match.Provenance, from policy.
+  #
+  # Round 1 of review caught the first question not being asked at all. Round
+  # 2 caught the second: the runner-exit-record check was doing real work --
+  # containment, digest recomputation, contract binding, exit code -- on a
+  # file that lives under .execution/**, which the verified actor can write
+  # and which is exempt from scope analysis. A reviewer demonstrated a fully
+  # hand-forged record with a genuinely matching sidecar passing, without the
+  # runner ever being invoked.
+  #
+  # The correction is not a better check on the file. No check on a file the
+  # actor can write proves who wrote it: a digest proves integrity since it
+  # was taken and says nothing about provenance, and `sealed_by:
+  # "axiom-runner"` is a string the forger types. So artifact-observed
+  # evidence no longer satisfies a required test by itself. It takes either
+  # an externally-observed source the actor cannot impersonate (today:
+  # ci-check), or a human explicitly accepting responsibility for the
+  # artifact on the record.
+  #
+  # That human path deliberately reuses the existing authority mechanism
+  # rather than adding a config flag: a `test-evidence-accepted` claim from
+  # actor `human`, citing a decision record that resolves in decision-log.md
+  # and was not introduced by this execution's own commits (the same
+  # conditions section 8 enforces for every human-only claim). A weakening
+  # that is per-execution, attributable, and reviewable in a governed
+  # artifact beats one that is a boolean in a config file.
 
   $evidence = Resolve-TestEvidenceEntries -Result $doc -Policy $policy
+
+  # Which provenance tiers clear a required test on their own, read from
+  # policy rather than hard-coded, so adding a genuinely external adapter
+  # later is a config change.
+  $satisfyingTiers = @()
+  if ($policy.PSObject.Properties["evidence_provenance"]) {
+    foreach ($tierProp in $policy.evidence_provenance.PSObject.Properties) {
+      if ($tierProp.Name -eq "_note") { continue }
+      if ([bool]$tierProp.Value.satisfies_required_test) { $satisfyingTiers += $tierProp.Name }
+    }
+  }
+
+  # Has a human vouched for artifact-observed evidence on this execution?
+  # Section 8 below independently validates and reports on every authority
+  # claim; this only reads whether a valid vouch is present, so a bad vouch
+  # produces one EXEC-007 there rather than a duplicate diagnostic here.
+  $humanVouchType = "test-evidence-accepted"
+  if ($policy.PSObject.Properties["required_test_satisfaction"] -and
+      -not [string]::IsNullOrWhiteSpace([string]$policy.required_test_satisfaction.human_vouch_claim_type)) {
+    $humanVouchType = [string]$policy.required_test_satisfaction.human_vouch_claim_type
+  }
+  $humanVouched = $false
+  if ($doc.PSObject.Properties["authority_claims"]) {
+    foreach ($claim in @($doc.authority_claims)) {
+      if ([string]$claim.type -ne $humanVouchType) { continue }
+      if ([string]$claim.actor -ne "human") { continue }
+      $vouchRef = $null
+      if ($claim.PSObject.Properties["decision_ref"]) { $vouchRef = [string]$claim.decision_ref }
+      if ([string]::IsNullOrWhiteSpace($vouchRef)) { continue }
+      $vouchResolved = Resolve-DecisionRecord -ProjectPath $ProjectPath -DecisionRef $vouchRef
+      if (-not $vouchResolved.Found) { continue }
+      # Same self-forgery guard as section 8: a decision the execution's own
+      # commits could have written is not independent authority for it.
+      if ($decisionLogRelPath -and ($observedPaths -contains $decisionLogRelPath)) { continue }
+      $humanVouched = $true
+      break
+    }
+  }
+
   $unverified = New-Object System.Collections.Generic.List[string]
   if ($contract.Document.PSObject.Properties["required_tests"]) {
     foreach ($required in @($contract.Document.required_tests)) {
@@ -336,6 +399,13 @@ function Invoke-ExecutionContractVerification {
       if (-not $verification.Verified) {
         $unverified.Add($requiredName) | Out-Null
         Add-Result FAIL "A test the contract requires is not backed by verified evidence -- its '$($match.Type)' entry did not verify: $($verification.Reason). An agent's own assertion that a test passed is a claim, not evidence." "EXEC-005" -Artifact "EXECUTION-RESULT.json" -ItemId $requiredName -Field "test_evidence"
+        continue
+      }
+
+      # The artifact checks out. Now: does it prove who produced it?
+      if (($satisfyingTiers -notcontains $match.Provenance) -and (-not $humanVouched)) {
+        $unverified.Add($requiredName) | Out-Null
+        Add-Result FAIL "A test the contract requires is backed only by '$($match.Type)' evidence, which is $($match.Provenance): the artifact is well-formed and matches its declared digest, but it lives where the actor being verified can write it, so nothing here establishes who produced it -- a digest proves the file has not changed since it was hashed, never that a test ran. Satisfy this with evidence from a source the actor cannot impersonate (a ci-check), or have a human accept the artifact on the record with a '$humanVouchType' authority claim citing a decision record." "EXEC-005" -Artifact "EXECUTION-RESULT.json" -ItemId $requiredName -Field "test_evidence"
       }
     }
   }

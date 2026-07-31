@@ -113,6 +113,22 @@ function New-ExecFixture {
   Set-Content -LiteralPath (Join-Path $dir "DELIVERY.md") -Value $delivery -NoNewline
   Set-Content -LiteralPath (Join-Path $dir "src/payments/app.ts") -Value "seed" -NoNewline
 
+  # Committed in the base commit, deliberately: artifact-observed evidence
+  # (a runner record or a JUnit file) no longer satisfies a required test on
+  # its own, because the actor being verified can write both the artifact and
+  # its digest. A human accepting it on the record is one of the two ways
+  # through, so the fixture carries a decision-log.md the vouch can cite --
+  # and it lives in the *base* commit so it is never inside the range under
+  # verification, which would disqualify it as self-forged.
+  $decisionLog = @(
+    "# Decision Log - P99-EXEC",
+    "",
+    "| Date | Decision ID | Topic | Options Presented | User Choice | Rationale | Source Ref | Impact |",
+    "|---|---|---|---|---|---|---|---|",
+    "| 2026-07-30 | DEC-100 | Accept local test artifacts for D-001 | accept / require CI | accept | reviewed the artifacts by hand | none | test evidence accepted |"
+  ) -join "`n"
+  Set-Content -LiteralPath (Join-Path $dir "decision-log.md") -Value $decisionLog -NoNewline
+
   # Not Invoke-FixtureGit: this one needs $LASTEXITCODE to pick the fallback
   # for git versions predating --initial-branch. Same "Continue" guard though,
   # since that unknown-option error is exactly the stderr that would otherwise
@@ -220,6 +236,14 @@ function New-Result {
     changed_files = @()
     test_evidence = @(
       [ordered]@{ type = "runner-exit-record"; name = "unit tests"; run_record_path = $relRunRecordPath }
+    )
+    # A runner record is artifact-observed: real, digest-checked, and still
+    # written somewhere the verified actor controls. The default result
+    # therefore carries the human vouch that promotes it, so these cases
+    # represent a legitimately satisfiable execution rather than the bypass.
+    # The cases that assert the tier rule itself override this away.
+    authority_claims = @(
+      [ordered]@{ type = "test-evidence-accepted"; actor = "human"; claim = "accepted"; decision_ref = "DEC-100" }
     )
   }
   foreach ($key in $Overrides.Keys) { $doc[$key] = $Overrides[$key] }
@@ -871,10 +895,13 @@ function Write-ResultDoc {
       base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
       changed_files = @()
       test_evidence = @([ordered]@{ type = "junit-artifact"; name = "unit tests"; path = "reports/junit.xml"; sha256 = $realHash })
+      # JUnit evidence is artifact-observed: the file and its digest are both
+      # writable by the verified actor, so a human vouch is what promotes it.
+      authority_claims = @([ordered]@{ type = "test-evidence-accepted"; actor = "human"; claim = "accepted"; decision_ref = "DEC-100" })
     }
     Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
     $r = Invoke-Verify -Dir $dir
-    Assert-True "junit real pass: verdict pass" ($r.Json.execution_verification.verdict -eq "pass") `
+    Assert-True "junit real pass, human-vouched: verdict pass" ($r.Json.execution_verification.verdict -eq "pass") `
       ("fails=" + ((Get-Rules $r.Json) -join ","))
   } finally { Remove-ExecFixture $dir }
 }.Invoke()
@@ -906,6 +933,130 @@ function Write-ResultDoc {
     Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
     $r = Invoke-Verify -Dir $dir
     Assert-True "hand-typed run record: EXEC-005 raised (no sidecar = unsealed)" ((Get-Rules $r.Json) -contains "EXEC-005")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: FULLY forged run record + a genuinely matching sidecar ----------
+#
+# The decisive case. The one above only proves a record with *no* sidecar is
+# rejected -- which is a trivial bar, because computing a SHA-256 is exactly
+# as easy as writing the JSON. This one writes every field correctly (real
+# contract digest, right work item, exit_code 0, sealed_by "axiom-runner"),
+# then computes the record's real hash and writes a matching sidecar, and
+# never invokes scripts/run-execution-command.ps1 at all.
+#
+# It must fail. A digest proves the file has not changed since the digest was
+# taken; it proves nothing about who took it. Every input here is inside
+# .execution/**, which the verified actor can write and which is deliberately
+# exempt from scope analysis -- so "sealed" was never a seal, and
+# `sealed_by: axiom-runner` is a self-assertion wearing a uniform. Confirmed
+# passing (i.e. bypassed) before the provenance-tier fix; kept as the
+# regression guard for it.
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $f = Get-BaseResultFields -Dir $dir
+
+    $runsDir = Join-Path $dir ".execution/D-001/runs"
+    New-Item -ItemType Directory -Path $runsDir -Force | Out-Null
+    $forgedPath = Join-Path $runsDir "forged.json"
+    $forged = [ordered]@{
+      run_id = "forged-by-hand"
+      work_item_id = "D-001"
+      contract_sha256 = $f.Digest
+      command = "npm test"
+      cwd = "."
+      exit_code = 0
+      started_at = "2026-01-01T00:00:00.0000000+00:00"
+      ended_at = "2026-01-01T00:00:01.0000000+00:00"
+      stdout_sha256 = ("0" * 64)
+      sealed_by = "axiom-runner"
+    }
+    Set-Content -LiteralPath $forgedPath -Value ($forged | ConvertTo-Json -Depth 8) -NoNewline
+    # The "seal" an attacker can trivially produce for themselves.
+    $forgedDigest = (Get-FileHash -LiteralPath $forgedPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    Set-Content -LiteralPath "$forgedPath.sha256" -Value ($forgedDigest + "`n") -NoNewline
+
+    $doc = [ordered]@{
+      contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
+      changed_files = @()
+      test_evidence = @([ordered]@{ type = "runner-exit-record"; name = "unit tests"; run_record_path = ".execution/D-001/runs/forged.json" })
+    }
+    Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "forged record + valid sidecar, runner never invoked: EXEC-005 raised" `
+      ((Get-Rules $r.Json) -contains "EXEC-005") `
+      ("verdict=" + $r.Json.execution_verification.verdict)
+    Assert-True "forged record + valid sidecar: verdict is not pass" `
+      ($r.Json.execution_verification.verdict -ne "pass")
+    Assert-True "forged record: the reason names provenance, not integrity" `
+      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-005" }) | Select-Object -First 1).message -match "who produced|provenance|independently")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: a GENUINE runner record, no human vouch -> still EXEC-005 ------
+#
+# The tier rule is about provenance, not authenticity, so it has to bite even
+# when the record is entirely legitimate. This one really does invoke
+# scripts/run-execution-command.ps1 -- the command really ran, the exit code
+# really was 0, the digest really matches -- and it is still rejected on its
+# own, because Axiom-PMO cannot tell this record apart from the forged one
+# above. Both are bytes under .execution/** that the verified actor could
+# have written. If this case ever passes without a vouch, the distinction the
+# provenance model rests on has quietly collapsed back to "well-formed
+# equals trustworthy".
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir -Overrides @{ authority_claims = @() } | Out-Null
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "genuine runner record without a vouch: EXEC-005 raised" `
+      ((Get-Rules $r.Json) -contains "EXEC-005") `
+      ("verdict=" + $r.Json.execution_verification.verdict)
+    Assert-True "genuine runner record without a vouch: reason names artifact-observed" `
+      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-005" }) | Select-Object -First 1).message -match "artifact-observed")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: a vouch citing a decision that does not resolve -> EXEC-005 ----
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir -Overrides @{
+      authority_claims = @([ordered]@{ type = "test-evidence-accepted"; actor = "human"; claim = "accepted"; decision_ref = "DEC-404" })
+    } | Out-Null
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "vouch citing an unresolvable decision: does not promote the evidence" `
+      ((Get-Rules $r.Json) -contains "EXEC-005")
+    Assert-True "vouch citing an unresolvable decision: also raises EXEC-007" `
+      ((Get-Rules $r.Json) -contains "EXEC-007")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: an AGENT cannot vouch for its own evidence -> EXEC-005 + 007 ---
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir -Overrides @{
+      # The obvious next forgery: if a human vouch promotes artifact evidence,
+      # claim to be the human. Rejected on actor authority, exactly as
+      # release-approval is.
+      authority_claims = @([ordered]@{ type = "test-evidence-accepted"; actor = "agent"; claim = "accepted"; decision_ref = "DEC-100" })
+    } | Out-Null
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "agent self-vouch: EXEC-007 raised (agent cannot grant test-evidence-accepted)" `
+      ((Get-Rules $r.Json) -contains "EXEC-007")
+    Assert-True "agent self-vouch: evidence stays unpromoted, EXEC-005 raised" `
+      ((Get-Rules $r.Json) -contains "EXEC-005")
   } finally { Remove-ExecFixture $dir }
 }.Invoke()
 
@@ -1024,6 +1175,7 @@ function Write-ResultDoc {
         base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
         changed_files = @()
         test_evidence = @([ordered]@{ type = "runner-exit-record"; name = "unit tests"; run_record_path = $relRunRecordPath })
+        authority_claims = @([ordered]@{ type = "test-evidence-accepted"; actor = "human"; claim = "accepted"; decision_ref = "DEC-100" })
       }
       Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
       $r = Invoke-Verify -Dir $dir
@@ -1171,19 +1323,28 @@ function Write-ResultDoc {
 {
   $dir = New-ExecFixture
   try {
+    # Overwrites the fixture's own decision log, so DEC-100 has to be carried
+    # forward here too -- the default result cites it to promote its
+    # artifact-observed runner evidence, and dropping it would make this case
+    # fail for an unrelated reason (a missing vouch) while appearing to test
+    # decision resolution.
     $decisionLog = @(
       "# Decision Log - T",
       "",
       "| Date | Decision ID | Topic | Options Presented | User Choice | Rationale | Source Ref | Impact |",
       "|---|---|---|---|---|---|---|---|",
-      "| 2026-07-30 | DEC-001 | ship it | A/B | A | because | src | ok |"
+      "| 2026-07-30 | DEC-001 | ship it | A/B | A | because | src | ok |",
+      "| 2026-07-30 | DEC-100 | Accept local test artifacts for D-001 | accept / require CI | accept | reviewed by hand | none | test evidence accepted |"
     ) -join "`n"
     Write-ExecFile $dir "decision-log.md" $decisionLog
     & git -C $dir add -A 2>$null | Out-Null; & git -C $dir commit -q -m "record decision" 2>$null | Out-Null
 
     Invoke-Export -Dir $dir -Grant "commit" | Out-Null
     New-Result -Dir $dir -Overrides @{
-      authority_claims = @([ordered]@{ type = "release-approval"; actor = "human"; claim = "approved"; decision_ref = "DEC-001" })
+      authority_claims = @(
+        [ordered]@{ type = "release-approval"; actor = "human"; claim = "approved"; decision_ref = "DEC-001" },
+        [ordered]@{ type = "test-evidence-accepted"; actor = "human"; claim = "accepted"; decision_ref = "DEC-100" }
+      )
     } | Out-Null
 
     $r = Invoke-Verify -Dir $dir
