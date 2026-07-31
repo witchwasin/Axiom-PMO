@@ -359,17 +359,23 @@ function Read-DecisionAuthorityBindings {
   $bindings = New-Object System.Collections.Generic.List[object]
   if (-not $Row) { return $bindings }
 
-  # Parsed per cell, not across the whole row concatenated together. The
-  # token runs to the end of the cell it appears in, so gluing cells into one
-  # string makes the following cells' text land inside the last field's value
-  # -- which is exactly how the first version of this silently mangled the
-  # evidence digest. Which column an author uses is still a free choice.
+  # Parsed per cell, not across the whole row concatenated together: gluing
+  # cells into one string makes the following cells' text land inside the last
+  # field's value -- which is exactly how the first version of this silently
+  # mangled the evidence digest. Which column an author uses is a free choice,
+  # and a cell may carry more than one token.
   $cellTexts = @()
   foreach ($prop in $Row.PSObject.Properties) { $cellTexts += [string]$prop.Value }
 
+  # A token has no closing delimiter -- a test name may contain spaces and
+  # semicolons are the field separator -- so each one runs until the next
+  # 'axiom-authority:' or the end of its cell. That is what lets one cell
+  # carry more than one token, which the docs promised and the first version
+  # did not deliver: it matched greedily to end-of-cell and read two tokens as
+  # one malformed payload.
   $payloads = @()
   foreach ($cell in $cellTexts) {
-    foreach ($m in [regex]::Matches($cell, '(?i)axiom-authority\s*:\s*(.+)$')) {
+    foreach ($m in [regex]::Matches($cell, '(?i)axiom-authority\s*:\s*(.*?)(?=axiom-authority\s*:|$)')) {
       $payloads += $m.Groups[1].Value
     }
   }

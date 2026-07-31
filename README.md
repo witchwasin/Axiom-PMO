@@ -11,6 +11,9 @@ A repo-native, deterministic governance layer that keeps AI coding agents
 inside **verified requirements, approved scope, traceable evidence, and
 human-controlled release gates.**
 
+**Axiom-PMO prepares and verifies development handoffs.<br>It does not replace
+developers or execution frameworks.**
+
 [![Axiom-PMO Checks](https://github.com/witchwasin/Axiom-PMO/actions/workflows/pmo-checks.yml/badge.svg)](https://github.com/witchwasin/Axiom-PMO/actions/workflows/pmo-checks.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](CHANGELOG.md)
@@ -22,6 +25,25 @@ human-controlled release gates.**
 ---
 
 > **AI agents can write code. They should not invent the project.**
+
+## What this repository is for
+
+Axiom-PMO is a **governance and development-handoff framework**. You use it to
+get a piece of work to the point where a developer — or an AI execution tool —
+can pick it up and build it, and to check afterwards that what was reported
+actually matches the evidence and the repository.
+
+| Axiom-PMO does | Axiom-PMO does not |
+|---|---|
+| Turn source material into scoped, traceable requirements | Write your system |
+| Check design readiness and handoff completeness | Replace your developers |
+| Verify scope, tests, evidence, and authority | Replace your execution framework |
+| Check that an AI's report matches real repository state | Act as the repo you build the product in |
+
+**Milestones 1–5 are the core product.** Milestone 6 — the Claude Code
+integration — is an **optional bridge**, for teams who decide to continue
+implementation with Claude Code after the handoff is verified. You never need
+it to use Axiom-PMO. See [ROADMAP.md](ROADMAP.md#core-product-versus-optional-integration).
 
 ## Why this matters now
 
@@ -511,10 +533,15 @@ Next:
 - Milestone 5, Execution Contract Verification MVP — verify that an AI
   agent's execution output stayed inside an approved contract, using
   observable ground truth rather than trusting the agent's own report.
-  Unblocked as of Milestone 4.5's acceptance; see [`ROADMAP.md`](ROADMAP.md)
-  for the research-first (Milestone 5.0) sequencing.
+  **Reviewed and accepted at round 5** (2026-07-31) after four rounds of
+  requested changes; Human Owner closure confirmation outstanding, so it is
+  not yet marked delivered. See [`ROADMAP.md`](ROADMAP.md).
+- Milestone 6, Claude Code integration — **optional, not part of the core
+  product**, and not started. Planned only so that a verified handoff can be
+  continued in Claude Code without re-interpreting the documents.
 
-The active roadmap is intentionally limited to Milestones 1 through 6.
+The active roadmap is intentionally limited to Milestones 1 through 6, of
+which **1 through 5 are the product** and 6 is an optional integration.
 
 The roadmap is intended to be reviewed weekly. Engineering findings,
 integration requests, and developer feedback may be accepted when they

@@ -149,7 +149,7 @@
       "residual_limit": "An actor could plant a digest in a decision row during an EARLIER execution for an artifact it intends to forge later. That requires the earlier execution to have passed review carrying an unexplained digest. Narrower and more visible, but not closed.",
       "decision_row_binding_token": {
         "syntax": "axiom-authority: type=<claim-type>; work_item=<id>; contract=<contract sha256>; test=<test name>; evidence=<artifact sha256>",
-        "placement": "Anywhere in the decision row. The token runs to the end of the cell it appears in, so put it last in that cell; it is parsed per cell, never across the concatenated row.",
+        "placement": "Anywhere in the decision row. A token runs until the next 'axiom-authority:' or the end of its cell -- it has no closing delimiter, because a test name may contain spaces. One row may carry several tokens, sharing a cell or not; each is matched independently and the row authorizes a claim when some token matches in full. Parsing is per cell, never across the concatenated row.",
         "required_fields_all_claims": [
           "type",
           "work_item",
