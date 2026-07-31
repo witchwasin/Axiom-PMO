@@ -107,7 +107,7 @@ Recommended effort allocation:
 | Milestone 3.5 - Runtime Portability | Accepted | CI threshold met; branch protection deferred by human decision |
 | Milestone 4 - GitHub Action | Delivered | Merged to `main` at `31d1e25`; child issues #12-#17 closed |
 | Milestone 4.5 - SCOPE-DIFF | Delivered | Human Owner accepted 2026-07-30 after two independent AI review rounds; merged to `main` at `6b42643` |
-| Milestone 5 - Execution Contract Verification MVP | **Reviewed / ACCEPT** at round 5 (Independent AI Reviewer, 2026-07-31) after four REQUEST CHANGES rounds; Human Owner closure confirmation pending | `docs/reference/execution-contract.md`; decision `DEC-002`; commit `87d3a7c`, CI run `30640858800` 7/7 |
+| Milestone 5 - Execution Contract Verification MVP | **Delivered / CLOSED** -- Independent AI Reviewer ACCEPT at round 5 after four REQUEST CHANGES rounds; Human Owner accepted and closed 2026-07-31 (`DEC-004`) | Core product. `docs/reference/execution-contract.md`; decisions `DEC-002`, `DEC-004`; commit `2888769`, CI run `30643605031` 7/7 |
 | Milestone 6 - Claude Code Integration Experience | Planned; **optional integration, not core product** | Implementation blocked pending a separate Human Owner instruction |
 
 ## Roadmap Governance
@@ -145,8 +145,8 @@ Milestone 1 delivered, with walkthrough/recording evidence deferred
 -> Milestone 3.5 (accepted)
 -> Milestone 4 (delivered)
 -> Milestone 4.5 (delivered)
--> Milestone 5 (in review -- not delivered)
--> Milestone 6
+-> Milestone 5 (delivered -- closed 2026-07-31)     <- end of core product
+-> Milestone 6 (optional integration; not authorized for implementation)
 ```
 
 Milestone 2.5 sits between diagnostics and the CLI deliberately. The CLI's
@@ -699,14 +699,19 @@ enough that a second integration could reuse it later without a rewrite.
 
 ### Milestone 5.1 - 5.4
 
-Status: **Reviewed -- ACCEPT (Independent AI Reviewer, round 5, 2026-07-31).** Certified at commit
-`87d3a7cb526bb93ea617e9574df2d19fa85cef87`, CI run `30640858800`, 7/7 jobs
-green including Windows PowerShell 5.1.
+Status: **CLOSED.** Implemented; reviewed by Independent AI Reviewer across five rounds (verdict
+ACCEPT at round 5, 2026-07-31); CI green 7/7 including Windows PowerShell 5.1;
+**accepted and closed by the Human Owner (Witchwasin K.) on 2026-07-31**,
+recorded as `DEC-004`. Certified at commit
+`288876994f856310ab4f694ec0768703ed48beef`, CI run `30643605031`.
 
-**Human Owner closure confirmation is still pending**, so this is recorded as
-reviewed and accepted by independent review, not as closed. Do not mark
-Milestone 5 delivered until a Human Owner acceptance record exists, the way
-Milestone 4.5 has one.
+Both records are required and neither substitutes for the other: Independent AI Reviewer's ACCEPT
+is independent review evidence, and the Human Owner confirmation is the
+approval (`AGENTS.md` rule 11).
+
+Milestone 5 is part of the **core product**. Milestones 1-5 together are the
+core Axiom-PMO governance and development-handoff framework; see
+[Core product versus optional integration](#core-product-versus-optional-integration).
 
 It took five rounds and four REQUEST CHANGES to get here. The findings below
 are kept in full rather than summarized away, because the sequence is the
