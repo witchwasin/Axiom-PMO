@@ -1,5 +1,12 @@
 # M5 Plan — Execution Contract Verification MVP
 
+> **Superseded 2026-07-31.** Milestone 5 is implemented, reviewed across five
+> rounds, and **closed** by Human Owner acceptance (`DEC-004`). This file is
+> kept as the historical planning snapshot from 2026-07-30; it does not
+> describe current behaviour. See `ROADMAP.md` and
+> `docs/reference/execution-contract.md`.
+
+
 > เขียน 2026-07-30 สรุปจากการตอบกลับของ Sol (คะแนน 9.1/10 ต่อร่างที่ Claude
 > เสนอ พร้อมข้อปรับ 6 จุด + gap 2 เรื่อง) นี่คือ**เอกสารสำหรับพิจารณา ไม่ใช่
 > คำสั่งให้เริ่มทำ** — รอ Human Owner ตัดสินใจก่อนเริ่ม M5.0 จริง ไม่มีโค้ด
