@@ -1,4 +1,4 @@
-# EXEC-005 - Required test has no verified evidence
+# EXEC-005 - Required test not backed by evidence that proves execution
 
 | | |
 |---|---|
@@ -8,63 +8,178 @@
 
 ## What this rule checks
 
-Every entry in the contract's `required_tests` has a matching entry in the result's `test_evidence` that **actually verifies** — not merely one that names a verifiable-looking adapter type and fills in the right field names. `scripts/lib/execution-contract-evidence.ps1`'s `Test-EvidenceEntryVerified` opens the file, recomputes the hash, queries the live API, or reopens the sealed record, per adapter.
+Each entry in the contract's `required_tests` must have a matching
+`test_evidence` entry that clears **two separate bars**:
 
-## Why it exists
+1. **The artifact checks out.** The file exists inside the project, its bytes
+   hash to the declared digest, its contents report success.
+   (`Test-EvidenceEntryVerified`)
+2. **Something establishes who produced it.** The entry's *provenance tier*
+   must be one that can satisfy a required test — or a human must have
+   accepted it on the record.
 
-> An agent stating that a test passed is a claim, not evidence.
+Passing (1) and failing (2) is a FAIL, and that is the point of this rule.
 
-The result is authored by the actor being verified. `{"name": "unit tests", "result": "passed"}` is a sentence that agent wrote about itself; treating it as proof that tests ran would make required-test validation ceremonial.
+## Why it exists — and why it was wrong twice
 
-**This is a corrected rule.** An earlier version of this check only confirmed that a `test_evidence` entry's *fields were present* — `{"type": "runner-exit-record", "command": "npm test", "exit_code": 0, "recorded_by": "axiom-runner"}` passed outright, because nothing ever opened a file, queried an API, or checked a hash. A code review found this before it was accepted; the real checks below are what replaced it.
+> A digest proves a file has not changed since it was hashed.
+> It proves nothing about who hashed it.
 
-### The three real adapters
+**Round 1 of review** found the check was pure theatre: it only confirmed an
+entry's *fields were present*. `{"type": "runner-exit-record", "command":
+"npm test", "exit_code": 0, "recorded_by": "axiom-runner"}` passed with no
+file ever opened.
 
-| Adapter | Requires | What is actually checked |
+**Round 2 found the fix was still wrong.** The replacement opened the run
+record, verified a `.sha256` sidecar, checked its contract and work-item
+bindings, and confirmed the sealed exit code — real work. But the record and
+its sidecar both live under `.execution/**`, which the verified actor can
+write and which is deliberately exempt from scope analysis. A reviewer
+demonstrated a **fully hand-forged record with a genuinely matching
+sidecar passing verification, with the runner never invoked.** Computing a
+SHA-256 is exactly as easy as writing the JSON it summarises.
+
+The mistake both times was the same: conflating *"Axiom-PMO can check this"*
+with *"this proves a test ran."* Those are different questions, and no
+amount of additional checking on a file the actor controls answers the
+second one. `sealed_by: "axiom-runner"` is a string the forger types.
+
+## Provenance tiers
+
+| Tier | Adapters | Satisfies a required test alone? |
 |---|---|---|
-| `junit-artifact` | `path`, `sha256` | `path` resolves inside the project root (same containment check as a `FILE:` reference, `REF-002`); the file exists; its real SHA-256 equals the claimed `sha256`; its XML parses safely (DTD processing prohibited); `failures + errors` across every `<testsuite>` sum to zero; `tests` is greater than zero. |
-| `ci-check` | `name`, `commit_sha` | A live query via `gh api repos/<owner>/<repo>/commits/<sha>/check-runs`, matched by `name`. The **observed** conclusion must be `success`. The result's own `conclusion` field, if present, is never read — see below. No `gh` CLI, no auth, or no resolvable GitHub remote all mean *unverified*, never a silent pass. |
-| `runner-exit-record` | `run_record_path` | A relative path (containment-checked) to a file `scripts/run-execution-command.ps1` produced: a JSON record plus a `.sha256` sidecar of its exact bytes. The sidecar's digest must match the file's real hash; the record's `work_item_id` and `contract_sha256` must bind to the contract under verification; its sealed `exit_code` must be `0`. `command`/`exit_code` fields on the `test_evidence` entry itself, if present, are informational only. |
+| `agent-claimed` | `agent-assertion` | Never |
+| `artifact-observed` | `junit-artifact`, `runner-exit-record` | **No** |
+| `externally-observed` | `ci-check` | Yes |
 
-`agent-assertion` (`name` only) is recorded for context and always carries `evidence_origin: agent-claimed`; it never satisfies a required test on its own.
+`artifact-observed` is not worthless — it is structured, digest-checked, and
+tamper-evident *after* it is written. It simply is not proof of execution,
+so it cannot carry a required test by itself.
 
-### Never trust the result's own claimed conclusion
+`ci-check` is the only tier that clears the bar today, because a GitHub check
+run is asserted by a third party the executing actor cannot impersonate.
 
-A `ci-check` entry may carry a `conclusion` field. It is **never read as authoritative** — only the live API response is. An agent writing `"conclusion": "success"` into its own result proves nothing about what actually happened; the whole point of this adapter is to check independently.
+## The two ways through
 
-### The runner is the strongest evidence in the MVP, and how it is sealed
+**1. External evidence.** Attach a `ci-check` bound to the exact commit SHA.
+Its conclusion is queried live; the result's own `conclusion` field is never
+read.
 
-`runner-exit-record` evidence comes from `axiom run` (`scripts/run-execution-command.ps1`), which actually executes the command as a real child process and captures the real exit code — Axiom-PMO observed it, rather than being told about it. The record and its `.sha256` sidecar use the same file+sidecar pattern `EXECUTION-CONTRACT.json` does, deliberately: a digest self-embedded via `ConvertTo-Json` re-serialization would differ between Windows PowerShell 5.1 and PowerShell 7, for reasons unrelated to tampering — hashing the file's stored bytes has no such dependency.
-
-This is not cryptographic proof against an actor with unrestricted filesystem access who edits both the record and its sidecar together. What it defeats is an agent hand-typing a plausible JSON object with no script ever having run the command — the actual gap the review found.
-
-### Unknown adapter types
-
-An adapter type the policy does not recognize degrades to *not verifiable* rather than failing the run outright. A result produced by a newer toolchain should be reported as "this does not satisfy a required test" — which is safe — instead of crashing verification, which would make adding an adapter a breaking change.
-
-## How to fix
-
-Produce real evidence, then reference it:
-
-```bash
-axiom run --project <path> --work-item D-001 --name "unit tests" --command "npm test"
-# prints the run_record_path to put in EXECUTION-RESULT.json
-```
+**2. A human accepts *that specific artifact* on the record.** Add a
+`test-evidence-accepted` authority claim, bound to the test and the artifact:
 
 ```json
 {
   "test_evidence": [
-    { "type": "runner-exit-record", "name": "unit tests",
-      "run_record_path": ".execution/D-001/runs/<run-id>.json" },
-    { "type": "ci-check", "name": "integration tests", "commit_sha": "abc123..." },
-    { "type": "junit-artifact", "name": "e2e tests",
-      "path": "reports/junit.xml", "sha256": "<real sha256 of that file>" }
+    { "type": "junit-artifact", "name": "unit tests",
+      "path": "reports/junit.xml", "sha256": "<real digest>" }
+  ],
+  "authority_claims": [
+    { "type": "test-evidence-accepted", "actor": "human", "claim": "accepted",
+      "decision_ref": "DEC-014",
+      "test_name": "unit tests",
+      "evidence_sha256": "<the same real digest>" }
   ]
 }
 ```
 
-The `name` must match the `required_tests` entry it satisfies.
+…and the cited decision row must itself say what it authorizes, in a form
+that can be checked field by field:
+
+```text
+| 2026-07-31 | DEC-014 | Accept unit tests evidence for D-001 | ... | accepted |
+  reviewed reports/junit.xml by hand.
+  axiom-authority: type=test-evidence-accepted; work_item=D-001;
+  contract=<contract sha256>; test=unit tests; evidence=<artifact sha256> | ... |
+```
+
+The token runs to the end of the cell it appears in, so put it last in that
+cell. It is parsed per cell — never across the concatenated row.
+
+| Field | Required for | Meaning |
+|---|---|---|
+| `type` | every human-only claim | the claim type this row authorizes |
+| `work_item` | every human-only claim | the work item it authorizes it for |
+| `contract` | every human-only claim | the contract digest it was written against |
+| `test` | a test vouch | the required test being satisfied |
+| `evidence` | a test vouch | the artifact digest being accepted |
+
+### Why the decision row has to carry a structured binding
+
+**This rule was wrong three times**, and each correction is worth stating
+because the near-misses are instructive.
+
+**Round 3** found the vouch was a single global boolean: any resolvable
+`test-evidence-accepted` claim promoted *every* artifact-observed entry in the
+execution. Demonstrated with a fabricated JUnit report claiming 99 passing
+tests, vouched by a real decision record about **which logging library to
+use**. The claim named no test, no artifact and no digest, so there was
+nothing for it to be wrong about.
+
+Binding the claim to the evidence is necessary — but on its own it does not
+close the hole. **The result document is written by the actor being verified.**
+If the binding lived only in the claim, the same attack survives: forge the
+artifact, hash it, copy that hash into your own `evidence_sha256`, cite the
+same unrelated decision, and every field "matches". Self-consistent forgery is
+still forgery. So the anchor is the decision row, which the actor cannot author
+inside the verified range (`decision-log.md` must not change within
+`base..head`).
+
+**Round 4 found that anchor was still too weak.** It searched the decision row
+for the digest as a *substring*. That answers "does this row mention these
+bytes" — not "did a human approve *this artifact* for *this test*". A row
+approving a JUnit report for `unit tests` was reusable for `integration tests`
+by relabelling the evidence entry and the claim, both of which the actor
+writes. Reproduced, verdict `pass`, no rule raised.
+
+A substring is not a statement. The row now has to make one, and it is parsed
+field by field.
+
+Requirements, in full:
+
+| Field | Must match |
+|---|---|
+| `actor` | `human` — an agent vouching for itself is rejected on authority |
+| `test_name` | the required test being satisfied |
+| `evidence_sha256` | the digest the adapter actually computed |
+| `decision_ref` | a `DEC-###` resolving to exactly one row, not written in-range |
+| the decision row's `axiom-authority:` token | every field above, plus type, work item, and contract digest |
+| `evidence_type`, `work_item_id`, `contract_sha256` | optional on the claim; checked when present |
+
+A vouch with no bindings fails closed. So does a decision row with no token.
+
+### This applies to every human-only claim
+
+Round 4's second finding: the binding check ran only for
+`test-evidence-accepted`. Every other human-only claim — `release-approval`,
+`qa-approval`, `security-approval`, `scope-change`, `risk-mode-downgrade` —
+still resolved on `decision_ref` alone, so any `DEC-###` in the log satisfied
+them. They now all require a binding token naming at least `type`,
+`work_item`, and `contract`. See `EXEC-007`.
+
+## What this still does not prove
+
+Even a correctly bound vouch only means *a human said they accepted this
+artifact*. If they did not actually inspect it, the framework cannot tell. The
+guarantee is accountability, not certainty — the same one every human approval
+gate here offers.
+
+**Residual limit, stated rather than papered over:** an actor could plant a
+digest in a decision row during an *earlier* execution, for an artifact it
+intends to forge later. That requires the earlier execution to have passed
+review carrying an unexplained digest — narrower and more visible, but not
+closed.
+
+## How to fix
+
+- Attach a `ci-check` for the required test, **or**
+- record a decision in `decision-log.md` and cite it from a
+  `test-evidence-accepted` claim, **or**
+- if the test genuinely did not run, say so: `execution_status: "partial"`
+  and leave the required test unsatisfied rather than manufacturing evidence.
 
 ## Related
 
-`EXEC-007` (claiming an approval rather than evidence), `EXEC-008` (git-observable claims), `RTM-003` (requirement with no linked test evidence, the documentation-side equivalent).
+`EXEC-007` (the authority rules the vouch is held to), `EXEC-002` (the same
+digest-is-not-provenance limit applied to the contract itself), `EXEC-008`
+(git-observable claims), `RTM-003` (the documentation-side equivalent).

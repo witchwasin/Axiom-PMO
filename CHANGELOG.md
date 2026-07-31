@@ -14,32 +14,100 @@
   `pmo-config/execution-contract-policy.json`; reference in
   `docs/reference/execution-contract.md`.
 
-  A 2026-07-30 code review (Sol) found the initial implementation checked
-  claim *shape*, not ground truth, in three places. All three are now fixed:
+  Two review rounds (Sol, 2026-07-30) shaped what this actually does, and
+  both are worth recording because the second corrected the first.
 
-  - Test-evidence adapters now verify for real, not on field presence:
-    JUnit evidence is opened, its real SHA-256 checked against the claimed
-    digest, its XML parsed with DTD processing prohibited, and its
-    failures+errors summed to zero; `ci-check` evidence is queried live via
-    the GitHub API and matched by name, never trusting the result's own
-    claimed conclusion; `runner-exit-record` evidence must point at a file
-    `axiom run` actually produced by running the command as a real child
-    process, sealed with the same file+`.sha256`-sidecar digest pattern the
-    contract itself uses.
-  - The contract's digest sidecar is now mandatory -- a missing or
-    malformed sidecar fails closed (`EXEC-002`) instead of silently
-    skipping the tamper check.
-  - A human-authority claim's `decision_ref` is now resolved against a real
-    parse of `decision-log.md` -- must exist, be unique, and **not have
-    been added or edited within the commit range under verification**,
-    closing the self-forged-approval path.
+  **Round 1** found the implementation checked claim *shape*, not ground
+  truth: test-evidence adapters confirmed an entry's fields were present
+  without opening a file, hashing anything, or querying an API; the
+  contract's digest sidecar was checked only when present, so deleting it
+  skipped the tamper check; and a human-authority claim's `decision_ref`
+  was checked for non-emptiness, never resolved against `decision-log.md`.
 
-  Also fixed: the changed-files check now catches a result *claiming* a
-  file changed that git shows no evidence of, not only the reverse.
+  **Round 2** found the fix for the first of those was still incomplete.
+  The new `runner-exit-record` check did real work -- containment, digest
+  recomputation against a `.sha256` sidecar, contract and work-item
+  binding, exit code -- but record and sidecar both live under
+  `.execution/**`, which the verified actor can write. A fully hand-forged
+  record with a genuinely matching sidecar passed, with `axiom run` never
+  invoked. Computing a SHA-256 is exactly as easy as writing the JSON it
+  summarises.
 
-  88 adversarial tests (up from 57) reproduce each original gap and confirm
-  the fix. Awaiting Sol's re-review and Human Owner acceptance — see
-  `ROADMAP.md`'s Milestone 5.1-5.4 section for current status.
+  The correction is not a better check on the file. **No check on a file
+  the verified actor can write establishes who wrote it** -- a digest
+  proves integrity from the moment it was taken and never provenance. So
+  evidence now carries an explicit provenance tier:
+
+  - `externally-observed` (`ci-check`, queried live from the GitHub API,
+    matched to an exact commit SHA, never reading the result's own claimed
+    conclusion) satisfies a required test on its own;
+  - `artifact-observed` (`junit-artifact`, `runner-exit-record`) is real,
+    digest-checked and tamper-evident, but does **not** satisfy a required
+    test alone;
+  - `agent-claimed` (`agent-assertion`) never does.
+
+  **Round 3** found the human-vouch path that promotes artifact-observed
+  evidence was itself a single global boolean: any resolvable
+  `test-evidence-accepted` claim promoted *every* artifact-observed entry in
+  the execution. Demonstrated with a fabricated JUnit report claiming 99
+  passing tests, vouched by a real decision record about which logging
+  library to use.
+
+  Binding the claim to the evidence is necessary but not sufficient, and the
+  distinction matters: the result document is written by the actor being
+  verified, so a binding that lives only in the claim is defeated by forging
+  the artifact, hashing it, and copying that hash into your own claim.
+  Self-consistent forgery is still forgery. The anchor is therefore the
+  decision row itself, which the actor cannot author within the verified
+  commit range -- `decision-log.md` must not change inside `base..head`, so a
+  row naming the artifact's digest had to exist before the work began.
+
+  A vouch now promotes one evidence entry, never all of them, and must name
+  `test_name` and `evidence_sha256` matching what the adapter actually
+  computed, and cite a resolving `DEC-###` not written in-range.
+
+  **Round 4** found the decision-row anchor was still too weak, in two
+  places. First, it searched the row for the digest as a *substring*. That
+  answers "does this row mention these bytes", not "did a human approve this
+  artifact for this test" -- so a row approving a JUnit report for `unit
+  tests` was reusable for `integration tests` by relabelling the evidence
+  entry and the claim, both of which the verified actor writes. Reproduced
+  here before the fix: verdict `pass`, no rule raised. Second, the binding
+  check ran only for `test-evidence-accepted`; every other human-only claim
+  (`release-approval`, `qa-approval`, `security-approval`, `scope-change`,
+  `risk-mode-downgrade`) still resolved on `decision_ref` alone, so any
+  `DEC-###` in the log satisfied any of them.
+
+  A substring is not a statement. The decision row must now carry a
+  structured `axiom-authority: type=...; work_item=...; contract=...;
+  test=...; evidence=...` token, parsed field by field per table cell --
+  required on **every** human-only claim, with `test` and `evidence`
+  additionally required for a test vouch. A row that merely mentions a digest
+  in prose authorizes nothing, and a row with no token fails closed.
+
+  Deliberately a claim rather than a config flag: a weakening that is
+  per-execution, attributable, and recorded in a governed artifact can be
+  reviewed later; a boolean cannot. It proves accountability, not inspection
+  -- and an actor could still plant a binding in an earlier execution's
+  decision row, which is documented rather than papered over.
+
+  Also fixed across the two rounds: the contract's digest sidecar is now
+  mandatory and fails closed (`EXEC-002`); `decision_ref` resolves against
+  a real parse of `decision-log.md`, must be unique, and must not have been
+  added or edited within the commit range under verification; and the
+  changed-files check now catches a result *claiming* a file changed that
+  git shows no evidence of, not only the reverse.
+
+  118 adversarial tests (up from 57) reproduce each gap and confirm each
+  fix, including the decisive ones: a hand-forged run record with a valid
+  sidecar; a genuine record without a vouch; a vouch citing a real but
+  unrelated decision; a vouch whose bindings are all self-consistent but
+  whose decision row never names the digest; a real artifact approved for one
+  test and relabelled for another; a digest present in the row only as prose;
+  and a `release-approval` citing a decision that says nothing about
+  releasing this work item. Awaiting
+  re-review and Human Owner acceptance -- see `ROADMAP.md`'s Milestone
+  5.1-5.4 section for current status.
 
 ## 1.2.0 - 2026-07-30
 
