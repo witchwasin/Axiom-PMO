@@ -128,8 +128,26 @@
     }
   },
   "required_test_satisfaction": {
-    "rule": "A required test is satisfied only by evidence whose provenance tier declares satisfies_required_test: true (today: externally-observed / ci-check), OR by artifact-observed evidence that a human has explicitly vouched for via a test-evidence-accepted authority claim citing a resolving decision record.",
+    "rule": "A required test is satisfied only by evidence whose provenance tier declares satisfies_required_test: true (today: externally-observed / ci-check), OR by artifact-observed evidence that a human has accepted for THAT SPECIFIC ARTIFACT via a test-evidence-accepted authority claim.",
     "why": "The actor being verified has write access to everything under .execution/** and to the working tree. Any local artifact it can produce, it can forge -- including digests, which prove integrity-since-writing and never provenance. Only an external observer it cannot impersonate, or a human accepting responsibility on the record, changes that.",
-    "human_vouch_claim_type": "test-evidence-accepted"
+    "human_vouch_claim_type": "test-evidence-accepted",
+    "vouch_binding": {
+      "_note": "A vouch that names nothing cannot be wrong about anything. The first version of this was a single boolean -- any resolvable decision_ref promoted every artifact-observed entry in the execution, demonstrated with a fabricated JUnit report vouched by a decision about which logging library to use. Bindings are therefore mandatory, and one of them lives outside the actor's reach.",
+      "required_claim_fields": [
+        "actor",
+        "decision_ref",
+        "test_name",
+        "evidence_sha256"
+      ],
+      "optional_claim_fields": [
+        "evidence_type",
+        "work_item_id",
+        "contract_sha256"
+      ],
+      "matching": "Promotion is per evidence entry, never global. Every field present on the claim must match the entry actually being promoted: test_name against the required test, evidence_sha256 against the digest the adapter really computed, and any optional field against its counterpart.",
+      "decision_row_must_name_the_digest": true,
+      "why_the_decision_row": "Claim fields are written by the actor being verified, so binding in the claim alone does not close the bypass -- forge the artifact, hash it, copy that hash into the claim, cite the same unrelated decision, and every field 'matches'. The decision row is the one input the actor cannot author within the verified commit range (decision-log.md must not change inside it), so the row itself must name the artifact's digest.",
+      "residual_limit": "An actor could plant a digest in a decision row during an EARLIER execution for an artifact it intends to forge later. That requires the earlier execution to have passed review carrying an unexplained digest. Narrower and more visible, but not closed."
+    }
   }
 }

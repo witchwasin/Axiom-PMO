@@ -11,7 +11,9 @@
 # Get-FileHash, no XML parse, no API call anywhere in the adapter resolver.
 #
 # Every Test-*Evidence function here returns the same shape:
-#   [pscustomobject]@{ Verified = $true|$false; Reason = <string, when false> }
+#   [pscustomobject]@{ Verified = $true|$false; Reason = <string, when false>
+#                      EvidenceDigest = <the digest of the exact bytes this
+#                                        adapter verified, when Verified> }
 # and every one defaults to Verified = $false on any ambiguity. An adapter
 # that cannot independently confirm something reports "unverified," never a
 # silent pass -- the same standard scope-diff-git-adapter.ps1 and
@@ -23,7 +25,7 @@
 function Test-JUnitEvidence {
   param($Entry, [Parameter(Mandatory = $true)][string]$ProjectPath)
 
-  $result = [pscustomobject]@{ Verified = $false; Reason = $null }
+  $result = [pscustomobject]@{ Verified = $false; Reason = $null; EvidenceDigest = $null }
   $relPath = [string]$Entry.Raw.path
   $claimedSha = [string]$Entry.Raw.sha256
 
@@ -101,6 +103,9 @@ function Test-JUnitEvidence {
   }
 
   $result.Verified = $true
+  # The digest of the bytes actually hashed, so a human vouch can bind to
+  # this exact artifact rather than to "some test evidence existed".
+  $result.EvidenceDigest = $actualSha
   return $result
 }
 
@@ -159,7 +164,7 @@ function Invoke-NativeCapture {
 function Test-CiCheckEvidence {
   param($Entry, [Parameter(Mandatory = $true)][string]$GitRepoRoot)
 
-  $result = [pscustomobject]@{ Verified = $false; Reason = $null }
+  $result = [pscustomobject]@{ Verified = $false; Reason = $null; EvidenceDigest = $null }
   $name = [string]$Entry.Raw.name
   $commitSha = [string]$Entry.Raw.commit_sha
   if ([string]::IsNullOrWhiteSpace($name) -or [string]::IsNullOrWhiteSpace($commitSha)) {
@@ -257,7 +262,7 @@ function Test-RunnerExitEvidence {
     [Parameter(Mandatory = $true)][string]$WorkItemId
   )
 
-  $result = [pscustomobject]@{ Verified = $false; Reason = $null }
+  $result = [pscustomobject]@{ Verified = $false; Reason = $null; EvidenceDigest = $null }
   $relPath = [string]$Entry.Raw.run_record_path
   if ([string]::IsNullOrWhiteSpace($relPath)) {
     $result.Reason = "no run_record_path -- a runner-exit-record must point at the sealed file scripts/run-execution-command.ps1 produced, not describe its own command/exit_code inline"
@@ -330,6 +335,10 @@ function Test-RunnerExitEvidence {
   }
 
   $result.Verified = $true
+  # The record file's own digest -- already recomputed above and matched
+  # against its sidecar, so this is the byte-exact identity of the record a
+  # human vouch has to name.
+  $result.EvidenceDigest = $actualDigest
   return $result
 }
 

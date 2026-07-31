@@ -218,6 +218,21 @@ function New-RealRunRecord {
   return ".execution/D-001/runs/$($recordFile.Name)"
 }
 
+# Writes decision-log.md with a DEC-100 row that names $Digest. Uncommitted on
+# purpose -- see New-Result for why the row must sit outside the verified
+# commit range.
+function Set-DecisionLogWithDigest {
+  param([string]$Dir, [string]$Digest, [string]$DecisionId = "DEC-100", [string]$TestName = "unit tests")
+  $log = @(
+    "# Decision Log - P99-EXEC",
+    "",
+    "| Date | Decision ID | Topic | Options Presented | User Choice | Rationale | Source Ref | Impact |",
+    "|---|---|---|---|---|---|---|---|",
+    "| 2026-07-31 | $DecisionId | Accept $TestName evidence for D-001 | accept / require CI | accept | reviewed the artifact by hand; sha256 $Digest | none | test evidence accepted |"
+  ) -join "`n"
+  Set-Content -LiteralPath (Join-Path $Dir "decision-log.md") -Value $log -NoNewline
+}
+
 function New-Result {
   param([string]$Dir, [hashtable]$Overrides = @{})
 
@@ -225,6 +240,18 @@ function New-Result {
   $contract = Get-Content -LiteralPath (Join-Path $Dir ".execution/D-001/EXECUTION-CONTRACT.json") -Raw | ConvertFrom-Json
   $head = Get-FixtureGit $Dir rev-parse HEAD
   $relRunRecordPath = New-RealRunRecord -Dir $Dir
+
+  # The run record's own digest -- what a vouch must name to be about *this*
+  # artifact rather than about test evidence in the abstract.
+  $recordDigest = (Get-FileHash -LiteralPath (Join-Path $Dir $relRunRecordPath) -Algorithm SHA256).Hash.ToLowerInvariant()
+
+  # Write the human decision naming that digest, into the working tree and
+  # deliberately NOT committed. That is the real-world order: the agent
+  # produces artifacts and commits (head), a human then reviews them and
+  # records the decision afterward, so the row is never inside the base..head
+  # range being verified. Committing it here would make decision-log.md part
+  # of the execution's own diff and correctly disqualify it as self-forged.
+  Set-DecisionLogWithDigest -Dir $Dir -Digest $recordDigest
 
   $doc = [ordered]@{
     contract_version = "1.0"
@@ -239,11 +266,16 @@ function New-Result {
     )
     # A runner record is artifact-observed: real, digest-checked, and still
     # written somewhere the verified actor controls. The default result
-    # therefore carries the human vouch that promotes it, so these cases
-    # represent a legitimately satisfiable execution rather than the bypass.
-    # The cases that assert the tier rule itself override this away.
+    # therefore carries a fully bound human vouch -- naming the test and the
+    # exact artifact digest, citing a decision row that names that same digest
+    # -- so these cases represent a legitimately satisfiable execution. The
+    # cases asserting the tier and binding rules override this away.
     authority_claims = @(
-      [ordered]@{ type = "test-evidence-accepted"; actor = "human"; claim = "accepted"; decision_ref = "DEC-100" }
+      [ordered]@{
+        type = "test-evidence-accepted"; actor = "human"; claim = "accepted"
+        decision_ref = "DEC-100"; test_name = "unit tests"; evidence_sha256 = $recordDigest
+        evidence_type = "runner-exit-record"; work_item_id = "D-001"
+      }
     )
   }
   foreach ($key in $Overrides.Keys) { $doc[$key] = $Overrides[$key] }
@@ -890,6 +922,7 @@ function Write-ResultDoc {
     Invoke-Export -Dir $dir -Grant "commit" | Out-Null
     $f = Get-BaseResultFields -Dir $dir
     $realHash = (Get-FileHash -LiteralPath (Join-Path $dir "reports/junit.xml") -Algorithm SHA256).Hash.ToLowerInvariant()
+    Set-DecisionLogWithDigest -Dir $dir -Digest $realHash
     $doc = [ordered]@{
       contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
       base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
@@ -897,7 +930,10 @@ function Write-ResultDoc {
       test_evidence = @([ordered]@{ type = "junit-artifact"; name = "unit tests"; path = "reports/junit.xml"; sha256 = $realHash })
       # JUnit evidence is artifact-observed: the file and its digest are both
       # writable by the verified actor, so a human vouch is what promotes it.
-      authority_claims = @([ordered]@{ type = "test-evidence-accepted"; actor = "human"; claim = "accepted"; decision_ref = "DEC-100" })
+      authority_claims = @([ordered]@{
+        type = "test-evidence-accepted"; actor = "human"; claim = "accepted"
+        decision_ref = "DEC-100"; test_name = "unit tests"; evidence_sha256 = $realHash
+      })
     }
     Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
     $r = Invoke-Verify -Dir $dir
@@ -1060,6 +1096,168 @@ function Write-ResultDoc {
   } finally { Remove-ExecFixture $dir }
 }.Invoke()
 
+# ---- Case: a vouch citing a REAL but UNRELATED decision -> EXEC-005 -------
+#
+# Review round 3's finding, reproduced. The first version of the vouch check
+# was a single global boolean: any resolvable test-evidence-accepted claim
+# promoted every artifact-observed entry in the execution. Demonstrated with a
+# fabricated JUnit report claiming 99 passing tests, vouched by a real
+# decision record about which logging library to use. The claim named no test,
+# no artifact and no digest, so there was nothing for it to be wrong about.
+{
+  $dir = New-ExecFixture
+  try {
+    Write-ExecFile $dir "reports/junit.xml" '<testsuite name="fabricated" tests="99" failures="0" errors="0"><testcase name="a"/></testsuite>'
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $f = Get-BaseResultFields -Dir $dir
+    $fakeHash = (Get-FileHash -LiteralPath (Join-Path $dir "reports/junit.xml") -Algorithm SHA256).Hash.ToLowerInvariant()
+
+    # A decision that resolves, is unique, predates the range -- and has
+    # nothing whatever to do with test evidence.
+    $unrelated = @(
+      "# Decision Log - P99-EXEC",
+      "",
+      "| Date | Decision ID | Topic | Options Presented | User Choice | Rationale | Source Ref | Impact |",
+      "|---|---|---|---|---|---|---|---|",
+      "| 2026-01-01 | DEC-100 | Pick a logging library | winston / pino | pino | faster | none | none |"
+    ) -join "`n"
+    Set-Content -LiteralPath (Join-Path $dir "decision-log.md") -Value $unrelated -NoNewline
+
+    $doc = [ordered]@{
+      contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
+      changed_files = @()
+      test_evidence = @([ordered]@{ type = "junit-artifact"; name = "unit tests"; path = "reports/junit.xml"; sha256 = $fakeHash })
+      authority_claims = @([ordered]@{ type = "test-evidence-accepted"; actor = "human"; claim = "accepted"; decision_ref = "DEC-100" })
+    }
+    Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "vouch citing a real but unrelated decision: EXEC-005 raised" `
+      ((Get-Rules $r.Json) -contains "EXEC-005") ("verdict=" + $r.Json.execution_verification.verdict)
+    Assert-True "unbound vouch: verdict is not pass" ($r.Json.execution_verification.verdict -ne "pass")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: fully SELF-CONSISTENT bindings, unrelated decision -> EXEC-005 --
+#
+# The case a claim-only binding rule would miss, and the reason the decision
+# row itself has to name the digest. Every binding review asked for is present
+# and correct -- test_name matches the required test, evidence_sha256 matches
+# the artifact's real digest, work_item and contract match -- because the
+# actor being verified writes all of them. Forge the artifact, hash it, copy
+# the hash into your own claim, cite the same unrelated decision, and every
+# field "matches". Self-consistent forgery is still forgery; only the decision
+# row, which the actor cannot write inside the verified range, breaks the loop.
+{
+  $dir = New-ExecFixture
+  try {
+    Write-ExecFile $dir "reports/junit.xml" '<testsuite name="fabricated" tests="99" failures="0" errors="0"><testcase name="a"/></testsuite>'
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $f = Get-BaseResultFields -Dir $dir
+    $fakeHash = (Get-FileHash -LiteralPath (Join-Path $dir "reports/junit.xml") -Algorithm SHA256).Hash.ToLowerInvariant()
+
+    $unrelated = @(
+      "# Decision Log - P99-EXEC",
+      "",
+      "| Date | Decision ID | Topic | Options Presented | User Choice | Rationale | Source Ref | Impact |",
+      "|---|---|---|---|---|---|---|---|",
+      "| 2026-01-01 | DEC-100 | Pick a logging library | winston / pino | pino | faster | none | none |"
+    ) -join "`n"
+    Set-Content -LiteralPath (Join-Path $dir "decision-log.md") -Value $unrelated -NoNewline
+
+    $doc = [ordered]@{
+      contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
+      changed_files = @()
+      test_evidence = @([ordered]@{ type = "junit-artifact"; name = "unit tests"; path = "reports/junit.xml"; sha256 = $fakeHash })
+      authority_claims = @([ordered]@{
+        type = "test-evidence-accepted"; actor = "human"; claim = "accepted"; decision_ref = "DEC-100"
+        test_name = "unit tests"; evidence_sha256 = $fakeHash
+        evidence_type = "junit-artifact"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      })
+    }
+    Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "self-consistent bindings, decision row silent on the digest: EXEC-005 raised" `
+      ((Get-Rules $r.Json) -contains "EXEC-005") ("verdict=" + $r.Json.execution_verification.verdict)
+    Assert-True "self-consistent bindings: reason names the decision record" `
+      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-005" }) | Select-Object -First 1).message -match "does not name the digest")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: a vouch for test A does not cover test B -> EXEC-005 -----------
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir | Out-Null
+    # Rewrite the (correct, bound) vouch to name a different test.
+    $resultPath = Join-Path $dir ".execution/D-001/EXECUTION-RESULT.json"
+    $rd = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
+    $rd.authority_claims[0].test_name = "some other test"
+    Set-Content -LiteralPath $resultPath -Value ($rd | ConvertTo-Json -Depth 12) -NoNewline
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "vouch bound to a different test does not promote this one" `
+      ((Get-Rules $r.Json) -contains "EXEC-005")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: right test, wrong artifact digest -> EXEC-005 ------------------
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir | Out-Null
+    $resultPath = Join-Path $dir ".execution/D-001/EXECUTION-RESULT.json"
+    $rd = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
+    $rd.authority_claims[0].evidence_sha256 = ("b" * 64)
+    Set-Content -LiteralPath $resultPath -Value ($rd | ConvertTo-Json -Depth 12) -NoNewline
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "vouch naming a different artifact digest does not promote this one" `
+      ((Get-Rules $r.Json) -contains "EXEC-005")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: a vouch with no bindings at all -> EXEC-005, fail closed -------
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir | Out-Null
+    $resultPath = Join-Path $dir ".execution/D-001/EXECUTION-RESULT.json"
+    $rd = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
+    # The shape the old global-boolean version accepted.
+    $rd.authority_claims = @([pscustomobject]@{ type = "test-evidence-accepted"; actor = "human"; claim = "accepted"; decision_ref = "DEC-100" })
+    Set-Content -LiteralPath $resultPath -Value ($rd | ConvertTo-Json -Depth 12) -NoNewline
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "legacy unbound vouch fails closed" ((Get-Rules $r.Json) -contains "EXEC-005")
+    Assert-True "legacy unbound vouch: reason says it names no test" `
+      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-005" }) | Select-Object -First 1).message -match "names no test_name")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: vouch bound to a different work item -> EXEC-005 ---------------
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir | Out-Null
+    $resultPath = Join-Path $dir ".execution/D-001/EXECUTION-RESULT.json"
+    $rd = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
+    $rd.authority_claims[0].work_item_id = "D-999"
+    Set-Content -LiteralPath $resultPath -Value ($rd | ConvertTo-Json -Depth 12) -NoNewline
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "vouch bound to another work item does not promote this one" `
+      ((Get-Rules $r.Json) -contains "EXEC-005")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
 # ---- Case: run record edited after sealing (sidecar now stale) -> EXEC-005
 {
   $dir = New-ExecFixture
@@ -1169,13 +1367,18 @@ function Write-ResultDoc {
 
     if ($recordFile) {
       $relRunRecordPath = ".execution/D-001/runs/$($recordFile.Name)"
+      $stderrRecordDigest = (Get-FileHash -LiteralPath (Join-Path $dir $relRunRecordPath) -Algorithm SHA256).Hash.ToLowerInvariant()
+      Set-DecisionLogWithDigest -Dir $dir -Digest $stderrRecordDigest
       $f = Get-BaseResultFields -Dir $dir
       $doc = [ordered]@{
         contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
         base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
         changed_files = @()
         test_evidence = @([ordered]@{ type = "runner-exit-record"; name = "unit tests"; run_record_path = $relRunRecordPath })
-        authority_claims = @([ordered]@{ type = "test-evidence-accepted"; actor = "human"; claim = "accepted"; decision_ref = "DEC-100" })
+        authority_claims = @([ordered]@{
+          type = "test-evidence-accepted"; actor = "human"; claim = "accepted"
+          decision_ref = "DEC-100"; test_name = "unit tests"; evidence_sha256 = $stderrRecordDigest
+        })
       }
       Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
       $r = Invoke-Verify -Dir $dir
@@ -1340,12 +1543,26 @@ function Write-ResultDoc {
     & git -C $dir add -A 2>$null | Out-Null; & git -C $dir commit -q -m "record decision" 2>$null | Out-Null
 
     Invoke-Export -Dir $dir -Grant "commit" | Out-Null
-    New-Result -Dir $dir -Overrides @{
-      authority_claims = @(
-        [ordered]@{ type = "release-approval"; actor = "human"; claim = "approved"; decision_ref = "DEC-001" },
-        [ordered]@{ type = "test-evidence-accepted"; actor = "human"; claim = "accepted"; decision_ref = "DEC-100" }
-      )
-    } | Out-Null
+    # New-Result produces the run record and rewrites decision-log.md with a
+    # DEC-100 row naming that record's digest. Read the digest back so the
+    # vouch can bind to it, then restore DEC-001 alongside -- this case is
+    # about DEC-001 resolving, so losing it would fail for the wrong reason.
+    # One New-Result call, then append the release-approval claim to what it
+    # already wrote. Calling it twice would mint a second run record and leave
+    # the vouch bound to whichever the directory happened to list first.
+    $resultPath = New-Result -Dir $dir
+    $resultDoc = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
+    $claims = @($resultDoc.authority_claims)
+    $claims += [pscustomobject]@{ type = "release-approval"; actor = "human"; claim = "approved"; decision_ref = "DEC-001" }
+    $resultDoc.authority_claims = $claims
+    Set-Content -LiteralPath $resultPath -Value ($resultDoc | ConvertTo-Json -Depth 12) -NoNewline
+
+    # New-Result wrote a decision log carrying DEC-100 with the record's real
+    # digest; DEC-001 has to be restored alongside it, since this case is about
+    # DEC-001 resolving and losing it would fail for the wrong reason.
+    $existingLog = Get-Content -LiteralPath (Join-Path $dir "decision-log.md") -Raw
+    Set-Content -LiteralPath (Join-Path $dir "decision-log.md") `
+      -Value ($existingLog.TrimEnd() + "`n| 2026-07-30 | DEC-001 | ship it | A/B | A | because | src | ok |") -NoNewline
 
     $r = Invoke-Verify -Dir $dir
     Assert-True "real decision ref, log committed before the export: verdict pass" `

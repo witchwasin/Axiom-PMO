@@ -46,13 +46,31 @@
     test alone;
   - `agent-claimed` (`agent-assertion`) never does.
 
-  `artifact-observed` evidence is promoted only when a human accepts it on
-  the record, via a `test-evidence-accepted` authority claim citing a
-  `DEC-###` that resolves in `decision-log.md` and was not written by the
-  execution's own commits. Deliberately a claim rather than a config flag:
-  a weakening that is per-execution, attributable, and recorded in a
-  governed artifact can be reviewed later; a boolean cannot. It proves
-  accountability, not inspection.
+  **Round 3** found the human-vouch path that promotes artifact-observed
+  evidence was itself a single global boolean: any resolvable
+  `test-evidence-accepted` claim promoted *every* artifact-observed entry in
+  the execution. Demonstrated with a fabricated JUnit report claiming 99
+  passing tests, vouched by a real decision record about which logging
+  library to use.
+
+  Binding the claim to the evidence is necessary but not sufficient, and the
+  distinction matters: the result document is written by the actor being
+  verified, so a binding that lives only in the claim is defeated by forging
+  the artifact, hashing it, and copying that hash into your own claim.
+  Self-consistent forgery is still forgery. The anchor is therefore the
+  decision row itself, which the actor cannot author within the verified
+  commit range -- `decision-log.md` must not change inside `base..head`, so a
+  row naming the artifact's digest had to exist before the work began.
+
+  A vouch now promotes one evidence entry, never all of them, and must name
+  `test_name` and `evidence_sha256` matching what the adapter actually
+  computed, cite a resolving `DEC-###` not written in-range, and that row
+  must contain the same digest. Unbound vouches fail closed. Deliberately a
+  claim rather than a config flag: a weakening that is per-execution,
+  attributable, and recorded in a governed artifact can be reviewed later; a
+  boolean cannot. It proves accountability, not inspection -- and an actor
+  could still plant a digest in an earlier execution's decision row, which is
+  documented rather than papered over.
 
   Also fixed across the two rounds: the contract's digest sidecar is now
   mandatory and fails closed (`EXEC-002`); `decision_ref` resolves against
@@ -61,9 +79,11 @@
   changed-files check now catches a result *claiming* a file changed that
   git shows no evidence of, not only the reverse.
 
-  99 adversarial tests (up from 57) reproduce each gap and confirm each
-  fix, including the decisive one: a hand-forged run record with a valid
-  sidecar, and a genuine record without a vouch, both rejected. Awaiting
+  108 adversarial tests (up from 57) reproduce each gap and confirm each
+  fix, including the decisive ones: a hand-forged run record with a valid
+  sidecar; a genuine record without a vouch; a vouch citing a real but
+  unrelated decision; and a vouch whose bindings are all self-consistent but
+  whose decision row never names the digest. Awaiting
   re-review and Human Owner acceptance -- see `ROADMAP.md`'s Milestone
   5.1-5.4 section for current status.
 
