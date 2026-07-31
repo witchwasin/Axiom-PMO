@@ -67,6 +67,11 @@ Invoke-Check "handoff-assessment" { & $ps -NoProfile -ExecutionPolicy Bypass -Fi
 Invoke-Check "scope-diff" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/scope-diff-tests.ps1") -RepoPath $repo }
 Invoke-Check "execution-contract" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/execution-contract-tests.ps1") -RepoPath $repo }
 Invoke-Check "demo-smoke" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/demo-smoke-tests.ps1") -RepoPath $repo }
+# Milestone 6.1 spike: the framework must keep working when its files are not
+# in a git checkout, not the cwd, and not writable -- the way a Claude Code
+# plugin is installed. Run on every host, because the failure mode this guards
+# (unquoted install paths) is Windows-only.
+Invoke-Check "plugin-install" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/plugin-install-spike-tests.ps1") -RepoPath $repo }
 Invoke-Check "lite-example" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/validate-project.ps1") -ProjectPath (Join-Path $repo "examples/LITE-BUGFIX") -Mode Lite -Gate Scope -FailOnWarning }
 Invoke-Check "standard-example" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/validate-project.ps1") -ProjectPath (Join-Path $repo "examples/STANDARD-FEATURE") -Mode Standard -Gate Release -FailOnWarning }
 Invoke-Check "strict-example" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/validate-project.ps1") -ProjectPath (Join-Path $repo "examples/STRICT-HIGH-RISK") -Mode Strict -Gate Release -FailOnWarning }
