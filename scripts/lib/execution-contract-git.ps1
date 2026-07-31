@@ -55,8 +55,19 @@ function Test-ExecutionAncestry {
     [Parameter(Mandatory = $true)][string]$Descendant
   )
 
-  & git -C $RepoRoot merge-base --is-ancestor $Ancestor $Descendant 2>$null | Out-Null
-  return ($LASTEXITCODE -eq 0)
+  # "Continue" guard: callers set ErrorActionPreference = Stop, and Windows
+  # PowerShell 5.1 turns native stderr into a terminating error under Stop
+  # (docs/architecture/powershell-portability.md §1). `merge-base
+  # --is-ancestor` writes to stderr on a malformed object name, which would
+  # kill the run instead of returning the false this function contracts to.
+  $previousEap = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try {
+    & git -C $RepoRoot merge-base --is-ancestor $Ancestor $Descendant 2>$null | Out-Null
+    return ($LASTEXITCODE -eq 0)
+  } finally {
+    $ErrorActionPreference = $previousEap
+  }
 }
 
 # Commit SHAs reachable from head but not from base -- the commits this

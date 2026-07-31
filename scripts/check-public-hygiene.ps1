@@ -50,10 +50,23 @@ if (-not (Test-Path -LiteralPath $allowlistPath -PathType Leaf)) {
 }
 
 $script:allowlist = Get-Content -LiteralPath $allowlistPath -Raw | ConvertFrom-Json
+# "Continue" around the git calls: this script sets ErrorActionPreference to
+# Stop, and Windows PowerShell 5.1 turns a native command's stderr into a
+# terminating error under Stop (see docs/architecture/powershell-portability.md
+# §1). `ls-files --exclude-from` writes to stderr when the file it names is
+# absent, which would kill the hygiene check itself rather than let the
+# $LASTEXITCODE branch below report it.
 $trackedFiles = @()
-$trackedFiles += & git -C $repo ls-files --cached
-$trackedFiles += & git -C $repo ls-files --others --exclude-from=.gitignore
-if ($LASTEXITCODE -ne 0) {
+$previousEap = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+try {
+  $trackedFiles += & git -C $repo ls-files --cached
+  $trackedFiles += & git -C $repo ls-files --others --exclude-from=.gitignore
+  $lsExitCode = $LASTEXITCODE
+} finally {
+  $ErrorActionPreference = $previousEap
+}
+if ($lsExitCode -ne 0) {
   Write-Host "FAIL: unable to list tracked files"
   exit 1
 }

@@ -64,16 +64,35 @@ if ($allVersions.Count -eq 1) {
 }
 
 # --- Public hygiene ----------------------------------------------------------
+# Every child process below runs under "Continue" rather than this script's
+# "Stop". That is load-bearing for a readiness *reporter*: its whole job is
+# running checks that may legitimately fail and collecting their exit codes
+# as problems. Windows PowerShell 5.1 turns a child's stderr into a
+# terminating error under "Stop" (docs/architecture/powershell-portability.md
+# §1), so a failing check would abort the report instead of being reported --
+# exactly backwards.
 Section "Public hygiene"
-& $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/check-public-hygiene.ps1") -RepoPath $repo
-$hygieneCode = $LASTEXITCODE
+$previousEap = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+try {
+  & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/check-public-hygiene.ps1") -RepoPath $repo
+  $hygieneCode = $LASTEXITCODE
+} finally {
+  $ErrorActionPreference = $previousEap
+}
 if ($hygieneCode -ne 0) {
   $problems += "Public hygiene check failed (exit $hygieneCode)"
 }
 
 # --- Working tree status (informational) -------------------------------------
 Section "Working tree"
-$status = & git -C $repo -c core.excludesFile= status --porcelain
+$previousEap = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+try {
+  $status = & git -C $repo -c core.excludesFile= status --porcelain
+} finally {
+  $ErrorActionPreference = $previousEap
+}
 if ([string]::IsNullOrWhiteSpace($status)) {
   Write-Host "Clean working tree."
 } else {
@@ -90,11 +109,17 @@ if ($RunSuite) {
     @{ n = "fixtures"; f = "scripts/run-validation-tests.ps1"; a = @("-RepoPath", $repo, "-VerifyGolden") },
     @{ n = "example-goldens"; f = "tests/golden/capture-examples.ps1"; a = @("-Verify") }
   )
-  foreach ($s in $suite) {
-    & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo $s.f) @($s.a) | Out-Null
-    $code = $LASTEXITCODE
-    if ($code -ne 0) { $problems += "Check '$($s.n)' failed (exit $code)" }
-    Write-Host ("{0}: exit {1}" -f $s.n, $code)
+  $previousEap = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try {
+    foreach ($s in $suite) {
+      & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo $s.f) @($s.a) | Out-Null
+      $code = $LASTEXITCODE
+      if ($code -ne 0) { $problems += "Check '$($s.n)' failed (exit $code)" }
+      Write-Host ("{0}: exit {1}" -f $s.n, $code)
+    }
+  } finally {
+    $ErrorActionPreference = $previousEap
   }
 }
 
