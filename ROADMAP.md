@@ -934,6 +934,11 @@ Do not spend near-term effort on:
   `v1.2.0`.
 - Milestone 5.0 research and go/no-go decision (GO WITH REFRAME), recorded
   2026-07-30.
+- Milestone 5.1-5.4 Execution Contract Verification: five review rounds,
+  Human Owner accepted and closed 2026-07-31 (`DEC-004`). **This completes
+  the core product** -- Milestones 1-5.
+- Milestone 6.0 research: integration shape decided (HYBRID), reviewed and
+  revised 2026-07-30.
 
 ### Deferred trust evidence
 
@@ -943,13 +948,15 @@ Do not spend near-term effort on:
 
 ### Next
 
-- Independent AI Reviewer re-review of Milestone 5.1-5.4's fixes (real evidence verification,
-  mandatory contract-digest sidecar, real `decision-log.md` resolver, 88
-  adversarial tests). Milestone 5 is not accepted until the re-review passes
-  and the Human Owner accepts.
-- Milestone 6.0 research (integration shape: HYBRID) is done and under
-  review; Milestone 6.1 implementation does not start until Milestone 5 is
-  accepted, per Roadmap Governance.
+- **Milestone 6.1 packaging spike** -- authorized by the Human Owner
+  2026-07-31. Prove what a Claude Code plugin can actually do with this
+  framework before any restructuring: executable invocation under the current
+  permission model, `pwsh` host resolution from a plugin install location,
+  dot-sourcing, framework-root versus project-root separation, and the
+  required skills layout. Directory moves are **not** authorized on
+  assumption; an approved fallback exists if native validator invocation does
+  not hold. Ends with an evidence packet and a stop for a Human Owner
+  decision -- M6.2-M6.4 do not begin without it.
 - External-user validation of the v1.2.0 GitHub Action and SCOPE-DIFF. This
   needs the Human Owner personally and cannot be delegated; it is the main
   source of independent signal about whether the shipped features are usable
@@ -957,8 +964,12 @@ Do not spend near-term effort on:
 
 ### Blocked
 
-- Claude Code integration implementation (Milestone 6.1+), until Milestone
-  5 is accepted and Milestone 6 is separately approved.
+- Milestone 6.2-6.4 (namespaced repo integration, setup/uninstall safety,
+  clean-room compatibility), until the M6.1 spike reports and the Human Owner
+  confirms the final integration shape.
+- Milestone 6.5 (preventive hook pilot), until the packaging MVP is itself
+  accepted. It is new capability rather than packaging, and ships report-only
+  by default like SCOPE-DIFF and the GitHub Action did.
 
 ## Success Signals
 
