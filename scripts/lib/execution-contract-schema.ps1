@@ -223,12 +223,24 @@ function Resolve-TestEvidenceEntries {
       }
     }
 
+    # Provenance travels with the entry from here on. It answers a different
+    # question from FieldsPresent or from the later Test-EvidenceEntryVerified
+    # check: not "is this well-formed" or "does the artifact check out", but
+    # "does this prove anything about WHO produced it". Conflating those two
+    # is what let the same defect ship twice -- see the policy's
+    # review_history.
+    $provenance = "agent-claimed"
+    if ($adapter -and -not [string]::IsNullOrWhiteSpace([string]$adapter.provenance)) {
+      $provenance = [string]$adapter.provenance
+    }
+
     $entries.Add([pscustomobject]@{
       Type = $type
       Name = [string]$item.name
       Known = ($null -ne $adapter)
       FieldsPresent = ($adapter -and $missingFields.Count -eq 0)
       MissingFields = $missingFields
+      Provenance = $provenance
       Raw = $item
     }) | Out-Null
   }
