@@ -218,9 +218,20 @@ if ($Uninstall) {
     exit $exitOk
   }
 
+  # Removing the block from a file that contained nothing else leaves an empty
+  # file behind -- residue from a command whose whole promise is that it can be
+  # undone. If there is nothing left, the file goes too. The narrow cost is a
+  # user who had a deliberately empty AGENTS.md before installing; they lose an
+  # empty file, which is stated in the output rather than done silently.
+  $removeFileEntirely = [string]::IsNullOrWhiteSpace($removal.Text)
+
   try {
     $backup = New-AxiomBackup -Path $targetPath
-    Write-TextFileAtomic -Path $targetPath -Text $removal.Text -HasBom $state.HasBom
+    if ($removeFileEntirely) {
+      Remove-Item -LiteralPath $targetPath -Force
+    } else {
+      Write-TextFileAtomic -Path $targetPath -Text $removal.Text -HasBom $state.HasBom
+    }
   } catch {
     Write-Section "[FAIL] SETUP-007 Could not write $File."
     Write-Host "  $($_.Exception.Message)"
@@ -230,8 +241,14 @@ if ($Uninstall) {
     if ($backup) { Write-Host "  A backup was taken first: $(Split-Path -Leaf $backup)" }
     exit $exitConflict
   }
-  Write-Section "Removed the Axiom-PMO block from $File."
-  Write-Host "  Backup: $(Split-Path -Leaf $backup)"
+  if ($removeFileEntirely) {
+    Write-Section "Removed the Axiom-PMO block from $File."
+    Write-Host "  Nothing else was in the file, so $File was removed too."
+    Write-Host "  Backup: $(Split-Path -Leaf $backup)"
+  } else {
+    Write-Section "Removed the Axiom-PMO block from $File."
+    Write-Host "  Backup: $(Split-Path -Leaf $backup)"
+  }
   exit $exitOk
 }
 

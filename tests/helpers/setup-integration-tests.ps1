@@ -146,9 +146,16 @@ try {
   $r = Invoke-Setup -Project $p
   Assert-True "setup creates AGENTS.md when the repository has none" `
     ($r.ExitCode -eq 0 -and (Test-Path -LiteralPath (Join-Path $p "AGENTS.md"))) ($r.Text)
+  # Clean-room scenario 2 caught the earlier behaviour here: leaving an empty
+  # AGENTS.md behind is residue from a command whose entire promise is that it
+  # can be undone.
   $r = Invoke-Setup -Project $p -Arguments @("-Uninstall")
-  Assert-True "…and uninstall leaves an empty file rather than deleting one it did not create" `
-    (Test-Path -LiteralPath (Join-Path $p "AGENTS.md")) ($r.Text)
+  Assert-True "…and uninstall removes the file it created, leaving no residue" `
+    (-not (Test-Path -LiteralPath (Join-Path $p "AGENTS.md"))) ($r.Text)
+  Assert-True "…and says so rather than deleting silently" `
+    ($r.Text -match "(?i)was removed too") ($r.Text)
+  Assert-True "…while still leaving the backup, so it is recoverable" `
+    (@(Get-ChildItem -LiteralPath $p -Filter "*.axiom-backup-*").Count -ge 1)
 
   # ---- Backups ----------------------------------------------------------
 

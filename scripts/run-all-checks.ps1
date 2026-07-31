@@ -85,6 +85,10 @@ Invoke-Check "setup-integration" { & $ps -NoProfile -ExecutionPolicy Bypass -Fil
 # do -- speak when nobody opted in, emit a permission decision, or break a tool
 # call when anything goes wrong.
 Invoke-Check "hook-advisory" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/hook-advisory-tests.ps1") -RepoPath $repo }
+# Milestone 6.4: the claim a user actually cares about -- installing this does
+# not break what they already have -- plus the governance claims a friendlier
+# integration would be most tempted to soften.
+Invoke-Check "clean-room" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/clean-room-tests.ps1") -RepoPath $repo }
 # Milestone 6.1 spike: the framework must keep working when its files are not
 # in a git checkout, not the cwd, and not writable -- the way a Claude Code
 # plugin is installed. Run on every host, because the failure mode this guards
