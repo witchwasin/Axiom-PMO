@@ -71,7 +71,7 @@ Recommended effort allocation:
 | Milestone 3.5 - Runtime Portability | Accepted | CI threshold met; branch protection deferred by human decision |
 | Milestone 4 - GitHub Action | Delivered | Merged to `main` at `31d1e25`; child issues #12-#17 closed |
 | Milestone 4.5 - SCOPE-DIFF | Delivered | Human Owner accepted 2026-07-30 after two independent AI review rounds; merged to `main` at `6b42643` |
-| Milestone 5 - Execution Contract Verification MVP | 5.0 decided (GO WITH REFRAME); 5.1-5.4 through two REQUEST CHANGES rounds, fixes applied, awaiting re-review -- **not accepted, not delivered** | `docs/reference/execution-contract.md`; decision `DEC-002`; findings and fixes tracked below |
+| Milestone 5 - Execution Contract Verification MVP | 5.0 decided (GO WITH REFRAME); 5.1-5.4 through three REQUEST CHANGES rounds, fixes applied, awaiting re-review -- **not accepted, not delivered** | `docs/reference/execution-contract.md`; decision `DEC-002`; findings and fixes tracked below |
 | Milestone 6 - Claude Code Integration Experience | Planned | Requires separate approval after Milestone 5 |
 
 ## Roadmap Governance
@@ -663,7 +663,7 @@ enough that a second integration could reuse it later without a rewrite.
 
 ### Milestone 5.1 - 5.4
 
-Status: **Fixes applied for a second REQUEST CHANGES round; awaiting
+Status: **Fixes applied for a third REQUEST CHANGES round; awaiting
 re-review and Human Owner acceptance.** Not yet delivered -- do not treat
 Milestone 5 as shipped until this section says the re-review passed and
 Human Owner accepted.
@@ -736,7 +736,7 @@ human vouch becomes the way through.
 | 5.1 contract export | Built |
 | 5.2 result import | Fixed: mandatory sidecar |
 | 5.3 authority + scope + evidence | Fixed: provenance tiers (artifact-observed evidence no longer satisfies a required test alone), real decision resolution |
-| 5.4 integration tests | Expanded: 99 cases, including the forged-record bypass round 2 demonstrated |
+| 5.4 integration tests | Expanded: 108 cases, including the forged-record bypass (round 2) and the unbound-vouch bypass (round 3) |
 
 Rules `EXEC-001` to `EXEC-008`, each with a `docs/rules/` page. Policy lives
 in `pmo-config/execution-contract-policy.json`.

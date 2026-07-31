@@ -65,8 +65,8 @@ run is asserted by a third party the executing actor cannot impersonate.
 Its conclusion is queried live; the result's own `conclusion` field is never
 read.
 
-**2. A human accepts the artifact on the record.** Add a
-`test-evidence-accepted` authority claim citing a decision record:
+**2. A human accepts *that specific artifact* on the record.** Add a
+`test-evidence-accepted` authority claim, bound to the test and the artifact:
 
 ```json
 {
@@ -75,17 +75,57 @@ read.
       "path": "reports/junit.xml", "sha256": "<real digest>" }
   ],
   "authority_claims": [
-    { "type": "test-evidence-accepted", "actor": "human",
-      "claim": "accepted", "decision_ref": "DEC-014" }
+    { "type": "test-evidence-accepted", "actor": "human", "claim": "accepted",
+      "decision_ref": "DEC-014",
+      "test_name": "unit tests",
+      "evidence_sha256": "<the same real digest>" }
   ]
 }
 ```
 
-The vouch is held to the same standard as every other human-only claim
-(`EXEC-007`): `actor` must be `human` (an agent vouching for itself is
-rejected), the `DEC-###` must resolve to exactly one row in
-`decision-log.md`, and that row must **not** have been added or edited within
-the commit range under verification.
+…and the cited decision row must itself name that digest:
+
+```text
+| 2026-07-31 | DEC-014 | Accept unit tests evidence for D-001 | ... | accepted |
+  reviewed reports/junit.xml by hand; sha256 <digest> | ... |
+```
+
+### Why the digest has to appear in the decision row
+
+**This rule was wrong a third time**, and the correction is worth stating
+because the near-miss is instructive.
+
+Round 3 found the vouch was a single global boolean: any resolvable
+`test-evidence-accepted` claim promoted *every* artifact-observed entry in the
+execution. Demonstrated with a fabricated JUnit report claiming 99 passing
+tests, vouched by a real decision record about **which logging library to
+use**. The claim named no test, no artifact and no digest, so there was
+nothing for it to be wrong about.
+
+Binding the claim to the evidence is necessary — but on its own it does not
+close the hole, and it is worth being precise about why. **The result document
+is written by the actor being verified.** If the binding lived only in the
+claim, the same attack survives: forge the artifact, hash it, copy that hash
+into your own `evidence_sha256`, cite the same unrelated decision, and every
+field "matches". Self-consistent forgery is still forgery.
+
+So the anchor is the decision row, which the actor cannot author inside the
+verified range (`decision-log.md` must not change within `base..head`). A row
+naming the artifact's digest had to exist *before the work began* — which
+means predicting the exact bytes of an artifact not yet produced.
+
+Requirements, in full:
+
+| Field | Must match |
+|---|---|
+| `actor` | `human` — an agent vouching for itself is rejected on authority |
+| `test_name` | the required test being satisfied |
+| `evidence_sha256` | the digest the adapter actually computed |
+| `decision_ref` | a `DEC-###` resolving to exactly one row, not written in-range |
+| the decision row | must contain that same digest |
+| `evidence_type`, `work_item_id`, `contract_sha256` | optional; checked when present |
+
+A vouch with no bindings fails closed.
 
 This is deliberately not a config flag. A weakening that is per-execution,
 attributable, and recorded in a governed artifact is reviewable; a boolean in
@@ -93,10 +133,16 @@ a config file is not.
 
 ## What this still does not prove
 
-Even a vouched artifact only means *a human said they accepted it*. If that
-human did not actually inspect the artifact, the framework cannot tell. The
-guarantee is accountability, not certainty — the same guarantee every human
-approval gate in this framework offers.
+Even a correctly bound vouch only means *a human said they accepted this
+artifact*. If they did not actually inspect it, the framework cannot tell. The
+guarantee is accountability, not certainty — the same one every human approval
+gate here offers.
+
+**Residual limit, stated rather than papered over:** an actor could plant a
+digest in a decision row during an *earlier* execution, for an artifact it
+intends to forge later. That requires the earlier execution to have passed
+review carrying an unexplained digest — narrower and more visible, but not
+closed.
 
 ## How to fix
 
