@@ -11,6 +11,11 @@ $ErrorActionPreference = "Stop"
 
 $root = Resolve-Path -LiteralPath $RepoPath
 $repo = $root.Path
+
+# Maintainer-only: audits the framework's own checkout, so it fails with a
+# diagnostic rather than a raw exception when run from a packaged install.
+. (Join-Path $PSScriptRoot "lib/framework-checkout.ps1")
+Assert-FrameworkCheckout -Root $repo -ToolName "pmo-doctor" -Alternative "scripts/validate-project.ps1 -ProjectPath <your project>"
 $policyPath = Join-Path $repo "pmo-config/policy.json"
 $skillManifestPath = Join-Path $repo "pmo-config/skill-manifest.json"
 $validationRulesPath = Join-Path $repo "pmo-config/validation-rules.json"

@@ -1,0 +1,12 @@
+{
+  "name": "axiom-pmo",
+  "version": "1.2.0",
+  "description": "Governance and development-handoff skills for Axiom-PMO: turn source material into scoped requirements, check handoff readiness, and verify execution results against an approved contract.",
+  "author": {
+    "name": "WITCHWASIN K."
+  },
+  "homepage": "https://github.com/witchwasin/Axiom-PMO",
+  "repository": "https://github.com/witchwasin/Axiom-PMO",
+  "license": "MIT",
+  "keywords": ["governance", "handoff", "requirements", "traceability", "pmo"]
+}
