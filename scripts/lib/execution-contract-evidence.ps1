@@ -211,9 +211,35 @@ function Test-CiCheckEvidence {
     return $result
   }
 
-  $observedConclusion = [string]$matchingRuns[0].conclusion
-  if ($observedConclusion -ne "success") {
-    $result.Reason = "the check run's conclusion, as observed via the GitHub API, is '$observedConclusion', not success"
+  # A commit can carry several check runs with the same name -- a re-run, or
+  # two workflow runs triggered on the same SHA (a push plus a manual
+  # dispatch, say). Taking $matchingRuns[0] made the verdict depend on
+  # whichever the API happened to list first, so the same evidence could
+  # verify or not verify between two invocations. That is not a theoretical
+  # ordering worry: this adapter's own live test hit it, picking a completed
+  # successful run during discovery and an in-flight one (conclusion "")
+  # a moment later.
+  #
+  # Resolved conservatively, in the same spirit as the ambiguity rule for
+  # DEC-### references: every completed run under that name must agree, and
+  # a name with any non-success completed run does not verify -- a
+  # "somewhere it passed" reading would let an actor re-run a job until one
+  # attempt went green and then cite the name.
+  $completedRuns = @($matchingRuns | Where-Object { [string]$_.status -eq "completed" })
+  if ($completedRuns.Count -eq 0) {
+    $inFlight = @($matchingRuns | ForEach-Object { [string]$_.status }) -join ", "
+    $result.Reason = "check run '$name' on commit $commitSha has not completed (status: $inFlight) -- an unfinished check is not evidence of a passing test"
+    return $result
+  }
+
+  $nonSuccess = @($completedRuns | Where-Object { [string]$_.conclusion -ne "success" })
+  if ($nonSuccess.Count -gt 0) {
+    $conclusions = @($completedRuns | ForEach-Object { [string]$_.conclusion }) -join ", "
+    if ($completedRuns.Count -gt 1) {
+      $result.Reason = "commit $commitSha has $($completedRuns.Count) completed check runs named '$name' and they do not all report success (observed: $conclusions). A name that passed on one attempt and failed on another is not evidence."
+    } else {
+      $result.Reason = "the check run's conclusion, as observed via the GitHub API, is '$conclusions', not success"
+    }
     return $result
   }
 
