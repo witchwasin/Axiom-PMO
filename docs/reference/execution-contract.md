@@ -119,22 +119,34 @@ Required: `contract_version`, `work_item_id`, `contract_sha256`, `base_sha`,
 
 ### Test evidence adapters
 
-Each adapter is **independently verified**, not accepted on field presence
-alone -- see [`EXEC-005`](../rules/EXEC-005.md) for exactly what each check
-does.
+Two independent questions get asked of every entry, and keeping them apart is
+the whole design:
 
-| Adapter | Requires | Verified by |
-|---|---|---|
-| `runner-exit-record` | `run_record_path` | Reopening the sealed file `axiom run` produced, recomputing its digest against the `.sha256` sidecar, and confirming it binds to this work item and contract with a sealed exit code of `0`. |
-| `ci-check` | `name`, `commit_sha` | A live query to the GitHub API for a check run matching `name` on that commit. The **observed** conclusion must be `success`; a `conclusion` field on the entry itself, if present, is informational only and never trusted. No `gh` CLI, no auth, or no resolvable remote all mean *unverified*. |
-| `junit-artifact` | `path`, `sha256` | Resolving `path` inside the project root, hashing the real file, comparing to the claimed `sha256`, safely parsing the XML, and confirming `failures + errors` sum to zero across every `<testsuite>`. |
-| `agent-assertion` | `name` | Nothing -- never verifiable by design. |
+> **Does the artifact check out?** — the file exists, its bytes hash to the
+> declared digest, its contents report success.
+>
+> **Does anything establish who produced it?** — a different question, and
+> the one that decides whether a required test is satisfied.
 
-An `agent-assertion` is recorded but never satisfies a `required_tests` entry
-on its own. Naming a verifiable adapter without its evidence fields does not
-count either, and neither does naming one with fields that merely look right
--- see EXEC-005 for the fabrication cases this actually catches (wrong hash,
-missing file, path traversal, unsealed record, wrong work item).
+| Adapter | Requires | What is actually checked | Provenance |
+|---|---|---|---|
+| `ci-check` | `name`, `commit_sha` | Live GitHub API query for a check run matching `name` on that commit. The **observed** conclusion must be `success`; the entry's own `conclusion` field is never read. No `gh`, no auth, or no resolvable remote all mean *unverified*. | `externally-observed` |
+| `junit-artifact` | `path`, `sha256` | `path` resolved inside the project root, the real file hashed and compared to the claimed digest, XML parsed with DTD processing prohibited, `failures + errors` summing to zero. | `artifact-observed` |
+| `runner-exit-record` | `run_record_path` | The sealed file `axiom run` produced, reopened, its digest recomputed against the `.sha256` sidecar, its work-item and contract bindings confirmed, sealed exit code `0`. | `artifact-observed` |
+| `agent-assertion` | `name` | Nothing. Recorded for context only. | `agent-claimed` |
+
+**Only `externally-observed` evidence satisfies a required test on its own.**
+
+`artifact-observed` evidence is real and tamper-evident, but both the artifact
+and its digest live where the actor being verified can write them — so it
+proves the artifact is internally consistent, not that a test ran. A code
+review demonstrated a fully hand-forged run record with a genuinely matching
+sidecar passing an earlier version of this check, without `axiom run` ever
+being invoked. Computing a SHA-256 is exactly as easy as writing the JSON it
+summarises.
+
+To satisfy a required test with `artifact-observed` evidence, a human must
+accept it on the record — see [Authority claims](#authority-claims) below.
 
 Produce `runner-exit-record` evidence with:
 
@@ -155,8 +167,69 @@ must resolve to exactly one row in `decision-log.md` -- not merely name one;
 `DEC-999-NOT-REAL` is rejected the same as an empty `decision_ref`. It must
 also not have been added or edited **within the commit range under
 verification**: a row the execution's own commits could have introduced is
-not independent authority for that same execution. See
+not independent authority for that same execution.
+
+Resolving is not enough. The row must also **state what it authorizes**, via
+an `axiom-authority:` binding token — otherwise any decision in the log
+satisfies any claim:
+
+```text
+| 2026-07-31 | DEC-014 | Approve release of D-001 | ship / hold | ship |
+  axiom-authority: type=release-approval; work_item=D-001;
+  contract=<contract sha256> | none | approved |
+```
+
+`type`, `work_item` and `contract` are required on every human-only claim. The
+token is parsed field by field, per table cell, and runs to the end of the cell
+it appears in — put it last in that cell. See
 [`EXEC-007`](../rules/EXEC-007.md).
+
+#### Vouching for artifact evidence
+
+`test-evidence-accepted` is the claim type that promotes `artifact-observed`
+evidence so it can satisfy a required test. It is bound on both sides — the
+claim names the test and the artifact digest, and the decision row's token
+names the same pair:
+
+```json
+{
+  "test_evidence": [
+    { "type": "junit-artifact", "name": "unit tests",
+      "path": "reports/junit.xml", "sha256": "<real digest>" }
+  ],
+  "authority_claims": [
+    { "type": "test-evidence-accepted", "actor": "human",
+      "claim": "accepted", "decision_ref": "DEC-014",
+      "test_name": "unit tests", "evidence_sha256": "<the same real digest>" }
+  ]
+}
+```
+
+```text
+| 2026-07-31 | DEC-014 | Accept unit test evidence for D-001 | ... | accepted |
+  axiom-authority: type=test-evidence-accepted; work_item=D-001;
+  contract=<contract sha256>; test=unit tests; evidence=<the same real digest> | ... |
+```
+
+Both sides are necessary. The claim is written by the actor being verified, so
+claim-side binding alone lets a forger hash their own artifact and copy the
+result into their own claim; the decision row is the one input the actor cannot
+author inside `base..head`. Promotion is per evidence entry, never global: a
+vouch for `unit tests` does nothing for `integration tests`, and a row
+approving one artifact does not carry over to another.
+
+An agent vouching for its own evidence is rejected on actor authority, and a
+`DEC-###` that does not resolve, is ambiguous, was written by this execution's
+own commits, or carries no matching token, promotes nothing.
+
+Deliberately a claim rather than a config flag: a weakening that is
+per-execution, attributable, and recorded in a governed artifact can be
+reviewed later. A boolean in a config file cannot.
+
+**What it proves:** that a named human accepted responsibility for the
+artifact. Not that they inspected it. The guarantee here is accountability,
+the same one every human approval gate in this framework offers — not
+certainty.
 
 ## Contract immutability
 
@@ -184,9 +257,20 @@ Stated plainly rather than left to be discovered:
   checkout does not know about, a force-moved remote ref, or a branch pushed then
   deleted cannot be disproven from local state. Push detection is tri-state:
   only a positive observation raises `EXEC-006`.
-- **An actor that rewrites contract, sidecar, and result consistently defeats
-  the digest check.** Only git history shows that — which is why `.execution/`
-  is meant to be committed.
+- **No local artifact proves its own provenance.** This is the general form of
+  the point above about `artifact-observed` evidence, and it applies to the
+  contract too: an actor that rewrites contract, sidecar, and result
+  consistently defeats the digest check. A digest establishes integrity from
+  the moment it was taken; it never establishes who took it. Closing that
+  would need either a secret the actor cannot read, or an observer outside
+  the actor's reach — neither of which exists inside a working tree the actor
+  controls. What remains is git history (which is why `.execution/` is meant
+  to be committed), external observation (`ci-check`), and human
+  accountability.
+- **A human vouch proves accountability, not inspection.** A
+  `test-evidence-accepted` claim records that a named person accepted an
+  artifact. Whether they actually looked at it is outside what any validator
+  can see.
 - **It does not judge code quality, requirement satisfaction, or whether the
   work should ship.** Those remain human decisions.
 - **`--format` is accepted but does not change the output.** The schema is

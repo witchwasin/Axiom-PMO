@@ -11,7 +11,9 @@
 # Get-FileHash, no XML parse, no API call anywhere in the adapter resolver.
 #
 # Every Test-*Evidence function here returns the same shape:
-#   [pscustomobject]@{ Verified = $true|$false; Reason = <string, when false> }
+#   [pscustomobject]@{ Verified = $true|$false; Reason = <string, when false>
+#                      EvidenceDigest = <the digest of the exact bytes this
+#                                        adapter verified, when Verified> }
 # and every one defaults to Verified = $false on any ambiguity. An adapter
 # that cannot independently confirm something reports "unverified," never a
 # silent pass -- the same standard scope-diff-git-adapter.ps1 and
@@ -23,7 +25,7 @@
 function Test-JUnitEvidence {
   param($Entry, [Parameter(Mandatory = $true)][string]$ProjectPath)
 
-  $result = [pscustomobject]@{ Verified = $false; Reason = $null }
+  $result = [pscustomobject]@{ Verified = $false; Reason = $null; EvidenceDigest = $null }
   $relPath = [string]$Entry.Raw.path
   $claimedSha = [string]$Entry.Raw.sha256
 
@@ -101,6 +103,9 @@ function Test-JUnitEvidence {
   }
 
   $result.Verified = $true
+  # The digest of the bytes actually hashed, so a human vouch can bind to
+  # this exact artifact rather than to "some test evidence existed".
+  $result.EvidenceDigest = $actualSha
   return $result
 }
 
@@ -159,7 +164,7 @@ function Invoke-NativeCapture {
 function Test-CiCheckEvidence {
   param($Entry, [Parameter(Mandatory = $true)][string]$GitRepoRoot)
 
-  $result = [pscustomobject]@{ Verified = $false; Reason = $null }
+  $result = [pscustomobject]@{ Verified = $false; Reason = $null; EvidenceDigest = $null }
   $name = [string]$Entry.Raw.name
   $commitSha = [string]$Entry.Raw.commit_sha
   if ([string]::IsNullOrWhiteSpace($name) -or [string]::IsNullOrWhiteSpace($commitSha)) {
@@ -211,9 +216,35 @@ function Test-CiCheckEvidence {
     return $result
   }
 
-  $observedConclusion = [string]$matchingRuns[0].conclusion
-  if ($observedConclusion -ne "success") {
-    $result.Reason = "the check run's conclusion, as observed via the GitHub API, is '$observedConclusion', not success"
+  # A commit can carry several check runs with the same name -- a re-run, or
+  # two workflow runs triggered on the same SHA (a push plus a manual
+  # dispatch, say). Taking $matchingRuns[0] made the verdict depend on
+  # whichever the API happened to list first, so the same evidence could
+  # verify or not verify between two invocations. That is not a theoretical
+  # ordering worry: this adapter's own live test hit it, picking a completed
+  # successful run during discovery and an in-flight one (conclusion "")
+  # a moment later.
+  #
+  # Resolved conservatively, in the same spirit as the ambiguity rule for
+  # DEC-### references: every completed run under that name must agree, and
+  # a name with any non-success completed run does not verify -- a
+  # "somewhere it passed" reading would let an actor re-run a job until one
+  # attempt went green and then cite the name.
+  $completedRuns = @($matchingRuns | Where-Object { [string]$_.status -eq "completed" })
+  if ($completedRuns.Count -eq 0) {
+    $inFlight = @($matchingRuns | ForEach-Object { [string]$_.status }) -join ", "
+    $result.Reason = "check run '$name' on commit $commitSha has not completed (status: $inFlight) -- an unfinished check is not evidence of a passing test"
+    return $result
+  }
+
+  $nonSuccess = @($completedRuns | Where-Object { [string]$_.conclusion -ne "success" })
+  if ($nonSuccess.Count -gt 0) {
+    $conclusions = @($completedRuns | ForEach-Object { [string]$_.conclusion }) -join ", "
+    if ($completedRuns.Count -gt 1) {
+      $result.Reason = "commit $commitSha has $($completedRuns.Count) completed check runs named '$name' and they do not all report success (observed: $conclusions). A name that passed on one attempt and failed on another is not evidence."
+    } else {
+      $result.Reason = "the check run's conclusion, as observed via the GitHub API, is '$conclusions', not success"
+    }
     return $result
   }
 
@@ -231,7 +262,7 @@ function Test-RunnerExitEvidence {
     [Parameter(Mandatory = $true)][string]$WorkItemId
   )
 
-  $result = [pscustomobject]@{ Verified = $false; Reason = $null }
+  $result = [pscustomobject]@{ Verified = $false; Reason = $null; EvidenceDigest = $null }
   $relPath = [string]$Entry.Raw.run_record_path
   if ([string]::IsNullOrWhiteSpace($relPath)) {
     $result.Reason = "no run_record_path -- a runner-exit-record must point at the sealed file scripts/run-execution-command.ps1 produced, not describe its own command/exit_code inline"
@@ -304,6 +335,10 @@ function Test-RunnerExitEvidence {
   }
 
   $result.Verified = $true
+  # The record file's own digest -- already recomputed above and matched
+  # against its sidecar, so this is the byte-exact identity of the record a
+  # human vouch has to name.
+  $result.EvidenceDigest = $actualDigest
   return $result
 }
 

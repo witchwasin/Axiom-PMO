@@ -306,17 +306,178 @@ function Invoke-ExecutionContractVerification {
 
   # --- 6. Required-test evidence (EXEC-005) --------------------------------
   #
-  # Real verification, not a field-presence check: Test-EvidenceEntryVerified
-  # (execution-contract-evidence.ps1) opens the JUnit file and rehashes it,
-  # queries the GitHub API for a ci-check, or reopens and rehashes a sealed
-  # runner-exit-record. This is the FATAL fix from Independent AI Reviewer's review -- the
-  # previous version trusted `policy.test_evidence_adapters[].verifiable`
-  # (a property of the adapter *type*) as if it were a property of the
-  # *entry*, so an agent could satisfy any required test by naming a
-  # verifiable-looking adapter and filling in plausible fields, none of which
-  # were ever actually checked.
+  # Two independent questions per entry, and collapsing them is what let the
+  # same defect ship twice:
+  #
+  #   Does the artifact check out?  -> Test-EvidenceEntryVerified. Opens the
+  #                                    JUnit file and rehashes it, queries the
+  #                                    GitHub API, reopens the sealed run
+  #                                    record. Real work, not field presence.
+  #   Does it prove WHO ran it?     -> $match.Provenance, from policy.
+  #
+  # Round 1 of review caught the first question not being asked at all. Round
+  # 2 caught the second: the runner-exit-record check was doing real work --
+  # containment, digest recomputation, contract binding, exit code -- on a
+  # file that lives under .execution/**, which the verified actor can write
+  # and which is exempt from scope analysis. A reviewer demonstrated a fully
+  # hand-forged record with a genuinely matching sidecar passing, without the
+  # runner ever being invoked.
+  #
+  # The correction is not a better check on the file. No check on a file the
+  # actor can write proves who wrote it: a digest proves integrity since it
+  # was taken and says nothing about provenance, and `sealed_by:
+  # "axiom-runner"` is a string the forger types. So artifact-observed
+  # evidence no longer satisfies a required test by itself. It takes either
+  # an externally-observed source the actor cannot impersonate (today:
+  # ci-check), or a human explicitly accepting responsibility for the
+  # artifact on the record.
+  #
+  # That human path deliberately reuses the existing authority mechanism
+  # rather than adding a config flag: a `test-evidence-accepted` claim from
+  # actor `human`, citing a decision record that resolves in decision-log.md
+  # and was not introduced by this execution's own commits (the same
+  # conditions section 8 enforces for every human-only claim). A weakening
+  # that is per-execution, attributable, and reviewable in a governed
+  # artifact beats one that is a boolean in a config file.
 
   $evidence = Resolve-TestEvidenceEntries -Result $doc -Policy $policy
+
+  # Which provenance tiers clear a required test on their own, read from
+  # policy rather than hard-coded, so adding a genuinely external adapter
+  # later is a config change.
+  $satisfyingTiers = @()
+  if ($policy.PSObject.Properties["evidence_provenance"]) {
+    foreach ($tierProp in $policy.evidence_provenance.PSObject.Properties) {
+      if ($tierProp.Name -eq "_note") { continue }
+      if ([bool]$tierProp.Value.satisfies_required_test) { $satisfyingTiers += $tierProp.Name }
+    }
+  }
+
+  # Resolving a human vouch, per evidence entry.
+  #
+  # Review round 3 found the first version of this was a single global
+  # boolean: any valid-looking `test-evidence-accepted` claim promoted every
+  # artifact-observed entry in the execution. Demonstrated with a fabricated
+  # JUnit report claiming 99 passing tests, vouched by a real decision record
+  # about *which logging library to use*. The claim named no test, no
+  # artifact, and no digest, so there was nothing for it to be wrong about.
+  #
+  # Binding the claim to the evidence is necessary but not sufficient, and
+  # that distinction is the whole design here. The result document is written
+  # by the actor being verified, so if the binding lived only in the claim,
+  # the same attack survives: forge the artifact, hash it, copy that hash
+  # into the claim's own `evidence_sha256`, cite the same unrelated decision,
+  # and every field "matches". Self-consistent forgery is still forgery.
+  #
+  # So the binding is anchored where the actor cannot write within this
+  # execution: the decision record itself must name the digest. decision-log.md
+  # is already required not to change inside the verified commit range, so a
+  # row naming the artifact's digest had to exist before the work began --
+  # which means predicting the exact bytes of an artifact not yet produced.
+  #
+  # Residual limit, stated rather than papered over: an actor could plant a
+  # digest in a decision row during an *earlier* execution for an artifact it
+  # intends to forge later. That needs the earlier execution to have passed
+  # review carrying an unexplained digest, which is a much narrower and more
+  # visible attack. Documented in docs/reference/execution-contract.md.
+  $humanVouchType = "test-evidence-accepted"
+  if ($policy.PSObject.Properties["required_test_satisfaction"] -and
+      -not [string]::IsNullOrWhiteSpace([string]$policy.required_test_satisfaction.human_vouch_claim_type)) {
+    $humanVouchType = [string]$policy.required_test_satisfaction.human_vouch_claim_type
+  }
+
+  # Returns why a vouch does NOT apply, or $null when it legitimately does.
+  function Resolve-EvidenceVouch {
+    param(
+      $Claims, [string]$VouchType, [string]$TestName, $Entry, [string]$EvidenceDigest,
+      [string]$WorkItemId, [string]$ContractDigest, [string]$ProjectPath,
+      [string]$DecisionLogRelPath, $ObservedPaths
+    )
+
+    $candidates = @()
+    foreach ($claim in @($Claims)) {
+      if ([string]$claim.type -eq $VouchType) { $candidates += $claim }
+    }
+    if ($candidates.Count -eq 0) { return "no $VouchType claim is present" }
+
+    $lastReason = $null
+    foreach ($claim in $candidates) {
+      if ([string]$claim.actor -ne "human") {
+        $lastReason = "the vouch is from actor '$([string]$claim.actor)', and only a human may accept test evidence"
+        continue
+      }
+      # Bindings are mandatory. A vouch that names nothing cannot be wrong
+      # about anything, which is exactly how the global-boolean version
+      # failed -- so an unbound claim is rejected outright rather than
+      # treated as covering everything.
+      $claimTest = [string]$claim.test_name
+      if ([string]::IsNullOrWhiteSpace($claimTest)) {
+        $lastReason = "the vouch names no test_name, so it cannot be tied to any particular required test"
+        continue
+      }
+      if ($claimTest -ne $TestName) { $lastReason = "the only vouch present is for test '$claimTest', not '$TestName'"; continue }
+
+      $claimDigest = ([string]$claim.evidence_sha256).Trim().ToLowerInvariant()
+      if ([string]::IsNullOrWhiteSpace($claimDigest)) {
+        $lastReason = "the vouch names no evidence_sha256, so it does not identify which artifact was accepted"
+        continue
+      }
+      if ($claimDigest -ne $EvidenceDigest) {
+        $lastReason = "the vouch accepts artifact digest $claimDigest, but the evidence actually presented digests to $EvidenceDigest"
+        continue
+      }
+
+      if ($claim.PSObject.Properties["evidence_type"] -and
+          -not [string]::IsNullOrWhiteSpace([string]$claim.evidence_type) -and
+          [string]$claim.evidence_type -ne [string]$Entry.Type) {
+        $lastReason = "the vouch is for '$([string]$claim.evidence_type)' evidence, but this entry is '$($Entry.Type)'"
+        continue
+      }
+      if ($claim.PSObject.Properties["work_item_id"] -and
+          -not [string]::IsNullOrWhiteSpace([string]$claim.work_item_id) -and
+          [string]$claim.work_item_id -ne $WorkItemId) {
+        $lastReason = "the vouch is bound to work item '$([string]$claim.work_item_id)', not '$WorkItemId'"
+        continue
+      }
+      if ($claim.PSObject.Properties["contract_sha256"] -and
+          -not [string]::IsNullOrWhiteSpace([string]$claim.contract_sha256) -and
+          ([string]$claim.contract_sha256).ToLowerInvariant() -ne $ContractDigest) {
+        $lastReason = "the vouch is bound to a different contract digest than the one being verified"
+        continue
+      }
+
+      $vouchRef = [string]$claim.decision_ref
+      if ([string]::IsNullOrWhiteSpace($vouchRef)) { $lastReason = "the vouch cites no decision record"; continue }
+      $resolved = Resolve-DecisionRecord -ProjectPath $ProjectPath -DecisionRef $vouchRef
+      if (-not $resolved.Found) { $lastReason = "the vouch cites decision record '$vouchRef', which could not be resolved: $($resolved.Reason)"; continue }
+      if ($DecisionLogRelPath -and ($ObservedPaths -contains $DecisionLogRelPath)) {
+        $lastReason = "the vouch cites '$vouchRef', but decision-log.md was itself changed within the commit range under verification"
+        continue
+      }
+
+      # The anchor. Everything above is written by the actor being verified;
+      # this is the one condition it cannot satisfy by writing more of its
+      # own document.
+      #
+      # Parsed field by field, not searched. An earlier version asked only
+      # whether the digest appeared anywhere in the row, which proved a human
+      # had *mentioned* the digest, not that they approved it for anything:
+      # a human accepted an artifact for "unit tests", the actor reused the
+      # same artifact and relabelled it "integration tests", and every check
+      # passed. The binding has to say what it authorizes.
+      $bindingProblem = Test-DecisionAuthorityBinding -Row $resolved.Row `
+        -ClaimType $VouchType -WorkItemId $WorkItemId -ContractSha256 $ContractDigest `
+        -TestName $TestName -EvidenceSha256 $EvidenceDigest
+      if ($bindingProblem) {
+        $lastReason = "decision record '$vouchRef' does not authorize this: $bindingProblem"
+        continue
+      }
+
+      return $null
+    }
+    return $lastReason
+  }
+
   $unverified = New-Object System.Collections.Generic.List[string]
   if ($contract.Document.PSObject.Properties["required_tests"]) {
     foreach ($required in @($contract.Document.required_tests)) {
@@ -336,6 +497,22 @@ function Invoke-ExecutionContractVerification {
       if (-not $verification.Verified) {
         $unverified.Add($requiredName) | Out-Null
         Add-Result FAIL "A test the contract requires is not backed by verified evidence -- its '$($match.Type)' entry did not verify: $($verification.Reason). An agent's own assertion that a test passed is a claim, not evidence." "EXEC-005" -Artifact "EXECUTION-RESULT.json" -ItemId $requiredName -Field "test_evidence"
+        continue
+      }
+
+      # The artifact checks out. Now: does anything establish who produced it?
+      if ($satisfyingTiers -contains $match.Provenance) { continue }
+
+      $claims = @()
+      if ($doc.PSObject.Properties["authority_claims"]) { $claims = @($doc.authority_claims) }
+      $vouchProblem = Resolve-EvidenceVouch -Claims $claims -VouchType $humanVouchType `
+        -TestName $requiredName -Entry $match -EvidenceDigest ([string]$verification.EvidenceDigest) `
+        -WorkItemId $verdict.work_item_id -ContractDigest $contract.Digest -ProjectPath $ProjectPath `
+        -DecisionLogRelPath $decisionLogRelPath -ObservedPaths $observedPaths
+
+      if ($vouchProblem) {
+        $unverified.Add($requiredName) | Out-Null
+        Add-Result FAIL "A test the contract requires is backed only by '$($match.Type)' evidence, which is $($match.Provenance): the artifact is well-formed and matches its declared digest, but it lives where the actor being verified can write it, so nothing here establishes who produced it. No human acceptance applies to it either -- $vouchProblem. Satisfy this with evidence from a source the actor cannot impersonate (a ci-check), or have a human accept this specific artifact: a '$humanVouchType' claim naming test_name and evidence_sha256, citing a decision record whose row names that same digest." "EXEC-005" -Artifact "EXECUTION-RESULT.json" -ItemId $requiredName -Field "test_evidence"
       }
     }
   }
@@ -442,6 +619,27 @@ function Invoke-ExecutionContractVerification {
             # authorize; it is the agent writing its own permission slip.
             $violations.Add("authority:$claimType") | Out-Null
             Add-Result FAIL "A human-only authority claim ('$claimType') cites decision record '$decisionRef', but decision-log.md was itself changed within the commit range under verification. A decision the execution's own commits could have introduced cannot serve as independent human authority for that same execution." "EXEC-007" -Artifact "decision-log.md" -ItemId $claimType -Field "authority_claims.decision_ref"
+          } else {
+            # Resolving is not authorizing. Every human-only claim -- not just
+            # the test-evidence vouch -- has to point at a decision row that
+            # says what it approves, or an actor can cite any old DEC that
+            # happens to resolve and manufacture an approval from it. Review
+            # round 4 called this out as the same bypass in a different claim
+            # type, and it is: the fix is one shared binding check rather than
+            # one per claim type, so the next claim type added inherits it.
+            $claimTestName = $null
+            $claimEvidence = $null
+            if ($claimType -eq $humanVouchType) {
+              $claimTestName = [string]$claim.test_name
+              $claimEvidence = [string]$claim.evidence_sha256
+            }
+            $bindProblem = Test-DecisionAuthorityBinding -Row $resolved.Row `
+              -ClaimType $claimType -WorkItemId $verdict.work_item_id -ContractSha256 $contract.Digest `
+              -TestName $claimTestName -EvidenceSha256 $claimEvidence
+            if ($bindProblem) {
+              $violations.Add("authority:$claimType") | Out-Null
+              Add-Result FAIL "A human-only authority claim ('$claimType') cites decision record '$decisionRef', which resolves but does not authorize this claim: $bindProblem" "EXEC-007" -Artifact "decision-log.md" -ItemId $claimType -Field "authority_claims.decision_ref"
+            }
           }
         }
       }
