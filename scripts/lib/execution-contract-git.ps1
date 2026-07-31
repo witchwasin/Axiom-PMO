@@ -55,8 +55,19 @@ function Test-ExecutionAncestry {
     [Parameter(Mandatory = $true)][string]$Descendant
   )
 
-  & git -C $RepoRoot merge-base --is-ancestor $Ancestor $Descendant 2>$null | Out-Null
-  return ($LASTEXITCODE -eq 0)
+  # "Continue" guard: callers set ErrorActionPreference = Stop, and Windows
+  # PowerShell 5.1 turns native stderr into a terminating error under Stop
+  # (docs/architecture/powershell-portability.md §1). `merge-base
+  # --is-ancestor` writes to stderr on a malformed object name, which would
+  # kill the run instead of returning the false this function contracts to.
+  $previousEap = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try {
+    & git -C $RepoRoot merge-base --is-ancestor $Ancestor $Descendant 2>$null | Out-Null
+    return ($LASTEXITCODE -eq 0)
+  } finally {
+    $ErrorActionPreference = $previousEap
+  }
 }
 
 # Commit SHAs reachable from head but not from base -- the commits this
@@ -119,13 +130,26 @@ function Test-ExecutionCommitOnRemote {
     [Parameter(Mandatory = $true)][string]$CommitSha
   )
 
-  $remoteRefs = & git -C $RepoRoot for-each-ref --format='%(refname)' refs/remotes 2>$null
-  if ($LASTEXITCODE -ne 0) { return $null }
-  $refList = @($remoteRefs | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
-  if ($refList.Count -eq 0) { return $null }
+  # "Continue" around both calls: this file's callers set
+  # $ErrorActionPreference = "Stop", and Windows PowerShell 5.1 turns a native
+  # command's stderr into a terminating error under "Stop" regardless of
+  # `2>$null`. `branch --remotes --contains` writes to stderr on a malformed
+  # object name, so an unguarded call could kill the whole verification run
+  # instead of returning a tri-state answer. Same failure mode that broke the
+  # ci-check adapter on the 5.1 CI leg.
+  $previousEap = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try {
+    $remoteRefs = & git -C $RepoRoot for-each-ref --format='%(refname)' refs/remotes 2>$null
+    if ($LASTEXITCODE -ne 0) { return $null }
+    $refList = @($remoteRefs | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
+    if ($refList.Count -eq 0) { return $null }
 
-  $containing = & git -C $RepoRoot branch --remotes --contains $CommitSha 2>$null
-  if ($LASTEXITCODE -ne 0) { return $false }
+    $containing = & git -C $RepoRoot branch --remotes --contains $CommitSha 2>$null
+    if ($LASTEXITCODE -ne 0) { return $false }
+  } finally {
+    $ErrorActionPreference = $previousEap
+  }
   foreach ($line in @($containing)) {
     if (-not [string]::IsNullOrWhiteSpace([string]$line)) { return $true }
   }

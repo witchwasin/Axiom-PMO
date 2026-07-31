@@ -126,8 +126,20 @@ if ($IncludeHandoff) {
 Write-Host "Created $Mode project: $projectDir"
 Write-Host ""
 Write-Host "Draft validation:"
-& $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/validate-project.ps1") -ProjectPath $projectDir -Mode $Mode -Gate Draft
-$draftExitCode = $LASTEXITCODE
+# "Continue" around the child process: this script sets ErrorActionPreference
+# to Stop, and Windows PowerShell 5.1 turns a child's stderr into a
+# terminating error under Stop (docs/architecture/powershell-portability.md
+# §1). A draft project is *expected* to fail validation, so anything the
+# validator writes to stderr here would abort project creation at the last
+# step -- after the files were already written.
+$previousEap = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+try {
+  & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/validate-project.ps1") -ProjectPath $projectDir -Mode $Mode -Gate Draft
+  $draftExitCode = $LASTEXITCODE
+} finally {
+  $ErrorActionPreference = $previousEap
+}
 Write-Host ""
 Write-Host "Next actions:"
 Write-Host "1. Add source files under source/MOM, source/REQ, or source/Transcript."

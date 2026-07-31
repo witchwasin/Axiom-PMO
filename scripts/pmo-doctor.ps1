@@ -380,6 +380,79 @@ if ($rulesWithBrokenDocs.Count -eq 0) {
   Add-Result FAIL ("Rules with unresolvable documentation: " + ((Sort-Ordinal -Values ([string[]]$rulesWithBrokenDocs)) -join ", ")) "DOCTOR-009"
 }
 
+# DOCTOR-010: native command invocations must be guarded against Windows
+# PowerShell 5.1's stderr-as-terminating-error behaviour.
+#
+# This check exists because the same defect shipped three times. Under
+# $ErrorActionPreference = "Stop", 5.1 converts ANY native command's stderr
+# into a terminating error -- including purely informational output, and
+# despite `2>$null`. PowerShell 7 does not, so it is invisible on the host
+# most of this repo is written on, and it kills a script outright rather than
+# producing a wrong answer. It has cost: a whole test file (git's CRLF
+# notice), the ci-check adapter (`git remote get-url` on a repo with no
+# remote), and the execution runner (any test command that writes to stderr
+# while passing -- npm, pytest, and jest all do).
+#
+# The rule this encodes: in a script that sets "Stop", every native
+# invocation either drops to "Continue" around the call, or matches one of
+# the two safe patterns below. Documented in
+# docs/architecture/powershell-portability.md §1.
+#
+# Deliberately a lexical check, not a parse: it looks at the ~15 lines before
+# each invocation for a "Continue" assignment or a wrapper call. That is
+# crude, but a false positive is a comment away from resolved while a false
+# negative is a crash on a host the author cannot run -- and a full AST
+# dataflow analysis to decide "is EAP Continue here" is far more machinery
+# than this earns.
+#
+# Scoped to scripts/ (product code) rather than tests/ as well, and the
+# reason is about consequence, not convenience: an unguarded call in a test
+# harness crashes loudly in CI, which is annoying but self-revealing; the
+# same call in product code crashes on a *user's* machine, on a host the
+# maintainer cannot reproduce, and looks like the tool being broken. The
+# ~50 equivalent sites under tests/ are real instances of the same class and
+# are recorded as known debt in
+# docs/architecture/powershell-portability.md rather than quietly excluded
+# -- narrowing the scan is a scoping decision, not permission to write
+# unguarded calls in tests.
+$nativeGuardProblems = @()
+$psFilesToScan = @(Get-ChildItem -LiteralPath (Join-Path $repo "scripts") -Filter *.ps1 -File -Recurse -ErrorAction SilentlyContinue)
+
+foreach ($psFile in $psFilesToScan) {
+  $psText = Get-Content -LiteralPath $psFile.FullName -Raw
+  if ($null -eq $psText) { continue }
+  # Only files that actually set "Stop" can exhibit the failure.
+  if ($psText -notmatch '\$ErrorActionPreference\s*=\s*[''"]Stop[''"]') { continue }
+
+  $psLines = $psText -split "`r?`n"
+  for ($i = 0; $i -lt $psLines.Count; $i++) {
+    $line = $psLines[$i]
+    if ($line -match '^\s*#') { continue }
+    # A native invocation: `& git ...`, `& gh ...`, or `& $someExe ...`.
+    if ($line -notmatch '&\s*(git|gh|\$\w*([Ee]xe|[Ss]hell)\w*)\b') { continue }
+
+    # Safe pattern 1: --quiet suppresses git's stderr by design.
+    if ($line -match '--quiet') { continue }
+    # Safe pattern 2: redirecting to a real file is a different mechanism and
+    # does not raise; it is also how a caller keeps stderr text for a log.
+    if ($line -match '2>\$\w*[Ss]tderr\w*') { continue }
+    # Safe pattern 3: the call is already inside a named wrapper that guards.
+    if ($line -match 'Invoke-NativeCapture|Invoke-FixtureGit|Get-FixtureGit') { continue }
+
+    $windowStart = [Math]::Max(0, $i - 15)
+    $window = ($psLines[$windowStart..$i]) -join "`n"
+    if ($window -match '\$ErrorActionPreference\s*=\s*[''"]Continue[''"]') { continue }
+
+    $relative = $psFile.FullName.Substring($repo.Length).TrimStart('\', '/') -replace '\\', '/'
+    $nativeGuardProblems += "$relative line $($i + 1)"
+  }
+}
+if ($nativeGuardProblems.Count -eq 0) {
+  Add-Result PASS "Native command invocations are guarded against PowerShell 5.1 stderr-as-error" "DOCTOR-010"
+} else {
+  Add-Result FAIL ("Unguarded native invocations under ErrorActionPreference=Stop (see docs/architecture/powershell-portability.md): " + ((Sort-Ordinal -Values ([string[]]$nativeGuardProblems)) -join ", ")) "DOCTOR-010"
+}
+
 $settingsPath = Join-Path $repo ".claude/settings.json"
 if (Test-Path -LiteralPath $settingsPath) {
   $settings = Get-Content -LiteralPath $settingsPath -Raw
