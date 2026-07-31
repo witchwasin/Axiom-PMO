@@ -192,7 +192,7 @@ try {
 
   # ---- The shell shim ---------------------------------------------------
 
-  if ($IsWindows -ne $true) {
+  if (-not (Test-WindowsHost)) {
     Assert-True "the hook shim is executable" (Test-Path -LiteralPath $shim)
 
     function Invoke-Shim {

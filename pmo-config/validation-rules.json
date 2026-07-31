@@ -466,6 +466,12 @@
       "suggestion": "Wrap the invocation: save $ErrorActionPreference, set it to \"Continue\", call the command inside try, restore it in finally. Reuse Invoke-NativeCapture where it is already available. The safe patterns that need no guard are `--quiet` (git suppresses stderr itself) and `2>$stderrFile` (a real file redirect). See docs/architecture/powershell-portability.md.",
       "documentation": "docs/rules/DOCTOR-010.md"
     },
+    "DOCTOR-011": {
+      "severity": "fail",
+      "description": "A PowerShell file under scripts/ or tests/ branches on $IsWindows directly. That variable does not exist in Windows PowerShell 5.1 -- it is $null there, and 5.1 only runs on Windows -- so `if ($IsWindows -ne $true)` is TRUE on Windows and any branch written as Unix-only runs there anyway. It is invisible on PowerShell 7, which is where this repository is developed.",
+      "suggestion": "Use Test-WindowsHost from scripts/lib/pwsh-host.ps1, which checks $PSVersionTable.PSEdition first. See docs/rules/DOCTOR-011.md and docs/architecture/powershell-portability.md.",
+      "documentation": "docs/rules/DOCTOR-011.md"
+    },
     "DOCTOR-STRUCT": {
       "severity": "fail",
       "description": "A required framework structural file or directory is missing.",

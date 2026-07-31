@@ -458,6 +458,56 @@ if ($nativeGuardProblems.Count -eq 0) {
   Add-Result FAIL ("Unguarded native invocations under ErrorActionPreference=Stop (see docs/architecture/powershell-portability.md): " + ((Sort-Ordinal -Values ([string[]]$nativeGuardProblems)) -join ", ")) "DOCTOR-010"
 }
 
+# DOCTOR-011: $IsWindows must not be used as a bare host test.
+#
+# It does not exist in Windows PowerShell 5.1 -- it is $null there, and 5.1
+# only ever runs on Windows. So `if ($IsWindows -ne $true)` is TRUE on 5.1,
+# and every branch written as "Unix only" runs on Windows anyway. So does
+# `if ($null -eq $IsWindows)` written to mean "Unix".
+#
+# Same shape as DOCTOR-010 and encoded for the same reason: it is invisible on
+# the host this repository is written on. It shipped in the Milestone 6.3 and
+# 6.5 test suites -- a symlink case and a `chmod` case both ran on Windows
+# PowerShell 5.1, where neither could work -- and only CI caught it.
+#
+# The safe form is Test-WindowsHost in scripts/lib/pwsh-host.ps1, which checks
+# $PSVersionTable.PSEdition first. A file may still name $IsWindows as part of
+# that check, so the definition itself and any line that also mentions
+# PSEdition are allowed.
+#
+# Scanned across scripts/ AND tests/, unlike DOCTOR-010: here a wrong branch in
+# a test is the whole defect, since the test silently exercises the wrong
+# platform and reports a pass it did not earn.
+$hostTestProblems = @()
+$hostScanRoots = @("scripts", "tests") | ForEach-Object { Join-Path $repo $_ } | Where-Object { Test-Path -LiteralPath $_ }
+# Two files legitimately name the variable: the helper that wraps it, and this
+# check itself. Excluded by name rather than by a cleverer pattern, so the
+# exclusion is visible.
+$hostScanExempt = @("scripts/lib/pwsh-host.ps1", "scripts/pmo-doctor.ps1")
+foreach ($scanRoot in $hostScanRoots) {
+  foreach ($psFile in @(Get-ChildItem -LiteralPath $scanRoot -Filter *.ps1 -File -Recurse -ErrorAction SilentlyContinue)) {
+    $relativeScan = $psFile.FullName.Substring($repo.Length).TrimStart('\', '/') -replace '\\', '/'
+    if ($hostScanExempt -contains $relativeScan) { continue }
+    $psText = Get-Content -LiteralPath $psFile.FullName -Raw
+    if ($null -eq $psText) { continue }
+    $psLines = $psText -split "`r?`n"
+    for ($i = 0; $i -lt $psLines.Count; $i++) {
+      $line = $psLines[$i]
+      if ($line -notmatch '\$IsWindows') { continue }
+      # The guarded form is fine, and so are comments explaining the pitfall.
+      if ($line -match 'PSEdition') { continue }
+      if ($line -match '^\s*#') { continue }
+      $relative = $psFile.FullName.Substring($repo.Length).TrimStart('\', '/') -replace '\\', '/'
+      $hostTestProblems += "$relative line $($i + 1)"
+    }
+  }
+}
+if ($hostTestProblems.Count -eq 0) {
+  Add-Result PASS 'No bare $IsWindows host tests (it is $null on Windows PowerShell 5.1)' "DOCTOR-011"
+} else {
+  Add-Result FAIL ('Bare $IsWindows host tests -- use Test-WindowsHost from scripts/lib/pwsh-host.ps1: ' + ((Sort-Ordinal -Values ([string[]]$hostTestProblems)) -join ", ")) "DOCTOR-011"
+}
+
 $settingsPath = Join-Path $repo ".claude/settings.json"
 if (Test-Path -LiteralPath $settingsPath) {
   $settings = Get-Content -LiteralPath $settingsPath -Raw

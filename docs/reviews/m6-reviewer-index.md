@@ -125,6 +125,14 @@ Ranked by what they can damage.
 | [`hook-advisory-tests.ps1`](../../tests/helpers/hook-advisory-tests.ps1) | 46 | Off by default, no decision, never breaks a tool call |
 | `cli-tests.mjs` | 50 | Includes 8 new `setup` cases |
 
+CI found two Windows defects the maintainer's machine could not: the advisory
+hook compared paths case-sensitively against a differently-normalised prefix
+(so an in-project file read as outside the project and was silently ignored),
+and three suites branched on a bare `$IsWindows`, which is `$null` on Windows
+PowerShell 5.1 and therefore ran "Unix only" cases on Windows. The second is now
+enforced by [`DOCTOR-011`](../rules/DOCTOR-011.md) across `scripts/` and
+`tests/`.
+
 All wired into `scripts/run-all-checks.ps1`, so every supported host runs them.
 
 ## Evidence that is not a test

@@ -118,3 +118,24 @@ function Invoke-PowerShellScript {
   }
   return & $exe @childArgs
 }
+
+function Test-WindowsHost {
+  <#
+    .SYNOPSIS
+      Is this running on Windows, on every supported host?
+    .DESCRIPTION
+      $IsWindows does not exist in Windows PowerShell 5.1 -- it is $null there,
+      and 5.1 only ever runs on Windows. So `if ($IsWindows -ne $true)` is TRUE
+      on 5.1 and any "Unix only" branch guarded that way runs on Windows
+      anyway.
+
+      That is not hypothetical: it shipped in the Milestone 6.3 and 6.5 test
+      suites and CI caught it, running a symlink case and a `chmod` case on
+      Windows PowerShell 5.1. The correct test checks the edition first, and
+      scripts/run-execution-command.ps1 already did -- the lesson just had not
+      been given a name anything else could call.
+  #>
+  [CmdletBinding()]
+  param()
+  return (($PSVersionTable.PSEdition -eq "Desktop") -or ($IsWindows -eq $true))
+}

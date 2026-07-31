@@ -275,7 +275,7 @@ try {
   $r = Invoke-Setup -Project (Join-Path $p "AGENTS.md")
   Assert-True "a file passed as the project path is refused" ($r.ExitCode -ne 0) ($r.Text)
 
-  if ($IsWindows -ne $true) {
+  if (-not (Test-WindowsHost)) {
     $outside = New-Project -Name "outside" -AgentsContent "# Somebody else's file`n"
     $p = New-Project -Name "symlinked"
     $previous = $ErrorActionPreference
@@ -296,7 +296,7 @@ try {
 
   # ---- Read-only target -------------------------------------------------
 
-  if ($IsWindows -ne $true) {
+  if (-not (Test-WindowsHost)) {
     $p = New-Project -Name "readonly" -AgentsContent $original
     $previous = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
