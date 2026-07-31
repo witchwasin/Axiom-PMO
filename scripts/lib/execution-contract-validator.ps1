@@ -458,9 +458,18 @@ function Invoke-ExecutionContractVerification {
       # The anchor. Everything above is written by the actor being verified;
       # this is the one condition it cannot satisfy by writing more of its
       # own document.
-      $rowText = ($resolved.Row | Out-String)
-      if ($rowText -notmatch [regex]::Escape($EvidenceDigest)) {
-        $lastReason = "decision record '$vouchRef' does not name the digest of the artifact being accepted ($EvidenceDigest). A vouch is only as good as the human-authored record behind it: the decision row itself has to identify the artifact, or the claim is the actor vouching for itself."
+      #
+      # Parsed field by field, not searched. An earlier version asked only
+      # whether the digest appeared anywhere in the row, which proved a human
+      # had *mentioned* the digest, not that they approved it for anything:
+      # a human accepted an artifact for "unit tests", the actor reused the
+      # same artifact and relabelled it "integration tests", and every check
+      # passed. The binding has to say what it authorizes.
+      $bindingProblem = Test-DecisionAuthorityBinding -Row $resolved.Row `
+        -ClaimType $VouchType -WorkItemId $WorkItemId -ContractSha256 $ContractDigest `
+        -TestName $TestName -EvidenceSha256 $EvidenceDigest
+      if ($bindingProblem) {
+        $lastReason = "decision record '$vouchRef' does not authorize this: $bindingProblem"
         continue
       }
 
@@ -610,6 +619,27 @@ function Invoke-ExecutionContractVerification {
             # authorize; it is the agent writing its own permission slip.
             $violations.Add("authority:$claimType") | Out-Null
             Add-Result FAIL "A human-only authority claim ('$claimType') cites decision record '$decisionRef', but decision-log.md was itself changed within the commit range under verification. A decision the execution's own commits could have introduced cannot serve as independent human authority for that same execution." "EXEC-007" -Artifact "decision-log.md" -ItemId $claimType -Field "authority_claims.decision_ref"
+          } else {
+            # Resolving is not authorizing. Every human-only claim -- not just
+            # the test-evidence vouch -- has to point at a decision row that
+            # says what it approves, or an actor can cite any old DEC that
+            # happens to resolve and manufacture an approval from it. Review
+            # round 4 called this out as the same bypass in a different claim
+            # type, and it is: the fix is one shared binding check rather than
+            # one per claim type, so the next claim type added inherits it.
+            $claimTestName = $null
+            $claimEvidence = $null
+            if ($claimType -eq $humanVouchType) {
+              $claimTestName = [string]$claim.test_name
+              $claimEvidence = [string]$claim.evidence_sha256
+            }
+            $bindProblem = Test-DecisionAuthorityBinding -Row $resolved.Row `
+              -ClaimType $claimType -WorkItemId $verdict.work_item_id -ContractSha256 $contract.Digest `
+              -TestName $claimTestName -EvidenceSha256 $claimEvidence
+            if ($bindProblem) {
+              $violations.Add("authority:$claimType") | Out-Null
+              Add-Result FAIL "A human-only authority claim ('$claimType') cites decision record '$decisionRef', which resolves but does not authorize this claim: $bindProblem" "EXEC-007" -Artifact "decision-log.md" -ItemId $claimType -Field "authority_claims.decision_ref"
+            }
           }
         }
       }

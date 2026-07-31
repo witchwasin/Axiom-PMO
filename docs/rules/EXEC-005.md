@@ -83,19 +83,33 @@ read.
 }
 ```
 
-…and the cited decision row must itself name that digest:
+…and the cited decision row must itself say what it authorizes, in a form
+that can be checked field by field:
 
 ```text
 | 2026-07-31 | DEC-014 | Accept unit tests evidence for D-001 | ... | accepted |
-  reviewed reports/junit.xml by hand; sha256 <digest> | ... |
+  reviewed reports/junit.xml by hand.
+  axiom-authority: type=test-evidence-accepted; work_item=D-001;
+  contract=<contract sha256>; test=unit tests; evidence=<artifact sha256> | ... |
 ```
 
-### Why the digest has to appear in the decision row
+The token runs to the end of the cell it appears in, so put it last in that
+cell. It is parsed per cell — never across the concatenated row.
 
-**This rule was wrong a third time**, and the correction is worth stating
-because the near-miss is instructive.
+| Field | Required for | Meaning |
+|---|---|---|
+| `type` | every human-only claim | the claim type this row authorizes |
+| `work_item` | every human-only claim | the work item it authorizes it for |
+| `contract` | every human-only claim | the contract digest it was written against |
+| `test` | a test vouch | the required test being satisfied |
+| `evidence` | a test vouch | the artifact digest being accepted |
 
-Round 3 found the vouch was a single global boolean: any resolvable
+### Why the decision row has to carry a structured binding
+
+**This rule was wrong three times**, and each correction is worth stating
+because the near-misses are instructive.
+
+**Round 3** found the vouch was a single global boolean: any resolvable
 `test-evidence-accepted` claim promoted *every* artifact-observed entry in the
 execution. Demonstrated with a fabricated JUnit report claiming 99 passing
 tests, vouched by a real decision record about **which logging library to
@@ -103,16 +117,23 @@ use**. The claim named no test, no artifact and no digest, so there was
 nothing for it to be wrong about.
 
 Binding the claim to the evidence is necessary — but on its own it does not
-close the hole, and it is worth being precise about why. **The result document
-is written by the actor being verified.** If the binding lived only in the
-claim, the same attack survives: forge the artifact, hash it, copy that hash
-into your own `evidence_sha256`, cite the same unrelated decision, and every
-field "matches". Self-consistent forgery is still forgery.
+close the hole. **The result document is written by the actor being verified.**
+If the binding lived only in the claim, the same attack survives: forge the
+artifact, hash it, copy that hash into your own `evidence_sha256`, cite the
+same unrelated decision, and every field "matches". Self-consistent forgery is
+still forgery. So the anchor is the decision row, which the actor cannot author
+inside the verified range (`decision-log.md` must not change within
+`base..head`).
 
-So the anchor is the decision row, which the actor cannot author inside the
-verified range (`decision-log.md` must not change within `base..head`). A row
-naming the artifact's digest had to exist *before the work began* — which
-means predicting the exact bytes of an artifact not yet produced.
+**Round 4 found that anchor was still too weak.** It searched the decision row
+for the digest as a *substring*. That answers "does this row mention these
+bytes" — not "did a human approve *this artifact* for *this test*". A row
+approving a JUnit report for `unit tests` was reusable for `integration tests`
+by relabelling the evidence entry and the claim, both of which the actor
+writes. Reproduced, verdict `pass`, no rule raised.
+
+A substring is not a statement. The row now has to make one, and it is parsed
+field by field.
 
 Requirements, in full:
 
@@ -122,14 +143,19 @@ Requirements, in full:
 | `test_name` | the required test being satisfied |
 | `evidence_sha256` | the digest the adapter actually computed |
 | `decision_ref` | a `DEC-###` resolving to exactly one row, not written in-range |
-| the decision row | must contain that same digest |
-| `evidence_type`, `work_item_id`, `contract_sha256` | optional; checked when present |
+| the decision row's `axiom-authority:` token | every field above, plus type, work item, and contract digest |
+| `evidence_type`, `work_item_id`, `contract_sha256` | optional on the claim; checked when present |
 
-A vouch with no bindings fails closed.
+A vouch with no bindings fails closed. So does a decision row with no token.
 
-This is deliberately not a config flag. A weakening that is per-execution,
-attributable, and recorded in a governed artifact is reviewable; a boolean in
-a config file is not.
+### This applies to every human-only claim
+
+Round 4's second finding: the binding check ran only for
+`test-evidence-accepted`. Every other human-only claim — `release-approval`,
+`qa-approval`, `security-approval`, `scope-change`, `risk-mode-downgrade` —
+still resolved on `decision_ref` alone, so any `DEC-###` in the log satisfied
+them. They now all require a binding token naming at least `type`,
+`work_item`, and `contract`. See `EXEC-007`.
 
 ## What this still does not prove
 

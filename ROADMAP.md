@@ -71,7 +71,7 @@ Recommended effort allocation:
 | Milestone 3.5 - Runtime Portability | Accepted | CI threshold met; branch protection deferred by human decision |
 | Milestone 4 - GitHub Action | Delivered | Merged to `main` at `31d1e25`; child issues #12-#17 closed |
 | Milestone 4.5 - SCOPE-DIFF | Delivered | Human Owner accepted 2026-07-30 after two independent AI review rounds; merged to `main` at `6b42643` |
-| Milestone 5 - Execution Contract Verification MVP | 5.0 decided (GO WITH REFRAME); 5.1-5.4 through three REQUEST CHANGES rounds, fixes applied, awaiting re-review -- **not accepted, not delivered** | `docs/reference/execution-contract.md`; decision `DEC-002`; findings and fixes tracked below |
+| Milestone 5 - Execution Contract Verification MVP | 5.0 decided (GO WITH REFRAME); 5.1-5.4 through four REQUEST CHANGES rounds, fixes applied, awaiting re-review -- **not accepted, not delivered** | `docs/reference/execution-contract.md`; decision `DEC-002`; findings and fixes tracked below |
 | Milestone 6 - Claude Code Integration Experience | Planned | Requires separate approval after Milestone 5 |
 
 ## Roadmap Governance
@@ -663,7 +663,7 @@ enough that a second integration could reuse it later without a rewrite.
 
 ### Milestone 5.1 - 5.4
 
-Status: **Fixes applied for a third REQUEST CHANGES round; awaiting
+Status: **Fixes applied for a fourth REQUEST CHANGES round; awaiting
 re-review and Human Owner acceptance.** Not yet delivered -- do not treat
 Milestone 5 as shipped until this section says the re-review passed and
 Human Owner accepted.
@@ -717,8 +717,8 @@ original gap and confirming the fix, plus one MINOR:
   result claims changed that git shows no evidence of is reported, not only
   the reverse.
 
-99 adversarial cases (`tests/helpers/execution-contract-tests.ps1`, up from
-57) reproduce each gap across both rounds and confirm each fix: fabricated
+118 adversarial cases (`tests/helpers/execution-contract-tests.ps1`, up from
+57) reproduce each gap across all four rounds and confirm each fix: fabricated
 JUnit hash, missing/traversal path, real failures with a correct hash,
 tampered and mismatched-work-item run records, no-remote `ci-check`,
 deleted/empty/malformed sidecars, fake and ambiguous `DEC-###` references,
@@ -731,12 +731,39 @@ Axiom-PMO cannot tell the two apart; and an **agent vouching for its own
 evidence** must fail on actor authority -- the obvious next forgery once a
 human vouch becomes the way through.
 
+**Round 4 (2026-07-31)** found the decision-row anchor itself was still too
+weak, in two places, and both were reproduced here before being fixed.
+
+The anchor searched the decision row for the artifact digest as a
+**substring**. That answers "does this row mention these bytes", not "did a
+human approve *this artifact* for *this test*" -- so a row approving a JUnit
+report for `unit tests` was reusable for `integration tests` simply by
+relabelling the evidence entry and the claim, both of which the verified
+actor writes. Verdict `pass`, no rule raised. Separately, the binding check
+ran **only** for `test-evidence-accepted`; every other human-only claim
+(`release-approval`, `qa-approval`, `security-approval`, `scope-change`,
+`risk-mode-downgrade`) still resolved on `decision_ref` alone, so any
+`DEC-###` in the log satisfied any of them.
+
+A substring is not a statement. The row must now carry a structured
+`axiom-authority: type=...; work_item=...; contract=...; test=...;
+evidence=...` token, parsed field by field, per table cell -- required on
+every human-only claim, with `test` and `evidence` additionally required for
+a test vouch. A digest sitting in the row's prose authorizes nothing; a row
+with no token fails closed.
+
+Worth recording as a pattern: three of the four rounds found the *same
+class* of mistake -- a check that was real, did work, and answered a
+slightly different question than the one that mattered. Field presence
+instead of ground truth (round 1); integrity instead of provenance (round
+2); resolvability instead of relevance (rounds 3 and 4).
+
 | Phase | Status |
 |---|---|
 | 5.1 contract export | Built |
 | 5.2 result import | Fixed: mandatory sidecar |
 | 5.3 authority + scope + evidence | Fixed: provenance tiers (artifact-observed evidence no longer satisfies a required test alone), real decision resolution |
-| 5.4 integration tests | Expanded: 108 cases, including the forged-record bypass (round 2) and the unbound-vouch bypass (round 3) |
+| 5.4 integration tests | Expanded: 118 cases, including the forged-record bypass (round 2), the unbound-vouch bypass (round 3), and the substring-anchor and unbound-non-test-claim bypasses (round 4) |
 
 Rules `EXEC-001` to `EXEC-008`, each with a `docs/rules/` page. Policy lives
 in `pmo-config/execution-contract-policy.json`.

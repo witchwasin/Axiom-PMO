@@ -16,9 +16,38 @@ Each entry in the result's `authority_claims` is checked against `pmo-config/exe
    - is present (not empty);
    - is shaped like `DEC-###`;
    - resolves to **exactly one** row in the project's `decision-log.md` (zero is "not found," more than one is "ambiguous" -- neither counts);
-   - was **not itself added or edited within the commit range under verification**.
+   - was **not itself added or edited within the commit range under verification**;
+   - carries an `axiom-authority:` binding token stating what it authorizes.
 
-The last check is what stops the obvious workaround: an agent that cannot cite a real decision simply writing one into `decision-log.md` as part of its own commits, then citing it. A row the execution's own commits could have introduced is not independent of the thing it is supposed to authorize.
+The resolution checks stop the obvious workaround: an agent that cannot cite a real decision simply writing one into `decision-log.md` as part of its own commits, then citing it. A row the execution's own commits could have introduced is not independent of the thing it is supposed to authorize.
+
+### The binding token
+
+Resolving a `DEC-###` proves a decision exists. It does not prove the decision
+is *about this*. Until round 4 of review, that was the whole check for every
+human-only claim other than `test-evidence-accepted`: any resolvable
+`DEC-###` anywhere in the log satisfied a `release-approval`, including a
+decision about which logging library to use.
+
+The cited row must now say what it authorizes:
+
+```text
+axiom-authority: type=release-approval; work_item=D-001; contract=<contract sha256>
+```
+
+| Field | Required | Checked against |
+|---|---|---|
+| `type` | always | the claim's `type` |
+| `work_item` | always | the result's `work_item_id` |
+| `contract` | always | the contract digest being verified |
+| `test` | test vouches | the required test name |
+| `evidence` | test vouches | the artifact digest the adapter computed |
+
+Parsed field by field, per table cell — the token runs to the end of the cell
+it appears in, so put it last in that cell. A row that merely *mentions* a
+digest or a work item in prose authorizes nothing; that substring search was
+the round-4 bypass, and [`EXEC-005`](EXEC-005.md) records how it was exploited.
+A row with no token fails closed.
 
 **This rule was corrected.** An earlier version only checked that `decision_ref` was non-empty -- `"decision_ref": "DEC-999-NOT-REAL"` passed outright, because nothing ever looked inside `decision-log.md`. A code review found this before it was accepted; `scripts/lib/execution-contract-schema.ps1`'s `Resolve-DecisionRecord` is the real resolver that replaced it.
 
@@ -72,6 +101,14 @@ For a real human approval, record the decision in `decision-log.md` first, then 
 ```json
 { "type": "release-approval", "actor": "human",
   "claim": "approved", "decision_ref": "DEC-014" }
+```
+
+…where `DEC-014`'s row carries the matching binding:
+
+```text
+| 2026-07-31 | DEC-014 | Approve release of D-001 | ship / hold | ship |
+  reviewed the build. axiom-authority: type=release-approval; work_item=D-001;
+  contract=<contract sha256> | none | approved |
 ```
 
 ## Related

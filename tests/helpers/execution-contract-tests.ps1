@@ -222,13 +222,22 @@ function New-RealRunRecord {
 # purpose -- see New-Result for why the row must sit outside the verified
 # commit range.
 function Set-DecisionLogWithDigest {
-  param([string]$Dir, [string]$Digest, [string]$DecisionId = "DEC-100", [string]$TestName = "unit tests")
+  param(
+    [string]$Dir, [string]$Digest, [string]$DecisionId = "DEC-100",
+    [string]$TestName = "unit tests", [string]$WorkItem = "D-001",
+    [string]$ContractDigest = $null, [string]$ClaimType = "test-evidence-accepted"
+  )
+  if (-not $ContractDigest) { $ContractDigest = Get-ContractDigest -Dir $Dir }
+  # The structured binding a human writes to say what they are approving.
+  # Parsed field by field by Test-DecisionAuthorityBinding -- "the digest
+  # appears somewhere in this row" was the round-4 bypass.
+  $token = "axiom-authority: type=$ClaimType; work_item=$WorkItem; contract=$ContractDigest; test=$TestName; evidence=$Digest"
   $log = @(
     "# Decision Log - P99-EXEC",
     "",
     "| Date | Decision ID | Topic | Options Presented | User Choice | Rationale | Source Ref | Impact |",
     "|---|---|---|---|---|---|---|---|",
-    "| 2026-07-31 | $DecisionId | Accept $TestName evidence for D-001 | accept / require CI | accept | reviewed the artifact by hand; sha256 $Digest | none | test evidence accepted |"
+    "| 2026-07-31 | $DecisionId | Accept $TestName evidence for $WorkItem | accept / require CI | accept | reviewed the artifact by hand. $token | none | test evidence accepted |"
   ) -join "`n"
   Set-Content -LiteralPath (Join-Path $Dir "decision-log.md") -Value $log -NoNewline
 }
@@ -1182,8 +1191,210 @@ function Write-ResultDoc {
     $r = Invoke-Verify -Dir $dir
     Assert-True "self-consistent bindings, decision row silent on the digest: EXEC-005 raised" `
       ((Get-Rules $r.Json) -contains "EXEC-005") ("verdict=" + $r.Json.execution_verification.verdict)
-    Assert-True "self-consistent bindings: reason names the decision record" `
-      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-005" }) | Select-Object -First 1).message -match "does not name the digest")
+    Assert-True "self-consistent bindings: reason is the missing binding token" `
+      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-005" }) | Select-Object -First 1).message -match "carries no 'axiom-authority:' binding")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ==========================================================================
+# Round-4 findings: the vouch check searched the decision row for the digest
+# as a substring. That answers "does this row mention these bytes", not "did a
+# human approve *this artifact for this test*". A row approving a JUnit report
+# for "unit tests" was reusable for "integration tests" by relabelling the
+# result document -- which the verified actor writes. The row now has to carry
+# a structured `axiom-authority:` token, parsed field by field.
+# ==========================================================================
+
+function Get-VouchedRecordDigest {
+  # The digest of the run record the default result vouches for, read back so
+  # a case can rewrite the decision row's binding around it.
+  param([string]$Dir)
+  $resultPath = Join-Path $Dir ".execution/D-001/EXECUTION-RESULT.json"
+  $doc = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
+  $rel = [string]$doc.test_evidence[0].run_record_path
+  return (Get-FileHash -LiteralPath (Join-Path $Dir $rel) -Algorithm SHA256).Hash.ToLowerInvariant()
+}
+
+# ---- Case: fully matching structured binding -> passes --------------------
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir | Out-Null
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "structured binding, every field matching: verdict pass" `
+      ($r.Json.execution_verification.verdict -eq "pass") `
+      ("fails=" + ((Get-Rules $r.Json) -join ","))
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: decision approves test A, execution claims test B -> EXEC-005 --
+# The round-4 FATAL, reproduced: same real artifact, same real digest, same
+# real decision -- only the test name relabelled. Under the substring search
+# this passed.
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir | Out-Null
+    Set-DecisionLogWithDigest -Dir $dir -Digest (Get-VouchedRecordDigest -Dir $dir) `
+      -TestName "integration tests"
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "artifact approved for another test is not reusable: EXEC-005" `
+      ((Get-Rules $r.Json) -contains "EXEC-005") `
+      ("verdict=" + $r.Json.execution_verification.verdict)
+    Assert-True "…and the reason names the test mismatch" `
+      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-005" }) | Select-Object -First 1).message -match "approves evidence for test 'integration tests'")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: binding names a different work item -> EXEC-005 ----------------
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir | Out-Null
+    Set-DecisionLogWithDigest -Dir $dir -Digest (Get-VouchedRecordDigest -Dir $dir) `
+      -WorkItem "D-999"
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "binding scoped to another work item does not authorize: EXEC-005" `
+      ((Get-Rules $r.Json) -contains "EXEC-005") `
+      ("verdict=" + $r.Json.execution_verification.verdict)
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: binding names a different contract digest -> EXEC-005 ----------
+# Stops a decision written for one export from being reused for a later,
+# differently scoped one on the same work item.
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir | Out-Null
+    Set-DecisionLogWithDigest -Dir $dir -Digest (Get-VouchedRecordDigest -Dir $dir) `
+      -ContractDigest ("c" * 64)
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "binding scoped to another contract does not authorize: EXEC-005" `
+      ((Get-Rules $r.Json) -contains "EXEC-005") `
+      ("verdict=" + $r.Json.execution_verification.verdict)
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: binding names a different claim type -> EXEC-005 ---------------
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir | Out-Null
+    Set-DecisionLogWithDigest -Dir $dir -Digest (Get-VouchedRecordDigest -Dir $dir) `
+      -ClaimType "release-approval"
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "a release approval is not a test-evidence acceptance: EXEC-005" `
+      ((Get-Rules $r.Json) -contains "EXEC-005") `
+      ("verdict=" + $r.Json.execution_verification.verdict)
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: the digest present, but only as prose -> EXEC-005 --------------
+# The row genuinely contains the right 64 hex characters. Without a token it
+# still states nothing about what is being approved.
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir | Out-Null
+    $recordDigest = Get-VouchedRecordDigest -Dir $dir
+    $log = @(
+      "# Decision Log - P99-EXEC",
+      "",
+      "| Date | Decision ID | Topic | Options Presented | User Choice | Rationale | Source Ref | Impact |",
+      "|---|---|---|---|---|---|---|---|",
+      "| 2026-07-31 | DEC-100 | Discuss artifact naming | keep / rename | keep | we looked at $recordDigest while deciding | none | none |"
+    ) -join "`n"
+    Set-Content -LiteralPath (Join-Path $dir "decision-log.md") -Value $log -NoNewline
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "digest mentioned in prose is not an approval: EXEC-005" `
+      ((Get-Rules $r.Json) -contains "EXEC-005") `
+      ("verdict=" + $r.Json.execution_verification.verdict)
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: a non-test human-only claim needs a binding too -> EXEC-007 ----
+# Round 4's second finding: the binding check ran only for
+# test-evidence-accepted, so release-approval still resolved on decision_ref
+# alone -- any DEC-### in the log would do.
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $resultPath = New-Result -Dir $dir
+    $doc = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
+    $claims = @($doc.authority_claims)
+    $claims += [pscustomobject]@{ type = "release-approval"; actor = "human"; claim = "approved"; decision_ref = "DEC-100" }
+    $doc.authority_claims = $claims
+    Set-Content -LiteralPath $resultPath -Value ($doc | ConvertTo-Json -Depth 12) -NoNewline
+
+    # DEC-100 exists and resolves -- it is the test-evidence acceptance the
+    # fixture already wrote. It says nothing about releasing anything.
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "release-approval citing an unrelated decision: EXEC-007" `
+      ((Get-Rules $r.Json) -contains "EXEC-007") `
+      ("verdict=" + $r.Json.execution_verification.verdict)
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: non-test claim, right type, wrong work item -> EXEC-007 --------
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $resultPath = New-Result -Dir $dir
+    $doc = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
+    $claims = @($doc.authority_claims)
+    $claims += [pscustomobject]@{ type = "release-approval"; actor = "human"; claim = "approved"; decision_ref = "DEC-200" }
+    $doc.authority_claims = $claims
+    Set-Content -LiteralPath $resultPath -Value ($doc | ConvertTo-Json -Depth 12) -NoNewline
+
+    $contractDigest = Get-ContractDigest -Dir $dir
+    $existing = Get-Content -LiteralPath (Join-Path $dir "decision-log.md") -Raw
+    $token = "axiom-authority: type=release-approval; work_item=D-777; contract=$contractDigest"
+    Set-Content -LiteralPath (Join-Path $dir "decision-log.md") `
+      -Value ($existing.TrimEnd() + "`n| 2026-07-31 | DEC-200 | Approve release | ship / hold | ship | $token | none | approved |") -NoNewline
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "release-approval bound to another work item: EXEC-007" `
+      ((Get-Rules $r.Json) -contains "EXEC-007") `
+      ("verdict=" + $r.Json.execution_verification.verdict)
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: non-test claim, correctly bound -> passes ----------------------
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $resultPath = New-Result -Dir $dir
+    $doc = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
+    $claims = @($doc.authority_claims)
+    $claims += [pscustomobject]@{ type = "release-approval"; actor = "human"; claim = "approved"; decision_ref = "DEC-200" }
+    $doc.authority_claims = $claims
+    Set-Content -LiteralPath $resultPath -Value ($doc | ConvertTo-Json -Depth 12) -NoNewline
+
+    $contractDigest = Get-ContractDigest -Dir $dir
+    $existing = Get-Content -LiteralPath (Join-Path $dir "decision-log.md") -Raw
+    $token = "axiom-authority: type=release-approval; work_item=D-001; contract=$contractDigest"
+    Set-Content -LiteralPath (Join-Path $dir "decision-log.md") `
+      -Value ($existing.TrimEnd() + "`n| 2026-07-31 | DEC-200 | Approve release | ship / hold | ship | $token | none | approved |") -NoNewline
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "correctly bound release-approval: verdict pass" `
+      ($r.Json.execution_verification.verdict -eq "pass") `
+      ("fails=" + ((Get-Rules $r.Json) -join ","))
   } finally { Remove-ExecFixture $dir }
 }.Invoke()
 
@@ -1560,9 +1771,13 @@ function Write-ResultDoc {
     # New-Result wrote a decision log carrying DEC-100 with the record's real
     # digest; DEC-001 has to be restored alongside it, since this case is about
     # DEC-001 resolving and losing it would fail for the wrong reason.
+    # DEC-001 carries its own binding token: a release-approval is a human-only
+    # claim too, and since round 4 every one of them must say what it approves.
+    $contractDigest = Get-ContractDigest -Dir $dir
+    $releaseToken = "axiom-authority: type=release-approval; work_item=D-001; contract=$contractDigest"
     $existingLog = Get-Content -LiteralPath (Join-Path $dir "decision-log.md") -Raw
     Set-Content -LiteralPath (Join-Path $dir "decision-log.md") `
-      -Value ($existingLog.TrimEnd() + "`n| 2026-07-30 | DEC-001 | ship it | A/B | A | because | src | ok |") -NoNewline
+      -Value ($existingLog.TrimEnd() + "`n| 2026-07-30 | DEC-001 | ship it | A/B | A | because. $releaseToken | src | ok |") -NoNewline
 
     $r = Invoke-Verify -Dir $dir
     Assert-True "real decision ref, log committed before the export: verdict pass" `

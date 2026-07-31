@@ -64,13 +64,32 @@
 
   A vouch now promotes one evidence entry, never all of them, and must name
   `test_name` and `evidence_sha256` matching what the adapter actually
-  computed, cite a resolving `DEC-###` not written in-range, and that row
-  must contain the same digest. Unbound vouches fail closed. Deliberately a
-  claim rather than a config flag: a weakening that is per-execution,
-  attributable, and recorded in a governed artifact can be reviewed later; a
-  boolean cannot. It proves accountability, not inspection -- and an actor
-  could still plant a digest in an earlier execution's decision row, which is
-  documented rather than papered over.
+  computed, and cite a resolving `DEC-###` not written in-range.
+
+  **Round 4** found the decision-row anchor was still too weak, in two
+  places. First, it searched the row for the digest as a *substring*. That
+  answers "does this row mention these bytes", not "did a human approve this
+  artifact for this test" -- so a row approving a JUnit report for `unit
+  tests` was reusable for `integration tests` by relabelling the evidence
+  entry and the claim, both of which the verified actor writes. Reproduced
+  here before the fix: verdict `pass`, no rule raised. Second, the binding
+  check ran only for `test-evidence-accepted`; every other human-only claim
+  (`release-approval`, `qa-approval`, `security-approval`, `scope-change`,
+  `risk-mode-downgrade`) still resolved on `decision_ref` alone, so any
+  `DEC-###` in the log satisfied any of them.
+
+  A substring is not a statement. The decision row must now carry a
+  structured `axiom-authority: type=...; work_item=...; contract=...;
+  test=...; evidence=...` token, parsed field by field per table cell --
+  required on **every** human-only claim, with `test` and `evidence`
+  additionally required for a test vouch. A row that merely mentions a digest
+  in prose authorizes nothing, and a row with no token fails closed.
+
+  Deliberately a claim rather than a config flag: a weakening that is
+  per-execution, attributable, and recorded in a governed artifact can be
+  reviewed later; a boolean cannot. It proves accountability, not inspection
+  -- and an actor could still plant a binding in an earlier execution's
+  decision row, which is documented rather than papered over.
 
   Also fixed across the two rounds: the contract's digest sidecar is now
   mandatory and fails closed (`EXEC-002`); `decision_ref` resolves against
@@ -79,11 +98,14 @@
   changed-files check now catches a result *claiming* a file changed that
   git shows no evidence of, not only the reverse.
 
-  108 adversarial tests (up from 57) reproduce each gap and confirm each
+  118 adversarial tests (up from 57) reproduce each gap and confirm each
   fix, including the decisive ones: a hand-forged run record with a valid
   sidecar; a genuine record without a vouch; a vouch citing a real but
-  unrelated decision; and a vouch whose bindings are all self-consistent but
-  whose decision row never names the digest. Awaiting
+  unrelated decision; a vouch whose bindings are all self-consistent but
+  whose decision row never names the digest; a real artifact approved for one
+  test and relabelled for another; a digest present in the row only as prose;
+  and a `release-approval` citing a decision that says nothing about
+  releasing this work item. Awaiting
   re-review and Human Owner acceptance -- see `ROADMAP.md`'s Milestone
   5.1-5.4 section for current status.
 
