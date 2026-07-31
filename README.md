@@ -526,19 +526,22 @@ Delivered in 1.2:
   stayed inside a project's pre-approved implementation scope (Milestone
   4.5).
 
+Closed 2026-07-31:
+
+- Milestone 5, Execution Contract Verification — verify that an AI agent's
+  execution output stayed inside an approved contract, using observable
+  ground truth rather than trusting the agent's own report. Reviewed across
+  five rounds by an independent AI reviewer, then **accepted and closed by
+  the Human Owner**. **This completes the core product.**
+
 Next:
 
 - keep the optional Milestone 1 walkthrough and recording evidence packet
   available for future trust work;
-- Milestone 5, Execution Contract Verification MVP — verify that an AI
-  agent's execution output stayed inside an approved contract, using
-  observable ground truth rather than trusting the agent's own report.
-  **Reviewed and accepted at round 5** (2026-07-31) after four rounds of
-  requested changes; Human Owner closure confirmation outstanding, so it is
-  not yet marked delivered. See [`ROADMAP.md`](ROADMAP.md).
 - Milestone 6, Claude Code integration — **optional, not part of the core
-  product**, and not started. Planned only so that a verified handoff can be
-  continued in Claude Code without re-interpreting the documents.
+  product**, not authorized for implementation. Planned only so that a
+  verified handoff can be continued in Claude Code without re-interpreting
+  the documents.
 
 The active roadmap is intentionally limited to Milestones 1 through 6, of
 which **1 through 5 are the product** and 6 is an optional integration.
@@ -557,8 +560,11 @@ Version `1.2.0`. The validation engine, governance model, and diagnostic
 contract are stable. 1.1 added the `Handoff` gate between `Design` and
 `Release`; 1.2 adds a reusable GitHub Action and SCOPE-DIFF changed-file scope
 enforcement, so a pull request can be checked — and, optionally, blocked —
-directly in CI. Interoperability automation (Milestone 5) remains on the
-[roadmap](ROADMAP.md).
+directly in CI. **Milestones 1–5 — the core governance and
+development-handoff framework — are complete**, with Milestone 5 (execution
+contract verification) accepted and closed on 2026-07-31. Milestone 6, the
+optional Claude Code integration bridge, remains on the
+[roadmap](ROADMAP.md) and is not authorized for implementation.
 
 Upgrading from 1.1 requires no migration: the Action and SCOPE-DIFF are both
 opt-in, and every existing local invocation is unaffected. Migrating from the

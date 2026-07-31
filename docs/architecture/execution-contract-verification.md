@@ -1,12 +1,16 @@
 # Execution Contract Verification — Milestone 5.0 research
 
-> Status: **research complete, decision recorded.** This document is
+> Status: **research complete; Milestone 5 is now implemented, reviewed, and
+> closed** (Human Owner acceptance 2026-07-31, `DEC-004`). This document is
 > Milestone 5.0's required output: a threat model, a target schema design,
-> and an explicit GO / GO WITH REFRAME / NO-GO decision. It is design, not
-> shipped code — nothing in `scripts/` or `pmo-config/` reads the schemas
-> described here yet. Implementation is Milestone 5.1 onward, and per
-> `ROADMAP.md`'s Roadmap Governance, opening planning issues for it is
-> allowed; starting it is a separate step.
+> and an explicit GO / GO WITH REFRAME / NO-GO decision.
+>
+> It is kept as the **design record**, not as a description of shipped
+> behaviour. Where the two differ, the shipped behaviour is authoritative —
+> five rounds of review changed several things this document proposed, most
+> importantly that a digest never establishes provenance. For what the code
+> actually does, read [`docs/reference/execution-contract.md`](../reference/execution-contract.md)
+> and the [`EXEC-001`…`EXEC-008` rule pages](../rules/).
 
 ## 1. Objective
 

@@ -2,12 +2,19 @@
 
 ## Unreleased
 
-### Reviewed — ACCEPT at round 5; Human Owner closure confirmation pending
+### Accepted and closed
 
-- **Execution contract verification (Milestone 5).** Reviewed and accepted
-  at round 5 (Sol, 2026-07-31) at commit `87d3a7c`, CI run `30640858800`,
-  7/7 jobs green. Recorded as reviewed/accepted, **not closed** -- a Human
-  Owner acceptance record is still outstanding. `axiom export` turns an
+- **Execution contract verification (Milestone 5).** Reviewed by Sol across
+  five rounds, verdict ACCEPT at round 5; CI green 7/7 including Windows
+  PowerShell 5.1; **accepted and closed by the Human Owner on 2026-07-31**
+  (`DEC-004`), certified at commit `2888769`, CI run `30643605031`.
+
+  Milestone 5 is part of the **core product**: Milestones 1-5 together are the
+  Axiom-PMO governance and development-handoff framework. Milestone 6 remains
+  an optional Claude Code integration bridge and is not authorized for
+  implementation (`DEC-003`).
+
+  `axiom export` turns an
   approved `DELIVERY.md` work item into an `EXECUTION-CONTRACT.json` an AI
   execution workflow can be handed; `axiom verify` checks the returned
   `EXECUTION-RESULT.json` against that contract and against observed git
@@ -16,8 +23,8 @@
   `pmo-config/execution-contract-policy.json`; reference in
   `docs/reference/execution-contract.md`.
 
-  Two review rounds (Sol, 2026-07-30) shaped what this actually does, and
-  both are worth recording because the second corrected the first.
+  Five review rounds shaped what this actually does, and every one is worth
+  recording because each corrected the one before it.
 
   **Round 1** found the implementation checked claim *shape*, not ground
   truth: test-evidence adapters confirmed an entry's fields were present
@@ -115,7 +122,9 @@
   malformed payload. Fixed in the parser -- a token runs until the next
   `axiom-authority:` or the end of its cell -- bringing the suite to 120.
 
-  See `ROADMAP.md`'s Milestone 5.1-5.4 section for the full sequence.
+  See `ROADMAP.md`'s Milestone 5.1-5.4 section for the full sequence -- kept
+  in full rather than summarized away, because five rounds of review on one
+  authority mechanism is the more useful record.
 
 ## 1.2.0 - 2026-07-30
 
