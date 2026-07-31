@@ -77,6 +77,10 @@ Invoke-Check "demo-smoke" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join
 # build failure instead.
 Invoke-Check "plugin-package" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/plugin-package-tests.ps1") -RepoPath $repo }
 Invoke-Check "plugin-skills-drift" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/build-plugin-package.ps1") -Check }
+# Milestone 6.3: the only code in this milestone that writes to a file the user
+# owns. Adversarial by design -- malformed markers, hand edits, CRLF, BOM,
+# symlinks, read-only targets, and content trying to manufacture authority.
+Invoke-Check "setup-integration" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/setup-integration-tests.ps1") -RepoPath $repo }
 # Milestone 6.1 spike: the framework must keep working when its files are not
 # in a git checkout, not the cwd, and not writable -- the way a Claude Code
 # plugin is installed. Run on every host, because the failure mode this guards

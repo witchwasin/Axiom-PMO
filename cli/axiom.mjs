@@ -169,6 +169,12 @@ const COMMANDS = {
     build: (args) => buildExport(args),
   },
 
+  setup: {
+    summary: "Add, preview, or remove the Axiom-PMO block in a repository's AGENTS.md",
+    usage: "axiom setup claude --project <path> [--dry-run] [--uninstall] [--force] [--file AGENTS.md|CLAUDE.md]",
+    build: (args) => buildSetup(args),
+  },
+
   verify: {
     summary: "Verify an execution result against its contract and observed git state",
     usage: "axiom verify --project <path> --result <path> [--contract <path>] [--json]",
@@ -301,6 +307,51 @@ function buildExport(args) {
   if (format.value) scriptArgs.push("-Format", format.value);
   if (force.present) scriptArgs.push("-Force");
   return { script: "scripts/export-execution-contract.ps1", scriptArgs: [...scriptArgs, ...rest] };
+}
+
+function buildSetup(args) {
+  // `axiom setup claude` reads as a subcommand, but the only target that
+  // exists is Claude Code, so it is accepted as a positional word rather than
+  // modelled as a dispatch table that would have exactly one entry.
+  let rest = args;
+  if (rest[0] && !rest[0].startsWith("-")) {
+    const target = rest[0];
+    if (target !== "claude") {
+      return { usageError: `unknown setup target '${target}' (only 'claude' is supported)` };
+    }
+    rest = rest.slice(1);
+  }
+
+  const project = takeOption(rest, "project");
+  rest = project.rest;
+  const file = takeOption(rest, "file");
+  rest = file.rest;
+  const dryRun = takeFlag(rest, "dry-run");
+  rest = dryRun.rest;
+  const uninstall = takeFlag(rest, "uninstall");
+  rest = uninstall.rest;
+  const force = takeFlag(rest, "force");
+  rest = force.rest;
+
+  // Defaults to the caller's own directory, and is resolved against cwd rather
+  // than the framework root: this command modifies the USER's repository, and
+  // resolving a relative path against the framework's checkout would be how it
+  // ends up editing the wrong AGENTS.md.
+  const projectPath = project.value
+    ? (isAbsolute(project.value) ? project.value : resolve(process.cwd(), project.value))
+    : process.cwd();
+
+  const scriptArgs = ["-ProjectPath", projectPath];
+  // takeFlag returns `.present`, not `.value`. Reading `.value` here silently
+  // forwarded none of these switches: setup still installed (the default
+  // path), so it looked like it worked, and --uninstall quietly reported
+  // "already up to date" instead of removing anything.
+  if (file.value) { scriptArgs.push("-File", file.value); }
+  if (dryRun.present) { scriptArgs.push("-DryRun"); }
+  if (uninstall.present) { scriptArgs.push("-Uninstall"); }
+  if (force.present) { scriptArgs.push("-Force"); }
+
+  return { script: "scripts/setup-claude-integration.ps1", scriptArgs: [...scriptArgs, ...rest] };
 }
 
 function buildVerify(args) {
@@ -461,6 +512,7 @@ function printUsage() {
     "  node cli/axiom.mjs handoff --project examples/HANDOFF-DEMO --mode Standard",
     "  node cli/axiom.mjs validate --project examples/STANDARD-FEATURE --gate Release --fail-on-warning",
     "  node cli/axiom.mjs init --code P02-ABC --mode Standard --handoff --target demo",
+    "  node cli/axiom.mjs setup claude --project . --dry-run",
     "",
     "Unrecognised options are forwarded to the underlying PowerShell script.",
     "Exit codes come from the validator: 0 pass, 1 fail, 2 blocking warning.",

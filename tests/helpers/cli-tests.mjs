@@ -9,7 +9,8 @@
 //   node tests/helpers/cli-tests.mjs
 
 import { spawnSync } from "node:child_process";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -207,6 +208,49 @@ if (!POWERSHELL_AVAILABLE) {
     assert("handoff --json stays parseable when the gate fails", brokenParsed !== null);
     assert("handoff --json still propagates the failing exit code", brokenJson.status === 1,
       `exit=${brokenJson.status}`);
+  }
+
+  {
+    // `axiom setup claude` is the only CLI verb that writes to a file outside
+    // this repository, so its argument forwarding is tested end to end rather
+    // than by inspection. Reading `.value` off takeFlag (which returns
+    // `.present`) forwarded none of these switches while still looking like it
+    // worked -- setup installed via the default path, and --uninstall reported
+    // "already up to date" instead of removing anything.
+    const sandbox = mkdtempSync(join(tmpdir(), "axiom-cli-setup-"));
+    try {
+      const project = join(sandbox, "repo");
+      mkdirSync(project, { recursive: true });
+      const original = "# Their Project\n\nTheir own rules.\n";
+      const agents = join(project, "AGENTS.md");
+      writeFileSync(agents, original);
+
+      const dry = runCli(["setup", "claude", "--project", project, "--dry-run"]);
+      assert("setup --dry-run exits cleanly", dry.status === 0, `exit=${dry.status}`);
+      assert("setup --dry-run reaches the script as a dry run",
+        /Dry run/i.test(dry.stdout), dry.stdout.slice(0, 300));
+      assert("setup --dry-run writes nothing", readFileSync(agents, "utf8") === original);
+
+      const install = runCli(["setup", "claude", "--project", project]);
+      assert("setup adds the block", install.status === 0 && /AXIOM-PMO:BEGIN/.test(readFileSync(agents, "utf8")),
+        install.stdout.slice(0, 300));
+
+      const again = runCli(["setup", "claude", "--project", project]);
+      assert("setup is idempotent through the CLI", /already up to date/i.test(again.stdout),
+        again.stdout.slice(0, 300));
+
+      const remove = runCli(["setup", "claude", "--project", project, "--uninstall"]);
+      assert("setup --uninstall actually removes", remove.status === 0 && /Removed/i.test(remove.stdout),
+        remove.stdout.slice(0, 300));
+      assert("…and restores the file byte-for-byte", readFileSync(agents, "utf8") === original,
+        JSON.stringify(readFileSync(agents, "utf8")));
+
+      const bad = runCli(["setup", "fnord", "--project", project]);
+      assert("an unknown setup target is refused", bad.status !== 0 && /unknown setup target/i.test(bad.stdout + bad.stderr),
+        `exit=${bad.status}`);
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
   }
 
   {
