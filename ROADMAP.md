@@ -872,28 +872,89 @@ Non-goals, stated because the framing is easy to lose:
 - It is not a requirement for using Axiom-PMO.
 - It does not move any authority, evidence, or approval logic out of the core.
 
-Status: **planned. Implementation blocked pending a separate instruction from
-the Human Owner** -- Milestone 5 acceptance does not unblock it.
+Status: **Milestone 6.0 (the integration-shape decision) decided 2026-07-30
+(HYBRID)**, reviewed by Sol as **ACCEPT WITH MINOR REVISIONS** (revisions
+applied: wording on cross-harness compatibility, MCP reframed from rejected to
+deferred, hook sequenced explicitly as M6.5 after the packaging MVP).
 
-Do not assume the final shape is an installer. Prototype and evaluate:
+**Milestone 6.1 and beyond are blocked pending a separate instruction from the
+Human Owner** -- Milestone 5's acceptance does not unblock them. 6.1+ is itself
+sequenced as M6.1-M6.5 rather than one milestone (see the architecture doc's
+§8) so a packaging spike finding does not get built on top of before it is
+checked.
 
-- copyable integration block;
-- Claude skill pack;
-- command set;
-- plugin;
-- MCP command;
-- hook;
-- `axiom setup claude`.
+### Milestone 6.0 - Integration shape decision
 
-If an installer is built, it must:
+Research and reasoning:
+[`docs/architecture/claude-code-integration.md`](docs/architecture/claude-code-integration.md).
+Decision recorded as `DEC-003` in `decision-log.md`.
 
-- detect existing `AGENTS.md`, `CLAUDE.md`, skills, commands, and framework
-  setup;
-- create backups before modification;
-- append namespaced Axiom-PMO sections instead of overwriting;
-- report conflicts;
-- ask before destructive changes;
-- support uninstall.
+The seven candidate shapes were evaluated against a real clone of the
+`superpowers` plugin (commit `44c9b2d6`, v6.2.0) rather than assumed. The
+decisive finding: "install Axiom-PMO" is six kinds of content, and only two
+of them must live in the user's repository.
+
+```text
+Claude Code plugin  (installed once, outside the user's repo)
+  skills/pmo-*            the 7 existing skills, already in conforming shape
+  scripts/, cli/          the validator, invoked via ${CLAUDE_PLUGIN_ROOT}
+  pmo-config/*.json       framework runtime config
+  templates/              scaffolding source
+
+User's repository  (created or appended, always reviewably)
+  CLAUDE.md / AGENTS.md   one short namespaced Axiom-PMO section
+  PROJECT.md, DELIVERY.md, SCOPE.json, ...   the user's governed artifacts
+```
+
+The behavioural rules cannot move into the plugin: `AGENTS.md` targets Codex,
+Cursor, and Copilot as well as Claude, and a Claude-only plugin would quietly
+narrow a multi-agent framework into a single-vendor one.
+
+Adopted: **plugin** (framework), **copyable integration block** appended to
+the repository-level `AGENTS.md` -- the intended cross-agent governance
+source, which harness-specific files like `CLAUDE.md` may reference or
+supplement -- (the honest minimum for the repo files), **`axiom setup
+claude`** (a thin convenience wrapper over those two, not a large installer).
+The **skill pack** was not a separate option -- it already exists and already
+conforms. **Command set** deferred as unverified; **MCP deferred** -- no
+proven need for the M6 MVP, not rejected permanently -- as a delivery
+mechanism for a validator the CLI and Action already expose.
+
+A file's presence in a repository does not by itself prove every harness
+reads and obeys it; each harness's own discovery/precedence rules are a
+separate, unverified question the architecture doc explicitly flags rather
+than claiming universal compatibility from file presence alone.
+
+The **hook** -- a `PreToolUse` guard that would make governance preventive
+rather than detective -- is carved out as a separate, later, opt-in milestone
+(M6.5, below). It is genuine new capability, but it is also the only option
+that can make a user's editor feel broken, so it must ship report-only by
+default like SCOPE-DIFF and the GitHub Action did, with its own acceptance.
+
+### Milestone 6.1-6.5 (requires separate approval)
+
+Sequenced as separately acceptable steps, not one milestone, so a packaging
+spike finding cannot get built on top of before it is checked. Full detail:
+[`docs/architecture/claude-code-integration.md`](docs/architecture/claude-code-integration.md) §8.
+
+1. **M6.1 Plugin packaging** -- starts with a spike proving this framework's
+   multi-file PowerShell validator actually runs from inside a plugin
+   (executable invocation permission, `pwsh` host resolution, dot-sourcing,
+   framework-root/project-root distinction, update/version drift, Windows
+   path quoting) before any real directory restructuring.
+2. **M6.2 Namespaced repo integration** -- the copyable `AGENTS.md` block:
+   fenced markers, idempotent append, backup before touching an existing
+   file, conflict report.
+3. **M6.3 Setup/uninstall safety** -- `axiom setup claude` wrapping 1 and 2,
+   with `--dry-run`, refusal on an unclean working tree, and uninstall that
+   removes exactly what was added.
+4. **M6.4 Clean-room compatibility** -- install into a repository that
+   already has its own `CLAUDE.md`, skills, and Superpowers, and prove
+   nothing of theirs was lost. This is the packaging work's definition of
+   done; it cannot be satisfied by unit tests alone.
+5. **M6.5 Optional preventive hook pilot** -- only after Human Owner
+   acceptance of M6.1-6.4. Report-only by default, its own acceptance,
+   transparent bypass/disable path.
 
 Definition of done:
 
