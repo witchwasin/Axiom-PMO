@@ -81,16 +81,26 @@ if (-not $remoteOk -or [string]::IsNullOrWhiteSpace([string]$remoteUrl)) {
   exit 0
 }
 
-# Find a commit that actually has a completed, successful check run. HEAD is
-# a poor choice: this job may be running while its own siblings are still in
-# progress, so their conclusions are null. Walking back a few commits finds
-# one whose workflow finished, which is what a real consumer would cite
-# anyway -- evidence is attached to work that already ran.
+# Find a commit that has a completed, successful check run -- starting at
+# HEAD~1, deliberately skipping HEAD.
+#
+# HEAD is where this job itself is running, and its check runs are in flight
+# by definition. Worse, a SHA can carry two workflow runs at once (an
+# automatic push trigger plus a manual dispatch), so the *same check name*
+# appears twice: one completed, one running. The first version of this file
+# started at HEAD and did exactly that -- discovery selected a completed
+# successful run, and the adapter then matched the in-flight twin with a
+# null conclusion. That surfaced a real ordering bug in the adapter (now
+# fixed: same-named runs must all agree), but the test itself was also wrong
+# to look at a commit whose checks were still moving.
+#
+# Starting one commit back is also more honest about the real usage: evidence
+# is cited for work that already ran, not for the run producing it.
 $foundSha = $null
 $foundCheckName = $null
 $foundFailingName = $null
 
-for ($depth = 0; $depth -lt 8; $depth++) {
+for ($depth = 1; $depth -lt 9; $depth++) {
   $previousEap = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
   $sha = (& git -C $repo rev-parse "HEAD~$depth" 2>$null)
@@ -166,6 +176,57 @@ if ($foundFailingName) {
   Assert-True "a check the API reports as not-success is rejected despite the result claiming success" (-not $r.Verified)
 } else {
   Add-Skip "observed-failure case" "no completed non-success check run found on that commit to point at"
+}
+
+# --- ambiguity: the same name, more than one completed run -----------------
+#
+# A SHA can carry several runs under one check name -- a re-run, or two
+# workflows triggered on the same commit. Before this was handled, the
+# adapter took whichever the API listed first, so a name that failed once and
+# passed once could verify or not depending on ordering. That is precisely
+# the shape an actor would exploit: re-run a job until one attempt goes
+# green, then cite the name.
+$ambiguousName = $null
+$allSuccessDuplicateName = $null
+$previousEap = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+$rawAll = & gh api "repos/$(Get-GitHubOwnerRepo -RemoteUrl ([string]$remoteUrl))/commits/$foundSha/check-runs" 2>$null
+$allOk = ($LASTEXITCODE -eq 0)
+$ErrorActionPreference = $previousEap
+if ($allOk) {
+  try {
+    $allData = ($rawAll | Out-String) | ConvertFrom-Json
+    $byName = @{}
+    foreach ($run in @($allData.check_runs)) {
+      if ([string]$run.status -ne "completed") { continue }
+      $n = [string]$run.name
+      if (-not $byName.ContainsKey($n)) { $byName[$n] = @() }
+      $byName[$n] += [string]$run.conclusion
+    }
+    foreach ($k in $byName.Keys) {
+      $vals = @($byName[$k])
+      if ($vals.Count -lt 2) { continue }
+      $distinct = @($vals | Select-Object -Unique)
+      if (($distinct.Count -gt 1) -and (-not $ambiguousName)) { $ambiguousName = $k }
+      if (($distinct.Count -eq 1) -and ($distinct[0] -eq "success") -and (-not $allSuccessDuplicateName)) { $allSuccessDuplicateName = $k }
+    }
+  } catch { }
+}
+
+if ($ambiguousName) {
+  $entry = New-CiEntry -Name $ambiguousName -CommitSha $foundSha -Conclusion "success"
+  $r = Test-CiCheckEvidence -Entry $entry -GitRepoRoot $repo
+  Assert-True "a name with both a passing and a failing completed run does not verify" (-not $r.Verified) $r.Reason
+} else {
+  Add-Skip "mixed-conclusion duplicate case" "no check name on that commit has completed runs disagreeing"
+}
+
+if ($allSuccessDuplicateName) {
+  $entry = New-CiEntry -Name $allSuccessDuplicateName -CommitSha $foundSha
+  $r = Test-CiCheckEvidence -Entry $entry -GitRepoRoot $repo
+  Assert-True "duplicate runs that all report success still verify" $r.Verified $r.Reason
+} else {
+  Add-Skip "all-success duplicate case" "no check name on that commit has multiple completed successful runs"
 }
 
 Write-Host ""
