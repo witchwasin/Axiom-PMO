@@ -937,6 +937,17 @@ Sequenced as separately acceptable steps, not one milestone, so a packaging
 spike finding cannot get built on top of before it is checked. Full detail:
 [`docs/architecture/claude-code-integration.md`](docs/architecture/claude-code-integration.md) §8.
 
+0. **M6.1 spike -- DONE.** Report:
+   [`docs/architecture/plugin-packaging-spike.md`](docs/architecture/plugin-packaging-spike.md).
+   15 cases in `tests/helpers/plugin-install-spike-tests.ps1`, wired into
+   `run-all-checks.ps1`. Result: the user-facing surface works from a
+   non-checkout, non-cwd, read-only install root, and the full M5 loop reaches
+   a real verdict from there; **no directory move is required** (`git-subdir`
+   sources are verified and widely used); the approved fallback was **not**
+   needed. One finding: the framework's own maintainer tools correctly do not
+   work from a plugin install, but fail with a raw exception instead of a
+   diagnostic -- an M6.2 item. Implementation stopped here pending a Human
+   Owner decision.
 1. **M6.1 Plugin packaging** -- starts with a spike proving this framework's
    multi-file PowerShell validator actually runs from inside a plugin
    (executable invocation permission, `pwsh` host resolution, dot-sourcing,
