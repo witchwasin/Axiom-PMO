@@ -2,10 +2,12 @@
 
 ## Unreleased
 
-### In progress — fixed, awaiting re-review, not yet accepted
+### Reviewed — ACCEPT at round 5; Human Owner closure confirmation pending
 
-- **Execution contract verification (Milestone 5).** Under active
-  development on `main`, **not yet accepted**. `axiom export` turns an
+- **Execution contract verification (Milestone 5).** Reviewed and accepted
+  at round 5 (Sol, 2026-07-31) at commit `87d3a7c`, CI run `30640858800`,
+  7/7 jobs green. Recorded as reviewed/accepted, **not closed** -- a Human
+  Owner acceptance record is still outstanding. `axiom export` turns an
   approved `DELIVERY.md` work item into an `EXECUTION-CONTRACT.json` an AI
   execution workflow can be handed; `axiom verify` checks the returned
   `EXECUTION-RESULT.json` against that contract and against observed git
@@ -98,16 +100,22 @@
   changed-files check now catches a result *claiming* a file changed that
   git shows no evidence of, not only the reverse.
 
-  118 adversarial tests (up from 57) reproduce each gap and confirm each
+  120 adversarial tests (up from 57) reproduce each gap and confirm each
   fix, including the decisive ones: a hand-forged run record with a valid
   sidecar; a genuine record without a vouch; a vouch citing a real but
   unrelated decision; a vouch whose bindings are all self-consistent but
   whose decision row never names the digest; a real artifact approved for one
   test and relabelled for another; a digest present in the row only as prose;
   and a `release-approval` citing a decision that says nothing about
-  releasing this work item. Awaiting
-  re-review and Human Owner acceptance -- see `ROADMAP.md`'s Milestone
-  5.1-5.4 section for current status.
+  releasing this work item.
+
+  **Round 5 accepted it**, with one non-blocking mismatch: the docs said a
+  decision row could carry several `axiom-authority` tokens, while the parser
+  matched greedily to end-of-cell and read two tokens sharing a cell as one
+  malformed payload. Fixed in the parser -- a token runs until the next
+  `axiom-authority:` or the end of its cell -- bringing the suite to 120.
+
+  See `ROADMAP.md`'s Milestone 5.1-5.4 section for the full sequence.
 
 ## 1.2.0 - 2026-07-30
 

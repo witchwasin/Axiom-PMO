@@ -93,8 +93,12 @@ that can be checked field by field:
   contract=<contract sha256>; test=unit tests; evidence=<artifact sha256> | ... |
 ```
 
-The token runs to the end of the cell it appears in, so put it last in that
-cell. It is parsed per cell — never across the concatenated row.
+A token has no closing delimiter — a test name may contain spaces, and the
+semicolon is the field separator — so each one runs until the next
+`axiom-authority:` or the end of its cell. One row may carry several tokens,
+in the same cell or different ones; each is matched independently, and a row
+authorizes a claim when *some* token on it matches in full. Parsing is per
+cell, never across the concatenated row.
 
 | Field | Required for | Meaning |
 |---|---|---|
