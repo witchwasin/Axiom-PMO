@@ -1398,6 +1398,73 @@ function Get-VouchedRecordDigest {
   } finally { Remove-ExecFixture $dir }
 }.Invoke()
 
+# ---- Case: two tokens in one cell, both parsed -> passes ------------------
+# Round 5 (non-blocking) found the docs promised a row could carry several
+# bindings, while the parser matched greedily to end-of-cell and read two
+# tokens in one cell as a single malformed payload. Tokens have no closing
+# delimiter -- a test name may contain spaces -- so each now runs until the
+# next 'axiom-authority:' or end of cell.
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $resultPath = New-Result -Dir $dir
+    $doc = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
+    $claims = @($doc.authority_claims)
+    $claims += [pscustomobject]@{ type = "release-approval"; actor = "human"; claim = "approved"; decision_ref = "DEC-100" }
+    $doc.authority_claims = $claims
+    Set-Content -LiteralPath $resultPath -Value ($doc | ConvertTo-Json -Depth 12) -NoNewline
+
+    # One DEC-100 row, one cell, two bindings: the test vouch New-Result needs
+    # plus a release approval. Under the greedy match the second swallowed the
+    # first and neither claim resolved.
+    $contractDigest = Get-ContractDigest -Dir $dir
+    $recordDigest = Get-VouchedRecordDigest -Dir $dir
+    $tokens = "axiom-authority: type=test-evidence-accepted; work_item=D-001; contract=$contractDigest; test=unit tests; evidence=$recordDigest " +
+              "axiom-authority: type=release-approval; work_item=D-001; contract=$contractDigest"
+    $log = @(
+      "# Decision Log - P99-EXEC",
+      "",
+      "| Date | Decision ID | Topic | Options Presented | User Choice | Rationale | Source Ref | Impact |",
+      "|---|---|---|---|---|---|---|---|",
+      "| 2026-07-31 | DEC-100 | Accept evidence and approve release of D-001 | accept / hold | accept | reviewed both. $tokens | none | accepted |"
+    ) -join "`n"
+    Set-Content -LiteralPath (Join-Path $dir "decision-log.md") -Value $log -NoNewline
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "two bindings in one cell: both claims authorized, verdict pass" `
+      ($r.Json.execution_verification.verdict -eq "pass") `
+      ("fails=" + ((Get-Rules $r.Json) -join ","))
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: two tokens in one cell, neither matching -> still rejected ------
+# Multi-token support must not become "any token in the row is close enough".
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    New-Result -Dir $dir | Out-Null
+    $contractDigest = Get-ContractDigest -Dir $dir
+    $recordDigest = Get-VouchedRecordDigest -Dir $dir
+    $tokens = "axiom-authority: type=test-evidence-accepted; work_item=D-999; contract=$contractDigest; test=unit tests; evidence=$recordDigest " +
+              "axiom-authority: type=test-evidence-accepted; work_item=D-001; contract=$contractDigest; test=other tests; evidence=$recordDigest"
+    $log = @(
+      "# Decision Log - P99-EXEC",
+      "",
+      "| Date | Decision ID | Topic | Options Presented | User Choice | Rationale | Source Ref | Impact |",
+      "|---|---|---|---|---|---|---|---|",
+      "| 2026-07-31 | DEC-100 | Accept evidence | accept | accept | $tokens | none | accepted |"
+    ) -join "`n"
+    Set-Content -LiteralPath (Join-Path $dir "decision-log.md") -Value $log -NoNewline
+
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "two near-miss bindings do not combine into an authorization: EXEC-005" `
+      ((Get-Rules $r.Json) -contains "EXEC-005") `
+      ("verdict=" + $r.Json.execution_verification.verdict)
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
 # ---- Case: a vouch for test A does not cover test B -> EXEC-005 -----------
 {
   $dir = New-ExecFixture
