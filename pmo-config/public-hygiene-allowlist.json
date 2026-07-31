@@ -67,6 +67,14 @@
         "tests/helpers/github-action-tests.mjs"
       ],
       "reason": "Synthetic GitHub-token-shaped marker used to prove the M4 Action wrapper never copies raw malformed validator stdout into JSON/Markdown reports, stdout annotations, or the Job Summary (Sol privacy review, 2026-07-29)."
+    },
+    {
+      "pattern": "/Users/[^/\\s]+",
+      "paths": [
+        "scripts/capture-plugin-load-evidence.ps1",
+        "pmo-config/public-hygiene-allowlist.json"
+      ],
+      "reason": "The redaction patterns in the plugin-load evidence capture. This script exists to STRIP home-directory paths from a committed transcript, so it must name the shapes it strips -- the one place where writing the pattern is the fix rather than the defect (M6.4)."
     }
   ]
 }
