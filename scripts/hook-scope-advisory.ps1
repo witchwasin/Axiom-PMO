@@ -43,6 +43,7 @@ function Exit-Silently { exit 0 }
 
 try {
   . (Join-Path $PSScriptRoot "lib/scope-diff-matcher.ps1")
+  . (Join-Path $PSScriptRoot "lib/pwsh-host.ps1")
 } catch {
   Exit-Silently
 }
@@ -119,8 +120,16 @@ foreach ($candidate in $candidatePaths) {
   $relative = $candidate
   try {
     $full = if ([System.IO.Path]::IsPathRooted($candidate)) { $candidate } else { Join-Path $project $candidate }
-    $normalisedProject = $project.TrimEnd([char]92, [char]47) + [System.IO.Path]::DirectorySeparatorChar
-    if ($full.StartsWith($normalisedProject, [System.StringComparison]::Ordinal)) {
+    # GetFullPath on both sides, and an ordinal-ignore-case comparison. Windows
+    # paths are case-insensitive and can arrive with mixed separators, so a
+    # case-sensitive raw StartsWith reports an in-project file as "outside the
+    # project" and silently says nothing about it -- which CI caught on
+    # windows-pwsh7 and nowhere else.
+    $full = [System.IO.Path]::GetFullPath($full)
+    $projectFull = [System.IO.Path]::GetFullPath($project)
+    $normalisedProject = $projectFull.TrimEnd([char]92, [char]47) + [System.IO.Path]::DirectorySeparatorChar
+    $comparison = if (Test-WindowsHost) { [System.StringComparison]::OrdinalIgnoreCase } else { [System.StringComparison]::Ordinal }
+    if ($full.StartsWith($normalisedProject, $comparison)) {
       $relative = $full.Substring($normalisedProject.Length)
     } else {
       # Outside the project entirely. SCOPE.json says nothing about such a

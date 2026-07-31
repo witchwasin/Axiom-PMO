@@ -321,7 +321,7 @@ try {
   # ---- Q: does a read-only install still work? ---------------------------
   # A plugin install can legitimately be read-only. Tested last, because it
   # changes permissions on the tree the earlier cases used.
-  if ($IsWindows -eq $false -or $null -eq $IsWindows) {
+  if (-not (Test-WindowsHost)) {
     $previous = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     try { & chmod -R a-w $install 2>&1 | Out-Null } finally { $ErrorActionPreference = $previous }

@@ -190,3 +190,29 @@ green locally and red in CI.
 - [`validation-engine.md`](validation-engine.md) — how the engine defends itself
 - [`docs/guides/powershell-runtime.md`](../guides/powershell-runtime.md) — installing a host
 - `DOCTOR-010` — the automated check that enforces §1
+
+## 6. `$IsWindows` does not exist in Windows PowerShell 5.1
+
+**Shipped in Milestone 6.** Caught by CI, not locally.
+
+`$IsWindows` arrived with PowerShell Core. On Windows PowerShell 5.1 it is
+`$null` — and 5.1 only ever runs on Windows. So every natural spelling of "not
+Windows" is true *on Windows*:
+
+```powershell
+if ($IsWindows -ne $true)  { }   # TRUE on 5.1
+if (-not $IsWindows)       { }   # TRUE on 5.1
+if ($null -eq $IsWindows)  { }   # TRUE on 5.1, usually written to mean "Unix"
+```
+
+On PowerShell 7 all three are correct, so nothing looks wrong on the host this
+repository is written on.
+
+The Milestone 6.3 and 6.5 suites guarded their symlink and `chmod` cases this
+way. Both ran on Windows PowerShell 5.1, where `ln -s` and `chmod` do not
+exist. The `chmod` case is the more dangerous of the two: it fails silently and
+then reports a pass for a read-only scenario it never created.
+
+**Use `Test-WindowsHost`** from `scripts/lib/pwsh-host.ps1`, which checks
+`$PSVersionTable.PSEdition` first. Enforced by
+[`DOCTOR-011`](../rules/DOCTOR-011.md) across both `scripts/` and `tests/`.
