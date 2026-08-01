@@ -324,24 +324,18 @@ try {
     Invoke-Setup -Project $p -Arguments @("-Uninstall") | Out-Null
     $after = Get-Bytes (Join-Path $p "AGENTS.md")
 
-    # A file that already ended with a newline round-trips byte-for-byte. One
-    # that did not gains exactly one newline and keeps it -- the single byte
-    # setup must add so the BEGIN marker does not land on the user's last line,
-    # and which uninstall deliberately does not take back. Adding a byte the
-    # user keeps is a far smaller wrong than deleting one they wanted, and it
-    # is asserted here rather than left as a claim in prose.
-    $endedWithNewline = $shape.Text.EndsWith("`n")
-    if ($endedWithNewline) {
-      Assert-True "byte preservation ($($shape.Name)): round trip is byte-identical" `
-        (([System.Convert]::ToBase64String($before)) -eq ([System.Convert]::ToBase64String($after))) `
-        ("before=" + $before.Length + "B after=" + $after.Length + "B")
-    } else {
-      $addedNewline = if ($shape.Text -match "`r`n") { "`r`n" } else { "`n" }
-      $expected = [System.Text.Encoding]::UTF8.GetBytes($shape.Text + $addedNewline)
-      Assert-True "byte preservation ($($shape.Name)): gains exactly one newline, nothing else" `
-        (([System.Convert]::ToBase64String($expected)) -eq ([System.Convert]::ToBase64String($after))) `
-        ("before=" + $before.Length + "B after=" + $after.Length + "B expected=" + $expected.Length + "B")
-    }
+    # Byte-identical. Every shape, no exceptions and no allowance.
+    #
+    # An earlier version let a file with no final newline gain one, on the
+    # grounds that an addition the user keeps beats a deletion they did not
+    # ask for. Review rejected the premise: setup should not need the
+    # allowance. It no longer takes one -- nothing is written outside the
+    # span, so there is nothing left behind to excuse.
+    Assert-True "byte preservation ($($shape.Name)): round trip is byte-identical" `
+      (([System.Convert]::ToBase64String($before)) -eq ([System.Convert]::ToBase64String($after))) `
+      ("before=" + $before.Length + "B after=" + $after.Length + "B")
+    Assert-True "byte preservation ($($shape.Name)): the file still exists" `
+      (Test-Path -LiteralPath (Join-Path $p "AGENTS.md"))
   }
 
   # A block in the MIDDLE of a file, with content after it. Nothing above or
@@ -395,7 +389,13 @@ try {
   foreach ($enc in @(
     @{ Name = "UTF-16LE with BOM"; Bytes = ([byte[]](0xFF, 0xFE) + [System.Text.Encoding]::Unicode.GetBytes("# Their Project`n`nrules`n")); Match = "UTF-16LE" },
     @{ Name = "UTF-16BE with BOM"; Bytes = ([byte[]](0xFE, 0xFF) + [System.Text.Encoding]::BigEndianUnicode.GetBytes("# Their Project`n`nrules`n")); Match = "UTF-16BE" },
-    @{ Name = "invalid UTF-8"; Bytes = ([System.Text.Encoding]::ASCII.GetBytes("# P`n`nrules ") + [byte[]](0xC3, 0x28, 0xA0, 0xA1) + [System.Text.Encoding]::ASCII.GetBytes("`n")); Match = "not valid UTF-8" }
+    @{ Name = "invalid UTF-8"; Bytes = ([System.Text.Encoding]::ASCII.GetBytes("# P`n`nrules ") + [byte[]](0xC3, 0x28, 0xA0, 0xA1) + [System.Text.Encoding]::ASCII.GetBytes("`n")); Match = "not valid UTF-8" },
+    # UTF-32LE's BOM is FF FE 00 00 -- it begins with UTF-16LE's. Sniffing the
+    # shorter signature first refused the file correctly but named the wrong
+    # encoding in the diagnostic, which sends the user to convert from
+    # something their file is not.
+    @{ Name = "UTF-32LE with BOM"; Bytes = ([byte[]](0xFF, 0xFE, 0x00, 0x00) + [System.Text.Encoding]::UTF32.GetBytes("# P`n`nrules`n")); Match = "UTF-32LE" },
+    @{ Name = "UTF-32BE with BOM"; Bytes = ([byte[]](0x00, 0x00, 0xFE, 0xFF) + [byte[]](0x00, 0x00, 0x00, 0x23)); Match = "UTF-32BE" }
   )) {
     foreach ($mode in @(@(), @("-DryRun"), @("-Uninstall"))) {
       $label = "$($enc.Name)$(if ($mode.Count) { " " + ($mode -join ' ') })"
@@ -510,16 +510,9 @@ try {
     Assert-True "whitespace file ($($ws.Name)): still exists after a round trip" `
       (Test-Path -LiteralPath (Join-Path $p "AGENTS.md"))
     $after = Get-Bytes (Join-Path $p "AGENTS.md")
-    $endedWithNewline = $ws.Text.EndsWith("`n") -or $ws.Text.Length -eq 0
-    if ($endedWithNewline) {
-      Assert-True "whitespace file ($($ws.Name)): bytes are unchanged" `
-        (([System.Convert]::ToBase64String($before)) -eq ([System.Convert]::ToBase64String($after))) `
-        ("before=" + $before.Length + "B after=" + $after.Length + "B")
-    } else {
-      Assert-True "whitespace file ($($ws.Name)): gains only the one bridging newline" `
-        ($after.Length -eq ($before.Length + 1)) `
-        ("before=" + $before.Length + "B after=" + $after.Length + "B")
-    }
+    Assert-True "whitespace file ($($ws.Name)): bytes are unchanged" `
+      (([System.Convert]::ToBase64String($before)) -eq ([System.Convert]::ToBase64String($after))) `
+      ("before=" + $before.Length + "B after=" + $after.Length + "B")
   }
 
   # ---- Encoding: leave the file the way it was found --------------------

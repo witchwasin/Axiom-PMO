@@ -881,26 +881,31 @@ genuinely different things:
 | Hardening | complete (before the review findings) |
 | Human Owner testing | complete |
 | Human Owner acceptance | accepted (`DEC-005`) |
-| Independent Sol review | **completed — REQUEST CHANGES** |
-| Blocking findings | **1 FATAL, 1 MAJOR — both now fixed, awaiting re-review** |
+| Independent Sol review | **three rounds, all REQUEST CHANGES** |
+| Blocking findings | **2 FATAL, 8 MAJOR, 2 MINOR across three rounds -- all implemented, awaiting re-review** |
 | Milestone closure | **blocked pending re-review** |
 | Release / tag / publish / merge | **not authorized** |
 
-Milestone 6 is **not closed.** Independent review returned **REQUEST CHANGES**
-with one FATAL and one MAJOR, both in the user-file write path:
+Milestone 6 is **not closed.** Independent review has returned REQUEST CHANGES
+three times, every finding in the code that writes to the user's own file:
 
-- **FATAL — ownership was decided by a self-declared, unkeyed digest.** Anyone
-  could write arbitrary content into the markers, compute the matching SHA-256,
-  and have setup or uninstall treat it as framework-generated. Reproduced, then
-  fixed: ownership is now anchored to the canonical body the framework
-  generates, and a self-consistent forgery fails closed.
-- **MAJOR — removal mutated content outside the markers.** `TrimEnd`/`Trim`
-  around the block collapsed blank lines the user owned. Fixed: removal takes
-  the exact marker span plus only the separator and trailer the marker itself
-  records, and installation no longer trims the file it appends to.
+| Round | Findings |
+|---|---|
+| 1 | FATAL: ownership decided by a self-declared, unkeyed digest. MAJOR: removal mutating content outside the markers. |
+| 2 | FATAL: unsupported encodings mangled rather than refused -- a UTF-16 file had every byte rewritten. MAJOR x4: mutable `sep=`/`tail=` widening a deletion; file provenance inferred from contents; Windows hook boundary unverified; duplicate `DEC-003`. |
+| 3 | MAJOR x3: a bridging newline broke the exact round trip; the Windows Git Bash hook was never functionally verified, and asserting it properly exposed an un-escaped JSON `cwd` meaning the advisory never fired on Windows at all; governance records stale. MINOR x2: UTF-32 BOM ordering; ownership and DryRun wording. |
 
-Both are fixed and awaiting re-review. The Human Owner's acceptance remains
-valid but closes neither these findings nor the three debts below.
+All are implemented; re-review is pending.
+
+**Two findings were caused by the fixes for earlier ones**, which is the more
+useful observation. Round 2's `sep=`/`tail=` defect existed because round 1's
+fix introduced that metadata to make removal precise; round 3's
+bridging-newline defect existed because round 2's fix removed the metadata but
+kept one byte outside the span for cosmetics. The current design keeps nothing
+outside the span at all.
+
+The Human Owner's acceptance (`DEC-005`) remains valid and closes neither these
+findings nor the debts below.
 
 Authorized by the Human Owner on 2026-07-31 after the 6.1 spike was accepted.
 

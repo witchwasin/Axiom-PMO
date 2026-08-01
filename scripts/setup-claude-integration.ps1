@@ -277,7 +277,9 @@ if ($DryRun) {
   }
   Write-Host "  --- end ---"
   Write-Host ""
-  Write-Host "  Content outside these markers is not modified."
+  Write-Host "  Nothing outside those markers is written, and nothing outside them would be"
+  Write-Host "  removed by -Uninstall -- the block is appended with no separator, so"
+  Write-Host "  install followed by uninstall returns this file to its current bytes exactly."
   exit $exitOk
 }
 

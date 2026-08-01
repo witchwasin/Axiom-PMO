@@ -91,9 +91,9 @@ What it does:
   is left byte-identical and no backup is taken, because nothing is going to be
   written to it (`SETUP-008`);
 - backs up `AGENTS.md` before touching it (`AGENTS.md.axiom-backup-<timestamp>`);
-- appends one fenced block, and nothing else. The only byte it may add outside
-  the block is a single newline, and only if your file did not end with one;
-  that newline is never taken back;
+- appends one fenced block, and **nothing else** -- no separator, no blank
+  line, not one byte outside the markers. Setup followed by uninstall returns
+  your file to exactly the bytes it had;
 - writes atomically — an interrupted run leaves the old file or the new one,
   never half of each;
 - keeps your line endings and byte-order mark exactly as they were;
@@ -217,6 +217,8 @@ Stated rather than discovered later.
 | **The advisory hook needs a POSIX shell** | Native Windows requires Git Bash or equivalent. PowerShell-only Windows gets no advisory, silently. Deliberate — see above. Everything else works there. |
 | **Non-UTF-8 instruction files are refused, not converted** | UTF-16 and invalid UTF-8 are rejected with `SETUP-008` and left untouched. Converting them is your call, not the tool's. |
 | **A file may be left empty after uninstall** | The file is never deleted, because provenance cannot be inferred from its contents afterwards. |
+| **Ownership is content recognition, not proof of authorship** | A block is treated as the framework's when its body matches text the framework generates. Paste that text into your own file and it will be recognised -- correctly, since it is the framework's text. The guarantee is that content the framework never generates is never touched without `--force`. |
+| **No blank line before the block** | The block is appended directly so that nothing is written outside the markers. If your file did not end with a newline, the marker shares that line. It renders identically; HTML comments produce no output. |
 | **No external-user validation** | The Human Owner has run the walkthrough. Nobody outside the team that built it has. |
 
 ## What Axiom-PMO still is

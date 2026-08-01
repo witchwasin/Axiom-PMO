@@ -39,9 +39,13 @@ $script:AxiomMarkerEnd = "AXIOM-PMO:END"
 # about who wrote it. That is the same thing Milestone 5 learned three times
 # about execution evidence, arriving here in a different costume.
 #
-# So ownership is now: does this body match a body the framework itself
-# generates? The digest is kept, but demoted to what it can actually support --
-# telling "edited after we wrote it" apart from "never ours".
+# So the question became: does this body match a body the framework itself
+# generates? That is content recognition, not a provenance proof -- a user who
+# pastes the canonical text into their own file will be recognised, and that is
+# correct, because the text is the framework's. What it guarantees is the thing
+# that matters: content the framework never generates is never replaced or
+# removed without -Force. The digest is kept, demoted to what it can actually
+# support -- telling "edited after we wrote it" apart from "never ours".
 function Get-AxiomCanonicalBody {
   [CmdletBinding()]
   param([string]$Version = "1")
@@ -154,20 +158,25 @@ function Read-TextFileState {
   # BOM sniffing first: a UTF-16 BOM is unambiguous, and a UTF-16 file is very
   # likely to decode as *something* under a lenient UTF-8 decoder, which is
   # exactly how this went wrong.
+  # UTF-32 first, and the order is not stylistic: the UTF-32LE BOM is
+  # FF FE 00 00, which *starts with* the UTF-16LE BOM. Testing the shorter
+  # signature first reports every UTF-32LE file as UTF-16LE -- the refusal is
+  # still correct, but the diagnostic tells the user the wrong thing about
+  # their own file.
+  if ($bytes.Length -ge 4) {
+    if ($bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE -and $bytes[2] -eq 0 -and $bytes[3] -eq 0) {
+      return [pscustomobject]@{ Exists = $true; Supported = $false; Encoding = "UTF-32LE"; Text = ""; HasBom = $true; Newline = "`n" }
+    }
+    if ($bytes[0] -eq 0 -and $bytes[1] -eq 0 -and $bytes[2] -eq 0xFE -and $bytes[3] -eq 0xFF) {
+      return [pscustomobject]@{ Exists = $true; Supported = $false; Encoding = "UTF-32BE"; Text = ""; HasBom = $true; Newline = "`n" }
+    }
+  }
   if ($bytes.Length -ge 2) {
     if ($bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE) {
       return [pscustomobject]@{ Exists = $true; Supported = $false; Encoding = "UTF-16LE"; Text = ""; HasBom = $true; Newline = "`n" }
     }
     if ($bytes[0] -eq 0xFE -and $bytes[1] -eq 0xFF) {
       return [pscustomobject]@{ Exists = $true; Supported = $false; Encoding = "UTF-16BE"; Text = ""; HasBom = $true; Newline = "`n" }
-    }
-  }
-  if ($bytes.Length -ge 4) {
-    if ($bytes[0] -eq 0 -and $bytes[1] -eq 0 -and $bytes[2] -eq 0xFE -and $bytes[3] -eq 0xFF) {
-      return [pscustomobject]@{ Exists = $true; Supported = $false; Encoding = "UTF-32BE"; Text = ""; HasBom = $true; Newline = "`n" }
-    }
-    if ($bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE -and $bytes[2] -eq 0 -and $bytes[3] -eq 0) {
-      return [pscustomobject]@{ Exists = $true; Supported = $false; Encoding = "UTF-32LE"; Text = ""; HasBom = $true; Newline = "`n" }
     }
   }
 
@@ -293,10 +302,18 @@ function Find-AxiomBlock {
 function Test-AxiomBlockOwnership {
   <#
     .SYNOPSIS
-      Did the framework write this block?
+      Is this block's content one the framework generates?
+    .NOTES
+      Recognition, not authorship. Matching a canonical body proves the content
+      IS the framework's text -- it does not prove the framework put it there,
+      and it cannot: anyone may copy the canonical body into their own file. The
+      guarantee is that content the framework never generates is never touched
+      without -Force, which is the property that matters for not destroying
+      somebody's work. Calling it proof of provenance would be the same
+      overstatement the self-declared digest already cost this milestone once.
     .DESCRIPTION
-      'owned'   -- the body is one the framework generates. Safe to replace or
-                   remove.
+      'owned'   -- the body is one the framework generates, so replacing or
+                   removing it destroys nothing the user wrote.
       'edited'  -- the body is not canonical, and does not match the digest
                    recorded when it was written: something changed it after we
                    wrote it.
@@ -378,15 +395,10 @@ function Set-AxiomBlock {
     .SYNOPSIS
       Insert or replace the block, returning the new text.
     .DESCRIPTION
-      Insertion appends the block to the text exactly as found. The only byte
-      it may add outside the markers is a single newline, and only when the
-      file did not end with one -- without it the BEGIN marker would land on the
-      same line as the user's last sentence.
-
-      That newline is never taken back. Uninstall leaves it, so a file that had
-      no trailing newline gains one permanently. An addition the user keeps is
-      a far smaller thing than a deletion they did not ask for, and it is
-      documented rather than silently reclaimed.
+      Insertion appends the rendered block to the text exactly as found, with
+      nothing in between -- no separator, no bridging newline, nothing. Every
+      byte this writes lies inside the span the markers bound, so uninstall has
+      nothing outside them to reclaim and no metadata to trust about it.
 
       Replacing splices only the span between and including the markers.
     .OUTPUTS
@@ -408,14 +420,22 @@ function Set-AxiomBlock {
   }
 
   if ($block.Status -eq "absent") {
-    if ($Text.Length -eq 0) {
-      return [pscustomobject]@{ Action = "inserted"; Text = $rendered }
-    }
-    # At most one newline, and only if the file lacks one. Nothing else is
-    # added outside the span, so there is nothing outside the span to reclaim.
-    $bridge = ""
-    if (-not ($Text.EndsWith("`n"))) { $bridge = $Newline }
-    return [pscustomobject]@{ Action = "inserted"; Text = ($Text + $bridge + $rendered) }
+    # Appended with nothing in between. Not one byte, not a newline.
+    #
+    # The previous version added a bridging newline when the file did not end
+    # with one, so the BEGIN marker would not share a line with the user's last
+    # sentence, and uninstall never took it back. Review was right that this
+    # makes the round trip lossy -- and worse on CRLF, where "at most one byte"
+    # was actually two.
+    #
+    # Appending directly means a file with no final newline gets
+    # `...rules<!-- AXIOM-PMO:BEGIN ... -->` on one line. That looks tight in
+    # the raw text and renders identically in Markdown, because an HTML comment
+    # produces no output wherever it sits. Cosmetics were not worth a permanent
+    # edit to somebody's file: this way install-then-uninstall returns the
+    # original bytes in every case, with nothing to reclaim and nothing to
+    # remember.
+    return [pscustomobject]@{ Action = "inserted"; Text = ($Text + $rendered) }
   }
 
   $ownership = Test-AxiomBlockOwnership -Block $block

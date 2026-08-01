@@ -12,49 +12,75 @@
 | Hardening | complete (before the review findings) |
 | Human Owner testing | complete |
 | Human Owner acceptance | accepted — `DEC-005`, 2026-08-01 |
-| Independent review | **completed — REQUEST CHANGES** |
-| Blocking findings | **1 FATAL, 1 MAJOR — both fixed, awaiting re-review** |
+| Independent review | **three rounds, all REQUEST CHANGES** |
+| Blocking findings | **2 FATAL, 8 MAJOR, 2 MINOR across three rounds — all implemented, awaiting re-review** |
 | Milestone closure | **blocked pending re-review** |
 | Release / tag / publication / merge | **not authorized** |
 
-### What the first review found, and what changed
+### Review history
 
-Both findings were in the only code that writes to a file the user owns, and
-both were reproduced here before being fixed.
+Three review rounds so far. Recorded in full because the sequence is the useful
+part — twice a fix for one finding created the next one.
 
-**FATAL — ownership was decided by a self-declared digest.** `Test-AxiomBlockOwnership`
-compared the block's content to a SHA-256 recorded in the block's own BEGIN
-marker. That digest is unkeyed and anyone can compute one, so arbitrary content
-plus a correct digest read as framework-generated — and `-Uninstall` deleted it
-with no `-Force`. Reproduced with a block containing a team's private
-deployment notes.
+| Round | Verdict | Findings |
+|---|---|---|
+| 1 | REQUEST CHANGES | 1 FATAL (ownership by self-declared digest), 1 MAJOR (removal mutating content outside the markers) |
+| 2 | REQUEST CHANGES | 1 FATAL (unsupported encodings mangled, not refused), 4 MAJOR (mutable `sep=`/`tail=` widening a deletion; file provenance inferred from contents; Windows hook boundary unverified; duplicate `DEC-003`) |
+| 3 | REQUEST CHANGES | 3 MAJOR (bridging newline broke the exact round trip; Windows Git Bash hook never functionally verified; governance records stale), 2 MINOR (UTF-32 BOM ordering; ownership and DryRun wording) |
 
-Ownership is now anchored to the canonical body the framework generates
-(`Get-AxiomCanonicalBody`, checked against a frozen digest registry). Four
-states, only one of which permits an unforced change: `owned`, `edited`,
-`foreign` (the self-consistent forgery), `unknown`. The recorded digest is
-demoted to distinguishing "edited after we wrote it" from "never ours".
+All findings from all three rounds are implemented. Round 3 is what this
+commit addresses.
 
-*This is the same mistake Milestone 5 made three times.* A digest proves
-integrity since hashing; it never proves authorship.
+**Two of them were caused by earlier fixes**, which is worth a reviewer's
+attention more than any individual defect:
 
-**MAJOR — removal mutated content outside the markers.** `Remove-AxiomBlock`
-used `TrimEnd` on the text before the block and `Trim` on the text after, then
-rebuilt the joins with a freshly chosen newline. Blank lines the user owned
-were collapsed. Removal now takes the exact marker span plus only what the
-marker records as the framework's own — `sep=N` before, `tail=N` after, and
-only when those exact characters are present. Insertion no longer trims the
-file it appends to, so the original is a byte-exact prefix of the result.
+- Round 2's `sep=`/`tail=` MAJOR existed because round 1's fix added that
+  metadata to make removal precise. It became a way to widen a deletion.
+- Round 3's bridging-newline MAJOR existed because round 2's fix removed the
+  metadata and kept one newline outside the span for cosmetics.
 
-The Human Owner's acceptance (`DEC-005`) remains valid, does not substitute for
-this review, and closed **no** known debt.
+The current design has neither. Insertion writes **nothing** outside the marker
+span — no separator, no bridging newline — so removal has nothing outside the
+span to reason about, and install-then-uninstall returns the original bytes in
+every case tested.
 
-### What to look at first this round
+### What changed for round 3
+
+**Exact round trip.** `Set-AxiomBlock` appends the rendered block directly to
+the text as found. A file with no final newline now gets
+`...rules<!-- AXIOM-PMO:BEGIN ... -->` on one line — tight in raw text,
+identical when rendered, and exactly reversible. Byte-identical round trips are
+asserted for LF, CRLF, no-final-newline, empty, whitespace-only, BOM, mid-file
+and abutting cases, with file existence asserted alongside.
+
+**Windows hook, functionally verified.** The previous Windows assertion checked
+only the exit code, and the hook returns 0 whether it advises or silently does
+nothing — so it proved nothing. It now asserts the *message*. Doing that
+exposed a real defect: the shim extracted `cwd` from JSON without un-escaping
+it, so a Windows path arrived as `C:\\Users\\dev\\repo`, the opt-in file
+was looked for at a path that does not exist, and the advisory **never fired on
+Windows at all**. Fixed, and covered on every host by giving a test project a
+literal backslash in its directory name.
+
+**Governance records.** `DEC-004`'s product-boundary reference corrected to
+`DEC-006`. Stale descriptions of `sep=`/`tail=`-based removal removed.
+
+**UTF-32 before UTF-16.** The UTF-32LE BOM begins with UTF-16LE's, so
+UTF-32 files were refused correctly but named wrongly.
+
+**Ownership wording.** Canonical-body matching is content *recognition*, not
+proof of authorship — a user may paste the framework's own text into their
+file and be recognised, which is correct. The guarantee is narrower and is now
+stated as it actually is: content the framework never generates is never
+touched without `-Force`.
+
+### What to look at first this round### What to look at first this round
 
 | | |
 |---|---|
 | Ownership model | `marker-block.ps1` — `Get-AxiomCanonicalBody`, `$AxiomKnownBodyDigests`, `Test-AxiomBlockOwnership`, `Get-AxiomOwnershipReason` |
-| Exact-span removal | `marker-block.ps1` — `Remove-AxiomBlock`, and the `sep=`/`tail=` recording in `New-AxiomBlockText` / `Find-AxiomBlock` |
+| Exact-span removal | `marker-block.ps1` — `Remove-AxiomBlock` (span only, no whitespace accounting) and `Set-AxiomBlock` (appends with nothing in between) |
+| Windows hook, functionally | `hooks/scope-advisory.sh` — JSON un-escaping of `cwd`; asserted in `hook-advisory-tests.ps1` by message, not exit code |
 | Forged-digest regression | `setup-integration-tests.ps1` — the digest is computed for real inside the test, not hardcoded |
 | Byte preservation | `setup-integration-tests.ps1` — ten file shapes, block mid-file, content abutting the END marker, BOM |
 | Registry cannot silently orphan installs | `plugin-package-tests.ps1` — current canonical digest must be in the frozen list |
@@ -204,8 +230,8 @@ All wired into `scripts/run-all-checks.ps1`, so every supported host runs them.
    input — including whitespace.
 2. Ownership cannot be forged: no body the framework did not generate can be
    made to read as `owned`, by any digest, marker attribute, or encoding.
-3. The `sep=`/`tail=` reclaim cannot remove a character the framework did not
-   write, including when a user has edited the whitespace around the block.
+3. Install followed by uninstall returns the original bytes, for every file
+   shape, with no residue and no permanent addition.
 4. The advisory hook cannot, at any input, cause an edit to be blocked.
 5. Nothing in Milestone 6 creates a new approval path or weakens an `EXEC-*`
    rule.
