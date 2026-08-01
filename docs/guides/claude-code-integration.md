@@ -1,9 +1,10 @@
 # Claude Code integration
 
-> **Status: implemented, under review. Not accepted, not released.**
-> Milestone 6 has not been reviewed by an independent reviewer or accepted by
-> the Human Owner. Nothing here is published to a marketplace and no release
-> exists. See [`ROADMAP.md`](../../ROADMAP.md).
+> **Status: implemented and Human-Owner accepted; independent review
+> outstanding, so not closed.** Nothing here is published to a marketplace, no
+> release or tag exists, and it is not merged to `main`. The known limitations
+> below are open and were not closed by that acceptance. See
+> [`ROADMAP.md`](../../ROADMAP.md).
 
 **Optional.** Milestones 1–5 are the Axiom-PMO product. Everything on this page
 is a bridge for teams who choose to continue implementation in Claude Code
@@ -180,9 +181,9 @@ Stated rather than discovered later.
 | **A git install carries the whole repository** | The plugin root is the repository root, so a git-source install fetches ~10 MB, of which ~6.7 MB is `tests/`. Only `skills/`, `hooks/` and the manifests are loaded; the rest is inert. Slimming it would mean duplicating the validator into a subdirectory, which the milestone forbids. |
 | **Skill invocation is not verified end to end** | The captured transcript proves the plugin loads and its skills are *discovered*. Whether a skill then behaves correctly is the skills' own content, unchanged by packaging. |
 | **Permission-prompt behaviour is not characterised** | Whether invoking the validator from a skill prompts, and how often, depends on your own permission settings. Not measured. |
-| **Update and version drift are untested** | Marketplace entries can pin a `sha`; that a plugin update cannot silently swap a pinned install mid-session has not been exercised. |
+| **Update and version drift are untested** | Marketplace entries can pin a `sha`; that a plugin update cannot silently swap a pinned install mid-session has not been exercised. Open debt, acknowledged. |
 | **Windows symlink and read-only cases are skipped** | Those tests run on macOS and Linux. Windows ACL semantics differ from `chmod`, and creating a symlink there needs elevation. |
-| **No external-user validation** | Everything here was tested by the people who built it. |
+| **No external-user validation** | The Human Owner has run the walkthrough. Nobody outside the team that built it has. |
 
 ## What Axiom-PMO still is
 
