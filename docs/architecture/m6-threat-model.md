@@ -1,6 +1,8 @@
 # Milestone 6 threat model
 
-> Status: **implemented, under review.** Not accepted, not released.
+> Status: **independent review completed — REQUEST CHANGES.** Threats 3 and 6
+> were the blocking findings. Both are now closed, and both are recorded here
+> rather than quietly absorbed. Re-review pending; not accepted, not released.
 
 Milestone 5's threat model asked "can an execution agent lie about what it
 did?" This one asks a narrower and more physical question, because Milestone 6
@@ -65,7 +67,59 @@ expected to hold — expected, not demonstrated.
 
 **Non-blocking, with an untested platform.**
 
-### 3. Marker injection
+### 3. Forged ownership — an unkeyed digest is not provenance
+
+**Threat.** The block's BEGIN marker records a SHA-256 of its own content. If
+that is what decides ownership, anyone can write arbitrary content, compute the
+matching digest, and have the framework treat the result as its own — then
+replace or delete it without `-Force`.
+
+**This was real, and it shipped.** Independent review found it; it was
+reproduced before being fixed. A block containing a team's private deployment
+notes, carrying a correctly computed digest, was removed by `-Uninstall` with
+no warning and no `-Force`.
+
+The mistake is one this framework has made before in a different costume. A
+digest proves content has not changed since it was hashed. It proves nothing
+about **who** hashed it, because computing a SHA-256 is exactly as easy as
+writing the content it summarises. Milestone 5 learned that three times about
+execution evidence; here it arrived as a marker describing itself.
+
+**Mitigation.** Ownership is no longer decided by the self-declared digest. A
+block is the framework's **only if its body matches a body the framework
+generates** — the current canonical body, or one of the frozen historical
+digests in `scripts/lib/marker-block.ps1`. The recorded digest is demoted to
+what it can actually support: telling "edited after we wrote it" apart from
+"never ours", so the message can be accurate about which.
+
+Four states, and only the first permits an unforced change:
+
+| State | Meaning |
+|---|---|
+| `owned` | body matches a canonical version |
+| `edited` | not canonical, and does not match its own recorded digest |
+| `foreign` | not canonical, but self-consistent — the forged case |
+| `unknown` | not canonical, nothing to compare against |
+
+The historical digests are frozen literals rather than computed, so that
+editing the canonical body does not orphan every block already installed in
+somebody's repository. A test asserts the current body's digest is in the list,
+so changing the body without recording it fails the suite.
+
+**Evidence.** `setup-integration-tests.ps1` — the forged case, with the digest
+computed for real inside the test rather than hardcoded, asserting that neither
+setup nor uninstall will touch it and that `-Force` is the only way through.
+Also that stripping the digest from a *canonical* body does **not** make it
+foreign, which pins down that the digest is not what proves ownership.
+
+**Residual.** `-Force` still discards whatever is there — that is what it is
+for, it is never implied by another flag, and a backup is taken first. A user
+who copies the canonical body verbatim into their own file will have it
+recognised as ours, which is correct: it is the framework's own text.
+
+**Was FATAL. Now closed.**
+
+### 4. Marker injection
 
 **Threat.** A repository contains hostile text — forged markers, or
 instructions aimed at the tool — to get authority-granting content written
@@ -89,7 +143,7 @@ repositories.
 
 **Non-blocking.**
 
-### 4. Partial write
+### 5. Partial write
 
 **Threat.** An interrupted or failed write leaves a truncated `AGENTS.md`.
 
@@ -105,19 +159,36 @@ that is a filesystem property, not one this repository verifies.
 
 **Non-blocking.**
 
-### 5. Rollback corruption / accidental deletion during uninstall
+### 6. Rollback corruption / accidental deletion during uninstall
 
-**Threat.** Uninstall removes more than it added — adjacent content, or a whole
-file it did not create.
+**Threat.** Uninstall removes more than it added — adjacent content, whitespace
+the user owns, or a whole file it did not create.
 
-**Mitigation.** Only the span between and including the markers is removed.
-Content before and after is reassembled with the document's own newline. If
-nothing remains, the file is removed *and the output says so*.
+**This was real too**, and independent review found it alongside the forged
+digest. Removal reassembled the surrounding text with `TrimEnd`, `Trim`, and a
+freshly chosen newline, so blank lines around the block were collapsed. The
+user's *text* survived; their formatting did not. Whitespace is content.
 
-**Evidence.** `setup-integration-tests.ps1` asserts byte-identical round trip.
-`clean-room-tests.ps1` fingerprints every file in ten different pre-existing
-repositories and asserts nothing outside `AGENTS.md` moved — this is what
-caught the residue defect where an empty file was left behind.
+**Mitigation.** Removal now takes the exact marker span, plus only what the
+marker itself records as the framework's: `sep=N` characters before it and
+`tail=N` after, and only when those exact characters are actually present.
+Nothing else is read, trimmed, or rewritten. Insertion no longer trims the file
+it appends to either — the original is a byte-exact prefix of the result.
+
+Recording those amounts rather than inferring them is the whole mechanism: a
+file that already ended with two blank lines is indistinguishable, after the
+fact, from one where setup added them. If nothing remains after removal, the
+file is removed *and the output says so*.
+
+**Evidence.** `setup-integration-tests.ps1` asserts a byte-identical round trip
+across ten file shapes — no trailing newline, one, three, five, leading blank
+lines, trailing spaces, tabs, CRLF with and without a trailing newline, and a
+single line — plus a block mid-file with content above and below, content
+abutting the END marker with no blank line, and a BOM file with trailing blank
+lines. Install is separately asserted to leave the original as an exact byte
+prefix. `clean-room-tests.ps1` fingerprints every file in ten different
+pre-existing repositories and asserts nothing outside `AGENTS.md` moved — this
+is what caught the residue defect where an empty file was left behind.
 
 **Residual.** A user whose `AGENTS.md` was deliberately empty before installing
 loses an empty file on uninstall. Narrow, announced in the output, and
@@ -125,7 +196,7 @@ recoverable from the backup.
 
 **Non-blocking.**
 
-### 6. Backup substitution
+### 7. Backup substitution
 
 **Threat.** A second run overwrites the backup from the first, so the "restore"
 path restores the wrong content.
@@ -145,7 +216,7 @@ needed.
 
 **Non-blocking.**
 
-### 7. Command injection
+### 8. Command injection
 
 **Threat.** A crafted path or payload becomes shell input.
 
@@ -163,7 +234,7 @@ cannot produce execution.
 
 **Non-blocking.**
 
-### 8. Malicious repository instructions
+### 9. Malicious repository instructions
 
 **Threat.** Repository content tries to instruct the agent that it has
 authority it does not have.
@@ -183,7 +254,7 @@ them. That is the whole reason verification happens afterwards.
 
 **Non-blocking.**
 
-### 9. Authority escalation through the integration
+### 10. Authority escalation through the integration
 
 **Threat.** The integration becomes a new path to an approval — a hook that
 "confirms" scope, a block that grants a claim type, a setup flag that waives a
@@ -203,7 +274,7 @@ section. `git diff` over the milestone touches no file under
 
 **Non-blocking.**
 
-### 10. Plugin content drift
+### 11. Plugin content drift
 
 **Threat.** `skills/` is a generated mirror of `.claude/skills/`. They diverge,
 and users run different guidance than the framework's own tests exercise.
@@ -223,7 +294,7 @@ inside their own plugin install is beyond its reach.
 
 **Non-blocking.**
 
-### 11. Plugin update / version mismatch
+### 12. Plugin update / version mismatch
 
 **Threat.** A plugin update swaps the framework out from under a project
 mid-work, so a contract exported by one version is verified by another.
@@ -242,7 +313,7 @@ and it remains open.
 
 **Non-blocking for review, and it should be named in the review.**
 
-### 12. Coexistence with existing hooks
+### 13. Coexistence with existing hooks
 
 **Threat.** The advisory hook breaks, reorders, or suppresses hooks the user or
 another plugin already registered.
@@ -262,7 +333,7 @@ what is verified is that this hook returns nothing that could override another.
 
 **Non-blocking, with an unverified interaction.**
 
-### 13. Maintainer content shipped to users
+### 14. Maintainer content shipped to users
 
 **Threat.** The package carries files a user should not have, or that let a
 maintainer command appear to work when it cannot.
@@ -289,17 +360,24 @@ resolved.
 |---|---|---|---|
 | 1 | Unsafe path write | No | Out of scope by design |
 | 2 | Symlink attack | No | Untested on Windows |
-| 3 | Marker injection | No | None identified |
-| 4 | Partial write | No | Relies on filesystem move semantics |
-| 5 | Rollback corruption | No | Empty pre-existing file is removed |
-| 6 | Backup substitution | No | Backups accumulate, deliberately |
-| 7 | Command injection | No | `sed`-based `cwd` extraction degrades to silence |
-| 8 | Malicious repository instructions | No | M5's problem, not made worse |
-| 9 | Authority escalation | No | None identified |
-| 10 | Plugin content drift | No | Gate covers the repo, not a user's install |
-| 11 | **Update / version mismatch** | No | **Real and untested** |
-| 12 | Coexistence with existing hooks | No | **Cross-plugin ordering unverified** |
-| 13 | Maintainer content shipped | No | **Whole repository ships on a git install** |
+| 3 | **Forged ownership (unkeyed digest)** | Was **FATAL** | **Closed.** `-Force` still overrides, by design |
+| 4 | Marker injection | No | None identified |
+| 5 | Partial write | No | Relies on filesystem move semantics |
+| 6 | **Rollback corruption / whitespace loss** | Was **MAJOR** | **Closed.** Empty pre-existing file is still removed |
+| 7 | Backup substitution | No | Backups accumulate, deliberately |
+| 8 | Command injection | No | `sed`-based `cwd` extraction degrades to silence |
+| 9 | Malicious repository instructions | No | M5's problem, not made worse |
+| 10 | Authority escalation | No | None identified |
+| 11 | Plugin content drift | No | Gate covers the repo, not a user's install |
+| 12 | **Update / version mismatch** | No | **Real and untested** |
+| 13 | Coexistence with existing hooks | No | **Cross-plugin ordering unverified** |
+| 14 | Maintainer content shipped | No | **Whole repository ships on a git install** |
 
-Nothing here is assessed as blocking. Three residuals are real enough to be
-named for a reviewer rather than buried: **11**, **12**, and **13**.
+**3 and 6 were found by independent review, not by this document.** Both were
+reproduced before being fixed. Their presence here is the honest record: the
+first version of this threat model listed neither, because the code it was
+describing looked correct to the person who wrote it.
+
+Of the remainder, three residuals are real enough to name for a reviewer rather
+than bury: **12**, **13**, and **14**. All three are acknowledged by the Human
+Owner and remain open.

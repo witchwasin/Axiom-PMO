@@ -200,15 +200,66 @@ try {
   Assert-True "…and content outside the block is still intact afterwards" `
     ((Get-Text (Join-Path $p "AGENTS.md")) -match "Tabs, not spaces\.")
 
-  # A block whose digest attribute was stripped cannot be proven ours.
-  $p = New-Project -Name "nodigest" -AgentsContent $original
+  # Stripping the digest from an otherwise canonical block does NOT make it
+  # foreign. Ownership is decided by whether the body is one the framework
+  # generates -- the digest is not what proves it, and cannot be, since anyone
+  # can compute one. This case exists to pin that down: it asserted the
+  # opposite before the review, which is how the model used to work.
+  $p = New-Project -Name "nodigest-canonical" -AgentsContent $original
   Invoke-Setup -Project $p | Out-Null
   $text = Get-Text (Join-Path $p "AGENTS.md")
   $stripped = [regex]::Replace($text, "sha256=[0-9a-f]{64}\s*", "")
   [System.IO.File]::WriteAllText((Join-Path $p "AGENTS.md"), $stripped, (New-Object System.Text.UTF8Encoding($false)))
   $r = Invoke-Setup -Project $p -Arguments @("-Uninstall")
-  Assert-True "a block with no ownership digest is not removed automatically" ($r.ExitCode -ne 0) ($r.Text)
-  Assert-True "…and says why" ($r.Text -match "(?i)ownership digest") ($r.Text)
+  Assert-True "a canonical body with its digest stripped is still ours" ($r.ExitCode -eq 0) ($r.Text)
+
+  # A non-canonical body with no digest, however, is not ours and never was.
+  $p = New-Project -Name "nodigest-foreign" `
+    -AgentsContent ($original + "`n<!-- AXIOM-PMO:BEGIN v1 -->`n`nSomebody else's notes.`n`n<!-- AXIOM-PMO:END -->`n")
+  $r = Invoke-Setup -Project $p -Arguments @("-Uninstall")
+  Assert-True "a non-canonical body with no digest is not removed automatically" ($r.ExitCode -ne 0) ($r.Text)
+  Assert-True "…and says why" ($r.Text -match "(?i)not one Axiom-PMO generates") ($r.Text)
+
+  # ---- The review's FATAL: a correctly forged digest --------------------
+  # An unkeyed SHA-256 recorded in the block's own marker proves the content is
+  # internally consistent. It proves nothing about who wrote it, because
+  # computing one is exactly as easy as writing the content it summarises.
+  # Before this was fixed, arbitrary content plus a correct digest read as
+  # framework-generated and uninstall deleted it with no -Force.
+  $foreignBody = "## Team Notes`n`nOur private deployment runbook. Nobody asked Axiom-PMO to manage this."
+  $forgedDigest = (& $pwshExe -NoProfile -Command "
+    . '$($repo -replace "'","''")/scripts/lib/marker-block.ps1'
+    Get-AxiomBlockDigest -Content ([System.IO.File]::ReadAllText('$($script:sandbox -replace "'","''")/forged-body.txt'))
+  ")
+  # Written via a file so the body reaching the digest is byte-identical to the
+  # body reaching the block -- computing it from an inline string would risk
+  # testing a hash of something slightly different.
+  [System.IO.File]::WriteAllText((Join-Path $script:sandbox "forged-body.txt"), $foreignBody, (New-Object System.Text.UTF8Encoding($false)))
+  $forgedDigest = (& $pwshExe -NoProfile -Command "
+    . '$($repo -replace "'","''")/scripts/lib/marker-block.ps1'
+    Get-AxiomBlockDigest -Content ([System.IO.File]::ReadAllText('$($script:sandbox -replace "'","''")/forged-body.txt'))
+  ") | Select-Object -First 1
+  $forgedDigest = ([string]$forgedDigest).Trim()
+
+  $forgedFile = "# Project`n`nreal content`n`n<!-- AXIOM-PMO:BEGIN v1 sha256=$forgedDigest -->`n`n$foreignBody`n`n<!-- AXIOM-PMO:END -->`n"
+  $p = New-Project -Name "forged-digest" -AgentsContent $forgedFile
+
+  Assert-True "the forged digest really is correct for the body (or this case proves nothing)" `
+    ($forgedDigest -match '^[0-9a-f]{64}$') ("digest=" + $forgedDigest)
+
+  $r = Invoke-Setup -Project $p -Arguments @("-Uninstall")
+  Assert-True "a correctly forged digest does not make foreign content removable" ($r.ExitCode -ne 0) ($r.Text)
+  Assert-True "…the reason names the unkeyed-digest problem rather than blaming an edit" `
+    ($r.Text -match "(?i)unkeyed") ($r.Text)
+  Assert-True "…and the content is still there" `
+    ((Get-Text (Join-Path $p "AGENTS.md")) -match "deployment runbook")
+
+  $r = Invoke-Setup -Project $p
+  Assert-True "…and setup will not replace it either" ($r.ExitCode -ne 0) ($r.Text)
+  Assert-True "…leaving the file byte-identical" ((Get-Text (Join-Path $p "AGENTS.md")) -eq $forgedFile)
+
+  $r = Invoke-Setup -Project $p -Arguments @("-Uninstall", "-Force")
+  Assert-True "…and -Force is the only way through" ($r.ExitCode -eq 0) ($r.Text)
 
   # ---- Malformed markers: refuse, never guess --------------------------
 
@@ -229,6 +280,85 @@ try {
     $r = Invoke-Setup -Project $p -Arguments @("-Uninstall")
     Assert-True "malformed markers ($($case.Name)): uninstall also refuses" ($r.ExitCode -ne 0) ($r.Text)
   }
+
+  # ---- Bytes outside the markers are never touched ---------------------
+  #
+  # The review's MAJOR: uninstall reassembled the surrounding text with TrimEnd
+  # and Trim and a freshly chosen newline, so blank lines the user owned around
+  # the block were collapsed. The text survived; their formatting did not.
+  # Whitespace is content.
+  #
+  # Each case installs, then uninstalls, then asserts the file is byte-identical
+  # to what it was before setup ran -- which is the only phrasing of this
+  # property that cannot be satisfied by accident.
+
+  foreach ($shape in @(
+    @{ Name = "no trailing newline"; Text = "# P`n`nrules" },
+    @{ Name = "one trailing newline"; Text = "# P`n`nrules`n" },
+    @{ Name = "three trailing newlines"; Text = "# P`n`nrules`n`n`n" },
+    @{ Name = "five trailing newlines"; Text = "# P`n`nrules`n`n`n`n`n" },
+    @{ Name = "leading blank lines"; Text = "`n`n`n# P`n`nrules`n" },
+    @{ Name = "trailing spaces on lines"; Text = "# P   `n`nrules  `n" },
+    @{ Name = "tabs and mixed indentation"; Text = "# P`n`n`t- one`n    - two`n" },
+    @{ Name = "CRLF, three trailing"; Text = "# P`r`n`r`nrules`r`n`r`n`r`n" },
+    @{ Name = "CRLF, no trailing newline"; Text = "# P`r`n`r`nrules" },
+    @{ Name = "single line, no newline"; Text = "rules" }
+  )) {
+    $p = New-Project -Name ("bytes-" + ($shape.Name -replace "[^a-zA-Z0-9]", "-")) -AgentsContent $shape.Text
+    $before = Get-Bytes (Join-Path $p "AGENTS.md")
+    Invoke-Setup -Project $p | Out-Null
+
+    # Installing must not disturb the original either: it is a prefix of the
+    # result, byte for byte.
+    $installed = Get-Bytes (Join-Path $p "AGENTS.md")
+    $prefixIntact = $true
+    if ($installed.Length -lt $before.Length) { $prefixIntact = $false }
+    else { for ($i = 0; $i -lt $before.Length; $i++) { if ($installed[$i] -ne $before[$i]) { $prefixIntact = $false; break } } }
+    Assert-True "byte preservation ($($shape.Name)): install leaves the original as an exact prefix" `
+      $prefixIntact
+
+    Invoke-Setup -Project $p -Arguments @("-Uninstall") | Out-Null
+    $after = Get-Bytes (Join-Path $p "AGENTS.md")
+    Assert-True "byte preservation ($($shape.Name)): round trip is byte-identical" `
+      (([System.Convert]::ToBase64String($before)) -eq ([System.Convert]::ToBase64String($after))) `
+      ("before=" + $before.Length + "B after=" + $after.Length + "B")
+  }
+
+  # A block in the MIDDLE of a file, with content after it. Nothing above or
+  # below may move, and the newline separating the block from what follows
+  # belongs to that content, not to the framework.
+  $p = New-Project -Name "bytes-middle" -AgentsContent "# P`n`nabove`n"
+  Invoke-Setup -Project $p | Out-Null
+  $withTail = (Get-Text (Join-Path $p "AGENTS.md")) + "`n`n## Added below afterwards`n`nbelow`n`n`n"
+  [System.IO.File]::WriteAllText((Join-Path $p "AGENTS.md"), $withTail, (New-Object System.Text.UTF8Encoding($false)))
+  $expected = "# P`n`nabove`n`n`n## Added below afterwards`n`nbelow`n`n`n"
+  Invoke-Setup -Project $p -Arguments @("-Uninstall") | Out-Null
+  $actual = Get-Text (Join-Path $p "AGENTS.md")
+  Assert-True "byte preservation (block mid-file): content above and below survives exactly" `
+    ($actual -eq $expected) `
+    ("expected " + ($expected -replace "`n", "\n") + " got " + ($actual -replace "`n", "\n"))
+
+  # Content immediately after the END marker with no blank line at all. The
+  # single newline there is the separator for THAT content and must stay.
+  $p = New-Project -Name "bytes-tight" -AgentsContent "# P`n"
+  Invoke-Setup -Project $p | Out-Null
+  $text = Get-Text (Join-Path $p "AGENTS.md")
+  $tight = $text.TrimEnd("`n") + "`nimmediately after`n"
+  [System.IO.File]::WriteAllText((Join-Path $p "AGENTS.md"), $tight, (New-Object System.Text.UTF8Encoding($false)))
+  Invoke-Setup -Project $p -Arguments @("-Uninstall") | Out-Null
+  $actual = Get-Text (Join-Path $p "AGENTS.md")
+  Assert-True "byte preservation (content abutting the END marker): it survives" `
+    ($actual -match "immediately after") ($actual -replace "`n", "\n")
+  Assert-True "…and the text before the block survives" ($actual -match "# P") ($actual -replace "`n", "\n")
+
+  # A BOM file that also has awkward trailing whitespace.
+  $p = New-Project -Name "bytes-bom"
+  $bomBytes = [byte[]](0xEF, 0xBB, 0xBF) + [System.Text.Encoding]::UTF8.GetBytes("# BOM`n`nrules`n`n`n")
+  [System.IO.File]::WriteAllBytes((Join-Path $p "AGENTS.md"), $bomBytes)
+  Invoke-Setup -Project $p | Out-Null
+  Invoke-Setup -Project $p -Arguments @("-Uninstall") | Out-Null
+  Assert-True "byte preservation (BOM plus trailing blank lines): round trip is byte-identical" `
+    (([System.Convert]::ToBase64String($bomBytes)) -eq ([System.Convert]::ToBase64String((Get-Bytes (Join-Path $p "AGENTS.md")))))
 
   # ---- Encoding: leave the file the way it was found --------------------
 

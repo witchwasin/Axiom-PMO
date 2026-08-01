@@ -8,18 +8,56 @@
 
 | | |
 |---|---|
-| Implementation | complete |
-| Hardening | complete |
+| Implementation | complete, remediation applied |
+| Hardening | complete (before the review findings) |
 | Human Owner testing | complete |
-| Human Owner acceptance | **accepted** — `DEC-005`, 2026-08-01 |
-| Independent review | **this document is for that. Pending.** |
-| Milestone closure | **pending your verdict** |
+| Human Owner acceptance | accepted — `DEC-005`, 2026-08-01 |
+| Independent review | **completed — REQUEST CHANGES** |
+| Blocking findings | **1 FATAL, 1 MAJOR — both fixed, awaiting re-review** |
+| Milestone closure | **blocked pending re-review** |
 | Release / tag / publication / merge | **not authorized** |
 
-The Human Owner's acceptance is not a substitute for this review — `AGENTS.md`
-rule 11 requires both — and it closed **no** known debt. Everything in
-[Known limitations and residual risks](#known-limitations-and-residual-risks)
-is still open.
+### What the first review found, and what changed
+
+Both findings were in the only code that writes to a file the user owns, and
+both were reproduced here before being fixed.
+
+**FATAL — ownership was decided by a self-declared digest.** `Test-AxiomBlockOwnership`
+compared the block's content to a SHA-256 recorded in the block's own BEGIN
+marker. That digest is unkeyed and anyone can compute one, so arbitrary content
+plus a correct digest read as framework-generated — and `-Uninstall` deleted it
+with no `-Force`. Reproduced with a block containing a team's private
+deployment notes.
+
+Ownership is now anchored to the canonical body the framework generates
+(`Get-AxiomCanonicalBody`, checked against a frozen digest registry). Four
+states, only one of which permits an unforced change: `owned`, `edited`,
+`foreign` (the self-consistent forgery), `unknown`. The recorded digest is
+demoted to distinguishing "edited after we wrote it" from "never ours".
+
+*This is the same mistake Milestone 5 made three times.* A digest proves
+integrity since hashing; it never proves authorship.
+
+**MAJOR — removal mutated content outside the markers.** `Remove-AxiomBlock`
+used `TrimEnd` on the text before the block and `Trim` on the text after, then
+rebuilt the joins with a freshly chosen newline. Blank lines the user owned
+were collapsed. Removal now takes the exact marker span plus only what the
+marker records as the framework's own — `sep=N` before, `tail=N` after, and
+only when those exact characters are present. Insertion no longer trims the
+file it appends to, so the original is a byte-exact prefix of the result.
+
+The Human Owner's acceptance (`DEC-005`) remains valid, does not substitute for
+this review, and closed **no** known debt.
+
+### What to look at first this round
+
+| | |
+|---|---|
+| Ownership model | `marker-block.ps1` — `Get-AxiomCanonicalBody`, `$AxiomKnownBodyDigests`, `Test-AxiomBlockOwnership`, `Get-AxiomOwnershipReason` |
+| Exact-span removal | `marker-block.ps1` — `Remove-AxiomBlock`, and the `sep=`/`tail=` recording in `New-AxiomBlockText` / `Find-AxiomBlock` |
+| Forged-digest regression | `setup-integration-tests.ps1` — the digest is computed for real inside the test, not hardcoded |
+| Byte preservation | `setup-integration-tests.ps1` — ten file shapes, block mid-file, content abutting the END marker, BOM |
+| Registry cannot silently orphan installs | `plugin-package-tests.ps1` — current canonical digest must be in the frozen list |
 
 ## Range
 
@@ -133,8 +171,8 @@ Ranked by what they can damage.
 | Suite | Cases | Covers |
 |---|---:|---|
 | [`plugin-install-spike-tests.ps1`](../../tests/helpers/plugin-install-spike-tests.ps1) | 17 | Framework runs from a non-checkout, non-cwd, read-only install root |
-| [`plugin-package-tests.ps1`](../../tests/helpers/plugin-package-tests.ps1) | 33 | Manifests, mirror completeness, four drift directions, `FRAMEWORK-001` |
-| [`setup-integration-tests.ps1`](../../tests/helpers/setup-integration-tests.ps1) | 90 | Malformed markers, hand edits, CRLF, BOM, symlink, read-only, traversal, backup collision, forged blocks |
+| [`plugin-package-tests.ps1`](../../tests/helpers/plugin-package-tests.ps1) | 38 | Manifests, mirror completeness, four drift directions, `FRAMEWORK-001`, **canonical-body digest registry** |
+| [`setup-integration-tests.ps1`](../../tests/helpers/setup-integration-tests.ps1) | 122 | Malformed markers, hand edits, CRLF, BOM, symlink, read-only, traversal, backup collision, forged blocks, **correctly forged digest**, **byte preservation across ten file shapes** |
 | [`clean-room-tests.ps1`](../../tests/helpers/clean-room-tests.ps1) | 61 | Ten repository shapes, fingerprinted; governance assertions |
 | [`hook-advisory-tests.ps1`](../../tests/helpers/hook-advisory-tests.ps1) | 46 | Off by default, no decision, never breaks a tool call |
 | `cli-tests.mjs` | 50 | Includes 8 new `setup` cases |
@@ -163,15 +201,17 @@ All wired into `scripts/run-all-checks.ps1`, so every supported host runs them.
 ## Claims I am asking you to confirm
 
 1. `marker-block.ps1` never modifies content outside its own markers, on any
-   input.
-2. The ownership digest genuinely prevents a hand-edited block being destroyed
-   without `-Force`, and cannot be trivially forged into a false "owned".
-3. The advisory hook cannot, at any input, cause an edit to be blocked.
-4. Nothing in Milestone 6 creates a new approval path or weakens an `EXEC-*`
+   input — including whitespace.
+2. Ownership cannot be forged: no body the framework did not generate can be
+   made to read as `owned`, by any digest, marker attribute, or encoding.
+3. The `sep=`/`tail=` reclaim cannot remove a character the framework did not
+   write, including when a user has edited the whitespace around the block.
+4. The advisory hook cannot, at any input, cause an edit to be blocked.
+5. Nothing in Milestone 6 creates a new approval path or weakens an `EXEC-*`
    rule.
-5. The setup command cannot be induced by repository content to write
+6. The setup command cannot be induced by repository content to write
    authority-granting text.
-6. The documentation does not overclaim — specifically that nothing says or
+7. The documentation does not overclaim — specifically that nothing says or
    implies Milestone 6 prevents an out-of-scope edit.
 
 ## Claims I am deliberately not making

@@ -108,7 +108,7 @@ Recommended effort allocation:
 | Milestone 4 - GitHub Action | Delivered | Merged to `main` at `31d1e25`; child issues #12-#17 closed |
 | Milestone 4.5 - SCOPE-DIFF | Delivered | Human Owner accepted 2026-07-30 after two independent AI review rounds; merged to `main` at `6b42643` |
 | Milestone 5 - Execution Contract Verification MVP | **Delivered / CLOSED** -- Independent AI Reviewer ACCEPT at round 5 after four REQUEST CHANGES rounds; Human Owner accepted and closed 2026-07-31 (`DEC-004`) | Core product. `docs/reference/execution-contract.md`; decisions `DEC-002`, `DEC-004`; commit `2888769`, CI run `30643605031` 7/7 |
-| Milestone 6 - Claude Code Integration Experience | **Human Owner tested and accepted (`DEC-005`, 2026-08-01); independent Independent AI Reviewer review pending, so not closed.** Not released, not tagged, not published, not merged | Optional integration, not core product. Three known debts remain open -- see Deferred technical debt. `docs/guides/claude-code-integration.md`; `docs/architecture/m6-threat-model.md`; decisions `DEC-003`, `DEC-005` |
+| Milestone 6 - Claude Code Integration Experience | **Human Owner accepted (`DEC-005`); independent review returned REQUEST CHANGES (1 FATAL, 1 MAJOR) -- both fixed, re-review pending. Closure blocked.** Not released, not tagged, not published, not merged | Optional integration, not core product. Three known debts remain open -- see Deferred technical debt. `docs/guides/claude-code-integration.md`; `docs/architecture/m6-threat-model.md`; decisions `DEC-003`, `DEC-005` |
 
 ## Roadmap Governance
 
@@ -877,17 +877,30 @@ genuinely different things:
 
 | | |
 |---|---|
-| Implementation | complete |
-| Hardening | complete |
+| Implementation | complete, remediation applied |
+| Hardening | complete (before the review findings) |
 | Human Owner testing | complete |
-| Human Owner acceptance | **accepted** (`DEC-005`, 2026-08-01) |
-| Independent Independent AI Reviewer review | **pending** |
-| Milestone closure | **pending Independent AI Reviewer review** |
-| Release / tag / publication / merge | **not authorized** |
+| Human Owner acceptance | accepted (`DEC-005`) |
+| Independent Independent AI Reviewer review | **completed — REQUEST CHANGES** |
+| Blocking findings | **1 FATAL, 1 MAJOR — both now fixed, awaiting re-review** |
+| Milestone closure | **blocked pending re-review** |
+| Release / tag / publish / merge | **not authorized** |
 
-Milestone 6 is **not closed.** `AGENTS.md` rule 11 requires independent review
-as well as human acceptance, and neither substitutes for the other. The Human
-Owner's acceptance closed no debt: the three below stay open.
+Milestone 6 is **not closed.** Independent review returned **REQUEST CHANGES**
+with one FATAL and one MAJOR, both in the user-file write path:
+
+- **FATAL — ownership was decided by a self-declared, unkeyed digest.** Anyone
+  could write arbitrary content into the markers, compute the matching SHA-256,
+  and have setup or uninstall treat it as framework-generated. Reproduced, then
+  fixed: ownership is now anchored to the canonical body the framework
+  generates, and a self-consistent forgery fails closed.
+- **MAJOR — removal mutated content outside the markers.** `TrimEnd`/`Trim`
+  around the block collapsed blank lines the user owned. Fixed: removal takes
+  the exact marker span plus only the separator and trailer the marker itself
+  records, and installation no longer trims the file it appends to.
+
+Both are fixed and awaiting re-review. The Human Owner's acceptance remains
+valid but closes neither these findings nor the three debts below.
 
 Authorized by the Human Owner on 2026-07-31 after the 6.1 spike was accepted.
 
