@@ -1,8 +1,13 @@
 # Milestone 6 threat model
 
-> Status: **independent review completed — REQUEST CHANGES.** Threats 3 and 6
-> were the blocking findings. Both are now closed, and both are recorded here
-> rather than quietly absorbed. Re-review pending; not accepted, not released.
+> Status: **independent review completed — REQUEST CHANGES, twice.** Threats 3,
+> 6, 14 and 15 were blocking findings from those reviews. All are now closed,
+> and all are recorded here rather than quietly absorbed. Re-review pending;
+> not accepted, not released.
+>
+> Four of this document's fifteen threats were found by a reviewer rather than
+> by the people who wrote the code. That ratio is the most useful number on
+> the page.
 
 Milestone 5's threat model asked "can an execution agent lie about what it
 did?" This one asks a narrower and more physical question, because Milestone 6
@@ -313,7 +318,7 @@ and it remains open.
 
 **Non-blocking for review, and it should be named in the review.**
 
-### 13. Coexistence with existing hooks
+### 13. Coexistence with existing hooks, and platform reach
 
 **Threat.** The advisory hook breaks, reorders, or suppresses hooks the user or
 another plugin already registered.
@@ -327,9 +332,22 @@ cannot hang an edit. It returns no decision, so it cannot suppress anything.
 Superpowers-style `hooks/hooks.json` and asserts it is byte-identical
 afterwards.
 
-**Residual.** **Hook ordering across plugins is not verified.** Claude Code's
-ordering and merge behaviour for multiple registered hooks was not inspected;
-what is verified is that this hook returns nothing that could override another.
+**Residual, two of them.**
+
+**Hook ordering across plugins is not verified.** Claude Code's ordering and
+merge behaviour for multiple registered hooks was not inspected; what *is*
+verified is that this hook returns nothing that could override another.
+
+**The advisory requires a POSIX shell.** The registered command is
+`sh "${CLAUDE_PLUGIN_ROOT}/hooks/scope-advisory.sh"`, so a PowerShell-only
+Windows environment silently gets no advisory. This is a Human Owner decision
+(2026-08-01), not an oversight: the alternative is invoking PowerShell from the
+hook, which works everywhere and costs ~200 ms on every Write and Edit for
+every user who installed the plugin and never enabled the feature. Paying that
+for a default-off advisory was judged not worth it. Setup, uninstall, the CLI,
+the validators and the advisory's own PowerShell logic are all supported on
+PowerShell-only Windows. The boundary is documented and asserted in
+`hook-advisory-tests.ps1` rather than skipped.
 
 **Non-blocking, with an unverified interaction.**
 
@@ -354,6 +372,93 @@ resolved.
 
 **Non-blocking.**
 
+### 15. Unsupported file encoding
+
+**Threat.** The instruction file is not UTF-8. A lenient decode turns its bytes
+into replacement characters, and writing back re-encodes **the whole file** —
+from a command whose entire promise is that it appends one block.
+
+**This was real, and it shipped.** Independent review found it; reproduced on a
+UTF-16LE `AGENTS.md` whose BOM (`ff fe`) came back as `ef bf bd ef bf bd`. Every
+byte in the document was rewritten. The backup was the only reason it was
+recoverable at all.
+
+**Mitigation.** Decoding is strict (`UTF8Encoding($false, $true)` — throw on
+invalid, never substitute). UTF-16LE/BE and UTF-32 BOMs are detected by
+signature; anything that fails a strict UTF-8 decode is refused. `SETUP-008`
+fails closed, **and takes no backup and leaves no temporary file** — there is
+nothing to protect a file from when nothing is going to be written to it.
+
+Converting the file automatically was rejected as a fix. A command that
+promises to append one section must not silently re-encode the other 99% of the
+document, even helpfully.
+
+**Evidence.** `setup-integration-tests.ps1` — UTF-16LE, UTF-16BE and invalid
+UTF-8, each across install, dry-run and uninstall: byte-identical file, no
+backup, no residue, and the encoding named in the diagnostic. Plus valid
+non-ASCII UTF-8 (Thai, Japanese, Greek, emoji) round-tripping byte-for-byte, so
+the refusal is not a blanket rejection of high bytes.
+
+**Residual.** Users of UTF-16 instruction files must convert them by hand. The
+diagnostic gives the command.
+
+**Was FATAL. Now closed.**
+
+### 16. Mutable marker metadata widening a deletion
+
+**Threat.** The v1 block recorded `sep=N` and `tail=N` — how much surrounding
+whitespace setup had added — so removal could reclaim it. Those attributes sit
+inside a marker anyone can edit, while ownership is decided by the *body*. So a
+block stays perfectly `owned` while its `sep` is changed from 2 to 6.
+
+**This was real.** Independent review found it; reproduced by editing `sep=2` to
+`sep=6` on an untouched, genuinely framework-generated block. Uninstall deleted
+four of the user's newlines.
+
+**Mitigation.** Not a bound, not a sanity check on the number. The number is
+gone. The v2 format writes **nothing outside the markers that it expects to take
+back**, so no attribute can control a deletion:
+
+- insertion appends the block to the text exactly as found, adding at most one
+  newline and only when the file did not end with one — and never reclaiming it;
+- removal splices exactly the marker span;
+- `sep=` and `tail=` are not read at all. A v1 block installed earlier may leave
+  a blank line behind, which is the deliberate trade: residue the user can
+  delete in a second beats deleting a byte they wanted.
+
+**Evidence.** `setup-integration-tests.ps1` — `sep`/`tail` set to 0, to the real
+former values, to 999, duplicated, and set to negative and non-numeric values,
+with content above and below the block. Every case asserts the bytes outside
+the span are identical.
+
+**Residual.** None identified. The attributes are inert.
+
+**Was MAJOR. Now closed.**
+
+### 17. Inferring file provenance from its contents
+
+**Threat.** Uninstall deleted the instruction file when nothing was left in it,
+reasoning that setup must have created it. A repository whose `AGENTS.md` held
+two blank lines before installing is indistinguishable, afterwards, from one
+setup created.
+
+**This was real.** Independent review found it; reproduced with a pre-existing
+whitespace-only `AGENTS.md`, deleted on uninstall.
+
+**Mitigation.** The file is never deleted. A zero-byte file may be left behind
+and the output says so. The mutable alternative — writing `created=true` into a
+marker anyone can edit — was rejected: that is guessing with extra steps, and
+threat 16 is what that class of metadata already cost.
+
+**Evidence.** `setup-integration-tests.ps1` — zero-byte, spaces-only,
+newlines-only and mixed-whitespace files, asserting both bytes and file
+existence across a round trip.
+
+**Residual.** A user who wanted the file gone must delete it. Stated in the
+output.
+
+**Was MAJOR. Now closed.**
+
 ## Summary
 
 | # | Threat | Blocking? | Residual |
@@ -372,11 +477,19 @@ resolved.
 | 12 | **Update / version mismatch** | No | **Real and untested** |
 | 13 | Coexistence with existing hooks | No | **Cross-plugin ordering unverified** |
 | 14 | Maintainer content shipped | No | **Whole repository ships on a git install** |
+| 15 | **Unsupported file encoding** | Was **FATAL** | **Closed.** UTF-16 users must convert by hand |
+| 16 | **Mutable marker metadata widening a deletion** | Was **MAJOR** | **Closed.** v1 blocks may leave a blank line behind |
+| 17 | **Provenance inferred from file contents** | Was **MAJOR** | **Closed.** An empty file may be left behind |
 
-**3 and 6 were found by independent review, not by this document.** Both were
-reproduced before being fixed. Their presence here is the honest record: the
-first version of this threat model listed neither, because the code it was
-describing looked correct to the person who wrote it.
+**3, 6, 15, 16 and 17 were all found by independent review, not by this
+document.** Every one was reproduced before being fixed. Their presence here is
+the honest record: earlier versions of this threat model listed none of them,
+because the code they described looked correct to the person who wrote it.
+
+Two of the five (16 and 17) were introduced *by the fixes for* 3 and 6 — a
+mechanism added to make removal precise became a new way to widen a deletion.
+That is worth stating plainly rather than presenting the current design as
+having been reasoned out in one pass.
 
 Of the remainder, three residuals are real enough to name for a reviewer rather
 than bury: **12**, **13**, and **14**. All three are acknowledged by the Human

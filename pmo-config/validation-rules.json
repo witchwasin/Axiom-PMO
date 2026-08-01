@@ -472,6 +472,12 @@
       "suggestion": "Use Test-WindowsHost from scripts/lib/pwsh-host.ps1, which checks $PSVersionTable.PSEdition first. See docs/rules/DOCTOR-011.md and docs/architecture/powershell-portability.md.",
       "documentation": "docs/rules/DOCTOR-011.md"
     },
+    "DOCTOR-012": {
+      "severity": "fail",
+      "description": "Two rows in the framework's decision-log.md share a DEC-### id. Decision ids are reference targets -- ROADMAP, CHANGELOG and the EXEC-* authority rules all cite them, and EXEC-007 resolves them at runtime and treats more than one match as ambiguous. A duplicate makes every citation of that id unresolvable.",
+      "suggestion": "Give the newer decision its own unused id and update the references that meant it, semantically rather than by global replacement. Do not change the content, decider, date, or approval state of either row. See docs/rules/DOCTOR-012.md.",
+      "documentation": "docs/rules/DOCTOR-012.md"
+    },
     "DOCTOR-STRUCT": {
       "severity": "fail",
       "description": "A required framework structural file or directory is missing.",

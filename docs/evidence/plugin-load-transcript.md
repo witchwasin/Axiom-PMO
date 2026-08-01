@@ -4,8 +4,8 @@
 > install through the `claude` CLI, not a simulation -- Milestone 6.4 requires
 > that distinction and this file is the evidence for it.
 
-Captured: 2026-07-31 18:34:39 UTC
-Repository commit: 82de3ac2e03097b209a2ffdf25dce4019637af53
+Captured: 2026-08-01 07:45:43 UTC
+Repository commit: 7b46bb6a8572f5ecefdeeffab1989406dd0bb000
 Claude CLI: 2.1.220 (Claude Code)
 
 ```text
@@ -27,20 +27,20 @@ $ claude plugin install axiom-pmo@axiom-pmo
   [exit 0]
 
 $ claude plugin details axiom-pmo
-  axiom-pmo 1.2.0
+  axiom-pmo 1.3.0
     Governance and development-handoff skills for Axiom-PMO: turn source material into scoped requirements, check handoff readiness, and verify execution results against an approved contract.
     Source: axiom-pmo@axiom-pmo
-  
+
   Component inventory
     Skills (7)  pmo-build-review, pmo-delivery, pmo-design, pmo-git-safety, pmo-governance, pmo-intake, pmo-quality-release
     Agents (0)
     Hooks (1)  PreToolUse  (harness-only — no model context cost)
     MCP servers (0)
     LSP servers (0)
-  
+
   Projected token cost
     Always-on:   ~334 tok   added to every session
-  
+
   Per-component (rounded)
     component            always-on  on-invoke
     pmo-governance             ~50       ~630
@@ -50,19 +50,19 @@ $ claude plugin details axiom-pmo
     pmo-intake                 ~50       ~720
     pmo-delivery               ~60      ~3.3k
     pmo-design                 ~50       ~710
-  
+
     On-invoke cost is paid each time a skill or agent fires.
     Token counts are estimates and may differ from actual usage.
   [exit 0]
 
 $ claude plugin list
   Installed plugins:
-  
+
     ❯ axiom-pmo@axiom-pmo
-      Version: 1.2.0
+      Version: 1.3.0
       Scope: user
       Status: ✔ enabled
-  
+
   [exit 0]
 ```
 

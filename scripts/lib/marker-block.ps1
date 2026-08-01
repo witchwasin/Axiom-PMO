@@ -121,25 +121,67 @@ function Get-AxiomBlockDigest {
 function Read-TextFileState {
   <#
     .SYNOPSIS
-      Read a text file, remembering how it was encoded so it can be written
-      back the same way.
+      Read a text file, or report that its encoding is one this tool must not
+      touch.
     .DESCRIPTION
-      A setup command that silently strips a BOM or flips CRLF to LF has
-      modified every line of a file it was supposed to append one block to.
-      That shows up as a catastrophic diff in the user's next commit and is
-      indistinguishable, at review time, from the tool having gone wrong.
+      The first version decoded every file with the replacement-fallback UTF-8
+      decoder. Feed it a UTF-16 file and the bytes come back as U+FFFD; write
+      them out again and the file is destroyed -- every byte, not just the ones
+      near the block. Demonstrated on a UTF-16LE AGENTS.md whose BOM (ff fe)
+      came back as ef bf bd ef bf bd.
+
+      A tool whose entire promise is "one appended block, nothing else touched"
+      cannot lose that argument. So decoding is strict, and anything that is not
+      UTF-8 is refused rather than mangled: refusing is a message, mangling is a
+      restore-from-backup.
+    .OUTPUTS
+      Supported = $false with an Encoding label when the file must not be
+      written. Callers must stop, and must not take a backup first -- there is
+      nothing to protect a file from if nothing is going to be written to it.
   #>
   [CmdletBinding()]
   param([Parameter(Mandatory = $true)][string]$Path)
 
   if (-not (Test-Path -LiteralPath $Path)) {
-    return [pscustomobject]@{ Exists = $false; Text = ""; HasBom = $false; Newline = [System.Environment]::NewLine }
+    return [pscustomobject]@{
+      Exists = $false; Supported = $true; Encoding = "utf-8"
+      Text = ""; HasBom = $false; Newline = [System.Environment]::NewLine
+    }
   }
 
   $bytes = [System.IO.File]::ReadAllBytes($Path)
+
+  # BOM sniffing first: a UTF-16 BOM is unambiguous, and a UTF-16 file is very
+  # likely to decode as *something* under a lenient UTF-8 decoder, which is
+  # exactly how this went wrong.
+  if ($bytes.Length -ge 2) {
+    if ($bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE) {
+      return [pscustomobject]@{ Exists = $true; Supported = $false; Encoding = "UTF-16LE"; Text = ""; HasBom = $true; Newline = "`n" }
+    }
+    if ($bytes[0] -eq 0xFE -and $bytes[1] -eq 0xFF) {
+      return [pscustomobject]@{ Exists = $true; Supported = $false; Encoding = "UTF-16BE"; Text = ""; HasBom = $true; Newline = "`n" }
+    }
+  }
+  if ($bytes.Length -ge 4) {
+    if ($bytes[0] -eq 0 -and $bytes[1] -eq 0 -and $bytes[2] -eq 0xFE -and $bytes[3] -eq 0xFF) {
+      return [pscustomobject]@{ Exists = $true; Supported = $false; Encoding = "UTF-32BE"; Text = ""; HasBom = $true; Newline = "`n" }
+    }
+    if ($bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE -and $bytes[2] -eq 0 -and $bytes[3] -eq 0) {
+      return [pscustomobject]@{ Exists = $true; Supported = $false; Encoding = "UTF-32LE"; Text = ""; HasBom = $true; Newline = "`n" }
+    }
+  }
+
   $hasBom = ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF)
-  $text = [System.Text.Encoding]::UTF8.GetString($bytes)
-  if ($hasBom) { $text = $text.Substring(1) }
+
+  # Throw-on-invalid, not replace-on-invalid. UTF8Encoding($emitBom, $throwOnInvalid).
+  $strict = New-Object System.Text.UTF8Encoding($false, $true)
+  $text = $null
+  try {
+    $offset = if ($hasBom) { 3 } else { 0 }
+    $text = $strict.GetString($bytes, $offset, $bytes.Length - $offset)
+  } catch {
+    return [pscustomobject]@{ Exists = $true; Supported = $false; Encoding = "not valid UTF-8"; Text = ""; HasBom = $hasBom; Newline = "`n" }
+  }
 
   # Dominant, not first: a file with one stray CRLF in an otherwise LF document
   # should stay an LF document.
@@ -147,7 +189,10 @@ function Read-TextFileState {
   $lfCount = ([regex]::Matches($text, "(?<!`r)`n")).Count
   $newline = if ($crlfCount -gt $lfCount) { "`r`n" } else { "`n" }
 
-  return [pscustomobject]@{ Exists = $true; Text = $text; HasBom = $hasBom; Newline = $newline }
+  return [pscustomobject]@{
+    Exists = $true; Supported = $true; Encoding = if ($hasBom) { "utf-8 with BOM" } else { "utf-8" }
+    Text = $text; HasBom = $hasBom; Newline = $newline
+  }
 }
 
 function Write-TextFileAtomic {
@@ -227,15 +272,11 @@ function Find-AxiomBlock {
   $digestMatch = [regex]::Match($attributes, '(?i)sha256\s*=\s*([0-9a-f]{64})')
   if ($digestMatch.Success) { $digest = $digestMatch.Groups[1].Value.ToLowerInvariant() }
 
-  # How much separator setup inserted before this block, if it said. Absent
-  # means "unknown", which removal treats as zero -- never guessing that
-  # whitespace it cannot account for belongs to it.
-  $separatorLength = 0
-  $sepMatch = [regex]::Match($attributes, '(?i)\bsep\s*=\s*(\d{1,3})')
-  if ($sepMatch.Success) { $separatorLength = [int]$sepMatch.Groups[1].Value }
-  $trailerLength = 0
-  $tailMatch = [regex]::Match($attributes, '(?i)\btail\s*=\s*(\d{1,3})')
-  if ($tailMatch.Success) { $trailerLength = [int]$tailMatch.Groups[1].Value }
+  # sep= and tail= are deliberately NOT read. v1 recorded them so removal could
+  # reclaim surrounding whitespace; they live in a marker anyone can edit, and
+  # ownership is decided by the body, so an owned block could carry a tampered
+  # sep and have uninstall delete the user's newlines. Nothing outside the span
+  # is removed any more, so there is nothing for them to control.
 
   $contentStart = $begins[0].Index + $begins[0].Length
   $content = $Text.Substring($contentStart, $ends[0].Index - $contentStart)
@@ -244,8 +285,6 @@ function Find-AxiomBlock {
     Status = "present"
     Content = $content
     Digest = $digest
-    SeparatorLength = $separatorLength
-    TrailerLength = $trailerLength
     StartIndex = $begins[0].Index
     EndIndex = $ends[0].Index + $ends[0].Length
   }
@@ -303,35 +342,29 @@ function Get-AxiomOwnershipReason {
 function New-AxiomBlockText {
   <#
     .SYNOPSIS
-      Render the block.
-    .PARAMETER SeparatorLength
-      How many characters of separator setup is inserting immediately before
-      this block. Recorded in the marker as sep=N so that uninstall can remove
-      exactly those characters and no others.
-    .PARAMETER TrailerLength
-      The same, for the newline setup appends immediately after the block.
-      Recorded as tail=N. Symmetry matters here: an earlier version reclaimed
-      the trailer only when the block happened to sit at end-of-file, so a
-      block with content added below it left a stray newline behind on
-      uninstall.
+      Render the block. Everything it returns lies inside the removable span.
+    .DESCRIPTION
+      The v1 format recorded sep= and tail= in the BEGIN marker, saying how many
+      characters of surrounding whitespace setup had added, so removal could
+      reclaim them. Review found the flaw: those attributes are inside a marker
+      anyone can edit, and ownership is decided by the BODY. So a block could
+      stay perfectly `owned` while its sep was changed from 2 to 6, and
+      uninstall would then delete four newlines belonging to the user.
 
-      This is written down rather than inferred because inferring it is
-      guessing about the user's whitespace. If a file already ended with two
-      blank lines and setup added none, an uninstall that "tidily" removed two
-      newlines would be deleting the user's formatting.
+      The fix is not a bound or a sanity check on the number. It is to stop
+      having a number: v2 writes nothing outside the markers that it expects to
+      take back. What setup adds outside the span, it leaves there forever.
   #>
   [CmdletBinding()]
   param(
     [Parameter(Mandatory = $true)][string]$Body,
-    [string]$Newline = "`n",
-    [int]$SeparatorLength = 0,
-    [int]$TrailerLength = 0
+    [string]$Newline = "`n"
   )
 
   $normalisedBody = ($Body -replace "`r`n", "`n").Trim()
   $digest = Get-AxiomBlockDigest -Content $normalisedBody
   $lines = @(
-    "<!-- $($script:AxiomMarkerBegin) v1 sha256=$digest sep=$SeparatorLength tail=$TrailerLength -->",
+    "<!-- $($script:AxiomMarkerBegin) v2 sha256=$digest -->",
     "",
     $normalisedBody,
     "",
@@ -345,16 +378,17 @@ function Set-AxiomBlock {
     .SYNOPSIS
       Insert or replace the block, returning the new text.
     .DESCRIPTION
-      Never modifies a byte outside the markers -- not even whitespace.
+      Insertion appends the block to the text exactly as found. The only byte
+      it may add outside the markers is a single newline, and only when the
+      file did not end with one -- without it the BEGIN marker would land on the
+      same line as the user's last sentence.
 
-      Inserting appends a fixed separator and the block to the text exactly as
-      found. The original is NOT trimmed: an earlier version trimmed trailing
-      newlines before appending, which silently rewrote the end of a file whose
-      author had deliberately left blank lines there.
+      That newline is never taken back. Uninstall leaves it, so a file that had
+      no trailing newline gains one permanently. An addition the user keeps is
+      a far smaller thing than a deletion they did not ask for, and it is
+      documented rather than silently reclaimed.
 
-      Replacing splices only the span between and including the markers, and
-      carries the existing block's recorded separator length forward -- the
-      separator belongs to the install that created it, not to this rewrite.
+      Replacing splices only the span between and including the markers.
     .OUTPUTS
       Action is one of: inserted, replaced, unchanged, blocked.
   #>
@@ -367,6 +401,7 @@ function Set-AxiomBlock {
   )
 
   $block = Find-AxiomBlock -Text $Text
+  $rendered = New-AxiomBlockText -Body $Body -Newline $Newline
 
   if ($block.Status -eq "malformed") {
     return [pscustomobject]@{ Action = "blocked"; Reason = $block.Reason; Text = $Text }
@@ -374,14 +409,13 @@ function Set-AxiomBlock {
 
   if ($block.Status -eq "absent") {
     if ($Text.Length -eq 0) {
-      $rendered = New-AxiomBlockText -Body $Body -Newline $Newline -SeparatorLength 0 -TrailerLength $Newline.Length
-      return [pscustomobject]@{ Action = "inserted"; Text = ($rendered + $Newline) }
+      return [pscustomobject]@{ Action = "inserted"; Text = $rendered }
     }
-    # A fixed separator, appended to the text verbatim. Whatever the file
-    # already ended with stays exactly as it was.
-    $separator = $Newline + $Newline
-    $rendered = New-AxiomBlockText -Body $Body -Newline $Newline -SeparatorLength $separator.Length -TrailerLength $Newline.Length
-    return [pscustomobject]@{ Action = "inserted"; Text = ($Text + $separator + $rendered + $Newline) }
+    # At most one newline, and only if the file lacks one. Nothing else is
+    # added outside the span, so there is nothing outside the span to reclaim.
+    $bridge = ""
+    if (-not ($Text.EndsWith("`n"))) { $bridge = $Newline }
+    return [pscustomobject]@{ Action = "inserted"; Text = ($Text + $bridge + $rendered) }
   }
 
   $ownership = Test-AxiomBlockOwnership -Block $block
@@ -393,7 +427,6 @@ function Set-AxiomBlock {
     }
   }
 
-  $rendered = New-AxiomBlockText -Body $Body -Newline $Newline -SeparatorLength $block.SeparatorLength -TrailerLength $block.TrailerLength
   $existing = $Text.Substring($block.StartIndex, $block.EndIndex - $block.StartIndex)
   if ($existing -eq $rendered) {
     return [pscustomobject]@{ Action = "unchanged"; Text = $Text }
@@ -406,17 +439,17 @@ function Set-AxiomBlock {
 function Remove-AxiomBlock {
   <#
     .SYNOPSIS
-      Remove the block, and provably nothing else.
+      Remove exactly the marker span. Never a byte more.
     .DESCRIPTION
-      Removes the exact marker span, plus the separator setup recorded as its
-      own (sep=N in the BEGIN marker) and only when those exact characters are
-      actually there, plus the single trailing newline setup appends and only
-      when it is the last character in the file.
+      No whitespace reclaim, no separator accounting, no marker attribute
+      consulted to decide how much to delete. The span is what the BEGIN and
+      END markers bound, and that is the whole of what goes.
 
-      Everything else is left byte-for-byte. An earlier version reassembled the
-      surrounding text with TrimEnd and Trim and a freshly chosen newline,
-      which collapsed the user's blank lines around the block -- content the
-      framework never owned. Whitespace is content.
+      A v1 block installed before this change recorded sep= and tail=; those
+      are now ignored, so a blank line setup once added may be left behind.
+      That residue is the deliberate choice: leaving a newline the user did not
+      want is recoverable by them in a second, and deleting one they did want
+      is not.
     .OUTPUTS
       Action is one of: removed, absent, blocked.
   #>
@@ -444,31 +477,10 @@ function Remove-AxiomBlock {
     }
   }
 
-  $start = $block.StartIndex
-  $end = $block.EndIndex
-
-  # Reclaim the separator only if the marker says how much there was AND those
-  # exact characters are sitting there. A recorded length that does not match
-  # what is actually in the file means somebody edited around the block, and
-  # their edit wins.
-  if ($block.SeparatorLength -gt 0 -and $start -ge $block.SeparatorLength) {
-    $candidate = $Text.Substring($start - $block.SeparatorLength, $block.SeparatorLength)
-    if ($candidate -match '^[\r\n]+$') {
-      $start = $start - $block.SeparatorLength
-    }
+  return [pscustomobject]@{
+    Action = "removed"
+    Text = ($Text.Substring(0, $block.StartIndex) + $Text.Substring($block.EndIndex))
   }
-
-  # The trailer setup appended, reclaimed on the same terms as the separator:
-  # only what the marker says is ours, and only when those exact characters are
-  # actually there.
-  if ($block.TrailerLength -gt 0 -and ($end + $block.TrailerLength) -le $Text.Length) {
-    $candidate = $Text.Substring($end, $block.TrailerLength)
-    if ($candidate -match '^[\r\n]+$') {
-      $end = $end + $block.TrailerLength
-    }
-  }
-
-  return [pscustomobject]@{ Action = "removed"; Text = ($Text.Substring(0, $start) + $Text.Substring($end)) }
 }
 
 function New-AxiomBackup {

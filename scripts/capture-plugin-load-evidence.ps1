@@ -85,7 +85,12 @@ function Invoke-Claude {
     $out = & claude @Arguments 2>&1
     $code = $LASTEXITCODE
   } finally { $ErrorActionPreference = $previous }
-  foreach ($line in @($out)) { Add-Line ("  " + [string]$line) }
+  # Indented for readability, but never on an empty line -- "  " on a blank
+  # line is trailing whitespace, and `git diff --check` is right to complain.
+  foreach ($line in @($out)) {
+    $text = [string]$line
+    if ([string]::IsNullOrWhiteSpace($text)) { Add-Line "" } else { Add-Line ("  " + $text) }
+  }
   Add-Line ("  [exit $code]")
   return [pscustomobject]@{ ExitCode = $code; Text = (@($out) | ForEach-Object { [string]$_ }) -join "`n" }
 }

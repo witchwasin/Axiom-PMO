@@ -128,6 +128,30 @@ try {
   $r = Invoke-Hook -Project $p -Payload (New-Payload -Project $p -FilePath "/etc/hosts")
   Assert-True "a path outside the project is not commented on at all" ($r.Text -eq "") ($r.Text)
 
+  # ---- Parity with SCOPE-DIFF's repo-wide exemptions -------------------
+  #
+  # The advisory used to pass an empty exemption list while SCOPE-DIFF applied
+  # pmo-config/scope-diff-policy.json. So the hook flagged files the gate
+  # exempts -- and a user who learns that the advisory and the gate disagree
+  # stops trusting both. It now loads the same policy through the same
+  # function.
+
+  foreach ($parity in @(
+    @{ Name = "CHANGELOG.md (repo-wide exempt)"; Path = "CHANGELOG.md"; Expect = "silent" },
+    @{ Name = "package-lock.json (repo-wide exempt)"; Path = "package-lock.json"; Expect = "silent" },
+    @{ Name = "nested package-lock.json (repo-wide exempt)"; Path = "web/package-lock.json"; Expect = "silent" },
+    @{ Name = "in-scope source"; Path = "src/payments/charge.ts"; Expect = "silent" },
+    @{ Name = "declared exclusion"; Path = "src/payments/vendor/lib.ts"; Expect = "silent" },
+    @{ Name = "genuinely out of scope"; Path = "src/reporting/export.ts"; Expect = "reported" }
+  )) {
+    $r = Invoke-Hook -Project $p -Payload (New-Payload -Project $p -FilePath $parity.Path)
+    if ($parity.Expect -eq "silent") {
+      Assert-True "SCOPE-DIFF parity ($($parity.Name)): no advisory" ($r.Text -eq "") ($r.Text)
+    } else {
+      Assert-True "SCOPE-DIFF parity ($($parity.Name)): advisory raised" ($r.Text -match "scope advisory") ($r.Text)
+    }
+  }
+
   # ---- It decides nothing ----------------------------------------------
   # The single most important property. Checked against output rather than
   # asserted about the code, and checked for every case that produces output.
@@ -258,7 +282,34 @@ try {
       ($optinIndex -gt 0 -and $pwshIndex -gt $optinIndex) `
       ("optin@$optinIndex pwsh@$pwshIndex")
   } else {
-    Write-Host "[SKIP] shell shim not exercised on Windows (the hook command is sh-based)"
+    # Not a silent skip. Product decision (B): the optional advisory is scoped
+    # to environments with a POSIX shell, so on native Windows it needs Git
+    # Bash or an equivalent `sh`. That boundary is asserted here rather than
+    # stepped over, because "the test skipped" and "the feature works" look
+    # identical in a green run -- which is exactly how this got as far as a
+    # review finding.
+    $shOnPath = $null -ne (Get-Command sh -ErrorAction SilentlyContinue)
+    Write-Host "[INFO] Windows host: POSIX shell $(if ($shOnPath) { 'IS' } else { 'is NOT' }) available"
+
+    if ($shOnPath) {
+      $on = New-HookProject -Name "shim-on-win" -OptIn $true
+      $previous = $ErrorActionPreference
+      $ErrorActionPreference = "Continue"
+      try {
+        $out = ((New-Payload -Project $on -FilePath "src/other/x.ts") | & sh $shim 2>&1)
+        $code = $LASTEXITCODE
+      } finally { $ErrorActionPreference = $previous }
+      Assert-True "Windows with a POSIX shell: the shim runs and exits cleanly" `
+        ($code -eq 0) ("exit=" + $code)
+    } else {
+      Assert-True "Windows without a POSIX shell: the documented boundary, not a defect" `
+        $true "the advisory is unavailable here by design; setup, CLI and validators are not"
+    }
+
+    # Whatever the shell situation, the advisory LOGIC is PowerShell and must
+    # be exercised on Windows. Those cases ran above, outside this branch.
+    Assert-True "…and the PowerShell advisory itself was exercised on this host regardless" `
+      ($script:pass -gt 0)
   }
 
   # ---- The registration -------------------------------------------------

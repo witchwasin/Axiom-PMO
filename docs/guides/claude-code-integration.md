@@ -87,8 +87,13 @@ pwsh -File scripts/setup-claude-integration.ps1 -ProjectPath .
 
 What it does:
 
+- refuses outright if `AGENTS.md` is not UTF-8 — a UTF-16 or invalid-UTF-8 file
+  is left byte-identical and no backup is taken, because nothing is going to be
+  written to it (`SETUP-008`);
 - backs up `AGENTS.md` before touching it (`AGENTS.md.axiom-backup-<timestamp>`);
-- appends one fenced block, and nothing else;
+- appends one fenced block, and nothing else. The only byte it may add outside
+  the block is a single newline, and only if your file did not end with one;
+  that newline is never taken back;
 - writes atomically — an interrupted run leaves the old file or the new one,
   never half of each;
 - keeps your line endings and byte-order mark exactly as they were;
@@ -108,9 +113,14 @@ node cli/axiom.mjs setup claude --project . --file CLAUDE.md
 node cli/axiom.mjs setup claude --project . --uninstall
 ```
 
-Removes exactly the fenced block. Content before and after it is untouched. If
-the block was the only thing in the file, the file is removed too, and the
-output says so. A backup is taken first either way.
+Removes exactly the fenced block — the span between and including the markers,
+and not one byte more. Content before and after it is untouched, whitespace
+included.
+
+The file itself is **never deleted**, even if the block was the only thing in
+it. A command cannot tell a file it created from one that was already empty, so
+it does not guess; you may be left with an empty `AGENTS.md`, and the output
+says so. A backup is taken first.
 
 Then remove the plugin:
 
@@ -130,7 +140,22 @@ To turn it on for one project, create `.axiom/hooks.json`:
 
 Once enabled, editing a file outside `SCOPE.json`'s `implementation_scope`
 produces a note. It **never** blocks the edit, and it emits no permission
-decision at any input — there is no code in it that could.
+decision at any input — there is no code in it that could. It applies the same
+repo-wide exemptions as SCOPE-DIFF, so the advisory and the gate agree.
+
+> **Platform boundary.** The advisory needs a POSIX shell (`sh`). On native
+> Windows that means Git Bash or an equivalent; a **PowerShell-only Windows
+> environment does not get the hook**, and no error is raised — it simply stays
+> silent.
+>
+> This applies to the optional advisory *only*. Setup, uninstall, the CLI, the
+> validators and the advisory's own PowerShell logic are all supported on
+> PowerShell-only Windows.
+>
+> The alternative was to invoke PowerShell directly from the hook, which works
+> everywhere but costs roughly 200 ms on *every* Write and Edit for every user
+> who installed the plugin and never turned the advisory on. That was judged
+> not worth it for a feature that is off by default.
 
 | | Cost per Write/Edit |
 |---|---|
@@ -161,6 +186,11 @@ the project without saying so. Edit the real file, or replace the link.
 **`SETUP-007 Could not write`**
 The directory is not writable. Nothing was modified.
 
+**`SETUP-008 ... is UTF-16LE / UTF-16BE / not valid UTF-8`**
+Axiom-PMO only edits UTF-8. Converting the file for you would re-encode every
+byte in it, not just the block, so it refuses instead — your file is untouched
+and no backup was taken. Convert it to UTF-8 yourself and re-run.
+
 **`FRAMEWORK-001 ... needs an Axiom-PMO source checkout`**
 You ran a maintainer tool (`pmo-doctor`, `check-public-hygiene`, the test
 runners) from a plugin install. Those audit the framework's own repository and
@@ -184,6 +214,9 @@ Stated rather than discovered later.
 | **Permission-prompt behaviour is not characterised** | Whether invoking the validator from a skill prompts, and how often, depends on your own permission settings. Not measured. |
 | **Update and version drift are untested** | Marketplace entries can pin a `sha`; that a plugin update cannot silently swap a pinned install mid-session has not been exercised. Open debt, acknowledged. |
 | **Windows symlink and read-only cases are skipped** | Those tests run on macOS and Linux. Windows ACL semantics differ from `chmod`, and creating a symlink there needs elevation. |
+| **The advisory hook needs a POSIX shell** | Native Windows requires Git Bash or equivalent. PowerShell-only Windows gets no advisory, silently. Deliberate — see above. Everything else works there. |
+| **Non-UTF-8 instruction files are refused, not converted** | UTF-16 and invalid UTF-8 are rejected with `SETUP-008` and left untouched. Converting them is your call, not the tool's. |
+| **A file may be left empty after uninstall** | The file is never deleted, because provenance cannot be inferred from its contents afterwards. |
 | **No external-user validation** | The Human Owner has run the walkthrough. Nobody outside the team that built it has. |
 
 ## What Axiom-PMO still is

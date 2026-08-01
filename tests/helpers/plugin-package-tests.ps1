@@ -89,9 +89,20 @@ $marketplace = Get-Content -LiteralPath $marketplaceManifestPath -Raw | ConvertF
 
 Assert-True "plugin name is kebab-case as the manifest reference requires" `
   ([string]$plugin.name -cmatch '^[a-z][a-z0-9]*(-[a-z0-9]+)*$') ("name=" + $plugin.name)
-Assert-True "plugin version matches the repository VERSION file" `
-  ([string]$plugin.version -eq ((Get-Content -LiteralPath (Join-Path $repo "VERSION") -Raw).Trim())) `
-  ("plugin=" + $plugin.version)
+# The plugin carries the version of the release it will ship in, which is
+# ahead of VERSION while that release is unbuilt. Asserting equality was
+# correct until Milestone 6 existed; it now has to assert the relationship
+# instead -- the plugin must never claim a version already released, or an
+# installed 1.2.0 plugin and the released 1.2.0 would be different software.
+$repoVersion = ((Get-Content -LiteralPath (Join-Path $repo "VERSION") -Raw).Trim())
+Assert-True "plugin version is a valid semantic version" `
+  ([string]$plugin.version -match '^\d+\.\d+\.\d+$') ("plugin=" + $plugin.version)
+Assert-True "plugin version does not collide with the released VERSION" `
+  ([string]$plugin.version -ne $repoVersion) `
+  ("plugin=" + $plugin.version + " VERSION=" + $repoVersion + " -- an unreleased plugin must not reuse a released version number")
+Assert-True "plugin version is ahead of the released VERSION, not behind" `
+  ([version][string]$plugin.version -gt [version]$repoVersion) `
+  ("plugin=" + $plugin.version + " VERSION=" + $repoVersion)
 Assert-True "marketplace declares exactly the one plugin" `
   (@($marketplace.plugins).Count -eq 1)
 Assert-True "marketplace source is the repository root" `

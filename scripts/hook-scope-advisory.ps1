@@ -115,6 +115,24 @@ try {
   foreach ($pattern in $declaration.Exclude) { $excludeRegexes += (ConvertTo-ScopeGlobRegex $pattern) }
 } catch { Exit-Silently }
 
+# The same repo-wide exemptions SCOPE-DIFF applies, loaded from the same policy
+# file. This used to pass an empty list, which meant the advisory disagreed
+# with the gate: it would flag a file that SCOPE-DIFF exempts, and a user who
+# learns the advisory and the gate mean different things stops reading either.
+$exemptEntries = @()
+try {
+  $frameworkRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
+  # Compiled to regexes exactly the way scope-diff-validator.ps1 does it, from
+  # the same function reading the same file, so the two cannot drift apart.
+  $exemptEntries = @(Read-ScopeDiffPolicy -RepoRoot $frameworkRoot | ForEach-Object {
+    [pscustomobject]@{ Pattern = $_.Pattern; Reason = $_.Reason; Regex = (ConvertTo-ScopeGlobRegex -Pattern $_.Pattern) }
+  })
+} catch {
+  # An unreadable framework policy must not turn into a wrong advisory. Better
+  # to say nothing than to flag a file the gate would have exempted.
+  Exit-Silently
+}
+
 $findings = New-Object System.Collections.Generic.List[string]
 foreach ($candidate in $candidatePaths) {
   $relative = $candidate
@@ -141,7 +159,7 @@ foreach ($candidate in $candidatePaths) {
   $relative = $relative -replace "\\", "/"
 
   $verdict = $null
-  try { $verdict = Resolve-ScopeVerdict -Path $relative -IncludeRegexes $includeRegexes -ExcludeRegexes $excludeRegexes -ExemptEntries @() } catch { continue }
+  try { $verdict = Resolve-ScopeVerdict -Path $relative -IncludeRegexes $includeRegexes -ExcludeRegexes $excludeRegexes -ExemptEntries $exemptEntries } catch { continue }
   if ($verdict -and $verdict.Verdict -eq "out_of_scope") {
     $findings.Add($relative) | Out-Null
   }
