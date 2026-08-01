@@ -279,11 +279,11 @@ Write-Host "reached the body"
   $text = ($out | ForEach-Object { [string]$_ }) -join "`n"
 
   Assert-True "a maintainer tool outside a checkout exits non-zero" ($code -ne 0) ("exit=" + $code)
-  Assert-True "…with a FRAMEWORK-001 diagnostic naming the tool" `
+  Assert-True "...with a FRAMEWORK-001 diagnostic naming the tool" `
     ($text -match "FRAMEWORK-001" -and $text -match "probe-tool") ($text)
-  Assert-True "…explaining why a plugin install cannot satisfy it" `
+  Assert-True "...explaining why a plugin install cannot satisfy it" `
     ($text -match "(?i)plugin install") ($text)
-  Assert-True "…and it never reaches the tool body" ($text -notmatch "reached the body")
+  Assert-True "...and it never reaches the tool body" ($text -notmatch "reached the body")
 
   # And the guard must not fire inside a real checkout, or every maintainer
   # command in this repository stops working.

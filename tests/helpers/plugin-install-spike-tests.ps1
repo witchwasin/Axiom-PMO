@@ -14,7 +14,7 @@ param(
 #   project somewhere else entirely?
 #
 # That is a NECESSARY condition for the plugin shape decided in Milestone 6.0
-# (docs/architecture/claude-code-integration.md §7). It is not a SUFFICIENT
+# (docs/architecture/claude-code-integration.md section 7). It is not a SUFFICIENT
 # one: nothing here launches Claude Code, loads a plugin, or exercises its
 # permission model. What Claude Code itself does with a plugin is answered
 # from primary source in the spike report, and separated there from what this
@@ -90,7 +90,7 @@ function Invoke-Framework {
 }
 
 function New-SimulatedPluginInstall {
-  # Copies exactly what Milestone 6.0 §7 says the plugin would carry --
+  # Copies exactly what Milestone 6.0 section 7 says the plugin would carry --
   # scripts, cli, pmo-config, templates, skills -- and nothing else. No .git,
   # no tests, no examples. If a framework script needs something outside that
   # list, this harness is where it shows up as a failure rather than in a
@@ -191,12 +191,12 @@ try {
   # M6.2 closed the half of this that WAS a defect: it still fails, correctly,
   # but now with a diagnostic naming the tool, what it looked for, why a plugin
   # install cannot satisfy it, and which command the user probably wanted.
-  Assert-True "…and fails with a FRAMEWORK-001 diagnostic, not a raw exception" `
+  Assert-True "...and fails with a FRAMEWORK-001 diagnostic, not a raw exception" `
     ($doctor.Text -match "FRAMEWORK-001") `
     ($doctor.Text.Substring(0, [Math]::Min(400, $doctor.Text.Length)))
-  Assert-True "…and the diagnostic redirects to the user-facing command" `
+  Assert-True "...and the diagnostic redirects to the user-facing command" `
     ($doctor.Text -match "validate-project\.ps1")
-  Assert-True "…and no raw PowerShell exception leaks alongside it" `
+  Assert-True "...and no raw PowerShell exception leaks alongside it" `
     ($doctor.Text -notmatch "(?i)Get-Content:|Cannot find path|FileNotFoundException") `
     ($doctor.Text.Substring(0, [Math]::Min(400, $doctor.Text.Length)))
 
