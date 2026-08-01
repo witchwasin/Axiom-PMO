@@ -88,8 +88,7 @@
 
   Milestone 5 is part of the **core product**: Milestones 1-5 together are the
   Axiom-PMO governance and development-handoff framework. Milestone 6 remains
-  an optional Claude Code integration bridge and is not authorized for
-  implementation (`DEC-003`).
+  an optional Claude Code integration bridge (`DEC-006`).
 
   `axiom export` turns an
   approved `DELIVERY.md` work item into an `EXECUTION-CONTRACT.json` an AI

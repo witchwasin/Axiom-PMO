@@ -192,9 +192,23 @@ try {
     $final = Get-Fingerprints -Root $dir
 
     # After a full round trip, everything they owned must be exactly as it was.
-    # AGENTS.md is exempt only in scenario 1, where the integration created it.
-    $allowed = if ($scenario.N -eq 1) { @("AGENTS.md") } else { @() }
+    #
+    # AGENTS.md is exempt where the repository did not have one, because setup
+    # creates it and uninstall now leaves it behind empty. That changed during
+    # review: deleting it inferred "we must have created this" from the file's
+    # contents afterwards, which is indistinguishable from a file that was
+    # already empty -- and it was deleting those. An empty file left behind is
+    # the smaller wrong answer, and it is asserted rather than waved past.
+    $hadAgents = $scenario.Files.ContainsKey("AGENTS.md")
+    $allowed = if ($hadAgents) { @() } else { @("AGENTS.md") }
     Assert-OnlyChanged -Scenario "$label after round trip" -Before $before -After $final -Allowed $allowed
+
+    if (-not $hadAgents) {
+      $leftover = [System.Text.Encoding]::UTF8.GetString([System.IO.File]::ReadAllBytes((Join-Path $dir "AGENTS.md")))
+      Assert-True "$label -- the file setup created is left empty, not deleted and not littered" `
+        ([string]::IsNullOrWhiteSpace($leftover)) `
+        ("leftover=" + ($leftover -replace "`n", "\n"))
+    }
   }
 
   # 8. A malformed Axiom marker already in the file.

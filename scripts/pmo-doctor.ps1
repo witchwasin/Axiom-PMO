@@ -458,6 +458,38 @@ if ($nativeGuardProblems.Count -eq 0) {
   Add-Result FAIL ("Unguarded native invocations under ErrorActionPreference=Stop (see docs/architecture/powershell-portability.md): " + ((Sort-Ordinal -Values ([string[]]$nativeGuardProblems)) -join ", ")) "DOCTOR-010"
 }
 
+# DOCTOR-012: decision ids in the framework's own decision-log.md must be unique.
+#
+# A decision id is a reference target -- ROADMAP, CHANGELOG and the EXEC rules
+# all cite them, and Milestone 5's authority model resolves them at runtime and
+# treats "more than one match" as ambiguous. Two rows sharing an id makes every
+# citation of it unresolvable.
+#
+# This is not hypothetical: DEC-003 was used for both the Milestone 6.0
+# integration-shape decision and the product-scope-boundary decision, and a
+# review found it. Nothing in the framework noticed, because nothing was
+# looking.
+$decisionLogPath = Join-Path $repo "decision-log.md"
+if (Test-Path -LiteralPath $decisionLogPath) {
+  $decisionText = Get-Content -LiteralPath $decisionLogPath -Raw
+  if ($null -eq $decisionText) { $decisionText = "" }
+  $decisionIds = @()
+  foreach ($line in ($decisionText -split "`r?`n")) {
+    # Table rows only: the id must sit in its own cell, so prose mentioning a
+    # DEC-### does not count as a second declaration of it.
+    $m = [regex]::Match($line, '^\s*\|[^|]*\|\s*(DEC-\d{3,})\s*\|')
+    if ($m.Success) { $decisionIds += $m.Groups[1].Value }
+  }
+  $duplicateDecisions = @($decisionIds | Group-Object | Where-Object { $_.Count -gt 1 } | ForEach-Object { "$($_.Name) x$($_.Count)" })
+  if ($duplicateDecisions.Count -eq 0) {
+    Add-Result PASS "Decision ids in decision-log.md are unique ($($decisionIds.Count) decisions)" "DOCTOR-012"
+  } else {
+    Add-Result FAIL ("Duplicate decision ids in decision-log.md -- every citation of these is ambiguous: " + ((Sort-Ordinal -Values ([string[]]$duplicateDecisions)) -join ", ")) "DOCTOR-012"
+  }
+} else {
+  Add-Result FAIL "decision-log.md not found" "DOCTOR-012"
+}
+
 # DOCTOR-011: $IsWindows must not be used as a bare host test.
 #
 # It does not exist in Windows PowerShell 5.1 -- it is $null there, and 5.1

@@ -15,8 +15,8 @@
   So the footprint is exactly one fenced block in one file, and this command's
   entire job is putting it there without damaging anything else:
 
-    - previews before writing (-DryRun), and the preview is a real diff of
-      what would change, not a description of it;
+    - previews before writing (-DryRun) by printing the exact block it would
+      write plus a byte-count summary -- not a diff, and not a paraphrase;
     - backs up before modifying;
     - writes atomically, so an interrupted run leaves the old file or the new
       one and never a half-written one;
@@ -109,6 +109,29 @@ if (Test-Path -LiteralPath $targetPath) {
 # ---- Inspect what is already here --------------------------------------
 
 $state = Read-TextFileState -Path $targetPath
+
+# Encoding gate, before a backup is taken or a byte is written. A file this
+# tool cannot decode losslessly is a file it must not rewrite: the whole
+# promise is "one appended block, nothing else touched", and a lenient decode
+# breaks that promise for every byte in the file at once.
+if (-not $state.Supported) {
+  Write-Host "[FAIL] SETUP-008 $File is $($state.Encoding); Axiom-PMO only edits UTF-8."
+  Write-Host ""
+  Write-Host "  Nothing was read as text, nothing was written, and no backup was taken --"
+  Write-Host "  there is nothing to protect the file from, because nothing is going to touch it."
+  Write-Host ""
+  Write-Host "  Why this refuses instead of converting: rewriting the file would re-encode"
+  Write-Host "  every byte in it, not just the block. A command that promises to append one"
+  Write-Host "  section must not silently rewrite the other 99% of the document."
+  Write-Host ""
+  Write-Host "  Fix: convert $File to UTF-8 yourself, then re-run. On PowerShell:"
+  Write-Host "    `$t = Get-Content -LiteralPath '$File' -Raw"
+  Write-Host "    Set-Content -LiteralPath '$File' -Value `$t -Encoding utf8"
+  Write-Host ""
+  Write-Host "Summary: PASS=0 FAIL=1"
+  exit $exitConflict
+}
+
 $block = Find-AxiomBlock -Text $state.Text
 $ownership = Test-AxiomBlockOwnership -Block $block
 
@@ -192,20 +215,22 @@ if ($Uninstall) {
     exit $exitOk
   }
 
-  # Removing the block from a file that contained nothing else leaves an empty
-  # file behind -- residue from a command whose whole promise is that it can be
-  # undone. If there is nothing left, the file goes too. The narrow cost is a
-  # user who had a deliberately empty AGENTS.md before installing; they lose an
-  # empty file, which is stated in the output rather than done silently.
-  $removeFileEntirely = [string]::IsNullOrWhiteSpace($removal.Text)
-
+  # The file is never deleted, whatever is left in it.
+  #
+  # An earlier version removed it when the remainder was empty or whitespace,
+  # reasoning that setup must have created it. That reasoning is not available
+  # after the fact: a repository whose AGENTS.md contained only a couple of
+  # blank lines before installing is indistinguishable from one setup created,
+  # and review found it deleting exactly that. Inferring provenance from a
+  # file's current contents is guessing, and the mutable alternative -- writing
+  # created=true into a marker anyone can edit -- would be guessing with extra
+  # steps.
+  #
+  # So a zero-byte file may be left behind. That is the smallest wrong answer
+  # available, and it is one the user can act on.
   try {
     $backup = New-AxiomBackup -Path $targetPath
-    if ($removeFileEntirely) {
-      Remove-Item -LiteralPath $targetPath -Force
-    } else {
-      Write-TextFileAtomic -Path $targetPath -Text $removal.Text -HasBom $state.HasBom
-    }
+    Write-TextFileAtomic -Path $targetPath -Text $removal.Text -HasBom $state.HasBom
   } catch {
     Write-Section "[FAIL] SETUP-007 Could not write $File."
     Write-Host "  $($_.Exception.Message)"
@@ -215,13 +240,11 @@ if ($Uninstall) {
     if ($backup) { Write-Host "  A backup was taken first: $(Split-Path -Leaf $backup)" }
     exit $exitConflict
   }
-  if ($removeFileEntirely) {
-    Write-Section "Removed the Axiom-PMO block from $File."
-    Write-Host "  Nothing else was in the file, so $File was removed too."
-    Write-Host "  Backup: $(Split-Path -Leaf $backup)"
-  } else {
-    Write-Section "Removed the Axiom-PMO block from $File."
-    Write-Host "  Backup: $(Split-Path -Leaf $backup)"
+  Write-Section "Removed the Axiom-PMO block from $File."
+  Write-Host "  Backup: $(Split-Path -Leaf $backup)"
+  if ([string]::IsNullOrWhiteSpace($removal.Text)) {
+    Write-Host "  $File is now empty. It is left in place rather than deleted -- this command"
+    Write-Host "  cannot tell a file it created from one that was already empty."
   }
   exit $exitOk
 }

@@ -79,8 +79,11 @@ function Get-Text {
 }
 
 function Get-Bytes {
+  # The unary comma matters. PowerShell unrolls a returned array, and an empty
+  # one unrolls to $null -- so a zero-byte file came back as $null and blew up
+  # the comparison rather than comparing equal to another empty file.
   param([string]$Path)
-  return [System.IO.File]::ReadAllBytes($Path)
+  return ,[System.IO.File]::ReadAllBytes($Path)
 }
 
 $script:sandbox = Join-Path ([System.IO.Path]::GetTempPath()) ("axiom-setup-" + [guid]::NewGuid().ToString("N").Substring(0, 8))
@@ -146,15 +149,16 @@ try {
   $r = Invoke-Setup -Project $p
   Assert-True "setup creates AGENTS.md when the repository has none" `
     ($r.ExitCode -eq 0 -and (Test-Path -LiteralPath (Join-Path $p "AGENTS.md"))) ($r.Text)
-  # Clean-room scenario 2 caught the earlier behaviour here: leaving an empty
-  # AGENTS.md behind is residue from a command whose entire promise is that it
-  # can be undone.
+  # Review corrected an earlier behaviour here. Removing the file when nothing
+  # was left looked tidy, but "nothing left" cannot distinguish a file setup
+  # created from one that was already empty -- and it was deleting the latter.
+  # A zero-byte file left behind is the smaller wrong answer.
   $r = Invoke-Setup -Project $p -Arguments @("-Uninstall")
-  Assert-True "…and uninstall removes the file it created, leaving no residue" `
-    (-not (Test-Path -LiteralPath (Join-Path $p "AGENTS.md"))) ($r.Text)
-  Assert-True "…and says so rather than deleting silently" `
-    ($r.Text -match "(?i)was removed too") ($r.Text)
-  Assert-True "…while still leaving the backup, so it is recoverable" `
+  Assert-True "…and uninstall leaves the file rather than guessing it created it" `
+    (Test-Path -LiteralPath (Join-Path $p "AGENTS.md")) ($r.Text)
+  Assert-True "…saying so, rather than leaving the user to notice" `
+    ($r.Text -match "(?i)now empty") ($r.Text)
+  Assert-True "…with the backup kept, so it is recoverable" `
     (@(Get-ChildItem -LiteralPath $p -Filter "*.axiom-backup-*").Count -ge 1)
 
   # ---- Backups ----------------------------------------------------------
@@ -319,9 +323,25 @@ try {
 
     Invoke-Setup -Project $p -Arguments @("-Uninstall") | Out-Null
     $after = Get-Bytes (Join-Path $p "AGENTS.md")
-    Assert-True "byte preservation ($($shape.Name)): round trip is byte-identical" `
-      (([System.Convert]::ToBase64String($before)) -eq ([System.Convert]::ToBase64String($after))) `
-      ("before=" + $before.Length + "B after=" + $after.Length + "B")
+
+    # A file that already ended with a newline round-trips byte-for-byte. One
+    # that did not gains exactly one newline and keeps it -- the single byte
+    # setup must add so the BEGIN marker does not land on the user's last line,
+    # and which uninstall deliberately does not take back. Adding a byte the
+    # user keeps is a far smaller wrong than deleting one they wanted, and it
+    # is asserted here rather than left as a claim in prose.
+    $endedWithNewline = $shape.Text.EndsWith("`n")
+    if ($endedWithNewline) {
+      Assert-True "byte preservation ($($shape.Name)): round trip is byte-identical" `
+        (([System.Convert]::ToBase64String($before)) -eq ([System.Convert]::ToBase64String($after))) `
+        ("before=" + $before.Length + "B after=" + $after.Length + "B")
+    } else {
+      $addedNewline = if ($shape.Text -match "`r`n") { "`r`n" } else { "`n" }
+      $expected = [System.Text.Encoding]::UTF8.GetBytes($shape.Text + $addedNewline)
+      Assert-True "byte preservation ($($shape.Name)): gains exactly one newline, nothing else" `
+        (([System.Convert]::ToBase64String($expected)) -eq ([System.Convert]::ToBase64String($after))) `
+        ("before=" + $before.Length + "B after=" + $after.Length + "B expected=" + $expected.Length + "B")
+    }
   }
 
   # A block in the MIDDLE of a file, with content after it. Nothing above or
@@ -359,6 +379,139 @@ try {
   Invoke-Setup -Project $p -Arguments @("-Uninstall") | Out-Null
   Assert-True "byte preservation (BOM plus trailing blank lines): round trip is byte-identical" `
     (([System.Convert]::ToBase64String($bomBytes)) -eq ([System.Convert]::ToBase64String((Get-Bytes (Join-Path $p "AGENTS.md")))))
+
+  # ---- Unsupported encodings: refuse, do not convert -------------------
+  #
+  # The review's FATAL. The first version decoded every file with the
+  # replacement-fallback UTF-8 decoder and wrote it back as UTF-8, so a UTF-16
+  # AGENTS.md came out with its BOM turned into U+FFFD and every byte in the
+  # file rewritten -- from a command whose entire promise is that it appends one
+  # block and touches nothing else.
+  #
+  # The bar for each of these is the same and it is absolute: byte-identical
+  # file, non-zero exit, a diagnostic, and no backup or temporary residue --
+  # there is nothing to protect a file from when nothing will be written to it.
+
+  foreach ($enc in @(
+    @{ Name = "UTF-16LE with BOM"; Bytes = ([byte[]](0xFF, 0xFE) + [System.Text.Encoding]::Unicode.GetBytes("# Their Project`n`nrules`n")); Match = "UTF-16LE" },
+    @{ Name = "UTF-16BE with BOM"; Bytes = ([byte[]](0xFE, 0xFF) + [System.Text.Encoding]::BigEndianUnicode.GetBytes("# Their Project`n`nrules`n")); Match = "UTF-16BE" },
+    @{ Name = "invalid UTF-8"; Bytes = ([System.Text.Encoding]::ASCII.GetBytes("# P`n`nrules ") + [byte[]](0xC3, 0x28, 0xA0, 0xA1) + [System.Text.Encoding]::ASCII.GetBytes("`n")); Match = "not valid UTF-8" }
+  )) {
+    foreach ($mode in @(@(), @("-DryRun"), @("-Uninstall"))) {
+      $label = "$($enc.Name)$(if ($mode.Count) { " " + ($mode -join ' ') })"
+      $p = New-Project -Name ("enc-" + ($label -replace "[^a-zA-Z0-9]", "-"))
+      [System.IO.File]::WriteAllBytes((Join-Path $p "AGENTS.md"), $enc.Bytes)
+      $r = Invoke-Setup -Project $p -Arguments $mode
+      Assert-True "$label -- refused with SETUP-008" `
+        ($r.ExitCode -ne 0 -and $r.Text -match "SETUP-008") ("exit=" + $r.ExitCode + " " + $r.Text)
+      Assert-True "$label -- names the encoding it found" `
+        ($r.Text -match [regex]::Escape($enc.Match)) ($r.Text)
+      Assert-True "$label -- the file is byte-identical" `
+        (([System.Convert]::ToBase64String($enc.Bytes)) -eq ([System.Convert]::ToBase64String((Get-Bytes (Join-Path $p "AGENTS.md")))))
+      Assert-True "$label -- no backup was taken" `
+        (@(Get-ChildItem -LiteralPath $p -Filter "*.axiom-backup-*").Count -eq 0)
+      Assert-True "$label -- no temporary residue" `
+        (@(Get-ChildItem -LiteralPath $p -Filter ".axiom-write-*" -Force).Count -eq 0)
+    }
+  }
+
+  # Valid UTF-8 that is not ASCII must still work -- refusing everything with a
+  # high byte in it would be a cure worse than the disease.
+  $p = New-Project -Name "utf8-nonascii"
+  $unicodeText = "# โครงการ`n`nกฎของทีม — ห้ามแก้ไฟล์นอก scope`n`n日本語 · Ελληνικά · emoji 🎯`n"
+  [System.IO.File]::WriteAllBytes((Join-Path $p "AGENTS.md"), [System.Text.Encoding]::UTF8.GetBytes($unicodeText))
+  $before = Get-Bytes (Join-Path $p "AGENTS.md")
+  $r = Invoke-Setup -Project $p
+  Assert-True "valid non-ASCII UTF-8 is supported" ($r.ExitCode -eq 0) ($r.Text)
+  Assert-True "…and its characters survive the write" `
+    ((Get-Text (Join-Path $p "AGENTS.md")) -match "ห้ามแก้ไฟล์นอก scope")
+  Invoke-Setup -Project $p -Arguments @("-Uninstall") | Out-Null
+  Assert-True "…and it round-trips byte-for-byte" `
+    (([System.Convert]::ToBase64String($before)) -eq ([System.Convert]::ToBase64String((Get-Bytes (Join-Path $p "AGENTS.md")))))
+
+  # ---- Tampered marker attributes cannot widen a deletion --------------
+  #
+  # The review's second MAJOR. v1 recorded sep= and tail= saying how much
+  # surrounding whitespace setup had added, so removal could reclaim it. Those
+  # attributes sit in a marker anyone can edit while ownership is decided by
+  # the BODY -- so a block stayed perfectly `owned` with sep changed from 2 to
+  # 6, and uninstall ate four of the user's newlines.
+  #
+  # v2 writes nothing outside the span, so there is nothing for an attribute to
+  # control. These cases prove the attributes are inert rather than bounded.
+
+  $surround = "# P`n`nabove`n`n`n`n`n"
+  foreach ($attack in @(
+    @{ Name = "sep=0 tail=0"; Inject = "sep=0 tail=0 " },
+    @{ Name = "sep=2 tail=1 (the old real values)"; Inject = "sep=2 tail=1 " },
+    @{ Name = "sep=999 tail=999"; Inject = "sep=999 tail=999 " },
+    @{ Name = "duplicate attributes"; Inject = "sep=4 sep=99 tail=9 tail=99 " },
+    @{ Name = "negative and non-numeric"; Inject = "sep=-5 tail=abc " }
+  )) {
+    $p = New-Project -Name ("attr-" + ($attack.Name -replace "[^a-zA-Z0-9]", "-")) -AgentsContent $surround
+    $before = Get-Bytes (Join-Path $p "AGENTS.md")
+    Invoke-Setup -Project $p | Out-Null
+
+    $text = Get-Text (Join-Path $p "AGENTS.md")
+    $tampered = $text -replace "AXIOM-PMO:BEGIN v2 ", ("AXIOM-PMO:BEGIN v2 " + $attack.Inject)
+    [System.IO.File]::WriteAllText((Join-Path $p "AGENTS.md"), $tampered, (New-Object System.Text.UTF8Encoding($false)))
+
+    $r = Invoke-Setup -Project $p -Arguments @("-Uninstall")
+    Assert-True "tampered attributes ($($attack.Name)): uninstall still succeeds" `
+      ($r.ExitCode -eq 0) ($r.Text)
+    Assert-True "tampered attributes ($($attack.Name)): every byte outside the span is unchanged" `
+      (([System.Convert]::ToBase64String($before)) -eq ([System.Convert]::ToBase64String((Get-Bytes (Join-Path $p "AGENTS.md"))))) `
+      ("before=" + $before.Length + "B after=" + (Get-Bytes (Join-Path $p "AGENTS.md")).Length + "B")
+  }
+
+  # The same, with content on both sides of the block, so a widened deletion
+  # would have somewhere to reach in either direction.
+  $p = New-Project -Name "attr-both-sides" -AgentsContent "# P`n`nabove`n`n`n"
+  Invoke-Setup -Project $p | Out-Null
+  $withTail = (Get-Text (Join-Path $p "AGENTS.md")) + "`n`n`n## below`n`nbelow text`n"
+  [System.IO.File]::WriteAllText((Join-Path $p "AGENTS.md"), $withTail, (New-Object System.Text.UTF8Encoding($false)))
+  $tampered = (Get-Text (Join-Path $p "AGENTS.md")) -replace "AXIOM-PMO:BEGIN v2 ", "AXIOM-PMO:BEGIN v2 sep=999 tail=999 "
+  [System.IO.File]::WriteAllText((Join-Path $p "AGENTS.md"), $tampered, (New-Object System.Text.UTF8Encoding($false)))
+  $expectedAfter = "# P`n`nabove`n`n`n`n`n`n## below`n`nbelow text`n"
+  Invoke-Setup -Project $p -Arguments @("-Uninstall") | Out-Null
+  Assert-True "tampered attributes with content on both sides: nothing adjacent is eaten" `
+    ((Get-Text (Join-Path $p "AGENTS.md")) -eq $expectedAfter) `
+    ("got " + ((Get-Text (Join-Path $p "AGENTS.md")) -replace "`n", "\n"))
+
+  # ---- Whitespace-only and empty files are never deleted ---------------
+  #
+  # The review's third MAJOR. Deleting the file when nothing was left inferred
+  # "setup must have created this" from the file's contents after the fact --
+  # which is exactly what a repository whose AGENTS.md held two blank lines
+  # looks like. It was deleting theirs.
+
+  foreach ($ws in @(
+    @{ Name = "zero-byte"; Text = "" },
+    @{ Name = "spaces only"; Text = "   " },
+    @{ Name = "newlines only"; Text = "`n`n`n" },
+    @{ Name = "mixed whitespace"; Text = " `t `n  `n`t`n" }
+  )) {
+    $p = New-Project -Name ("ws-" + ($ws.Name -replace "[^a-zA-Z0-9]", "-"))
+    [System.IO.File]::WriteAllText((Join-Path $p "AGENTS.md"), $ws.Text, (New-Object System.Text.UTF8Encoding($false)))
+    $before = Get-Bytes (Join-Path $p "AGENTS.md")
+
+    Invoke-Setup -Project $p | Out-Null
+    Invoke-Setup -Project $p -Arguments @("-Uninstall") | Out-Null
+
+    Assert-True "whitespace file ($($ws.Name)): still exists after a round trip" `
+      (Test-Path -LiteralPath (Join-Path $p "AGENTS.md"))
+    $after = Get-Bytes (Join-Path $p "AGENTS.md")
+    $endedWithNewline = $ws.Text.EndsWith("`n") -or $ws.Text.Length -eq 0
+    if ($endedWithNewline) {
+      Assert-True "whitespace file ($($ws.Name)): bytes are unchanged" `
+        (([System.Convert]::ToBase64String($before)) -eq ([System.Convert]::ToBase64String($after))) `
+        ("before=" + $before.Length + "B after=" + $after.Length + "B")
+    } else {
+      Assert-True "whitespace file ($($ws.Name)): gains only the one bridging newline" `
+        ($after.Length -eq ($before.Length + 1)) `
+        ("before=" + $before.Length + "B after=" + $after.Length + "B")
+    }
+  }
 
   # ---- Encoding: leave the file the way it was found --------------------
 

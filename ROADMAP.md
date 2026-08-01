@@ -35,8 +35,8 @@ control layer they operate inside.
 
 ### Core product versus optional integration
 
-Set by the Human Owner (Witchwasin K., 2026-07-31) and binding on how this
-repository is documented and presented.
+Set by the Human Owner (Witchwasin K., 2026-07-31), recorded as `DEC-006`, and
+binding on how this repository is documented and presented.
 
 > **Milestones 1-5 are the core Axiom-PMO product: a governance and
 > development-handoff framework. Milestone 6 is an optional bridge for users
@@ -108,7 +108,7 @@ Recommended effort allocation:
 | Milestone 4 - GitHub Action | Delivered | Merged to `main` at `31d1e25`; child issues #12-#17 closed |
 | Milestone 4.5 - SCOPE-DIFF | Delivered | Human Owner accepted 2026-07-30 after two independent AI review rounds; merged to `main` at `6b42643` |
 | Milestone 5 - Execution Contract Verification MVP | **Delivered / CLOSED** -- Sol ACCEPT at round 5 after four REQUEST CHANGES rounds; Human Owner accepted and closed 2026-07-31 (`DEC-004`) | Core product. `docs/reference/execution-contract.md`; decisions `DEC-002`, `DEC-004`; commit `2888769`, CI run `30643605031` 7/7 |
-| Milestone 6 - Claude Code Integration Experience | **Human Owner accepted (`DEC-005`); independent review returned REQUEST CHANGES (1 FATAL, 1 MAJOR) -- both fixed, re-review pending. Closure blocked.** Not released, not tagged, not published, not merged | Optional integration, not core product. Three known debts remain open -- see Deferred technical debt. `docs/guides/claude-code-integration.md`; `docs/architecture/m6-threat-model.md`; decisions `DEC-003`, `DEC-005` |
+| Milestone 6 - Claude Code Integration Experience | **Human Owner accepted (`DEC-005`); independent review returned REQUEST CHANGES (1 FATAL, 1 MAJOR) -- both fixed, re-review pending. Closure blocked.** Not released, not tagged, not published, not merged | Optional integration, not core product. Three known debts remain open -- see Deferred technical debt. `docs/guides/claude-code-integration.md`; `docs/architecture/m6-threat-model.md`; decisions `DEC-003` (shape), `DEC-006` (product boundary), `DEC-005` (acceptance) |
 
 ## Roadmap Governance
 
@@ -1116,12 +1116,13 @@ described as fixed until it is.
 
 ### Blocked
 
-- Milestone 6.2-6.4 (namespaced repo integration, setup/uninstall safety,
-  clean-room compatibility), until the M6.1 spike reports and the Human Owner
-  confirms the final integration shape.
-- Milestone 6.5 (preventive hook pilot), until the packaging MVP is itself
-  accepted. It is new capability rather than packaging, and ships report-only
-  by default like SCOPE-DIFF and the GitHub Action did.
+- **Milestone 6 closure**, until independent re-review passes. The first review
+  returned REQUEST CHANGES; the findings are fixed and re-review is pending.
+- Publishing the plugin to a public marketplace, tagging a release, and merging
+  Milestone 6 to `main` -- all behind that same re-review.
+- Any enforcement mode for the advisory hook. It ships report-only; making it
+  block would be a separate proposal with its own acceptance, not a
+  configuration change.
 
 ## Success Signals
 
