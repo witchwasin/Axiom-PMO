@@ -19,6 +19,15 @@ payload=$(cat 2>/dev/null || true)
 # cwd comes from the payload; grepping it out avoids a JSON parser in /bin/sh.
 # A miss just means the advisory stays quiet, which is the safe direction.
 cwd=$(printf '%s' "$payload" | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)
+
+# Un-escape the JSON string. This is the whole reason the advisory never fired
+# on Windows: a Windows cwd arrives as "C:\\Users\\dev\\repo", so the raw
+# capture above is C:\\Users\\dev\\repo with the backslashes still doubled,
+# the opt-in file is looked for at a path that does not exist, and the hook
+# exits 0 having done nothing. Silent and green, which is why exit-code-only
+# tests could not see it.
+cwd=$(printf '%s' "$cwd" | sed -e 's/\\\//\//g' -e 's/\\\\/\\/g')
+
 [ -n "$cwd" ] || cwd=$(pwd)
 
 optin="$cwd/.axiom/hooks.json"

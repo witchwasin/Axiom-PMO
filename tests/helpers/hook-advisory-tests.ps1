@@ -273,6 +273,43 @@ try {
     $r = Invoke-Shim -Payload "" -Env $env
     Assert-True "the shim tolerates an empty payload" ($r.ExitCode -eq 0 -and $r.Text -eq "") ($r.Text)
 
+    # JSON-escaped backslashes in cwd. This is the Windows path shape, and it
+    # is why the advisory never fired there: a Windows cwd arrives as
+    # "C:\\Users\\dev\\repo", the shim captured it with the backslashes
+    # still doubled, looked for the opt-in file at a path that does not exist,
+    # and exited 0 having done nothing. Exit-code-only assertions called that a
+    # pass -- so this asserts the MESSAGE, which is the only thing that proves
+    # the hook did any work.
+    #
+    # Exercised on any host by giving the project directory a literal backslash
+    # in its name, so the escaping the shim must undo is real rather than
+    # simulated.
+    $backslashDir = Join-Path $script:sandbox "proj\dir"
+    New-Item -ItemType Directory -Path (Join-Path $backslashDir ".axiom") -Force | Out-Null
+    [System.IO.File]::WriteAllText((Join-Path $backslashDir "SCOPE.json"),
+      '{"schema_version":"1.0","project":"B","implementation_scope":{"include":["src/**"],"exclude":[]}}',
+      (New-Object System.Text.UTF8Encoding($false)))
+    [System.IO.File]::WriteAllText((Join-Path $backslashDir ".axiom/hooks.json"),
+      '{"scope_advisory": true}', (New-Object System.Text.UTF8Encoding($false)))
+
+    $escapedCwd = $backslashDir -replace "\\", "\\\\"
+    $escapedPayload = "{`"cwd`":`"$escapedCwd`",`"tool_input`":{`"file_path`":`"other/thing.ts`"}}"
+    $r = Invoke-Shim -Payload $escapedPayload -Env $env
+    Assert-True "a JSON-escaped cwd is un-escaped, and the advisory actually fires" `
+      ($r.Text -match "scope advisory") `
+      ("silence here means the shim looked for the opt-in at a path that does not exist: " + $r.Text)
+    Assert-True "...and it names the out-of-scope path" ($r.Text -match "other/thing\.ts") ($r.Text)
+
+    $inScopePayload = "{`"cwd`":`"$escapedCwd`",`"tool_input`":{`"file_path`":`"src/ok.ts`"}}"
+    $r = Invoke-Shim -Payload $inScopePayload -Env $env
+    Assert-True "...and an in-scope path through the same escaped cwd stays silent" `
+      ($r.Text -eq "") ($r.Text)
+
+    $exemptPayload = "{`"cwd`":`"$escapedCwd`",`"tool_input`":{`"file_path`":`"CHANGELOG.md`"}}"
+    $r = Invoke-Shim -Payload $exemptPayload -Env $env
+    Assert-True "...and a repo-wide exempt path through the same escaped cwd stays silent" `
+      ($r.Text -eq "") ($r.Text)
+
     # The disabled path runs on every Write/Edit for every user who installed
     # the plugin and never enabled this. It must not start PowerShell.
     $shimSource = [System.IO.File]::ReadAllText($shim)
@@ -292,15 +329,48 @@ try {
     Write-Host "[INFO] Windows host: POSIX shell $(if ($shOnPath) { 'IS' } else { 'is NOT' }) available"
 
     if ($shOnPath) {
+      # Exit code proves nothing here: the shim returns 0 whether it advised or
+      # silently did nothing, which is exactly how the Windows path stayed
+      # broken behind a green assertion. These assert the message.
+      function Invoke-WinShim {
+        param([string]$Payload)
+        $previous = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        $savedRoot = $env:CLAUDE_PLUGIN_ROOT
+        $savedPwsh = $env:AXIOM_PWSH
+        $env:CLAUDE_PLUGIN_ROOT = $repo
+        $env:AXIOM_PWSH = $pwshExe
+        try {
+          $out = ($Payload | & sh $shim 2>&1)
+          $code = $LASTEXITCODE
+        } finally {
+          $env:CLAUDE_PLUGIN_ROOT = $savedRoot
+          $env:AXIOM_PWSH = $savedPwsh
+          $ErrorActionPreference = $previous
+        }
+        return [pscustomobject]@{ ExitCode = $code; Text = (($out | ForEach-Object { [string]$_ }) -join "`n").Trim() }
+      }
+
       $on = New-HookProject -Name "shim-on-win" -OptIn $true
-      $previous = $ErrorActionPreference
-      $ErrorActionPreference = "Continue"
-      try {
-        $out = ((New-Payload -Project $on -FilePath "src/other/x.ts") | & sh $shim 2>&1)
-        $code = $LASTEXITCODE
-      } finally { $ErrorActionPreference = $previous }
-      Assert-True "Windows with a POSIX shell: the shim runs and exits cleanly" `
-        ($code -eq 0) ("exit=" + $code)
+      $r = Invoke-WinShim -Payload (New-Payload -Project $on -FilePath "src/other/x.ts")
+      Assert-True "Windows + POSIX shell: an out-of-scope edit actually produces the advisory" `
+        ($r.Text -match "scope advisory") `
+        ("a silent pass here is the bug this replaced: " + $r.Text)
+      Assert-True "Windows + POSIX shell: ...naming the path" `
+        ($r.Text -match "src/other/x\.ts") ($r.Text)
+
+      $r = Invoke-WinShim -Payload (New-Payload -Project $on -FilePath "src/payments/charge.ts")
+      Assert-True "Windows + POSIX shell: an in-scope edit stays silent" ($r.Text -eq "") ($r.Text)
+
+      $r = Invoke-WinShim -Payload (New-Payload -Project $on -FilePath "src/payments/vendor/lib.ts")
+      Assert-True "Windows + POSIX shell: a declared exclusion stays silent" ($r.Text -eq "") ($r.Text)
+
+      $r = Invoke-WinShim -Payload (New-Payload -Project $on -FilePath "CHANGELOG.md")
+      Assert-True "Windows + POSIX shell: a repo-wide exempt path stays silent" ($r.Text -eq "") ($r.Text)
+
+      $r = Invoke-WinShim -Payload "not json at all"
+      Assert-True "Windows + POSIX shell: malformed input still cannot deny an edit" `
+        ($r.ExitCode -eq 0) ("exit=" + $r.ExitCode)
     } else {
       Assert-True "Windows without a POSIX shell: the documented boundary, not a defect" `
         $true "the advisory is unavailable here by design; setup, CLI and validators are not"

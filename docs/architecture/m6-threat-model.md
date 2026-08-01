@@ -174,16 +174,13 @@ digest. Removal reassembled the surrounding text with `TrimEnd`, `Trim`, and a
 freshly chosen newline, so blank lines around the block were collapsed. The
 user's *text* survived; their formatting did not. Whitespace is content.
 
-**Mitigation.** Removal now takes the exact marker span, plus only what the
-marker itself records as the framework's: `sep=N` characters before it and
-`tail=N` after, and only when those exact characters are actually present.
-Nothing else is read, trimmed, or rewritten. Insertion no longer trims the file
-it appends to either — the original is a byte-exact prefix of the result.
+**Mitigation.** Removal takes the exact marker span and nothing else. The
+`sep=`/`tail=` accounting that was the first attempt at this is gone — see
+threat 16, which is the defect that attempt became. Insertion writes nothing
+outside the span at all, not even a bridging newline, so there is no
+surrounding whitespace for removal to have an opinion about.
 
-Recording those amounts rather than inferring them is the whole mechanism: a
-file that already ended with two blank lines is indistinguishable, after the
-fact, from one where setup added them. If nothing remains after removal, the
-file is removed *and the output says so*.
+If nothing remains after removal, the file is **not** deleted — see threat 17.
 
 **Evidence.** `setup-integration-tests.ps1` asserts a byte-identical round trip
 across ten file shapes — no trailing newline, one, three, five, leading blank
@@ -419,12 +416,18 @@ four of the user's newlines.
 gone. The v2 format writes **nothing outside the markers that it expects to take
 back**, so no attribute can control a deletion:
 
-- insertion appends the block to the text exactly as found, adding at most one
-  newline and only when the file did not end with one — and never reclaiming it;
+- insertion appends the block to the text exactly as found, with **nothing** in
+  between — no separator, no bridging newline;
 - removal splices exactly the marker span;
 - `sep=` and `tail=` are not read at all. A v1 block installed earlier may leave
   a blank line behind, which is the deliberate trade: residue the user can
   delete in a second beats deleting a byte they wanted.
+
+A first version of this fix kept a single bridging newline for files that did
+not end with one, so the BEGIN marker would not share a line with the user's
+last sentence, and did not reclaim it. Review rejected that too, correctly: it
+made the round trip lossy — two bytes on CRLF, not the "at most one" claimed —
+and the cosmetic gain did not justify a permanent edit to somebody's file.
 
 **Evidence.** `setup-integration-tests.ps1` — `sep`/`tail` set to 0, to the real
 former values, to 999, duplicated, and set to negative and non-numeric values,
