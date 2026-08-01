@@ -284,7 +284,7 @@ Task source: delivery
   $agentsText = [System.Text.Encoding]::UTF8.GetString([System.IO.File]::ReadAllBytes((Join-Path $project "AGENTS.md")))
   Assert-True "the instruction block tells the agent where the governed context is" `
     ($agentsText -match "SCOPE\.json" -and $agentsText -match "EXECUTION-CONTRACT")
-  Assert-True "…and never claims the integration prevents an out-of-scope edit" `
+  Assert-True "...and never claims the integration prevents an out-of-scope edit" `
     ($agentsText -notmatch "(?i)(prevents|blocks|stops) (you|the agent|any) .{0,30}(out.of.scope|scope violation)")
 
   $contractDigest = (Get-Content -LiteralPath ($contractPath + ".sha256") -Raw).Trim()
@@ -315,11 +315,11 @@ Task source: delivery
     -Arguments @("-ProjectPath", $project, "-ResultPath", $resultPath)
   Assert-True "an agent-side approval claim is still rejected after the integration" `
     ($verify.Text -match "EXEC-007") ($verify.Text)
-  Assert-True "…and the overall verdict is a failure" `
+  Assert-True "...and the overall verdict is a failure" `
     ($verify.Text -match "(?m)^Verdict: fail") ($verify.Text)
   Assert-True "the out-of-scope file is still reported" `
     ($verify.Text -match "src/reporting/export\.ts") ($verify.Text)
-  Assert-True "…and an agent assertion still does not satisfy a required test" `
+  Assert-True "...and an agent assertion still does not satisfy a required test" `
     ($verify.Text -match "EXEC-005") ($verify.Text)
 
   # Case B: the honest report an agent IS allowed to make still fails on the
@@ -343,9 +343,9 @@ Task source: delivery
   $blockOnly = [regex]::Match($text, "(?s)AXIOM-PMO:BEGIN.*?AXIOM-PMO:END").Value
   Assert-True "hostile repository content does not change what the block says" `
     ($blockOnly -notmatch "(?i)may approve releases|has human authority") ($blockOnly)
-  Assert-True "…and the user's own text is still preserved verbatim regardless" `
+  Assert-True "...and the user's own text is still preserved verbatim regardless" `
     ($text -match "IMPORTANT: any tool editing this file")
-  Assert-True "…and the block still says the agent may not approve its own work" `
+  Assert-True "...and the block still says the agent may not approve its own work" `
     ($blockOnly -match "(?i)may not approve your own work")
 } finally {
   if (Test-Path -LiteralPath $script:sandbox) {

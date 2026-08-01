@@ -92,7 +92,7 @@ try {
   $p = New-HookProject -Name "no-optin" -OptIn $false
   $r = Invoke-Hook -Project $p -Payload (New-Payload -Project $p -FilePath "src/other/thing.ts")
   Assert-True "with no opt-in file the hook says nothing" ($r.Text -eq "") ($r.Text)
-  Assert-True "…and exits 0" ($r.ExitCode -eq 0) ("exit=" + $r.ExitCode)
+  Assert-True "...and exits 0" ($r.ExitCode -eq 0) ("exit=" + $r.ExitCode)
 
   $p = New-HookProject -Name "optin-false" -OptIn $false
   New-Item -ItemType Directory -Path (Join-Path $p ".axiom") -Force | Out-Null
@@ -111,7 +111,7 @@ try {
   $p = New-HookProject -Name "optin" -OptIn $true
   $r = Invoke-Hook -Project $p -Payload (New-Payload -Project $p -FilePath "src/other/thing.ts")
   Assert-True "an out-of-scope path is reported once opted in" ($r.Text -match "scope advisory") ($r.Text)
-  Assert-True "…and names the offending path" ($r.Text -match "src/other/thing\.ts") ($r.Text)
+  Assert-True "...and names the offending path" ($r.Text -match "src/other/thing\.ts") ($r.Text)
 
   $r = Invoke-Hook -Project $p -Payload (New-Payload -Project $p -FilePath "src/payments/charge.ts")
   Assert-True "an in-scope path produces no noise" ($r.Text -eq "") ($r.Text)
@@ -159,13 +159,13 @@ try {
   $r = Invoke-Hook -Project $p -Payload (New-Payload -Project $p -FilePath "src/other/thing.ts")
   Assert-True "the response carries no permission decision field" `
     ($r.Text -notmatch "(?i)permissionDecision|permission_decision") ($r.Text)
-  Assert-True "…no deny or block verdict" `
+  Assert-True "...no deny or block verdict" `
     ($r.Text -notmatch "(?i)`"(deny|block|ask)`"") ($r.Text)
-  Assert-True "…and says in its own words that nothing is blocked" `
+  Assert-True "...and says in its own words that nothing is blocked" `
     ($r.Text -match "(?i)nothing is blocked|report-only") ($r.Text)
-  Assert-True "…and disclaims being evidence or a decision" `
+  Assert-True "...and disclaims being evidence or a decision" `
     ($r.Text -match "(?i)not a decision and not evidence") ($r.Text)
-  Assert-True "…and points at the check that actually decides" `
+  Assert-True "...and points at the check that actually decides" `
     ($r.Text -match "SCOPE-DIFF") ($r.Text)
 
   # Nothing anywhere in the shipped hook can emit a decision, because there is
@@ -183,7 +183,7 @@ try {
   Assert-True "no executable line in the hook emits a permission-decision field" `
     ($hookCode -notmatch "(?i)permissionDecision|permission_decision|hookSpecificOutput") `
     ("the point is not that no case produced one, but that no case could")
-  Assert-True "…and none emits a deny or block verdict" `
+  Assert-True "...and none emits a deny or block verdict" `
     ($hookCode -notmatch '"deny"|"block"')
 
   # ---- It never breaks a tool call -------------------------------------
@@ -267,7 +267,7 @@ try {
       -Env @{ AXIOM_PWSH = "/nonexistent/pwsh"; CLAUDE_PLUGIN_ROOT = $repo; PATH = $fakeBin }
     Assert-True "no PowerShell on the host means no advisory, not a failure" `
       ($r.ExitCode -eq 0) ("exit=" + $r.ExitCode + " " + $r.Text)
-    Assert-True "…and it stays silent rather than printing an error" `
+    Assert-True "...and it stays silent rather than printing an error" `
       ($r.Text -eq "") ($r.Text)
 
     $r = Invoke-Shim -Payload "" -Env $env
@@ -308,7 +308,7 @@ try {
 
     # Whatever the shell situation, the advisory LOGIC is PowerShell and must
     # be exercised on Windows. Those cases ran above, outside this branch.
-    Assert-True "…and the PowerShell advisory itself was exercised on this host regardless" `
+    Assert-True "...and the PowerShell advisory itself was exercised on this host regardless" `
       ($script:pass -gt 0)
   }
 
@@ -317,15 +317,15 @@ try {
   $hooksJsonPath = Join-Path $repo "hooks/hooks.json"
   Assert-True "the plugin registers the hook" (Test-Path -LiteralPath $hooksJsonPath)
   $hooksJson = Get-Content -LiteralPath $hooksJsonPath -Raw | ConvertFrom-Json
-  Assert-True "…on PreToolUse" ($null -ne $hooksJson.hooks.PreToolUse)
-  Assert-True "…scoped to editing tools rather than every tool call" `
+  Assert-True "...on PreToolUse" ($null -ne $hooksJson.hooks.PreToolUse)
+  Assert-True "...scoped to editing tools rather than every tool call" `
     ([string]@($hooksJson.hooks.PreToolUse)[0].matcher -match "Write|Edit") `
     ("matcher=" + [string]@($hooksJson.hooks.PreToolUse)[0].matcher)
-  Assert-True "…via `${CLAUDE_PLUGIN_ROOT}, not a hardcoded path" `
+  Assert-True "...via `${CLAUDE_PLUGIN_ROOT}, not a hardcoded path" `
     ([string]@(@($hooksJson.hooks.PreToolUse)[0].hooks)[0].command -match [regex]::Escape('${CLAUDE_PLUGIN_ROOT}'))
-  Assert-True "…with a timeout, so a wedged advisory cannot hang an edit" `
+  Assert-True "...with a timeout, so a wedged advisory cannot hang an edit" `
     ($null -ne @(@($hooksJson.hooks.PreToolUse)[0].hooks)[0].timeout)
-  Assert-True "…and the registration describes itself as report-only and opt-in" `
+  Assert-True "...and the registration describes itself as report-only and opt-in" `
     ([string]$hooksJson.description -match "(?i)report-only" -and [string]$hooksJson.description -match "(?i)opt-in")
 } finally {
   if (Test-Path -LiteralPath $script:sandbox) {
