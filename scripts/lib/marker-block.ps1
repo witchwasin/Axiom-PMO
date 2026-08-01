@@ -23,6 +23,80 @@
 $script:AxiomMarkerBegin = "AXIOM-PMO:BEGIN"
 $script:AxiomMarkerEnd = "AXIOM-PMO:END"
 
+# The block body the framework generates, and the only content it will claim as
+# its own.
+#
+# This lives here rather than in the setup script for a reason that a review
+# found the hard way: ownership has to be decided against something the actor
+# writing the file cannot choose. The first version compared the block's
+# content to a digest recorded in the block's own BEGIN marker -- an unkeyed
+# SHA-256 that anyone can compute. Arbitrary content plus a correctly computed
+# digest read as "framework-generated", and uninstall then deleted content the
+# framework had never written, with no -Force required. Demonstrated before
+# this was changed.
+#
+# A digest proves a body has not changed since it was hashed. It proves nothing
+# about who wrote it. That is the same thing Milestone 5 learned three times
+# about execution evidence, arriving here in a different costume.
+#
+# So ownership is now: does this body match a body the framework itself
+# generates? The digest is kept, but demoted to what it can actually support --
+# telling "edited after we wrote it" apart from "never ours".
+function Get-AxiomCanonicalBody {
+  [CmdletBinding()]
+  param([string]$Version = "1")
+  if ($Version -ne "1") { return $null }
+  return @"
+## Axiom-PMO
+
+This repository is governed by [Axiom-PMO](https://github.com/witchwasin/Axiom-PMO),
+a governance and development-handoff framework. This block is generated -- edit
+it by re-running the setup command, not by hand.
+
+**Before implementing anything**, read the governed context for the work item
+you were given: ``PROJECT.md`` for scope, ``DELIVERY.md`` for the work item and its
+acceptance criteria, ``SCOPE.json`` for the approved implementation scope, and
+``.execution/<work-item>/EXECUTION-CONTRACT.json`` if one was exported for you.
+
+**Stay inside the approved scope.** Changing files outside ``SCOPE.json``'s
+``implementation_scope`` is a scope deviation and will be reported.
+
+**You may not approve your own work.** Report ``implementation-complete`` and
+nothing more. Release, QA, security, scope-change, risk-downgrade and
+test-evidence acceptance are human-only authority claims; each needs a decision
+recorded in ``decision-log.md`` by a person. Writing ``"actor": "human"`` in a file
+you authored does not make one.
+
+**Evidence, not assertion.** A required test is satisfied by evidence from a
+source you cannot impersonate -- a CI check -- or by a human accepting a
+specific artifact on the record. Your own report that a test passed is not
+evidence of it.
+
+**Verification is after the fact.** Run
+``axiom verify --project . --result .execution/<work-item>/EXECUTION-RESULT.json``
+when you are done. This block gives you the approved scope and authority as
+context; it does not enforce them, and nothing here prevents an out-of-scope
+edit. Axiom-PMO checks afterwards whether the implementation stayed inside them.
+"@
+}
+
+# Digests of every body version the framework has ever generated, frozen as
+# literals.
+#
+# Frozen, not computed, and that is the point. If the canonical body is edited,
+# the computed digest changes and every block already installed in a user's
+# repository would stop being recognised as ours -- so uninstall would refuse
+# and every user would need -Force. Keeping the old digests here is what makes
+# an upgrade a normal operation instead of a support incident.
+#
+# Adding a version means appending its digest, never replacing one. A test
+# asserts the current canonical body's digest is present, so editing the body
+# without recording it fails the suite rather than silently orphaning installs.
+$script:AxiomKnownBodyDigests = @(
+  # v1 -- Milestone 6.3
+  "b3af36639b1077269108f6719c53630ecdf6c3c517f410589a599686194c626b"
+)
+
 function Get-AxiomBlockDigest {
   <#
     .SYNOPSIS
@@ -153,6 +227,16 @@ function Find-AxiomBlock {
   $digestMatch = [regex]::Match($attributes, '(?i)sha256\s*=\s*([0-9a-f]{64})')
   if ($digestMatch.Success) { $digest = $digestMatch.Groups[1].Value.ToLowerInvariant() }
 
+  # How much separator setup inserted before this block, if it said. Absent
+  # means "unknown", which removal treats as zero -- never guessing that
+  # whitespace it cannot account for belongs to it.
+  $separatorLength = 0
+  $sepMatch = [regex]::Match($attributes, '(?i)\bsep\s*=\s*(\d{1,3})')
+  if ($sepMatch.Success) { $separatorLength = [int]$sepMatch.Groups[1].Value }
+  $trailerLength = 0
+  $tailMatch = [regex]::Match($attributes, '(?i)\btail\s*=\s*(\d{1,3})')
+  if ($tailMatch.Success) { $trailerLength = [int]$tailMatch.Groups[1].Value }
+
   $contentStart = $begins[0].Index + $begins[0].Length
   $content = $Text.Substring($contentStart, $ends[0].Index - $contentStart)
 
@@ -160,6 +244,8 @@ function Find-AxiomBlock {
     Status = "present"
     Content = $content
     Digest = $digest
+    SeparatorLength = $separatorLength
+    TrailerLength = $trailerLength
     StartIndex = $begins[0].Index
     EndIndex = $ends[0].Index + $ends[0].Length
   }
@@ -168,39 +254,84 @@ function Find-AxiomBlock {
 function Test-AxiomBlockOwnership {
   <#
     .SYNOPSIS
-      Is the block still byte-for-byte what the framework wrote?
+      Did the framework write this block?
     .DESCRIPTION
-      'owned'   -- safe to replace or remove.
-      'edited'  -- a human changed our block. Removing it would destroy their
-                   work, so callers must stop and report rather than proceed.
-      'unknown' -- written before digests were recorded, or the attribute was
-                   stripped. Treated as 'edited': not provably ours is not ours.
+      'owned'   -- the body is one the framework generates. Safe to replace or
+                   remove.
+      'edited'  -- the body is not canonical, and does not match the digest
+                   recorded when it was written: something changed it after we
+                   wrote it.
+      'foreign' -- the body is not canonical, but its recorded digest matches
+                   it exactly. Self-consistent, and self-consistency is not
+                   authorship. This is the case a correctly forged digest
+                   produces, and it must fail closed.
+      'unknown' -- not canonical, and there is nothing to compare against.
+
+      Only 'owned' permits an unforced replace or remove. The other three all
+      require -Force, and the distinction between them exists so the message
+      can tell the user which situation they are actually in.
   #>
   [CmdletBinding()]
   param([Parameter(Mandatory = $true)]$Block)
 
   if ($Block.Status -ne "present") { return "absent" }
-  if (-not $Block.Digest) { return "unknown" }
+
   $actual = Get-AxiomBlockDigest -Content $Block.Content
-  if ($actual -eq $Block.Digest) { return "owned" }
+  if ($script:AxiomKnownBodyDigests -contains $actual) { return "owned" }
+
+  if (-not $Block.Digest) { return "unknown" }
+  if ($Block.Digest -eq $actual) { return "foreign" }
   return "edited"
+}
+
+function Get-AxiomOwnershipReason {
+  <#
+    .SYNOPSIS
+      Why a non-owned block will not be touched, in words a user can act on.
+  #>
+  [CmdletBinding()]
+  param([Parameter(Mandatory = $true)][string]$Ownership, [string]$Verb = "modify")
+
+  switch ($Ownership) {
+    "edited" { return "the block's content is not one Axiom-PMO generates, and it no longer matches the digest recorded when it was written -- it has been edited by hand since. ${Verb}ing it would discard those edits" }
+    "foreign" { return "the block's content is not one Axiom-PMO generates. Its recorded digest matches its content, but that digest is unkeyed and anyone can compute one -- a matching digest shows the content is internally consistent, not that Axiom-PMO wrote it. ${Verb}ing it would discard content the framework never created" }
+    "unknown" { return "the block's content is not one Axiom-PMO generates and carries no recorded digest, so it cannot be shown to be framework-generated" }
+    default { return "the block cannot be shown to be framework-generated" }
+  }
 }
 
 function New-AxiomBlockText {
   <#
     .SYNOPSIS
-      Render the block, with its own digest embedded in the BEGIN marker.
+      Render the block.
+    .PARAMETER SeparatorLength
+      How many characters of separator setup is inserting immediately before
+      this block. Recorded in the marker as sep=N so that uninstall can remove
+      exactly those characters and no others.
+    .PARAMETER TrailerLength
+      The same, for the newline setup appends immediately after the block.
+      Recorded as tail=N. Symmetry matters here: an earlier version reclaimed
+      the trailer only when the block happened to sit at end-of-file, so a
+      block with content added below it left a stray newline behind on
+      uninstall.
+
+      This is written down rather than inferred because inferring it is
+      guessing about the user's whitespace. If a file already ended with two
+      blank lines and setup added none, an uninstall that "tidily" removed two
+      newlines would be deleting the user's formatting.
   #>
   [CmdletBinding()]
   param(
     [Parameter(Mandatory = $true)][string]$Body,
-    [string]$Newline = "`n"
+    [string]$Newline = "`n",
+    [int]$SeparatorLength = 0,
+    [int]$TrailerLength = 0
   )
 
   $normalisedBody = ($Body -replace "`r`n", "`n").Trim()
   $digest = Get-AxiomBlockDigest -Content $normalisedBody
   $lines = @(
-    "<!-- $($script:AxiomMarkerBegin) v1 sha256=$digest -->",
+    "<!-- $($script:AxiomMarkerBegin) v1 sha256=$digest sep=$SeparatorLength tail=$TrailerLength -->",
     "",
     $normalisedBody,
     "",
@@ -212,14 +343,20 @@ function New-AxiomBlockText {
 function Set-AxiomBlock {
   <#
     .SYNOPSIS
-      Insert or replace the block in a document, returning the new text.
+      Insert or replace the block, returning the new text.
     .DESCRIPTION
-      Never modifies anything outside the markers. Appending leaves the
-      existing document untouched and adds a blank line separator; replacing
-      swaps only the span between and including the markers.
+      Never modifies a byte outside the markers -- not even whitespace.
+
+      Inserting appends a fixed separator and the block to the text exactly as
+      found. The original is NOT trimmed: an earlier version trimmed trailing
+      newlines before appending, which silently rewrote the end of a file whose
+      author had deliberately left blank lines there.
+
+      Replacing splices only the span between and including the markers, and
+      carries the existing block's recorded separator length forward -- the
+      separator belongs to the install that created it, not to this rewrite.
     .OUTPUTS
       Action is one of: inserted, replaced, unchanged, blocked.
-      On 'blocked': Reason.
   #>
   [CmdletBinding()]
   param(
@@ -230,31 +367,33 @@ function Set-AxiomBlock {
   )
 
   $block = Find-AxiomBlock -Text $Text
-  $rendered = New-AxiomBlockText -Body $Body -Newline $Newline
 
   if ($block.Status -eq "malformed") {
     return [pscustomobject]@{ Action = "blocked"; Reason = $block.Reason; Text = $Text }
   }
 
   if ($block.Status -eq "absent") {
-    if ([string]::IsNullOrWhiteSpace($Text)) {
+    if ($Text.Length -eq 0) {
+      $rendered = New-AxiomBlockText -Body $Body -Newline $Newline -SeparatorLength 0 -TrailerLength $Newline.Length
       return [pscustomobject]@{ Action = "inserted"; Text = ($rendered + $Newline) }
     }
+    # A fixed separator, appended to the text verbatim. Whatever the file
+    # already ended with stays exactly as it was.
     $separator = $Newline + $Newline
-    $trimmed = $Text.TrimEnd("`r", "`n")
-    return [pscustomobject]@{ Action = "inserted"; Text = ($trimmed + $separator + $rendered + $Newline) }
+    $rendered = New-AxiomBlockText -Body $Body -Newline $Newline -SeparatorLength $separator.Length -TrailerLength $Newline.Length
+    return [pscustomobject]@{ Action = "inserted"; Text = ($Text + $separator + $rendered + $Newline) }
   }
 
   $ownership = Test-AxiomBlockOwnership -Block $block
   if ($ownership -ne "owned" -and -not $Force) {
-    $reason = if ($ownership -eq "edited") {
-      "the existing Axiom-PMO block has been edited by hand; replacing it would discard those edits"
-    } else {
-      "the existing Axiom-PMO block carries no ownership digest, so it cannot be proven to be framework-generated"
+    return [pscustomobject]@{
+      Action = "blocked"
+      Reason = (Get-AxiomOwnershipReason -Ownership $ownership -Verb "replac")
+      Text = $Text
     }
-    return [pscustomobject]@{ Action = "blocked"; Reason = $reason; Text = $Text }
   }
 
+  $rendered = New-AxiomBlockText -Body $Body -Newline $Newline -SeparatorLength $block.SeparatorLength -TrailerLength $block.TrailerLength
   $existing = $Text.Substring($block.StartIndex, $block.EndIndex - $block.StartIndex)
   if ($existing -eq $rendered) {
     return [pscustomobject]@{ Action = "unchanged"; Text = $Text }
@@ -267,7 +406,17 @@ function Set-AxiomBlock {
 function Remove-AxiomBlock {
   <#
     .SYNOPSIS
-      Remove the block, and nothing else, returning the new text.
+      Remove the block, and provably nothing else.
+    .DESCRIPTION
+      Removes the exact marker span, plus the separator setup recorded as its
+      own (sep=N in the BEGIN marker) and only when those exact characters are
+      actually there, plus the single trailing newline setup appends and only
+      when it is the last character in the file.
+
+      Everything else is left byte-for-byte. An earlier version reassembled the
+      surrounding text with TrimEnd and Trim and a freshly chosen newline,
+      which collapsed the user's blank lines around the block -- content the
+      framework never owned. Whitespace is content.
     .OUTPUTS
       Action is one of: removed, absent, blocked.
   #>
@@ -288,31 +437,38 @@ function Remove-AxiomBlock {
 
   $ownership = Test-AxiomBlockOwnership -Block $block
   if ($ownership -ne "owned" -and -not $Force) {
-    $reason = if ($ownership -eq "edited") {
-      "the Axiom-PMO block has been edited by hand; removing it would discard those edits"
-    } else {
-      "the Axiom-PMO block carries no ownership digest, so it cannot be proven safe to remove"
+    return [pscustomobject]@{
+      Action = "blocked"
+      Reason = (Get-AxiomOwnershipReason -Ownership $ownership -Verb "remov")
+      Text = $Text
     }
-    return [pscustomobject]@{ Action = "blocked"; Reason = $reason; Text = $Text }
   }
 
-  $before = $Text.Substring(0, $block.StartIndex)
-  $after = $Text.Substring($block.EndIndex)
+  $start = $block.StartIndex
+  $end = $block.EndIndex
 
-  # The separator this tool inserted on the way in comes back out with it; any
-  # blank lines the user put there themselves stay. Collapsing whitespace
-  # further would be tidying somebody else's file.
-  # Reassembled with the document's OWN newline, not a hardcoded LF. Getting
-  # this wrong converted every CRLF file to LF on uninstall -- a one-line
-  # change that rewrites every line of somebody's file, which is exactly the
-  # damage this whole library exists to avoid.
-  $result = ($before.TrimEnd("`r", "`n"))
-  if (-not [string]::IsNullOrWhiteSpace($after)) {
-    $result = $result + $Newline + $Newline + $after.Trim("`r", "`n")
+  # Reclaim the separator only if the marker says how much there was AND those
+  # exact characters are sitting there. A recorded length that does not match
+  # what is actually in the file means somebody edited around the block, and
+  # their edit wins.
+  if ($block.SeparatorLength -gt 0 -and $start -ge $block.SeparatorLength) {
+    $candidate = $Text.Substring($start - $block.SeparatorLength, $block.SeparatorLength)
+    if ($candidate -match '^[\r\n]+$') {
+      $start = $start - $block.SeparatorLength
+    }
   }
-  if ($result.Length -gt 0) { $result = $result.TrimEnd("`r", "`n") + $Newline }
 
-  return [pscustomobject]@{ Action = "removed"; Text = $result }
+  # The trailer setup appended, reclaimed on the same terms as the separator:
+  # only what the marker says is ours, and only when those exact characters are
+  # actually there.
+  if ($block.TrailerLength -gt 0 -and ($end + $block.TrailerLength) -le $Text.Length) {
+    $candidate = $Text.Substring($end, $block.TrailerLength)
+    if ($candidate -match '^[\r\n]+$') {
+      $end = $end + $block.TrailerLength
+    }
+  }
+
+  return [pscustomobject]@{ Action = "removed"; Text = ($Text.Substring(0, $start) + $Text.Substring($end)) }
 }
 
 function New-AxiomBackup {

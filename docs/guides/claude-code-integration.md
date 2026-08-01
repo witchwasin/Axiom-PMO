@@ -1,7 +1,8 @@
 # Claude Code integration
 
-> **Status: implemented and Human-Owner accepted; independent review
-> outstanding, so not closed.** Nothing here is published to a marketplace, no
+> **Status: implemented and Human-Owner accepted; independent review returned
+> REQUEST CHANGES (both findings since fixed), re-review pending, so not
+> closed.** Nothing here is published to a marketplace, no
 > release or tag exists, and it is not merged to `main`. The known limitations
 > below are open and were not closed by that acceptance. See
 > [`ROADMAP.md`](../../ROADMAP.md).

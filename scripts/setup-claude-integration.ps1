@@ -156,38 +156,12 @@ if ($block.Status -eq "malformed") {
 # session, and it grants nothing: no approval authority, no ability to close a
 # finding, no exemption from any gate.
 
-$body = @"
-## Axiom-PMO
-
-This repository is governed by [Axiom-PMO](https://github.com/witchwasin/Axiom-PMO),
-a governance and development-handoff framework. This block is generated -- edit
-it by re-running the setup command, not by hand.
-
-**Before implementing anything**, read the governed context for the work item
-you were given: ``PROJECT.md`` for scope, ``DELIVERY.md`` for the work item and its
-acceptance criteria, ``SCOPE.json`` for the approved implementation scope, and
-``.execution/<work-item>/EXECUTION-CONTRACT.json`` if one was exported for you.
-
-**Stay inside the approved scope.** Changing files outside ``SCOPE.json``'s
-``implementation_scope`` is a scope deviation and will be reported.
-
-**You may not approve your own work.** Report ``implementation-complete`` and
-nothing more. Release, QA, security, scope-change, risk-downgrade and
-test-evidence acceptance are human-only authority claims; each needs a decision
-recorded in ``decision-log.md`` by a person. Writing ``"actor": "human"`` in a file
-you authored does not make one.
-
-**Evidence, not assertion.** A required test is satisfied by evidence from a
-source you cannot impersonate -- a CI check -- or by a human accepting a
-specific artifact on the record. Your own report that a test passed is not
-evidence of it.
-
-**Verification is after the fact.** Run
-``axiom verify --project . --result .execution/<work-item>/EXECUTION-RESULT.json``
-when you are done. This block gives you the approved scope and authority as
-context; it does not enforce them, and nothing here prevents an out-of-scope
-edit. Axiom-PMO checks afterwards whether the implementation stayed inside them.
-"@
+# The canonical body lives in the library, not here. Ownership is decided by
+# comparing a block's content against what the framework generates, so there
+# can only be one definition of that -- a second copy in this script would let
+# the two drift and make ownership mean different things depending on which
+# file you read.
+$body = Get-AxiomCanonicalBody -Version "1"
 
 # ---- Uninstall ----------------------------------------------------------
 

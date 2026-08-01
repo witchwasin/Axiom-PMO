@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-### Implemented and Human-Owner accepted; independent review outstanding — not closed, not released
+### Implemented and Human-Owner accepted; independent review returned REQUEST CHANGES — remediated, re-review pending
 
 - **Claude Code integration (Milestone 6).** Optional. Milestones 1-5 are the
   product; this is a bridge for teams who choose to continue implementation in
@@ -10,11 +10,27 @@
   requires it.
 
   Tested and accepted by the Human Owner on 2026-08-01 (`DEC-005`).
-  **Independent review is still outstanding, so this is not closed** --
-  `AGENTS.md` rule 11 requires both, and neither substitutes for the other.
-  Not released, not tagged, not published, not merged. The acceptance closed
-  no debt: three known limitations remain open and are listed under Deferred
-  technical debt in `ROADMAP.md`.
+  **Independent review returned REQUEST CHANGES**: one FATAL and one MAJOR,
+  both in the code that writes to the user's own file, and both reproduced
+  before being fixed.
+
+  The FATAL: ownership was decided by an unkeyed SHA-256 the block declared
+  about itself, so arbitrary content plus a correctly computed digest read as
+  framework-generated and was deleted without `-Force`. Ownership is now
+  anchored to the canonical body the framework generates; a self-consistent
+  forgery fails closed. Same lesson Milestone 5 learned three times -- a digest
+  proves integrity since hashing, never authorship.
+
+  The MAJOR: removal reassembled the text around the block with `TrimEnd` and
+  `Trim`, collapsing blank lines the user owned. Removal now takes the exact
+  marker span plus only the separator and trailer the marker itself records,
+  and installation no longer trims the file it appends to.
+
+  Both fixed with regression tests. **Closure is blocked pending re-review** --
+  `AGENTS.md` rule 11 requires independent review as well as human acceptance,
+  and neither substitutes for the other. Not released, not tagged, not
+  published, not merged. Neither the acceptance nor this remediation closed any
+  of the three known limitations under Deferred technical debt in `ROADMAP.md`.
 
   The framework installs as a Claude Code plugin, outside the user's
   repository. One fenced, namespaced block goes into the repository's
@@ -58,7 +74,7 @@
   the whole repository (~10 MB, mostly `tests/`). Full list in
   `docs/architecture/m6-threat-model.md`.
 
-  Tests added: 17 spike, 33 packaging, 90 setup, 61 clean-room, 46 hook.
+  Tests added: 17 spike, 38 packaging, 122 setup, 61 clean-room, 46 hook.
   The Human Owner has run `docs/guides/claude-code-walkthrough.md`. It has
   still not been run by anyone outside the team that built it, which is the
   independent signal that walkthrough exists to produce.

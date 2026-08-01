@@ -539,10 +539,12 @@ Next:
 - keep the optional Milestone 1 walkthrough and recording evidence packet
   available for future trust work;
 - Milestone 6, Claude Code integration — **optional, not part of the core
-  product**. Implemented, hardened, and **tested and accepted by the Human
-  Owner** (2026-08-01). **Independent review is still outstanding, so it is
-  not closed**, and it is not released, tagged, published, or merged. Three
-  known limitations remain open — see the guide. It packages the framework as a Claude Code
+  product**. Implemented, hardened, and **accepted by the Human
+  Owner** (2026-08-01). **Independent review returned REQUEST CHANGES** — one
+  FATAL and one MAJOR in the user-file write path, both since fixed with
+  regression tests; **closure is blocked pending re-review**. Not released,
+  tagged, published, or merged. Three known limitations remain open — see the
+  guide. It packages the framework as a Claude Code
   plugin and adds one fenced block to a repository's `AGENTS.md` so a verified
   handoff can be continued without re-interpreting the documents. It hands the
   agent governed context; it does not enforce scope. See
@@ -570,8 +572,8 @@ directly in CI. **Milestones 1–5 — the core governance and
 development-handoff framework — are complete**, with Milestone 5 (execution
 contract verification) accepted and closed on 2026-07-31. Milestone 6, the
 optional Claude Code integration bridge, is implemented and Human-Owner
-accepted, with **independent review outstanding** -- not closed, not released,
-and not published. There is no npm package: Milestone 3 Phase B is deferred.
+accepted; **independent review returned REQUEST CHANGES and re-review is
+pending**, so it is not closed, not released, and not published. There is no npm package: Milestone 3 Phase B is deferred.
 
 Upgrading from 1.1 requires no migration: the Action and SCOPE-DIFF are both
 opt-in, and every existing local invocation is unaffected. Migrating from the

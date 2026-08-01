@@ -1,7 +1,7 @@
 # Try the Claude Code integration — 15 minutes
 
-> **Status: implemented and Human-Owner accepted; independent review
-> outstanding.** Not released, not published. The Human Owner has run this
+> **Status: implemented and Human-Owner accepted; independent review returned
+> REQUEST CHANGES (both findings since fixed), re-review pending.** Not released, not published. The Human Owner has run this
 > walkthrough; **nobody outside the team that built it has**, and that is
 > exactly the signal this page exists to produce.
 

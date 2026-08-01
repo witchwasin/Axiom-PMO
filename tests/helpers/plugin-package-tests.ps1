@@ -146,6 +146,34 @@ foreach ($skill in $mirrorSkills) {
     ($text -match "(?ms)^---\s*\r?\n.*?^name:\s*\S+.*?^description:\s*\S+.*?^---\s*$")
 }
 
+# ---- Ownership registry -------------------------------------------------
+# Ownership is decided by matching a block's body against bodies the framework
+# generates, so the registry of those bodies is load-bearing. If the canonical
+# body is edited without its digest being recorded, every block already
+# installed in a user's repository silently stops being recognised as ours and
+# uninstall starts refusing. This makes that a test failure instead.
+
+. (Join-Path $repo "scripts/lib/marker-block.ps1")
+
+$canonicalBody = Get-AxiomCanonicalBody -Version "1"
+Assert-True "the canonical block body is available from the library" `
+  (-not [string]::IsNullOrWhiteSpace($canonicalBody))
+
+$canonicalDigest = Get-AxiomBlockDigest -Content $canonicalBody
+Assert-True "the current canonical body's digest is in the frozen registry" `
+  ($script:AxiomKnownBodyDigests -contains $canonicalDigest) `
+  ("computed=" + $canonicalDigest + " -- if the body was edited, append this digest to AxiomKnownBodyDigests rather than replacing the existing entry, or every installed block stops being recognised")
+
+Assert-True "the registry keeps every historical digest, never just the current one" `
+  ($script:AxiomKnownBodyDigests.Count -ge 1)
+
+# The body is the framework speaking to an agent on every session; it must not
+# grant anything, and the packaging suite is a reasonable second place to say so.
+Assert-True "the canonical body states the agent may not approve its own work" `
+  ($canonicalBody -match "(?i)may not approve your own work")
+Assert-True "the canonical body states it does not enforce scope" `
+  ($canonicalBody -match "(?i)does not enforce|nothing here prevents")
+
 # ---- The drift gate -----------------------------------------------------
 
 $check = Invoke-Build -Root $repo -Check
