@@ -108,7 +108,7 @@ Recommended effort allocation:
 | Milestone 4 - GitHub Action | Delivered | Merged to `main` at `31d1e25`; child issues #12-#17 closed |
 | Milestone 4.5 - SCOPE-DIFF | Delivered | Human Owner accepted 2026-07-30 after two independent AI review rounds; merged to `main` at `6b42643` |
 | Milestone 5 - Execution Contract Verification MVP | **Delivered / CLOSED** -- Sol ACCEPT at round 5 after four REQUEST CHANGES rounds; Human Owner accepted and closed 2026-07-31 (`DEC-004`) | Core product. `docs/reference/execution-contract.md`; decisions `DEC-002`, `DEC-004`; commit `2888769`, CI run `30643605031` 7/7 |
-| Milestone 6 - Claude Code Integration Experience | 6.0 decided; 6.1 spike accepted; **6.2-6.5 implemented and under review** -- not accepted, not released, not published | Optional integration, not core product. `docs/guides/claude-code-integration.md`; `docs/architecture/m6-threat-model.md`; decision `DEC-003` |
+| Milestone 6 - Claude Code Integration Experience | **Human Owner tested and accepted (`DEC-005`, 2026-08-01); independent Sol review pending, so not closed.** Not released, not tagged, not published, not merged | Optional integration, not core product. Three known debts remain open -- see Deferred technical debt. `docs/guides/claude-code-integration.md`; `docs/architecture/m6-threat-model.md`; decisions `DEC-003`, `DEC-005` |
 
 ## Roadmap Governance
 
@@ -872,9 +872,24 @@ Non-goals, stated because the framing is easy to lose:
 - It is not a requirement for using Axiom-PMO.
 - It does not move any authority, evidence, or approval logic out of the core.
 
-Status: **6.2-6.5 implemented; under review.** Not accepted, not delivered,
-not released, and not published to any marketplace. Authorized by the Human
-Owner on 2026-07-31 after the 6.1 spike was accepted.
+Status, split out rather than collapsed into one word, because these are
+genuinely different things:
+
+| | |
+|---|---|
+| Implementation | complete |
+| Hardening | complete |
+| Human Owner testing | complete |
+| Human Owner acceptance | **accepted** (`DEC-005`, 2026-08-01) |
+| Independent Sol review | **pending** |
+| Milestone closure | **pending Sol review** |
+| Release / tag / publication / merge | **not authorized** |
+
+Milestone 6 is **not closed.** `AGENTS.md` rule 11 requires independent review
+as well as human acceptance, and neither substitutes for the other. The Human
+Owner's acceptance closed no debt: the three below stay open.
+
+Authorized by the Human Owner on 2026-07-31 after the 6.1 spike was accepted.
 
 | Phase | Status |
 |---|---|
@@ -914,9 +929,8 @@ Known limitations are listed in
 [`docs/guides/claude-code-integration.md`](docs/guides/claude-code-integration.md#known-limitations),
 residual risks in
 [`docs/architecture/m6-threat-model.md`](docs/architecture/m6-threat-model.md).
-Three deserve a reviewer's attention: plugin update/version drift is untested,
-cross-plugin hook ordering is unverified, and a git-source install carries the
-whole repository.
+Three are acknowledged by the Human Owner and remain **open** -- see
+[Deferred technical debt](#deferred-technical-debt).
 
 ### Milestone 6.0 - Integration shape decision
 
@@ -1047,11 +1061,29 @@ Do not spend near-term effort on:
 - Milestone 6.0 research: integration shape decided (HYBRID), reviewed and
   revised 2026-07-30.
 
+### Deferred technical debt
+
+Open, acknowledged, and deliberately not hidden. Nothing here was closed by
+Milestone 6's Human Owner acceptance (`DEC-005`), and none of it may be
+described as fixed until it is.
+
+| # | Debt | Milestone | Status |
+|---|---|---|---|
+| 1 | **Plugin update / version drift is untested.** Marketplace entries can pin a `sha`, but nothing verifies that an update cannot replace a pinned install mid-session. | M6 | Open. Non-blocking. |
+| 2 | **Cross-plugin hook ordering is unproven.** What *is* verified is that the advisory returns nothing that could override another plugin's hook; Claude Code's ordering and merge behaviour was not inspected. | M6 | Open. Non-blocking. |
+| 3 | **A git-source plugin install carries the whole repository** -- roughly 10 MB, of which ~6.7 MB is `tests/`. Only `skills/`, `hooks/` and the manifests are loaded; the rest is inert. | M6 | Open. Non-blocking. **Must not be resolved by duplicating the validator or by a large restructure without a separate milestone and decision.** |
+| 4 | **`ci-check` matches a check run by name, not `check_run_id`.** A check that failed and was later re-run green can produce a permanent false negative. | M5 | Open. Non-blocking per Sol's earlier review. Not fixed. |
+
 ### Deferred trust evidence
 
-- Optional independent clean-room walkthrough on Windows and macOS.
-- Optional deterministic terminal recording and README GIF.
+- Optional independent clean-room walkthrough on Windows and macOS (Milestone
+  1). Deferred from the start; not a blocker for the core product or for
+  Milestone 6.
+- Optional deterministic terminal recording and README GIF (Milestone 1). Same
+  status.
 - Issue #8 remains available if the deferred evidence is picked up later.
+- **Milestone 3 Phase B: the public npm package is deferred and has NOT been
+  published.** Nothing may describe Axiom-PMO as having an npm distribution.
 
 ### Next
 

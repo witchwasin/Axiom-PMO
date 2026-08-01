@@ -4,8 +4,22 @@
 > line so it can be checked against the source. Where the index and the source
 > disagree, the source is right.
 
-**Status: implemented, under review.** Not accepted, not delivered, not
-released, not tagged, not published, not merged to `main`.
+**Status**
+
+| | |
+|---|---|
+| Implementation | complete |
+| Hardening | complete |
+| Human Owner testing | complete |
+| Human Owner acceptance | **accepted** — `DEC-005`, 2026-08-01 |
+| Independent review | **this document is for that. Pending.** |
+| Milestone closure | **pending your verdict** |
+| Release / tag / publication / merge | **not authorized** |
+
+The Human Owner's acceptance is not a substitute for this review — `AGENTS.md`
+rule 11 requires both — and it closed **no** known debt. Everything in
+[Known limitations and residual risks](#known-limitations-and-residual-risks)
+is still open.
 
 ## Range
 
@@ -176,7 +190,9 @@ All wired into `scripts/run-all-checks.ps1`, so every supported host runs them.
 Full list: [`m6-threat-model.md`](../architecture/m6-threat-model.md) §Summary
 and [`claude-code-integration.md`](../guides/claude-code-integration.md#known-limitations).
 
-The three worth your time:
+The three worth your time. All three are acknowledged by the Human Owner,
+explicitly **not** closed by his acceptance, and recorded under Deferred
+technical debt in `ROADMAP.md`:
 
 | | |
 |---|---|
@@ -186,6 +202,9 @@ The three worth your time:
 
 ## Confirmations
 
+- Human Owner acceptance recorded as `DEC-005`; it is offered as one half of
+  acceptance, never as review evidence.
+- No known debt was closed by that acceptance.
 - No merge to `main`.
 - No tag created.
 - No GitHub Release.

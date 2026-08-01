@@ -1,8 +1,9 @@
 # Try the Claude Code integration — 15 minutes
 
-> **Status: implemented, under review.** Not accepted, not released, and **not
-> yet validated by anyone outside the team that built it**. That is exactly
-> what this page is for.
+> **Status: implemented and Human-Owner accepted; independent review
+> outstanding.** Not released, not published. The Human Owner has run this
+> walkthrough; **nobody outside the team that built it has**, and that is
+> exactly the signal this page exists to produce.
 
 You should not need to read `ROADMAP.md` to try this. Everything you need is
 below.

@@ -2,12 +2,19 @@
 
 ## Unreleased
 
-### Implemented, under review — not accepted, not released
+### Implemented and Human-Owner accepted; independent review outstanding — not closed, not released
 
 - **Claude Code integration (Milestone 6).** Optional. Milestones 1-5 are the
   product; this is a bridge for teams who choose to continue implementation in
   Claude Code after a handoff is verified, and nothing in Milestones 1-5
   requires it.
+
+  Tested and accepted by the Human Owner on 2026-08-01 (`DEC-005`).
+  **Independent review is still outstanding, so this is not closed** --
+  `AGENTS.md` rule 11 requires both, and neither substitutes for the other.
+  Not released, not tagged, not published, not merged. The acceptance closed
+  no debt: three known limitations remain open and are listed under Deferred
+  technical debt in `ROADMAP.md`.
 
   The framework installs as a Claude Code plugin, outside the user's
   repository. One fenced, namespaced block goes into the repository's
@@ -45,14 +52,16 @@
     ~230 ms enabled. It cannot emit a permission decision, and that is
     asserted against its source rather than only its output.
 
-  Three residual risks are named rather than buried: plugin update/version
-  drift is untested, cross-plugin hook ordering is unverified, and a
-  git-source install carries the whole repository (~10 MB, mostly `tests/`).
-  Full list in `docs/architecture/m6-threat-model.md`.
+  Three residual risks are named rather than buried, acknowledged by the
+  Human Owner, and still **open**: plugin update/version drift is untested,
+  cross-plugin hook ordering is unverified, and a git-source install carries
+  the whole repository (~10 MB, mostly `tests/`). Full list in
+  `docs/architecture/m6-threat-model.md`.
 
   Tests added: 17 spike, 33 packaging, 90 setup, 61 clean-room, 46 hook.
-  No external-user validation yet -- `docs/guides/claude-code-walkthrough.md`
-  exists for exactly that and has not been run by anyone outside the team.
+  The Human Owner has run `docs/guides/claude-code-walkthrough.md`. It has
+  still not been run by anyone outside the team that built it, which is the
+  independent signal that walkthrough exists to produce.
 
 ### Accepted and closed
 
