@@ -2,9 +2,10 @@
 
 > **Status: CLOSED.** Independent review complete (ACCEPT WITH MINOR
 > REVISIONS, three rounds); Human Owner accepted and closed 2026-08-01
-> (`DEC-007`). Nothing here is published to a marketplace, no
-> release or tag exists, and it is not merged to `main`. The known limitations
-> below are open and were not closed by that acceptance. See
+> (`DEC-007`) and separately authorized merge to `main`. No public
+> marketplace publication exists. This page describes the v1.3.0 release
+> candidate; tagging and GitHub Release publication remain separate Human
+> Owner decisions. See
 > [`ROADMAP.md`](../../ROADMAP.md).
 
 **Optional.** Milestones 1–5 are the Axiom-PMO product. Everything on this page
@@ -42,8 +43,14 @@ Axiom-PMO verified handoff
 
 ## Install the plugin
 
+From the directory where you want the framework checkout to live:
+
 ```bash
-claude plugin marketplace add witchwasin/Axiom-PMO
+git clone https://github.com/witchwasin/Axiom-PMO
+```
+
+```bash
+claude plugin marketplace add ./Axiom-PMO
 ```
 
 ```bash
@@ -67,22 +74,24 @@ Nothing in your repository has changed at this point.
 
 ## Add the instruction block to a repository
 
+From the repository you want to integrate:
+
 Preview first. This writes nothing:
 
 ```bash
-node cli/axiom.mjs setup claude --project . --dry-run
+node ../Axiom-PMO/cli/axiom.mjs setup claude --project . --dry-run
 ```
 
 Then apply it:
 
 ```bash
-node cli/axiom.mjs setup claude --project .
+node ../Axiom-PMO/cli/axiom.mjs setup claude --project .
 ```
 
 Or run the script directly, without Node:
 
 ```bash
-pwsh -File scripts/setup-claude-integration.ps1 -ProjectPath .
+pwsh -File ../Axiom-PMO/scripts/setup-claude-integration.ps1 -ProjectPath .
 ```
 
 What it does:
@@ -104,13 +113,13 @@ What it does:
 To target `CLAUDE.md` instead:
 
 ```bash
-node cli/axiom.mjs setup claude --project . --file CLAUDE.md
+node ../Axiom-PMO/cli/axiom.mjs setup claude --project . --file CLAUDE.md
 ```
 
 ## Remove it
 
 ```bash
-node cli/axiom.mjs setup claude --project . --uninstall
+node ../Axiom-PMO/cli/axiom.mjs setup claude --project . --uninstall
 ```
 
 Removes exactly the fenced block — the span between and including the markers,
@@ -228,6 +237,8 @@ followed by a reinstall can replace an already-loaded plugin's content
 GitHub-hosted marketplace source behaves identically to the local-directory
 source this was tested against. Full evidence and its stated limits:
 [`docs/evidence/plugin-version-identity-transcript.md`](../evidence/plugin-version-identity-transcript.md).
+The Human Owner accepted those limits as non-blocking for v1.3.0 (`DEC-009`);
+they remain documented, but they are not release blockers.
 
 ## Known limitations
 
@@ -236,17 +247,16 @@ Stated rather than discovered later.
 | Limitation | Detail |
 |---|---|
 | **It does not prevent anything** | The block is context, not enforcement. Out-of-scope edits are detected afterwards by SCOPE-DIFF and the `EXEC-*` rules, not stopped as they happen. |
-| **A git install carries the whole repository** | The plugin root is the repository root, so a git-source install fetches ~10 MB, of which ~6.7 MB is `tests/`. Only `skills/`, `hooks/` and the manifests are loaded; the rest is inert. Slimming it would mean duplicating the validator into a subdirectory, which the milestone forbids. |
+| **A git install carries the whole repository** | The plugin root is the repository root, so a git-source install fetches ~10 MB, of which ~6.7 MB is `tests/`. Only `skills/`, `hooks/` and the manifests are loaded; the rest is inert. Accepted as a non-blocking limitation for v1.3.0 (`DEC-008`). Slimming it later would require a separate milestone. |
 | **Skill invocation is not verified end to end** | The captured transcript proves the plugin loads and its skills are *discovered*. Whether a skill then behaves correctly is the skills' own content, unchanged by packaging. |
 | **Permission-prompt behaviour is not characterised** | Whether invoking the validator from a skill prompts, and how often, depends on your own permission settings. Not measured. |
-| **Update and version drift are untested** | Marketplace entries can pin a `sha`; that a plugin update cannot silently swap a pinned install mid-session has not been exercised. Open debt, acknowledged. |
+| **Update behaviour is bounded, not fully characterised** | The plugin version is verified as the cache/update identity and release checks now prevent version drift. Active-session replacement and GitHub-hosted marketplace-source behaviour were not exercised, and are accepted as non-blocking limits for v1.3.0 (`DEC-009`). |
 | **Windows symlink and read-only cases are skipped** | Those tests run on macOS and Linux. Windows ACL semantics differ from `chmod`, and creating a symlink there needs elevation. |
 | **The advisory hook needs a POSIX shell** | Native Windows requires Git Bash or equivalent. PowerShell-only Windows gets no advisory, silently. Deliberate — see above. Everything else works there. |
 | **Non-UTF-8 instruction files are refused, not converted** | UTF-16 and invalid UTF-8 are rejected with `SETUP-008` and left untouched. Converting them is your call, not the tool's. |
 | **A file may be left empty after uninstall** | The file is never deleted, because provenance cannot be inferred from its contents afterwards. |
 | **Ownership is content recognition, not proof of authorship** | A block is treated as the framework's when its body matches text the framework generates. Paste that text into your own file and it will be recognised -- correctly, since it is the framework's text. The guarantee is that content the framework never generates is never touched without `--force`. |
 | **No blank line before the block** | The block is appended directly so that nothing is written outside the markers. If your file did not end with a newline, the marker shares that line. It renders identically; HTML comments produce no output. |
-| **No external-user validation** | The Human Owner has run the walkthrough. Nobody outside the team that built it has. |
 
 ## What Axiom-PMO still is
 

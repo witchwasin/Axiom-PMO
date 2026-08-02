@@ -12,9 +12,5 @@
     "issue": "^ISSUE:\\d+$",
     "ci": "^CI:https://.+$"
   },
-  "externally_unverified_types": [
-    "url",
-    "issue",
-    "ci"
-  ]
+  "externally_unverified_types": ["url", "issue", "ci"]
 }

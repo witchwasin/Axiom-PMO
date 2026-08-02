@@ -6,53 +6,22 @@
       "Draft": [],
       "Scope": [],
       "Design": [],
-      "Handoff": [
-        "DELIVERY.md",
-        "HANDOFF.md"
-      ],
-      "Release": [
-        "DELIVERY.md"
-      ]
+      "Handoff": ["DELIVERY.md", "HANDOFF.md"],
+      "Release": ["DELIVERY.md"]
     },
     "Standard": {
       "Draft": [],
       "Scope": [],
-      "Design": [
-        "DESIGN"
-      ],
-      "Handoff": [
-        "DELIVERY.md",
-        "DESIGN",
-        "HANDOFF.md",
-        "DESIGN/BUILD-SPEC.md"
-      ],
-      "Release": [
-        "DELIVERY.md",
-        "RELEASE.md",
-        "DESIGN"
-      ]
+      "Design": ["DESIGN"],
+      "Handoff": ["DELIVERY.md", "DESIGN", "HANDOFF.md", "DESIGN/BUILD-SPEC.md"],
+      "Release": ["DELIVERY.md", "RELEASE.md", "DESIGN"]
     },
     "Strict": {
       "Draft": [],
       "Scope": [],
-      "Design": [
-        "DESIGN"
-      ],
-      "Handoff": [
-        "DELIVERY.md",
-        "DESIGN",
-        "HANDOFF.md",
-        "DESIGN/BUILD-SPEC.md",
-        "RAID-log.md",
-        "decision-log.md"
-      ],
-      "Release": [
-        "DELIVERY.md",
-        "RELEASE.md",
-        "DESIGN",
-        "RAID-log.md",
-        "decision-log.md"
-      ]
+      "Design": ["DESIGN"],
+      "Handoff": ["DELIVERY.md", "DESIGN", "HANDOFF.md", "DESIGN/BUILD-SPEC.md", "RAID-log.md", "decision-log.md"],
+      "Release": ["DELIVERY.md", "RELEASE.md", "DESIGN", "RAID-log.md", "decision-log.md"]
     }
   }
 }

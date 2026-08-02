@@ -26,9 +26,10 @@ off by default.
   independently reviewed across three rounds -- every round REQUEST CHANGES,
   final verdict **ACCEPT WITH MINOR REVISIONS**; accepted and closed by the
   Human Owner (`DEC-007`), certified at commit
-  `3cc3f3e5a6df6490aa9c535556bcb81432186e00`, CI run
-  `30692748537`. Closure authorizes closure only -- not merged, tagged,
-  released, or published, and no known debt was closed by it.
+  `1d85d6091bc07bd1eb59d221310f18adf5287b83`, CI run
+  `30736667616`. Closure itself authorized closure only; merge to `main`
+  was separately confirmed by the Human Owner. No tag, GitHub Release,
+  marketplace publication, or npm publication has occurred.
 
   Ten findings across three rounds, all reproduced before being fixed, all
   in the code that writes to the user's own file:
