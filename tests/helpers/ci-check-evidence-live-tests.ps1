@@ -154,6 +154,24 @@ $entry = New-CiEntry -Name $foundCheckName -CommitSha $foundSha
 $r = Test-CiCheckEvidence -Entry $entry -GitRepoRoot $repo
 Assert-True "a real successful check run on a real commit verifies" $r.Verified $r.Reason
 
+# --- case sensitivity: "Build" must not satisfy evidence naming "build" ----
+# Review found both name-comparison sites used PowerShell's -eq/-ne, which are
+# case-insensitive for strings. Proved directly rather than argued:
+# $flippedName is the SAME real, currently-passing check, cited by a
+# different-case spelling of its own real name. If case were ignored, either
+# path below would verify; neither must.
+$flippedName = $foundCheckName.ToUpperInvariant()
+$flippedNameUsable = ($flippedName -cne $foundCheckName)
+
+if ($flippedNameUsable) {
+  $entry = New-CiEntry -Name $flippedName -CommitSha $foundSha
+  $r = Test-CiCheckEvidence -Entry $entry -GitRepoRoot $repo
+  Assert-True "name-search path: a different-case name does not verify a real, currently-passing run" `
+    (-not $r.Verified) $r.Reason
+} else {
+  Add-Skip "name-search path case-sensitivity" "the real check name has no letter case to flip ('$foundCheckName')"
+}
+
 # --- check_run_id: the direct-lookup path and its binding checks -----------
 
 if ($foundCheckRunId) {
@@ -181,6 +199,15 @@ if ($foundCheckRunId) {
   $entry = New-CiEntry -Name $foundCheckName -CommitSha $foundSha -CheckRunId "not-a-number"
   $r = Test-CiCheckEvidence -Entry $entry -GitRepoRoot $repo
   Assert-True "a non-numeric check_run_id does not verify" (-not $r.Verified) $r.Reason
+
+  if ($flippedNameUsable) {
+    $entry = New-CiEntry -Name $flippedName -CommitSha $foundSha -CheckRunId $foundCheckRunId
+    $r = Test-CiCheckEvidence -Entry $entry -GitRepoRoot $repo
+    Assert-True "check_run_id path: a different-case name does not verify a real, currently-passing run" `
+      (-not $r.Verified) $r.Reason
+  } else {
+    Add-Skip "check_run_id path case-sensitivity" "the real check name has no letter case to flip ('$foundCheckName')"
+  }
 } else {
   Add-Skip "check_run_id positive path" "the discovered successful run carried no id, which should not happen against a real API response"
 }
