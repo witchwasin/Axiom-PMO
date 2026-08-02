@@ -167,6 +167,7 @@ function Test-CiCheckEvidence {
   $result = [pscustomobject]@{ Verified = $false; Reason = $null; EvidenceDigest = $null }
   $name = [string]$Entry.Raw.name
   $commitSha = [string]$Entry.Raw.commit_sha
+  $checkRunId = [string]$Entry.Raw.check_run_id
   if ([string]::IsNullOrWhiteSpace($name) -or [string]::IsNullOrWhiteSpace($commitSha)) {
     $result.Reason = "missing name or commit_sha"
     return $result
@@ -192,6 +193,69 @@ function Test-CiCheckEvidence {
   $ownerRepo = Get-GitHubOwnerRepo -RemoteUrl ([string]$remoteUrl)
   if (-not $ownerRepo) {
     $result.Reason = "the git remote is not a recognizable GitHub URL -- cannot independently verify"
+    return $result
+  }
+
+  # An optional check_run_id binds to one exact run instead of searching by
+  # name. This closes a real gap the name search cannot: a check that failed
+  # once and was later re-run to green is, under a name search, permanently
+  # entangled with its own failed history. GitHub keeps listing the old failed
+  # run alongside the new passing one under the same name, and requiring every
+  # same-named completed run to agree -- the correct fix for a *different*
+  # exploit, an actor re-running a job until one attempt goes green and citing
+  # the name -- means the legitimate rerun could never verify either. Both
+  # exploits share a query shape (search by name); they cannot both be closed
+  # by tightening that one search, because closing one closes the other.
+  #
+  # Naming the specific run sidesteps the conflict entirely: it is immune to a
+  # same-named sibling in either direction, and it is exactly as hard to forge
+  # as ci-check evidence has ever been, because the id is assigned by GitHub,
+  # not chosen by the actor. Two binding checks below (head_sha, name) exist so
+  # that a real id from an unrelated commit or an unrelated check cannot be
+  # cited as if it were this one.
+  #
+  # Optional and not required: an entry with only name/commit_sha still goes
+  # through the search path below, unchanged, so existing evidence and
+  # existing contracts keep working exactly as before.
+  if (-not [string]::IsNullOrWhiteSpace($checkRunId)) {
+    $parsedId = 0L
+    if (-not [long]::TryParse($checkRunId, [ref]$parsedId)) {
+      $result.Reason = "check_run_id '$checkRunId' is not a valid integer"
+      return $result
+    }
+
+    $runApi = Invoke-NativeCapture { gh api "repos/$ownerRepo/check-runs/$parsedId" }
+    if ($runApi.ExitCode -ne 0) {
+      $result.Reason = "the GitHub API query for check run $parsedId failed -- cannot independently verify (network, auth, or the run does not exist)"
+      return $result
+    }
+
+    $run = $null
+    try {
+      $run = ($runApi.Output | Out-String) | ConvertFrom-Json
+    } catch {
+      $result.Reason = "the GitHub API response for check run $parsedId could not be parsed"
+      return $result
+    }
+
+    if ([string]$run.head_sha -ne $commitSha) {
+      $result.Reason = "check run $parsedId belongs to commit $($run.head_sha), not $commitSha -- cannot cite it as evidence for a different commit"
+      return $result
+    }
+    if ([string]$run.name -ne $name) {
+      $result.Reason = "check run $parsedId is named '$($run.name)', not '$name' -- the id and name in the evidence entry disagree"
+      return $result
+    }
+    if ([string]$run.status -ne "completed") {
+      $result.Reason = "check run $parsedId has not completed (status: $($run.status)) -- an unfinished check is not evidence of a passing test"
+      return $result
+    }
+    if ([string]$run.conclusion -ne "success") {
+      $result.Reason = "check run $parsedId's observed conclusion is '$($run.conclusion)', not success"
+      return $result
+    }
+
+    $result.Verified = $true
     return $result
   }
 
@@ -230,6 +294,13 @@ function Test-CiCheckEvidence {
   # a name with any non-success completed run does not verify -- a
   # "somewhere it passed" reading would let an actor re-run a job until one
   # attempt went green and then cite the name.
+  #
+  # This is the known cost of the by-name path, and it is real: a check that
+  # failed once and was legitimately re-run to green cannot verify here,
+  # because the failed attempt's own history never leaves the API response.
+  # It is not fixed by loosening this rule -- that reopens the exploit above.
+  # It is fixed by not searching by name at all: cite check_run_id and take
+  # the branch above instead.
   $completedRuns = @($matchingRuns | Where-Object { [string]$_.status -eq "completed" })
   if ($completedRuns.Count -eq 0) {
     $inFlight = @($matchingRuns | ForEach-Object { [string]$_.status }) -join ", "

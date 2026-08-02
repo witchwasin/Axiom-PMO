@@ -46,9 +46,10 @@ function Add-Skip {
 # Mirrors what the adapter itself builds an entry from, so these tests
 # exercise the real function rather than a parallel implementation.
 function New-CiEntry {
-  param([string]$Name, [string]$CommitSha, [string]$Conclusion = $null)
+  param([string]$Name, [string]$CommitSha, [string]$Conclusion = $null, [string]$CheckRunId = $null)
   $raw = [ordered]@{ type = "ci-check"; name = $Name; commit_sha = $CommitSha }
   if ($Conclusion) { $raw["conclusion"] = $Conclusion }
+  if ($CheckRunId) { $raw["check_run_id"] = $CheckRunId }
   return [pscustomobject]@{
     Type = "ci-check"; Name = $Name; Known = $true; FieldsPresent = $true
     MissingFields = @(); Provenance = "externally-observed"
@@ -98,6 +99,7 @@ if (-not $remoteOk -or [string]::IsNullOrWhiteSpace([string]$remoteUrl)) {
 # is cited for work that already ran, not for the run producing it.
 $foundSha = $null
 $foundCheckName = $null
+$foundCheckRunId = $null
 $foundFailingName = $null
 
 for ($depth = 1; $depth -lt 9; $depth++) {
@@ -127,6 +129,7 @@ for ($depth = 1; $depth -lt 9; $depth++) {
     if ([string]$run.conclusion -eq "success" -and -not $foundCheckName) {
       $foundSha = $sha
       $foundCheckName = [string]$run.name
+      $foundCheckRunId = [string]$run.id
     }
     if ((@("failure", "cancelled", "timed_out") -contains [string]$run.conclusion) -and -not $foundFailingName) {
       $foundFailingName = [string]$run.name
@@ -150,6 +153,37 @@ Write-Host ""
 $entry = New-CiEntry -Name $foundCheckName -CommitSha $foundSha
 $r = Test-CiCheckEvidence -Entry $entry -GitRepoRoot $repo
 Assert-True "a real successful check run on a real commit verifies" $r.Verified $r.Reason
+
+# --- check_run_id: the direct-lookup path and its binding checks -----------
+
+if ($foundCheckRunId) {
+  $entry = New-CiEntry -Name $foundCheckName -CommitSha $foundSha -CheckRunId $foundCheckRunId
+  $r = Test-CiCheckEvidence -Entry $entry -GitRepoRoot $repo
+  Assert-True "citing check_run_id directly verifies the same real run" $r.Verified $r.Reason
+
+  # The binding checks -- an id alone is not enough, or an actor could cite a
+  # real, green check_run_id that happened to belong to someone else's commit
+  # or a different check entirely.
+  $entry = New-CiEntry -Name $foundCheckName -CommitSha ("0" * 40) -CheckRunId $foundCheckRunId
+  $r = Test-CiCheckEvidence -Entry $entry -GitRepoRoot $repo
+  Assert-True "check_run_id bound to the wrong commit_sha does not verify" (-not $r.Verified) $r.Reason
+
+  $entry = New-CiEntry -Name "this-check-name-does-not-exist-anywhere" -CommitSha $foundSha -CheckRunId $foundCheckRunId
+  $r = Test-CiCheckEvidence -Entry $entry -GitRepoRoot $repo
+  Assert-True "check_run_id bound to the wrong name does not verify" (-not $r.Verified) $r.Reason
+
+  # A syntactically plausible but real-world-impossible id. GitHub check run
+  # ids are large; a small one should 404 rather than collide with anything.
+  $entry = New-CiEntry -Name $foundCheckName -CommitSha $foundSha -CheckRunId "1"
+  $r = Test-CiCheckEvidence -Entry $entry -GitRepoRoot $repo
+  Assert-True "a nonexistent check_run_id does not verify" (-not $r.Verified) $r.Reason
+
+  $entry = New-CiEntry -Name $foundCheckName -CommitSha $foundSha -CheckRunId "not-a-number"
+  $r = Test-CiCheckEvidence -Entry $entry -GitRepoRoot $repo
+  Assert-True "a non-numeric check_run_id does not verify" (-not $r.Verified) $r.Reason
+} else {
+  Add-Skip "check_run_id positive path" "the discovered successful run carried no id, which should not happen against a real API response"
+}
 
 # --- and the ways it must not verify ----------------------------------------
 
@@ -187,6 +221,7 @@ if ($foundFailingName) {
 # the shape an actor would exploit: re-run a job until one attempt goes
 # green, then cite the name.
 $ambiguousName = $null
+$ambiguousSuccessId = $null
 $allSuccessDuplicateName = $null
 $previousEap = $ErrorActionPreference
 $ErrorActionPreference = "Continue"
@@ -197,17 +232,24 @@ if ($allOk) {
   try {
     $allData = ($rawAll | Out-String) | ConvertFrom-Json
     $byName = @{}
+    $successIdByName = @{}
     foreach ($run in @($allData.check_runs)) {
       if ([string]$run.status -ne "completed") { continue }
       $n = [string]$run.name
       if (-not $byName.ContainsKey($n)) { $byName[$n] = @() }
       $byName[$n] += [string]$run.conclusion
+      if ([string]$run.conclusion -eq "success" -and -not $successIdByName.ContainsKey($n)) {
+        $successIdByName[$n] = [string]$run.id
+      }
     }
     foreach ($k in $byName.Keys) {
       $vals = @($byName[$k])
       if ($vals.Count -lt 2) { continue }
       $distinct = @($vals | Select-Object -Unique)
-      if (($distinct.Count -gt 1) -and (-not $ambiguousName)) { $ambiguousName = $k }
+      if (($distinct.Count -gt 1) -and (-not $ambiguousName)) {
+        $ambiguousName = $k
+        if ($successIdByName.ContainsKey($k)) { $ambiguousSuccessId = $successIdByName[$k] }
+      }
       if (($distinct.Count -eq 1) -and ($distinct[0] -eq "success") -and (-not $allSuccessDuplicateName)) { $allSuccessDuplicateName = $k }
     }
   } catch { }
@@ -217,8 +259,25 @@ if ($ambiguousName) {
   $entry = New-CiEntry -Name $ambiguousName -CommitSha $foundSha -Conclusion "success"
   $r = Test-CiCheckEvidence -Entry $entry -GitRepoRoot $repo
   Assert-True "a name with both a passing and a failing completed run does not verify" (-not $r.Verified) $r.Reason
+
+  # This is the defect check_run_id exists to close, reproduced against a real
+  # commit rather than argued about: the same name that just failed to verify
+  # above -- because SOME completed run under it is not success -- verifies
+  # when the evidence names the specific successful run's id instead. A check
+  # that failed once and was re-run to green is no longer permanently unable
+  # to be cited; it was only ever the by-name search that could not tell the
+  # two runs apart.
+  if ($ambiguousSuccessId) {
+    $entry = New-CiEntry -Name $ambiguousName -CommitSha $foundSha -CheckRunId $ambiguousSuccessId
+    $r = Test-CiCheckEvidence -Entry $entry -GitRepoRoot $repo
+    Assert-True "the decisive case: citing the successful run's id verifies despite a failing sibling under the same name" `
+      $r.Verified $r.Reason
+  } else {
+    Add-Skip "check_run_id closes the permanent-false-negative case" "the ambiguous name's successful run carried no id"
+  }
 } else {
   Add-Skip "mixed-conclusion duplicate case" "no check name on that commit has completed runs disagreeing"
+  Add-Skip "check_run_id closes the permanent-false-negative case" "no mixed-conclusion duplicate name found to reproduce it against"
 }
 
 if ($allSuccessDuplicateName) {
