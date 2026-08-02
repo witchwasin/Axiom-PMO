@@ -13,8 +13,8 @@
   CORRECTIONS, and 1 correction round applied in response (2026-07-29) — see "Correction round"
   below.
 - **Sources consulted:** 145 distinct URLs across the 4 tracks, before cross-track
-  deduplication — see the `## Sources` section of each `research/.drafts/track-*.md` file for
-  the full per-track lists. **This is a URL count, not an independent-confirmation count.**
+  deduplication. Per-track working drafts were removed from the public tree during
+  release cleanup. **This is a URL count, not an independent-confirmation count.**
   Source families represented: vendor documentation and product pages, vendor marketing/blog
   copy, GitHub issue reports (several from the same repository), academic preprints,
   practitioner forum/blog discussion, news coverage, and secondary aggregators. Multiple URLs
@@ -105,9 +105,6 @@
   - Verified on-disk before this entry was written: `grep -rn "2026-08" research/` returns
     nothing; the two section-1 claims read as survey-scoped in the delivered brief; `git status`
     confirms only the four files listed above changed.
-- **Research files:**
-  - [research/.drafts/track-a-native-agent-governance.md](../.drafts/track-a-native-agent-governance.md)
-  - [research/.drafts/track-b-pr-ci-policy-tooling.md](../.drafts/track-b-pr-ci-policy-tooling.md)
-  - [research/.drafts/track-c-ai-governance-platforms.md](../.drafts/track-c-ai-governance-platforms.md)
-  - [research/.drafts/track-d-developer-pain-evidence.md](../.drafts/track-d-developer-pain-evidence.md)
+- **Research files:** Per-track working drafts were removed from the public tree
+  during release cleanup.
 - **Delivered brief:** [research/outputs/ai-delivery-governance-landscape.md](ai-delivery-governance-landscape.md)

@@ -28,7 +28,8 @@ off by default.
   Human Owner (`DEC-007`), certified at commit
   `1d85d6091bc07bd1eb59d221310f18adf5287b83`, CI run
   `30736667616`. Closure itself authorized closure only; merge to `main`
-  was separately confirmed by the Human Owner. No tag, GitHub Release,
+  was separately confirmed by the Human Owner. The `v1.3.0` git tag was
+  separately authorized and created on 2026-08-02. No GitHub Release,
   marketplace publication, or npm publication has occurred.
 
   Ten findings across three rounds, all reproduced before being fixed, all
@@ -558,6 +559,9 @@ still passes.
 - **Cross-platform helpers**: a `Makefile` and `scripts/check.sh` /
   `scripts/check.cmd` wrappers around the PowerShell reference implementation,
   plus a non-destructive `scripts/prepare-public-release.ps1`.
+- Removed historical working archives and slide-generation source folders from
+  the public tree; the release keeps the final user-facing deck and current
+  public evidence only.
 
 ### Changed
 
@@ -567,9 +571,8 @@ still passes.
 - **Example golden snapshots are checkout-portable.**
   `tests/golden/capture-examples.ps1` normalizes the resolved repository path to
   a `<REPO_ROOT>` placeholder, and the example snapshots verify on any clone.
-- Internal remediation reports were sanitized and archived; historical release
-  notes below were shortened to public-facing changes rather than private
-  development diary entries.
+- Internal remediation reports were shortened to public-facing changes rather
+  than private development diary entries.
 
 ## 0.5.1 - 2026-07-13
 
@@ -596,10 +599,8 @@ still passes.
 
 ### Historical Notes
 
-- The close-out report is archived at
-  `reports/archive/acceptance-0.5.1.md`.
-- The CI fixture incident is archived at
-  `reports/archive/ci-golden-fixture-postmortem.md`.
+- Historical working reports were removed from the public tree after the
+  public-facing release notes and case study were retained.
 
 ## 0.5.0 - 2026-07-12
 
@@ -660,9 +661,9 @@ still passes.
 
 ### Changed
 
-- Archived legacy and optional skills under `.claude-archive/`.
+- Removed legacy and optional skills from the active public tree.
 - Removed superseded YAML runtime config files.
-- Moved superseded reports under `reports/archive/`.
+- Removed superseded working reports from the active public tree.
 - Preserved the process-violation record as a historical governance lesson.
 
 ## 0.3.0-lite-ai-guardrails - 2026-07-10

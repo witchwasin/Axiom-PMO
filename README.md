@@ -1,8 +1,3 @@
-<!-- markdownlint-disable MD033 MD041 -->
-<div align="center">
-
-<img src="Slide Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-logo-primary.svg" alt="Axiom-PMO — The governance control plane for AI-assisted software delivery." width="520">
-
 # Axiom-PMO
 
 ### The governance control plane for AI-assisted software delivery.
@@ -18,9 +13,8 @@ developers or execution frameworks.**
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](CHANGELOG.md)
 
-<sub>Version <code>1.3.0</code> · MIT License · PowerShell reference implementation (Windows PowerShell 5.1 and PowerShell 7; Linux/macOS via <code>pwsh</code>)</sub>
-
-</div>
+Version `1.3.0` · MIT License · PowerShell reference implementation (Windows
+PowerShell 5.1 and PowerShell 7; Linux/macOS via `pwsh`)
 
 ---
 
@@ -452,29 +446,11 @@ tests pass.** See [`CONTRIBUTING.md`](CONTRIBUTING.md) and
 [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). AI-assisted contributions are welcome
 but must be disclosed and human-reviewed.
 
-## Brand and Visual Identity
+## Visual Identity
 
-Axiom-PMO uses a Swiss-minimal visual system inspired by engineering
-documentation: quiet, inspectable, and precise.
-
-The primary mark is the **Axiom Gate** — a geometric *A* with a red control
-boundary. It represents the point where AI-assisted work must stop until
-evidence, policy, or human approval allows it to proceed. AI can build;
-Axiom-PMO verifies the source, scope, evidence, and authority behind the work.
-
-<p align="center">
-  <img src="Slide Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-brand-board-en.svg" alt="Axiom-PMO brand board" width="780">
-</p>
-
-Brand assets live under
-[`Slide Deck/axiom_pmo_overview_ppt169_20260726/images/`](Slide Deck/axiom_pmo_overview_ppt169_20260726/images):
-
-- [`axiom-pmo-logo-primary.svg`](Slide Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-logo-primary.svg) — primary logo for documentation and presentation
-- [`axiom-pmo-mark.svg`](Slide Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-mark.svg) — the Axiom Gate mark for compact placements
-- [`axiom-pmo-logo-monochrome.svg`](Slide Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-logo-monochrome.svg) — single-color variant
-- [`axiom-pmo-slide-signature.svg`](Slide Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-slide-signature.svg) — header/footer lockup for slides
-
-[View the full brand board](Slide Deck/axiom_pmo_overview_ppt169_20260726/images/axiom-pmo-brand-board-en.svg).
+Axiom-PMO uses a restrained engineering-documentation visual system: quiet,
+inspectable, and precise. The public deck is available at
+[`Slide Deck/Axiom-PMO-Overview.pptx`](Slide%20Deck/Axiom-PMO-Overview.pptx).
 
 | Token | Hex | Use |
 |---|---|---|

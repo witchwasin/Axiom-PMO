@@ -2,10 +2,9 @@
 
 > **Status: CLOSED.** Independent review complete (ACCEPT WITH MINOR
 > REVISIONS, three rounds); Human Owner accepted and closed 2026-08-01
-> (`DEC-007`) and separately authorized merge to `main`. No public
-> marketplace publication exists. This page describes the v1.3.0 release
-> candidate; tagging and GitHub Release publication remain separate Human
-> Owner decisions. See
+> (`DEC-007`), separately authorized merge to `main`, and separately
+> authorized the `v1.3.0` git tag. No public marketplace, GitHub Release, or npm
+> publication exists. See
 > [`ROADMAP.md`](../../ROADMAP.md).
 
 **Optional.** Milestones 1–5 are the Axiom-PMO product. Everything on this page

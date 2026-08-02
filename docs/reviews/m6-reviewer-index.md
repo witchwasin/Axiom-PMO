@@ -15,7 +15,7 @@
 | Findings | **2 FATAL, 8 MAJOR, 2 MINOR — all resolved** |
 | Human Owner closure | **accepted and CLOSED** — `DEC-007`, 2026-08-01 |
 | Merge to `main` | **Done** — 2026-08-01, separately confirmed by the Human Owner (`DEC-007` authorized closure only) |
-| Tag / release / publication | **not authorized** |
+| Tag / release / publication | Git tag `v1.3.0` done 2026-08-02; GitHub Release, marketplace publication, and npm publication not done |
 
 Milestone 6 is closed. Both halves of acceptance exist and neither substituted
 for the other: independent review (ACCEPT WITH MINOR REVISIONS — the minor
@@ -23,9 +23,10 @@ revisions applied in this closure pass) and Human Owner acceptance (`DEC-005`
 for testing, `DEC-007` for closure), as `AGENTS.md` rule 11 requires.
 
 Closure itself authorized no merge, tag, release or publication; the merge to
-`main` was a separate Human Owner confirmation the following day, and
-tag/release/publication remain unauthorized. The remaining release-scope limits
-are documented in `DEC-008` and `DEC-009`.
+`main` and the later `v1.3.0` git tag were separate Human Owner confirmations.
+GitHub Release, marketplace publication, and npm publication remain separate
+decisions. The remaining release-scope limits are documented in `DEC-008` and
+`DEC-009`.
 
 ### Review history
 
@@ -286,11 +287,11 @@ technical debt in `ROADMAP.md`:
 - Human Owner acceptance recorded as `DEC-005`; it is offered as one half of
   acceptance, never as review evidence.
 - No known debt was closed by that acceptance.
-- No merge to `main`.
-- No tag created.
+- Merge to `main` was authorized after closure.
+- Git tag `v1.3.0` was authorized after closure.
 - No GitHub Release.
 - No marketplace publication.
-- No version bump to a final release.
+- No npm publication.
 - The hook ships **off**, and report-only when on.
 - No `EXEC-*` rule, claim type, actor, or policy default changed.
 - The maintainer's machine was restored: the plugin and marketplace added
