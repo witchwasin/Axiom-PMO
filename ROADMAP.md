@@ -1121,9 +1121,9 @@ quietly dropped.
 
 | # | Debt | Milestone | Status |
 |---|---|---|---|
-| 1 | **Plugin update / version drift is untested.** Marketplace entries can pin a `sha`, but nothing verifies that an update cannot replace a pinned install mid-session. | M6 | Open. Non-blocking. |
-| 2 | **Cross-plugin hook ordering is unproven.** What *is* verified is that the advisory returns nothing that could override another plugin's hook; Claude Code's ordering and merge behaviour was not inspected. | M6 | Open. Non-blocking. |
-| 3 | **A git-source plugin install carries the whole repository** -- roughly 10 MB, of which ~6.7 MB is `tests/`. Only `skills/`, `hooks/` and the manifests are loaded; the rest is inert. | M6 | Open. Non-blocking. **Must not be resolved by duplicating the validator or by a large restructure without a separate milestone and decision.** |
+| 1 | **Plugin update / version drift.** Partially closed for v1.3.0. Confirmed with a real install, not assumed: Claude Code caches a plugin by its declared `version` (`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`) and tracks it as the active install's identity in `installed_plugins.json`, including the git commit for a directory-source install -- the plugin's version *is* the update/cache identity. `prepare-public-release.ps1` and `plugin-package-tests.ps1` now both fail a release candidate whose `.claude-plugin/plugin.json` disagrees with `VERSION`. Evidence: [`docs/evidence/plugin-version-identity-transcript.md`](docs/evidence/plugin-version-identity-transcript.md). **Still open:** whether an update replaces an already-loaded plugin mid-session without a restart, and whether a GitHub-hosted marketplace source behaves the same as the local-directory source tested -- neither was exercised. | M6 | Open, narrowed. Non-blocking. |
+| 2 | **Cross-plugin hook ordering.** Closed to the level Claude Code's own contract makes provable. Primary source (`plugin-dev` skill, official marketplace): hooks from multiple plugins "merge ... and run in parallel," with "non-deterministic ordering" and no visibility into another hook's output -- there is no order to prove. A real install alongside an independent second `PreToolUse` hook matching the same tools confirmed neither plugin's registration or cached hook file was affected by installing or removing the other. `hook-advisory-tests.ps1` now asserts, deterministically, that the hook's own registration and source claim no priority/order field, read no other hook's output, and do not claim any tool exclusively. Evidence: [`docs/evidence/hook-coexistence-transcript.md`](docs/evidence/hook-coexistence-transcript.md). | M6 | **Closed**, 2026-08-02. |
+| 3 | **A git-source plugin install carries the whole repository** -- roughly 10 MB, of which ~6.7 MB is `tests/`. Only `skills/`, `hooks/` and the manifests are loaded; the rest is inert. **Accepted as a permanent, non-blocking limitation of the `v1.3.0` release** (`DEC-008`) -- not deferred pending a fix, an explicit trade-off the Human Owner signed off on. A future milestone may evaluate `git-subdir`, npm packaging, or a dedicated plugin package; this release does not, and does **not** duplicate or relocate the validator to work around it. | M6 | **Accepted limitation**, `v1.3.0` (`DEC-008`). Non-blocking. |
 | 4 | ~~`ci-check` matches a check run by name, not `check_run_id`.~~ **Fixed, Milestone 5.5.** `Test-CiCheckEvidence` now accepts an optional `check_run_id` that binds directly to one run (proving a legitimate re-run-to-green case verifies where the name search could not), and check-name comparison is case-sensitive throughout. Independent AI Reviewer REQUEST CHANGES on the first pass (check names compared case-insensitively), then ACCEPT once fixed. Commit `ca6ae6a`, CI run `30748756130` (headSha `ca6ae6a`, not a later docs-only commit) 7/7. | M5 | **Closed**, 2026-08-02. |
 
 ### Deferred trust evidence
@@ -1143,19 +1143,17 @@ With Milestones 1-6 and 5.5 all delivered and merged to `main`, nothing is
 implementation-ready without a Human Owner decision to start it. Candidates,
 none currently authorized:
 
-- **External-user validation of the v1.2.0 GitHub Action and SCOPE-DIFF, and
-  of the Milestone 6 Claude Code integration.** This needs the Human Owner
-  personally, or someone outside the team that built it, and cannot be
-  delegated to the AI -- it is the main source of independent signal about
-  whether the shipped features are usable by anyone who did not build them.
-  The M6 walkthrough (`docs/guides/claude-code-walkthrough.md`) exists for
-  this and has only been run by the Human Owner so far.
-- Any of the three open M6 debts (plugin update/version drift, cross-plugin
-  hook ordering, git-source install size) or the deferred trust evidence
-  below, if the Human Owner chooses to pick one up.
-- Publishing the plugin to a public marketplace, or a v1.3.0 (or later)
-  tagged release covering M6 and M5.5 -- both require a separate, explicit
-  Human Owner decision; neither is implied by the merge to `main`.
+- The `v1.3.0` release: tagging, and any GitHub Release notes that go with
+  it. The release candidate is prepared; the tag itself is a separate, explicit
+  Human Owner decision.
+- Publishing the plugin to a public marketplace. Not implied by tagging a
+  release, and not implied by the merge to `main`.
+- The deferred trust evidence above, if the Human Owner chooses to pick it up.
+
+Real-world use and problem reports are **deliberately not tracked here.** The
+Human Owner uses the framework directly and raises anything he finds as it
+arises; turning that into a roadmap item would invent a schedule for something
+that has none.
 
 ### Blocked
 

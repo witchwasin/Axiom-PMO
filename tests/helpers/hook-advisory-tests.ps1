@@ -397,6 +397,32 @@ try {
     ($null -ne @(@($hooksJson.hooks.PreToolUse)[0].hooks)[0].timeout)
   Assert-True "...and the registration describes itself as report-only and opt-in" `
     ([string]$hooksJson.description -match "(?i)report-only" -and [string]$hooksJson.description -match "(?i)opt-in")
+
+  # ---- Cross-plugin coexistence: no ordering dependency ------------------
+  #
+  # Claude Code's own hook-development documentation states the contract
+  # plainly: hooks from multiple plugins merge and run in PARALLEL, with no
+  # guaranteed order and no visibility into another hook's output (real
+  # marketplace, anthropics/claude-plugins-official, plugin-dev skill,
+  # hook-development/SKILL.md -- "Rely on hook execution order" is listed
+  # under DON'T). A hook that assumed it ran first, last, or alone would be
+  # relying on something the platform does not offer.
+  #
+  # A live install alongside a second, independently-authored PreToolUse
+  # hook matching the same tools is captured in
+  # docs/evidence/hook-coexistence-transcript.md -- both plugins' hook files
+  # cache independently and neither install nor removal of one touches the
+  # other. What is asserted here, deterministically, is the property that
+  # makes that safe: nothing in this hook's own registration or source reads
+  # another hook's output, depends on running before or after anything else,
+  # or claims any tool exclusively.
+  $hooksJsonText = Get-Content -LiteralPath $hooksJsonPath -Raw
+  Assert-True "the matcher does not claim tools exclusively (a regex OR, not a lock)" `
+    ([string]@($hooksJson.hooks.PreToolUse)[0].matcher -match '\|')
+  Assert-True "the registration names no priority, order, or precedence field" `
+    ($hooksJsonText -notmatch '(?i)"(priority|order|precedence|sequence|before|after)"\s*:')
+  Assert-True "the hook script reads no environment variable suggesting another hook's output" `
+    ($hookCode -notmatch '(?i)HOOK_(RESULT|OUTPUT|STATE)|PREVIOUS_HOOK|OTHER_HOOK')
 } finally {
   if (Test-Path -LiteralPath $script:sandbox) {
     $previous = $ErrorActionPreference

@@ -2,8 +2,8 @@
 // GitHub Action wrapper. Owns CI presentation only -- it invokes the existing
 // CLI (which invokes the existing PowerShell validator) and never evaluates a
 // rule itself. See docs/reference/diagnostics-contract.md for the JSON shape
-// this reads, and 20260729_Fixed_plan/M4_GitHub_Action_implementation_plan.md
-// for the interface this implements.
+// this reads, and docs/guides/github-action.md for the interface this
+// implements.
 //
 //   node run-action.mjs --project <path> [--mode Standard] [--gate Release]
 //     [--fail-on-warning true|false] [--working-directory .]

@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+_Nothing yet._
+
+## 1.3.0 - 2026-08-02
+
+**The Claude Code integration, and execution-evidence hardening.** Milestone 6
+ships Axiom-PMO as an optional Claude Code plugin; Milestone 5.5 closes a
+provenance gap in `ci-check` evidence. Milestones 1-5 remain the product --
+nothing in them requires the integration.
+
+Backward compatible. Every existing local invocation and the GitHub Action are
+unchanged; the plugin and its advisory hook are both opt-in, and the hook is
+off by default.
+
 ### Closed — three independent review rounds, ACCEPT WITH MINOR REVISIONS
 
 - **Claude Code integration (Milestone 6).** Optional. Milestones 1-5 are the

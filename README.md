@@ -16,9 +16,9 @@ developers or execution frameworks.**
 
 [![Axiom-PMO Checks](https://github.com/witchwasin/Axiom-PMO/actions/workflows/pmo-checks.yml/badge.svg)](https://github.com/witchwasin/Axiom-PMO/actions/workflows/pmo-checks.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](CHANGELOG.md)
 
-<sub>Version <code>1.2.0</code> · MIT License · PowerShell reference implementation (Windows PowerShell 5.1 and PowerShell 7; Linux/macOS via <code>pwsh</code>)</sub>
+<sub>Version <code>1.3.0</code> · MIT License · PowerShell reference implementation (Windows PowerShell 5.1 and PowerShell 7; Linux/macOS via <code>pwsh</code>)</sub>
 
 </div>
 
@@ -499,7 +499,7 @@ Typography: Tahoma / Arial (sans-serif) for voice; Consolas / Courier New
 | **Process** | [Lite](docs/process/lite.md) · [Standard](docs/process/standard.md) · [Strict](docs/process/strict.md) |
 | **Tutorials** | [your first project](docs/tutorials/first-project.md) · [using it with an AI agent](docs/tutorials/using-with-an-ai-agent.md) |
 | **Integrations** | [overview](docs/integrations/overview.md) · [Superpowers](docs/integrations/superpowers.md) · [BMAD](docs/integrations/bmad.md) · [spec-kit](docs/integrations/spec-kit.md) · [OpenSpec](docs/integrations/openspec.md) |
-| **Releases** | [1.2.0](docs/releases/v1.2.0.md) · [1.1.1](docs/releases/v1.1.1.md) · [1.1.0](docs/releases/v1.1.0.md) · [1.0.0](docs/releases/v1.0.0.md) · [changelog](CHANGELOG.md) |
+| **Releases** | [1.3.0](docs/releases/v1.3.0.md) · [1.2.0](docs/releases/v1.2.0.md) · [1.1.1](docs/releases/v1.1.1.md) · [1.1.0](docs/releases/v1.1.0.md) · [1.0.0](docs/releases/v1.0.0.md) · [changelog](CHANGELOG.md) |
 
 If you are an AI agent working in this repository, start with
 [`AGENTS.md`](AGENTS.md), [`CLAUDE.md`](CLAUDE.md), and
@@ -563,18 +563,20 @@ strengthen the product direction without weakening governance.
 
 ## Project status
 
-Version `1.2.0`. The validation engine, governance model, and diagnostic
+Version `1.3.0`. The validation engine, governance model, and diagnostic
 contract are stable. 1.1 added the `Handoff` gate between `Design` and
-`Release`; 1.2 adds a reusable GitHub Action and SCOPE-DIFF changed-file scope
-enforcement, so a pull request can be checked — and, optionally, blocked —
-directly in CI. **Milestones 1–5 — the core governance and
-development-handoff framework — are complete**, with Milestone 5 (execution
-contract verification) accepted and closed on 2026-07-31. Milestone 6, the
-optional Claude Code integration bridge, is implemented, reviewed across three
-rounds, and **closed** (`DEC-007`); still not released, tagged, or published --
-closure does not authorize any of those. There is no npm package: Milestone 3 Phase B is deferred.
+`Release`; 1.2 added a reusable GitHub Action and SCOPE-DIFF changed-file
+scope enforcement, so a pull request can be checked — and, optionally,
+blocked — directly in CI. 1.3 adds the optional Claude Code integration
+(Milestone 6) and hardens `ci-check` execution evidence (Milestone 5.5).
 
-Upgrading from 1.1 requires no migration: the Action and SCOPE-DIFF are both
-opt-in, and every existing local invocation is unaffected. Migrating from the
+**Milestones 1–6 are complete.** Milestones 1–5 are the core governance and
+development-handoff framework; Milestone 6 is an optional bridge and nothing
+in 1–5 requires it. There is no npm package: Milestone 3 Phase B is
+deferred, and the plugin is not published to any public marketplace.
+
+Upgrading from 1.2 requires no migration: the Claude Code plugin and its
+advisory hook are both opt-in, the hook is off by default, and every existing
+local invocation and Action usage is unaffected. Migrating from the
 previous private layout? See
 [`docs/migration/from-pmo-template-personal.md`](docs/migration/from-pmo-template-personal.md).

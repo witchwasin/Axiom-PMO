@@ -14,7 +14,8 @@
 | Independent review | **complete — ACCEPT WITH MINOR REVISIONS** (three rounds) |
 | Findings | **2 FATAL, 8 MAJOR, 2 MINOR — all resolved** |
 | Human Owner closure | **accepted and CLOSED** — `DEC-007`, 2026-08-01 |
-| Release / tag / publication / merge | **not authorized** |
+| Merge to `main` | **Done** — 2026-08-01, separately confirmed by the Human Owner (`DEC-007` authorized closure only) |
+| Tag / release / publication | **not authorized** |
 
 Milestone 6 is closed. Both halves of acceptance exist and neither substituted
 for the other: independent review (ACCEPT WITH MINOR REVISIONS — the minor
@@ -23,7 +24,9 @@ for testing, `DEC-007` for closure), as `AGENTS.md` rule 11 requires.
 
 Closure closed **no** known debt. Everything under
 [Known limitations and residual risks](#known-limitations-and-residual-risks)
-remains open, and closure authorizes no merge, tag, release or publication.
+remains open. Closure itself authorized no merge, tag, release or publication;
+the merge to `main` was a separate Human Owner confirmation the following day,
+and tag/release/publication remain unauthorized.
 
 ### Review history
 
