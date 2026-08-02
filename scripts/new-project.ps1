@@ -5,6 +5,25 @@ param(
   [ValidateSet("Lite", "Standard", "Strict")]
   [string]$Mode = "Standard",
 
+  # M7: declared delivery strategy, not project identity -- a project may
+  # switch it later with an ordinary PROJECT.md edit. Defaults to
+  # development_handoff, the core product's own default, so every existing
+  # caller of this script keeps producing byte-for-byte the same PROJECT.md
+  # it always has (see the same rationale on -IncludeHandoff below).
+  [ValidateSet("development_handoff", "governed_ai_execution")]
+  [string]$ExecutionPath = "development_handoff",
+
+  # M7 onboarding: when the interactive wizard's "Help me decide" path finds a
+  # strict trigger, it passes it through here so the generated D-001 row
+  # already carries the declaration instead of a human having to fill it in
+  # by hand. None of these three change validator behavior on their own --
+  # Resolve-EffectiveMode (scripts/lib/mode-resolver.ps1) already reads
+  # DELIVERY.md's Strict Trigger column and escalates from it; this only
+  # writes what the wizard already asked into the row that column lives in.
+  [string]$StrictTrigger = "none",
+  [string]$ModeReason = "normal feature",
+  [string]$ModeApprovedBy = "PM",
+
   [string]$OutputRoot = "projects",
 
   # Handoff scaffolding is opt-in so the default generator output is byte-for-byte
@@ -57,6 +76,7 @@ $deliveryFile = Join-Path $projectDir "DELIVERY.md"
 $projectText = Get-Content -LiteralPath $projectFile -Raw
 $projectText = $projectText.Replace("<PROJECT-CODE>", $ProjectCode)
 $projectText = $projectText.Replace("Lite / Standard / Strict", $Mode)
+$projectText = $projectText.Replace("development_handoff / governed_ai_execution", $ExecutionPath)
 $projectText = $projectText.Replace("<YYYY-MM-DD>", $today)
 $projectText = $projectText.Replace("YYYY-MM-DD", $today)
 Set-Content -LiteralPath $projectFile -Value $projectText -Encoding utf8
@@ -70,7 +90,7 @@ $deliveryText = $deliveryText.Replace("Lite / Standard / Strict", $Mode)
 # Lite project's effective mode to Standard and failed REF-001 on a design
 # file that was never created. Match the row to the requested mode instead.
 $defaultDesignRef = if ($Mode -eq "Lite") { "not_required" } else { "DESIGN/FLOW.puml" }
-$deliveryText = $deliveryText -replace '\| D-001 \| Standard \| none \| normal feature \| PM \| <feature> \| REQ-001 \| DESIGN/FLOW\.puml \|', "| D-001 | $Mode | none | normal feature | PM | <feature> | REQ-001 | $defaultDesignRef |"
+$deliveryText = $deliveryText -replace '\| D-001 \| Standard \| none \| normal feature \| PM \| <feature> \| REQ-001 \| DESIGN/FLOW\.puml \|', "| D-001 | $Mode | $StrictTrigger | $ModeReason | $ModeApprovedBy | <feature> | REQ-001 | $defaultDesignRef |"
 Set-Content -LiteralPath $deliveryFile -Value $deliveryText -Encoding utf8
 
 function Copy-TemplateWithProjectCode {
@@ -123,7 +143,7 @@ if ($IncludeHandoff) {
   Set-Content -LiteralPath (Join-Path $projectDir "HANDOFF-REVIEW.json") -Value $reviewText -Encoding utf8
 }
 
-Write-Host "Created $Mode project: $projectDir"
+Write-Host "Created $Mode project ($ExecutionPath): $projectDir"
 Write-Host ""
 Write-Host "Draft validation:"
 # "Continue" around the child process: this script sets ErrorActionPreference

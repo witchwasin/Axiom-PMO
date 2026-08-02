@@ -218,6 +218,18 @@
 },
 {
 "schema_version": "1.1",
+"level": "INFO",
+"rule_id": "PATH-001",
+"message": "PROJECT.md does not declare an Execution path; defaulting to development_handoff",
+"blocking": true,
+"artifact": null,
+"item_id": null,
+"field": null,
+"suggestion": null,
+"documentation_url": null
+},
+{
+"schema_version": "1.1",
 "level": "PASS",
 "rule_id": "BLOCKER-001",
 "message": "No open blocker pattern found",

@@ -1,0 +1,4 @@
+{
+  "$comment": "Fixture only: proves PATH-002 fires against an active, unresolved execution package. Not a real, verifiable contract.",
+  "work_item_id": "D-001"
+}
