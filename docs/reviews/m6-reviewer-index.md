@@ -8,28 +8,40 @@
 
 | | |
 |---|---|
-| Implementation | complete, remediation applied |
-| Hardening | complete (before the review findings) |
-| Human Owner testing | complete |
-| Human Owner acceptance | accepted — `DEC-005`, 2026-08-01 |
-| Independent review | **three rounds, all REQUEST CHANGES** |
-| Blocking findings | **2 FATAL, 8 MAJOR, 2 MINOR across three rounds — all implemented, awaiting re-review** |
-| Milestone closure | **blocked pending re-review** |
+| Implementation | complete |
+| Hardening | complete |
+| Human Owner testing | complete — `DEC-005` |
+| Independent review | **complete — ACCEPT WITH MINOR REVISIONS** (three rounds) |
+| Findings | **2 FATAL, 8 MAJOR, 2 MINOR — all resolved** |
+| Human Owner closure | **accepted and CLOSED** — `DEC-007`, 2026-08-01 |
 | Release / tag / publication / merge | **not authorized** |
+
+Milestone 6 is closed. Both halves of acceptance exist and neither substituted
+for the other: independent review (ACCEPT WITH MINOR REVISIONS — the minor
+revisions applied in this closure pass) and Human Owner acceptance (`DEC-005`
+for testing, `DEC-007` for closure), as `AGENTS.md` rule 11 requires.
+
+Closure closed **no** known debt. Everything under
+[Known limitations and residual risks](#known-limitations-and-residual-risks)
+remains open, and closure authorizes no merge, tag, release or publication.
 
 ### Review history
 
-Three review rounds so far. Recorded in full because the sequence is the useful
-part — twice a fix for one finding created the next one.
+Three rounds, every one REQUEST CHANGES, before the final ACCEPT WITH MINOR
+REVISIONS. Recorded in full because the sequence is the useful part — twice, a
+fix for one finding created the next one.
 
 | Round | Verdict | Findings |
 |---|---|---|
 | 1 | REQUEST CHANGES | 1 FATAL (ownership by self-declared digest), 1 MAJOR (removal mutating content outside the markers) |
 | 2 | REQUEST CHANGES | 1 FATAL (unsupported encodings mangled, not refused), 4 MAJOR (mutable `sep=`/`tail=` widening a deletion; file provenance inferred from contents; Windows hook boundary unverified; duplicate `DEC-003`) |
 | 3 | REQUEST CHANGES | 3 MAJOR (bridging newline broke the exact round trip; Windows Git Bash hook never functionally verified; governance records stale), 2 MINOR (UTF-32 BOM ordering; ownership and DryRun wording) |
+| Final | **ACCEPT WITH MINOR REVISIONS** | Duplicated heading in this index; ROADMAP summary row. Both applied in the closure pass. |
 
-All findings from all three rounds are implemented. Round 3 is what this
-commit addresses.
+All findings from all three rounds are implemented, and the review concluded
+**ACCEPT WITH MINOR REVISIONS** — the minor revisions being this index's
+duplicated heading and the ROADMAP summary row, both applied in the closure
+pass.
 
 **Two of them were caused by earlier fixes**, which is worth a reviewer's
 attention more than any individual defect:
@@ -44,7 +56,7 @@ span — no separator, no bridging newline — so removal has nothing outside th
 span to reason about, and install-then-uninstall returns the original bytes in
 every case tested.
 
-### What changed for round 3
+### What changed in the final round
 
 **Exact round trip.** `Set-AxiomBlock` appends the rendered block directly to
 the text as found. A file with no final newline now gets
@@ -74,7 +86,7 @@ file and be recognised, which is correct. The guarantee is narrower and is now
 stated as it actually is: content the framework never generates is never
 touched without `-Force`.
 
-### What to look at first this round### What to look at first this round
+### What to look at first
 
 | | |
 |---|---|
@@ -105,8 +117,8 @@ touched without `-Force`.
 | `82de3ac` | 6.5 | Optional advisory hook |
 | `9984158` | 6.4 | Clean-room compatibility and the real plugin-load transcript |
 
-New review effort belongs on `75d38cd`, `7707bb8`, `82de3ac`, `9984158` and
-the hardening commit that follows them.
+Review covered all of these plus the three remediation commits that followed
+(`7b46bb6`, `d9bb4d2`, `3cc3f3e`).
 
 ## Where to start
 
@@ -117,7 +129,8 @@ If you read only three files, read these, in this order:
 2. **[`scripts/hook-scope-advisory.ps1`](../../scripts/hook-scope-advisory.ps1)** —
    the only code that runs inside the user's editing loop.
 3. **[`docs/architecture/m6-threat-model.md`](../architecture/m6-threat-model.md)** —
-   thirteen threats with mitigation, evidence, and residual risk.
+   seventeen threats with mitigation, evidence, and residual risk. Four were
+   found by review rather than by the authors.
 
 ## Security-sensitive files
 
@@ -224,7 +237,7 @@ All wired into `scripts/run-all-checks.ps1`, so every supported host runs them.
   clone, produce byte-identical `skills/`. Installing from that fresh clone
   loads 7 skills and 1 hook.
 
-## Claims I am asking you to confirm
+## Claims the review confirmed
 
 1. `marker-block.ps1` never modifies content outside its own markers, on any
    input — including whitespace.
@@ -240,7 +253,7 @@ All wired into `scripts/run-all-checks.ps1`, so every supported host runs them.
 7. The documentation does not overclaim — specifically that nothing says or
    implies Milestone 6 prevents an out-of-scope edit.
 
-## Claims I am deliberately not making
+## Claims deliberately not made
 
 - That the plugin was loaded and its skills *invoked* end to end. Discovery is
   proven; invocation behaviour is the skills' own content, unchanged here.

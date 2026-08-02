@@ -108,7 +108,7 @@ Recommended effort allocation:
 | Milestone 4 - GitHub Action | Delivered | Merged to `main` at `31d1e25`; child issues #12-#17 closed |
 | Milestone 4.5 - SCOPE-DIFF | Delivered | Human Owner accepted 2026-07-30 after two independent AI review rounds; merged to `main` at `6b42643` |
 | Milestone 5 - Execution Contract Verification MVP | **Delivered / CLOSED** -- Sol ACCEPT at round 5 after four REQUEST CHANGES rounds; Human Owner accepted and closed 2026-07-31 (`DEC-004`) | Core product. `docs/reference/execution-contract.md`; decisions `DEC-002`, `DEC-004`; commit `2888769`, CI run `30643605031` 7/7 |
-| Milestone 6 - Claude Code Integration Experience | **Human Owner accepted (`DEC-005`); independent review returned REQUEST CHANGES (1 FATAL, 1 MAJOR) -- both fixed, re-review pending. Closure blocked.** Not released, not tagged, not published, not merged | Optional integration, not core product. Three known debts remain open -- see Deferred technical debt. `docs/guides/claude-code-integration.md`; `docs/architecture/m6-threat-model.md`; decisions `DEC-003` (shape), `DEC-006` (product boundary), `DEC-005` (acceptance) |
+| Milestone 6 - Claude Code Integration Experience | **CLOSED** -- three independent review rounds (R1: 1 FATAL + 1 MAJOR; R2: 1 FATAL + 4 MAJOR; R3: 3 MAJOR + 2 MINOR), all findings resolved; final verdict **ACCEPT WITH MINOR REVISIONS**; Human Owner accepted and closed 2026-08-01 (`DEC-007`) | Optional integration, not core product. Not merged, tagged, released or published -- closure authorizes none of those. Known debts remain open. `docs/reviews/m6-reviewer-index.md`; decisions `DEC-003` (shape), `DEC-006` (boundary), `DEC-005` (testing), `DEC-007` (closure) |
 
 ## Roadmap Governance
 
@@ -877,17 +877,18 @@ genuinely different things:
 
 | | |
 |---|---|
-| Implementation | complete, remediation applied |
-| Hardening | complete (before the review findings) |
-| Human Owner testing | complete |
-| Human Owner acceptance | accepted (`DEC-005`) |
-| Independent Sol review | **three rounds, all REQUEST CHANGES** |
-| Blocking findings | **2 FATAL, 8 MAJOR, 2 MINOR across three rounds -- all implemented, awaiting re-review** |
-| Milestone closure | **blocked pending re-review** |
+| Implementation | complete |
+| Hardening | complete |
+| Human Owner testing | complete (`DEC-005`) |
+| Independent Sol review | **complete -- ACCEPT WITH MINOR REVISIONS** |
+| Findings | **2 FATAL, 8 MAJOR, 2 MINOR across three rounds -- all resolved** |
+| Milestone closure | **CLOSED** -- Human Owner, 2026-08-01 (`DEC-007`) |
 | Release / tag / publish / merge | **not authorized** |
 
-Milestone 6 is **not closed.** Independent review has returned REQUEST CHANGES
-three times, every finding in the code that writes to the user's own file:
+Milestone 6 is **closed**, certified at commit `3cc3f3e` and CI run
+[`30692748537`](https://github.com/witchwasin/Axiom-PMO/actions/runs/30692748537).
+It took three independent review rounds, every one of them REQUEST CHANGES,
+before the final verdict of ACCEPT WITH MINOR REVISIONS:
 
 | Round | Findings |
 |---|---|
@@ -895,17 +896,21 @@ three times, every finding in the code that writes to the user's own file:
 | 2 | FATAL: unsupported encodings mangled rather than refused -- a UTF-16 file had every byte rewritten. MAJOR x4: mutable `sep=`/`tail=` widening a deletion; file provenance inferred from contents; Windows hook boundary unverified; duplicate `DEC-003`. |
 | 3 | MAJOR x3: a bridging newline broke the exact round trip; the Windows Git Bash hook was never functionally verified, and asserting it properly exposed an un-escaped JSON `cwd` meaning the advisory never fired on Windows at all; governance records stale. MINOR x2: UTF-32 BOM ordering; ownership and DryRun wording. |
 
-All are implemented; re-review is pending.
+Every finding is resolved. The minor revisions attached to the final verdict --
+a duplicated heading in the reviewer index and this summary row -- were applied
+in the closure pass.
 
 **Two findings were caused by the fixes for earlier ones**, which is the more
-useful observation. Round 2's `sep=`/`tail=` defect existed because round 1's
-fix introduced that metadata to make removal precise; round 3's
-bridging-newline defect existed because round 2's fix removed the metadata but
-kept one byte outside the span for cosmetics. The current design keeps nothing
-outside the span at all.
+useful observation to carry forward. Round 2's `sep=`/`tail=` defect existed
+because round 1's fix introduced that metadata to make removal precise; round
+3's bridging-newline defect existed because round 2's fix removed the metadata
+but kept one byte outside the span for cosmetics. The design that finally
+passed keeps nothing outside the span at all -- the first version of it with
+nothing left to trade away.
 
-The Human Owner's acceptance (`DEC-005`) remains valid and closes neither these
-findings nor the debts below.
+Closure (`DEC-007`) authorizes **only** closure: no merge to `main`, no tag, no
+release, no marketplace or npm publication. It closes **no** known debt -- the
+list below is unchanged.
 
 Authorized by the Human Owner on 2026-07-31 after the 6.1 spike was accepted.
 

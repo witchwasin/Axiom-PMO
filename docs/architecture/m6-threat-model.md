@@ -1,9 +1,9 @@
 # Milestone 6 threat model
 
-> Status: **independent review completed — REQUEST CHANGES, twice.** Threats 3,
-> 6, 14 and 15 were blocking findings from those reviews. All are now closed,
-> and all are recorded here rather than quietly absorbed. Re-review pending;
-> not accepted, not released.
+> Status: **independent review complete — ACCEPT WITH MINOR REVISIONS.**
+> Threats 3, 6, 14, 15, 16 and 17 were blocking findings across three review
+> rounds. All are closed. Milestone 6 is closed (`DEC-007`); not released, not
+> published.
 >
 > Four of this document's fifteen threats were found by a reviewer rather than
 > by the people who wrote the code. That ratio is the most useful number on

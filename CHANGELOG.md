@@ -2,35 +2,39 @@
 
 ## Unreleased
 
-### Implemented and Human-Owner accepted; independent review returned REQUEST CHANGES — remediated, re-review pending
+### Closed — three independent review rounds, ACCEPT WITH MINOR REVISIONS
 
 - **Claude Code integration (Milestone 6).** Optional. Milestones 1-5 are the
   product; this is a bridge for teams who choose to continue implementation in
   Claude Code after a handoff is verified, and nothing in Milestones 1-5
   requires it.
 
-  Tested and accepted by the Human Owner on 2026-08-01 (`DEC-005`).
-  **Independent review returned REQUEST CHANGES**: one FATAL and one MAJOR,
-  both in the code that writes to the user's own file, and both reproduced
-  before being fixed.
+  **Closed 2026-08-01.** Tested and accepted by the Human Owner (`DEC-005`);
+  independently reviewed across three rounds -- every round REQUEST CHANGES,
+  final verdict **ACCEPT WITH MINOR REVISIONS**; accepted and closed by the
+  Human Owner (`DEC-007`), certified at commit
+  `3cc3f3e5a6df6490aa9c535556bcb81432186e00`, CI run
+  `30692748537`. Closure authorizes closure only -- not merged, tagged,
+  released, or published, and no known debt was closed by it.
 
-  The FATAL: ownership was decided by an unkeyed SHA-256 the block declared
-  about itself, so arbitrary content plus a correctly computed digest read as
-  framework-generated and was deleted without `-Force`. Ownership is now
-  anchored to the canonical body the framework generates; a self-consistent
-  forgery fails closed. Same lesson Milestone 5 learned three times -- a digest
-  proves integrity since hashing, never authorship.
+  Ten findings across three rounds, all reproduced before being fixed, all
+  in the code that writes to the user's own file:
 
-  The MAJOR: removal reassembled the text around the block with `TrimEnd` and
-  `Trim`, collapsing blank lines the user owned. Removal now takes the exact
-  marker span plus only the separator and trailer the marker itself records,
-  and installation no longer trims the file it appends to.
+  | Round | Findings |
+  |---|---|
+  | 1 | FATAL: ownership decided by a self-declared, unkeyed SHA-256 the block declared about itself -- arbitrary content plus a correct digest read as framework-generated and was deleted without `-Force`. MAJOR: removal reassembled surrounding text with `TrimEnd`/`Trim`, collapsing blank lines the user owned. |
+  | 2 | FATAL: unsupported encodings mangled rather than refused -- a UTF-16 file had its BOM turned to replacement characters and every byte rewritten. MAJOR x4: mutable `sep=`/`tail=` marker metadata could widen a deletion even on an `owned` block; file provenance was inferred from post-removal contents, deleting pre-existing whitespace-only files; the Windows hook path was unverified; `DEC-003` referenced two different decisions. |
+  | 3 | MAJOR x3: a bridging newline kept outside the marker span broke the exact round trip (two bytes on CRLF); the Windows assertion checked only exit code, which is 0 whether the hook advises or does nothing -- asserting the message instead exposed that the shim never un-escaped JSON `cwd`, so the advisory had never fired on Windows at all; governance records referenced stale IDs. MINOR x2: UTF-32 BOM detection ran after UTF-16's and mis-identified UTF-32LE files; wording overstated the digest as proof of authorship rather than recognition. |
+  | Final | ACCEPT WITH MINOR REVISIONS -- a duplicated heading in the reviewer index and a stale ROADMAP row, both fixed in the closure pass. |
 
-  Both fixed with regression tests. **Closure is blocked pending re-review** --
-  `AGENTS.md` rule 11 requires independent review as well as human acceptance,
-  and neither substitutes for the other. Not released, not tagged, not
-  published, not merged. Neither the acceptance nor this remediation closed any
-  of the three known limitations under Deferred technical debt in `ROADMAP.md`.
+  Same lesson as Milestone 5, arriving twice more in different clothes: a
+  digest proves integrity since hashing, never authorship, and inferring
+  provenance from a file's current contents is guessing dressed as logic.
+  Two of the ten findings were caused by earlier fixes -- round 2's mutable
+  marker metadata was added by round 1's fix, and round 3's bridging newline
+  was kept by round 2's fix. The design that finally passed writes **nothing**
+  outside the marker span: no separator, no bridging byte, nothing to
+  reclaim and nothing left to trade away.
 
   The framework installs as a Claude Code plugin, outside the user's
   repository. One fenced, namespaced block goes into the repository's
@@ -56,25 +60,32 @@
     `.claude/skills/` with a CI drift gate covering four separate directions.
     Maintainer-only tools now fail with `FRAMEWORK-001` outside a checkout
     instead of a raw exception.
-  - **6.3 setup and uninstall.** One fenced block, ownership proven by a
-    digest in the marker, atomic writes, backups, idempotent, byte-identical
-    round trip including CRLF and BOM. Refuses rather than guessing when
-    markers are malformed or the block was hand-edited.
+  - **6.3 setup and uninstall.** One fenced block, ownership decided by
+    matching a frozen registry of framework-generated bodies (never by a
+    self-declared digest), exact-span removal with nothing written outside the
+    markers, atomic writes, backups, idempotent, byte-identical round trip
+    for every file shape tested including CRLF, BOM, and no trailing newline.
+    Refuses rather than guessing when markers are malformed, the block was
+    hand-edited, or the encoding is not UTF-8.
   - **6.4 clean-room.** Ten pre-existing repository shapes -- CLAUDE.md,
     AGENTS.md, both, custom skills and commands, Superpowers, BMAD, malformed
     markers, already-installed, edits-after-setup -- fingerprinted file by
     file. Plus a real `claude plugin` install transcript: 7 skills, 1 hook.
   - **6.5 advisory hook.** Opt-in per project, report-only, ~9 ms disabled and
-    ~230 ms enabled. It cannot emit a permission decision, and that is
-    asserted against its source rather than only its output.
+    ~230 ms enabled. It cannot emit a permission decision, asserted against
+    its source rather than only its output. Functionally verified on Windows
+    with a POSIX shell by asserting the advisory message, not just an exit
+    code -- which is what surfaced the un-escaped-`cwd` defect above. Windows
+    without a POSIX shell does not receive the hook, by product decision:
+    setup, the CLI, and validators remain fully supported there.
 
-  Three residual risks are named rather than buried, acknowledged by the
-  Human Owner, and still **open**: plugin update/version drift is untested,
-  cross-plugin hook ordering is unverified, and a git-source install carries
-  the whole repository (~10 MB, mostly `tests/`). Full list in
+  Known limitations, acknowledged by the Human Owner and **not closed** by
+  this closure: plugin update/version drift is untested, cross-plugin hook
+  ordering is unverified, and a git-source install carries the whole
+  repository (~10 MB, mostly `tests/`). Full list in
   `docs/architecture/m6-threat-model.md`.
 
-  Tests added: 17 spike, 38 packaging, 122 setup, 61 clean-room, 46 hook.
+  Tests: 17 spike, 40 packaging, 229 setup, 63 clean-room, 56 hook, 50 CLI.
   The Human Owner has run `docs/guides/claude-code-walkthrough.md`. It has
   still not been run by anyone outside the team that built it, which is the
   independent signal that walkthrough exists to produce.

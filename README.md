@@ -539,11 +539,10 @@ Next:
 - keep the optional Milestone 1 walkthrough and recording evidence packet
   available for future trust work;
 - Milestone 6, Claude Code integration — **optional, not part of the core
-  product**. Implemented, hardened, and **accepted by the Human
-  Owner** (2026-08-01). **Independent review returned REQUEST CHANGES** — one
-  FATAL and one MAJOR in the user-file write path, both since fixed with
-  regression tests; **closure is blocked pending re-review**. Not released,
-  tagged, published, or merged. Three known limitations remain open — see the
+  product**. Implemented, hardened, and **CLOSED** (2026-08-01) after three rounds
+  of independent review (final verdict: ACCEPT WITH MINOR REVISIONS) and Human
+  Owner acceptance (`DEC-007`). Not released, tagged, published, or merged --
+  closure authorizes none of those. Known limitations remain open — see the
   guide. It packages the framework as a Claude Code
   plugin and adds one fenced block to a repository's `AGENTS.md` so a verified
   handoff can be continued without re-interpreting the documents. It hands the
@@ -571,9 +570,9 @@ enforcement, so a pull request can be checked — and, optionally, blocked —
 directly in CI. **Milestones 1–5 — the core governance and
 development-handoff framework — are complete**, with Milestone 5 (execution
 contract verification) accepted and closed on 2026-07-31. Milestone 6, the
-optional Claude Code integration bridge, is implemented and Human-Owner
-accepted; **independent review returned REQUEST CHANGES and re-review is
-pending**, so it is not closed, not released, and not published. There is no npm package: Milestone 3 Phase B is deferred.
+optional Claude Code integration bridge, is implemented, reviewed across three
+rounds, and **closed** (`DEC-007`); still not released, tagged, or published --
+closure does not authorize any of those. There is no npm package: Milestone 3 Phase B is deferred.
 
 Upgrading from 1.1 requires no migration: the Action and SCOPE-DIFF are both
 opt-in, and every existing local invocation is unaffected. Migrating from the
