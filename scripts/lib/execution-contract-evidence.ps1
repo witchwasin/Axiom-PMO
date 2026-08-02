@@ -242,8 +242,15 @@ function Test-CiCheckEvidence {
       $result.Reason = "check run $parsedId belongs to commit $($run.head_sha), not $commitSha -- cannot cite it as evidence for a different commit"
       return $result
     }
-    if ([string]$run.name -ne $name) {
-      $result.Reason = "check run $parsedId is named '$($run.name)', not '$name' -- the id and name in the evidence entry disagree"
+    if ([string]$run.name -cne $name) {
+      # Case-sensitive on purpose: PowerShell's -ne is case-insensitive, so a
+      # check literally named "Build" would satisfy evidence naming "build".
+      # GitHub check names are distinct strings a workflow author controls
+      # exactly; treating "Build" and "build" as interchangeable would let
+      # evidence for one check pass as evidence for a different one solely by
+      # casing, which is exactly the kind of confusable-identity gap this
+      # adapter otherwise goes out of its way to close.
+      $result.Reason = "check run $parsedId is named '$($run.name)', not '$name' (case-sensitive) -- the id and name in the evidence entry disagree"
       return $result
     }
     if ([string]$run.status -ne "completed") {
@@ -274,9 +281,14 @@ function Test-CiCheckEvidence {
     return $result
   }
 
-  $matchingRuns = @($data.check_runs | Where-Object { [string]$_.name -eq $name })
+  # -ceq, not -eq: PowerShell's -eq is case-insensitive for strings, so a
+  # search for "build" would match a check actually named "Build". Two
+  # differently-cased checks on the same commit are two different checks;
+  # matching case-insensitively would let evidence for either satisfy a claim
+  # naming the other.
+  $matchingRuns = @($data.check_runs | Where-Object { [string]$_.name -ceq $name })
   if ($matchingRuns.Count -eq 0) {
-    $result.Reason = "no check run named '$name' was found for commit $commitSha"
+    $result.Reason = "no check run named '$name' (case-sensitive) was found for commit $commitSha"
     return $result
   }
 
