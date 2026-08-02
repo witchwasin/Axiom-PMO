@@ -1,11 +1,12 @@
 # Axiom-PMO Productization Roadmap
 
 Status: roadmap of record
-Current tagged release: 1.2.0 (`VERSION` file). Milestone 6 merged to `main`
-2026-08-01; Milestone 5.5 merged to `main` 2026-08-02. Neither is yet part of
-a tagged release -- tagging requires a separate, explicit Human Owner
-decision.
-Last updated: 2026-08-02
+Current product version: 1.3.0 (`VERSION` file, and the version this
+repository's own tooling checks itself against). Last tagged GitHub release:
+`v1.2.0` -- Milestone 6 (merged to `main` 2026-08-01) and Milestone 5.5
+(merged 2026-08-02) are both on `main` and both un-tagged. Tagging `v1.3.0`
+requires a separate, explicit Human Owner decision; it has not been made.
+Last updated: 2026-08-03
 
 Axiom-PMO is moving from an open-source governance framework into a developer
 workflow tool for AI-assisted software delivery.
@@ -112,7 +113,11 @@ Recommended effort allocation:
 | Milestone 4.5 - SCOPE-DIFF | Delivered | Human Owner accepted 2026-07-30 after two independent AI review rounds; merged to `main` at `6b42643` |
 | Milestone 5 - Execution Contract Verification MVP | **Delivered / CLOSED** -- Sol ACCEPT at round 5 after four REQUEST CHANGES rounds; Human Owner accepted and closed 2026-07-31 (`DEC-004`) | Core product. `docs/reference/execution-contract.md`; decisions `DEC-002`, `DEC-004`; commit `2888769`, CI run `30643605031` 7/7 |
 | Milestone 5.5 - `ci-check` provenance hardening | **Delivered / CLOSED** -- Sol REQUEST CHANGES (check names compared case-insensitively), then ACCEPT after the fix; merged to `main` 2026-08-02 | Core product, post-closure fix. Binds `ci-check` evidence to `check_run_id` (closing the by-name permanent-false-negative case) and makes check-name comparison case-sensitive; commit `ca6ae6a`, CI run `30748756130` (headSha `ca6ae6a`) 7/7 |
-| Milestone 6 - Claude Code Integration Experience | **CLOSED and MERGED to `main`** -- three independent review rounds (R1: 1 FATAL + 1 MAJOR; R2: 1 FATAL + 4 MAJOR; R3: 3 MAJOR + 2 MINOR), all findings resolved; final verdict **ACCEPT WITH MINOR REVISIONS**; Human Owner accepted and closed 2026-08-01 (`DEC-007`); merge to `main` separately confirmed by the Human Owner directly in chat and completed the same day | Optional integration, not core product. Not tagged, released, or published to any marketplace. Known debts remain open. `docs/reviews/m6-reviewer-index.md`; decisions `DEC-003` (shape), `DEC-006` (boundary), `DEC-005` (testing), `DEC-007` (closure); commit `1d85d60`, CI run `30736667616` 7/7 |
+| Milestone 6 - Claude Code Integration Experience | **CLOSED and MERGED to `main`** -- three independent review rounds (R1: 1 FATAL + 1 MAJOR; R2: 1 FATAL + 4 MAJOR; R3: 3 MAJOR + 2 MINOR), all findings resolved; final verdict **ACCEPT WITH MINOR REVISIONS**; Human Owner accepted and closed 2026-08-01 (`DEC-007`); merge to `main` separately confirmed by the Human Owner directly in chat and completed the same day | Optional integration, not core product. Not tagged, released, or published to any marketplace. Cross-plugin hook ordering closed to the documented platform-contract level; update/version-drift narrowed, with two specific gaps accepted as bounded, non-blocking `v1.3.0` limitations (not closed); package size accepted as a `v1.3.0` limitation. See Deferred technical debt. `docs/reviews/m6-reviewer-index.md`; decisions `DEC-003` (shape), `DEC-006` (boundary), `DEC-005` (testing), `DEC-007` (closure), `DEC-008`/`DEC-009` (release-scope limitations); commit `1d85d60`, CI run `30736667616` 7/7 |
+| Milestone 7 - Onboarding and the Two Execution Paths | **Authorized, not started** -- design reviewed through two independent Sol rounds against `research/m7-m9-proposal.md`; Human Owner authorized implementation 2026-08-03 (`DEC-010`) | Core product. Two independent onboarding questions (who builds the work, how strictly is it governed), a governed `execution_path` declaration, and an `axiom status` verb. Design decision `DEC-010` |
+| Milestone 8.0 - Adversarial Review Evidence: research | **Authorized, not started** -- research and threat-model only; Human Owner authorized 2026-08-03 (`DEC-011`) | Core-product-adjacent research. Primary question: whether a `ci-observed` provenance tier can be bound tightly enough to mean an independent review actually produced the artifact, not merely that a CI job ran. NO-GO is an accepted outcome. Decision `DEC-011` |
+| Milestone 8.1 - Adversarial Review Evidence: implementation | **Not authorized** -- contingent on Milestone 8.0's GO/NO-GO recommendation and a further, separate Human Owner decision | Depends on Milestone 8.0 |
+| Milestone 9 - Failure Pattern Registry and Governed Improvement Proposals | **Proposed; boundary confirmed, implementation not authorized** -- local/opt-in boundary confirmed 2026-08-03 (`DEC-012`) | Local, opt-in aggregation over existing diagnostics, plus human-reviewed improvement candidates. Sequenced after Milestone 8.0 so its event schema can carry review-disposition data. Decision `DEC-012` |
 
 ## Roadmap Governance
 
@@ -152,7 +157,16 @@ Milestone 1 delivered, with walkthrough/recording evidence deferred
 -> Milestone 5 (delivered -- closed 2026-07-31)     <- end of core product
 -> Milestone 5.5 (delivered -- closed 2026-08-02, post-closure fix)
 -> Milestone 6 (optional integration; closed and merged to `main` 2026-08-01)
+-> Milestone 7 (authorized 2026-08-03, not started)
+-> Milestone 8.0 (research, authorized 2026-08-03, not started)
+-> Milestone 9 (proposed; boundary confirmed 2026-08-03; implementation not authorized)
+-> Milestone 8.1 (not authorized; contingent on Milestone 8.0's recommendation)
 ```
+
+Milestone 8.0 is sequenced ahead of Milestone 9 for a concrete reason, not only
+risk ordering: Milestone 9's diagnostic-event schema needs to know what
+review-disposition data Milestone 8 will produce, and building Milestone 9
+first would mean changing that schema afterward.
 
 Milestone 2.5 sits between diagnostics and the CLI deliberately. The CLI's
 `handoff` verb and the GitHub Action's per-stage reporting both depend on the
@@ -1064,6 +1078,250 @@ Claude Code users can add Axiom-PMO to a real repository without losing existing
 Claude, Superpowers, BMAD, or custom agent configuration.
 ```
 
+## Milestone 7 - Onboarding and the Two Execution Paths
+
+Objective: replace "read the README, infer a mental model, guess a workflow"
+with two independent questions, answered once, that select a real path through
+the framework.
+
+Status: **Authorized, not started.** Human Owner authorized implementation
+2026-08-03 (`DEC-010`), after design review across two independent Sol rounds.
+Full design, rejected alternatives, and the reasoning for each is
+`research/m7-m9-proposal.md` section 2.
+
+Core product. The capability is not new -- both execution paths already exist
+as working engines (the Handoff gate, and export/run/verify) -- this milestone
+names them, makes them selectable, and stops asking a new user to infer either
+from scratch.
+
+Two axes, kept independent because they are not the same decision:
+
+```text
+Axis 1 -- who builds it?          Development Handoff | Governed AI Execution
+Axis 2 -- how strictly is it governed?   Lite | Standard | Strict
+```
+
+A vendor handoff can be Strict. A governed AI execution can be Lite. Collapsing
+the two into one question would produce the wrong mental model from the first
+minute.
+
+### The declaration, not detection, boundary
+
+At `init` there is no source material, no requirement, no work item -- nothing
+to detect from. The wizard therefore never claims the system found a risk; it
+records what the user declared:
+
+```text
+GOOD   You declared that this work handles personal data.
+       Strict triggers are non-downgradable, so the effective mode is Strict.
+
+BAD    The system detected personal data.
+```
+
+The declaration is written into the existing `Strict Trigger` / `Mode Reason` /
+`Mode Approved By` columns already defined in
+`pmo-config/policy.json table_schemas.delivery_work_items` and shipped in
+`templates/DELIVERY.md` -- not a new artifact, not a new reference type, and
+nothing under `source/`, which stays user-owned per `AGENTS.md` rule 9. Two
+earlier drafts of this design got this wrong in each direction (an AI
+`evidence_status`, then a generated file under `source/REQ/`) before the
+existing schema was found to already have the right home for it.
+`Mode Approved By` is prefilled from `git config user.name` and requires
+confirmation; it is documented as **attested**, the same standing
+`handoff-policy.json` already gives `reviewer_kind` -- no offline validator can
+prove who typed a name, and claiming otherwise would be false assurance.
+
+### Scope
+
+- `execution_path` (`development_handoff` | `governed_ai_execution`) declared
+  in `PROJECT.md` front matter, defaulting to `development_handoff` so every
+  existing project, example, and fixture is unaffected. New rules `PATH-001`
+  (missing/unrecognized declaration; `info` when absent, `warn` when present
+  but invalid) and `PATH-002` (the declaration contradicts an *active,
+  unresolved* execution package for a work item that is not `Done` --
+  archived or completed execution evidence never triggers it, so a legitimate
+  switch back to Development Handoff does not warn forever).
+- The path is a **current delivery strategy, not project identity**: changing
+  it is an ordinary edit to `PROJECT.md`. A path may add required artifacts and
+  must never remove any -- a machine-tested invariant, not a documentation
+  promise. No new CLI verb for switching it; `axiom status` shows it.
+- `artifact-policy.json` is **not** restructured in this milestone. The
+  path-artifact delta is empty today; it gains its first real entry when
+  Milestone 8 defines `EXECUTION-REVIEW.json`.
+- Interactive `axiom init`: the two questions above, plus a `Help me decide`
+  path that asks one question per entry in `policy.json enums.strict_triggers`,
+  with wording read from a new `pmo-config/onboarding-questions.json` --
+  checked against the trigger enum by a doctor rule so the wording cannot drift
+  behind it -- then a pre-creation summary before anything is written.
+- Non-interactive stays the default whenever stdin is not a TTY, so CI and
+  `make demo` cannot hang; flags always win over prompts.
+- `axiom status`: a read-only verb reporting the declared path, the effective
+  mode and why, the current gate, and the next blocking finding -- derived
+  from the validator's own diagnostics, never a second, independent opinion
+  that could disagree with it.
+- README restructured so both paths are visible above the fold.
+
+### Non-goals
+
+- No new approval, gate, or authority.
+- No detection of risk from source material -- declaration only.
+- No file created, edited, or deleted under `source/`.
+- No new required artifact for either path in this milestone.
+- No `artifact-policy.json` restructure.
+
+### Constraint carried from `cli/axiom.mjs`'s own file header
+
+The CLI contains zero validation logic today and must keep containing zero,
+because a second implementation in JavaScript would drift from the PowerShell
+reference and nobody would know which one was right. The wizard's prompting
+lives in `cli/axiom.mjs`; every trigger list, question, and mode-resolution
+rule lives in `pmo-config/*.json` and PowerShell.
+
+## Milestone 8 - Adversarial Review Evidence
+
+Objective: give AI-executed work independent, evidence-backed review as
+**candidate evidence**, for the defect classes deterministic rules structurally
+cannot reach -- behaviour changed inside an approved file, a test that passes
+while testing the wrong thing, an implementation that satisfies the letter of
+an acceptance criterion and not its intent, a behaviour change hidden inside a
+refactor.
+
+Named "Adversarial Review **Evidence**," never "Gate": it is not authority, and
+a verdict must never change a validator exit code. Full design and the
+rejected alternatives are `research/m7-m9-proposal.md` section 3.
+
+### Milestone 8.0 - Research and go/no-go
+
+Status: **Authorized, research only, not started.** Human Owner authorized
+2026-08-03 (`DEC-011`). This milestone's central artifact sits on the same
+self-attestation surface that cost Milestone 5 five review rounds, so
+implementation is deliberately not authorized alongside the research -- the
+Milestone 5.0/6.0 precedent (research, threat model, explicit GO/NO-GO) applies
+here for the same reason.
+
+Primary research question:
+
+```text
+A check_run_id proves a CI job ran. It does not prove that an independent
+adversarial review produced this artifact.
+```
+
+A CI job can copy a file the executor wrote, call a script that never invokes a
+reviewer, use a modified prompt, or upload a placeholder. The research must
+determine what binding set (workflow identity and commit, reviewer
+adapter/command identity, review-policy version, prompt/config digest,
+`contract_sha256`, `base_sha`, `head_sha`, review-artifact digest) makes a
+`ci-observed` provenance tier mean something, and must state the ceiling
+honestly: even fully bound, what is proven is *"a named workflow, at a known
+commit, produced this file,"* never what happened inside the model call. If the
+achievable assurance does not justify the machinery, **NO-GO is a correct and
+accepted outcome.**
+
+Also to be resolved by the research, with two points already settled by Human
+Owner decision so they are not relitigated under later review pressure
+(`DEC-011`):
+
+- a three-tier provenance model (`ci-observed`, `human-attested`,
+  `artifact-observed` -- the last requiring human acceptance, exactly as
+  `EXEC-005` already requires for artifact-observed test evidence);
+- **a `human-attested` review, by someone other than the executor, satisfies
+  Strict identically to an AI-produced one** -- Strict must never become a
+  requirement to purchase a second model;
+- a finding-lifecycle authority model where the executor may move an `open`
+  finding only to `disputed` (which remains blocking, and is not a closure),
+  and only a human may close a finding under a security, legal, business, or
+  privacy category, mirroring `HANDOFF-010`;
+- a deterministic preflight (an existing-checks flag, not a new verb or gate)
+  run before the review, so a review is never spent on a diff whose base does
+  not resolve;
+- evaluator isolation: the approved requirement, scope, contract, diff, and
+  test artifacts, never the executor's chain of thought, persuasion, a prior
+  verdict, or the narrative fields of `EXECUTION-RESULT.json`.
+
+### Milestone 8.1 - Implementation
+
+Status: **Not authorized.** Contingent on Milestone 8.0's GO/NO-GO
+recommendation and a further, separate Human Owner decision. Nothing in this
+roadmap entry authorizes any `AREV-*` rule, `EXECUTION-REVIEW.json` schema, or
+policy file to be written.
+
+## Milestone 9 - Failure Pattern Registry and Governed Improvement Proposals
+
+Objective: organizational memory over diagnostics the validator already
+emits -- recurring findings clustered and disposed as true defect, false
+positive, or user error, surfaced as human-reviewed improvement candidates.
+Full design is `research/m7-m9-proposal.md` section 4.
+
+Status: **Proposed; boundary confirmed, implementation not authorized.** Human
+Owner confirmed the milestone's local/opt-in boundary ahead of any
+implementation authorization, 2026-08-03 (`DEC-012`), because it is a design
+constraint the milestone depends on rather than an implementation detail:
+
+```text
+Local and opt-in. No network transmission, by default or implicitly.
+Raw diagnostic events git-ignored by default; sharing the derived registry is
+explicit and opt-in. Any future external or cross-organization aggregation
+requires its own separate milestone and Human Owner decision.
+```
+
+No aggregation exists today, so this is closer to a 0/10 than the 3/10 it was
+first scored at.
+
+Deliberately small -- an aggregator over JSON the validator already emits, not
+a new engine:
+
+- one immutable event file per validation run (`.axiom/learning/events/<utc
+  timestamp>-<run-id>.jsonl`), never reopened once written, so two runs cannot
+  collide by construction, aggregated into a rebuildable `FAILURE-PATTERNS.json`
+  -- a corrupted registry is a rebuild, not a data-loss event;
+- every field carries an explicit retain/normalize/hash/drop disposition,
+  because "metadata-only" is not a privacy guarantee on its own (a bare
+  artifact path such as `customers/acme/fraud-investigation.md` discloses the
+  subject without a byte of content);
+- clustering scored on distinct run ids, commits, work items, projects, and
+  time window -- never a raw occurrence count, so twenty reruns against one
+  unfixed defect register as one problem, not twenty;
+- an `IMPROVEMENT-CANDIDATE.json` must weigh the full remedy set --
+  documentation, onboarding, wording, a changed default, a validator defect,
+  false-positive reduction -- with "add a new rule" never the default remedy,
+  consistent with this roadmap's existing prohibition on rules added only to
+  increase perceived coverage; an AI-authored candidate's `status` may only
+  ever be `proposed`;
+- an optional `lifecycle` (`experimental` | `enforced` | `deprecated`) on
+  catalog rules in `validation-rules.json`, with one invariant a doctor check
+  enforces: an experimental rule may be `info` or `warn` and never blocking;
+  promotion to `enforced` requires a `DEC-###` and a roadmap entry.
+
+Detection and visibility only, stated as such rather than claimed as
+prevention -- see Permanent Non-Goals below.
+
+## Permanent Non-Goals
+
+Distinct from `Not Now` below. `Not Now` is near-term effort allocation and may
+be revisited on its own schedule. A Permanent Non-Goal is excluded by design;
+reversing one is a change to what Axiom-PMO is, not a scheduling decision.
+
+- **Autonomous policy mutation.** An AI may not change a rule's severity,
+  promote an experimental rule to enforced, alter authority policy, reduce a
+  Strict requirement, change a schema so its own output passes, or approve a
+  rule it proposed. Nothing offline can *prevent* an agent with write access
+  from editing `pmo-config/*.json` -- claiming otherwise would be the same
+  false assurance this framework exists to prevent, and the Milestone 6
+  round-1 finding (ownership decided by a self-declared digest) is the local
+  precedent for why a self-declared control is not a control. What is real is
+  detection and visibility: flagging any change to a severity, authority, or
+  lifecycle field under `pmo-config/**` inside a verified commit range as
+  requiring a human decision reference (the mechanism `EXEC-007` already uses
+  for a decision record edited inside the range under verification),
+  `CODEOWNERS` on `pmo-config/**`, and a `SCOPE-DIFF`-style prohibited-path
+  default so an execution contract does not grant `pmo-config/**` without a
+  deliberate grant. An AI that can change the rule it is judged by is the exact
+  failure mode this framework exists to prevent -- `AGENTS.md` rule 11 already
+  says this for handoff findings; this generalizes it.
+
+  What an AI may do: **observe -> aggregate -> propose -> supply evidence.**
+  What only a human may do: **review -> authorize -> promote -> accept risk.**
+
 ## Not Now
 
 Do not spend near-term effort on:
@@ -1110,6 +1368,13 @@ Do not spend near-term effort on:
   `check_run_id` and makes check-name comparison case-sensitive. Sol REQUEST
   CHANGES (check names compared case-insensitively), then ACCEPT once fixed;
   merged to `main` 2026-08-02.
+- Milestones 7, 8.0, and 9 design: proposed by the Human Owner, drafted and
+  revised across three rounds against two independent Sol reviews
+  (`research/m7-m9-proposal.md`). Milestone 7 authorized for implementation and
+  Milestone 8.0 authorized for research only, 2026-08-03 (`DEC-010`,
+  `DEC-011`); Milestone 9's local/opt-in boundary confirmed the same day
+  (`DEC-012`) ahead of any implementation authorization; a Permanent Non-Goals
+  section adopted for autonomous policy mutation.
 
 ### Deferred technical debt
 
@@ -1121,9 +1386,9 @@ quietly dropped.
 
 | # | Debt | Milestone | Status |
 |---|---|---|---|
-| 1 | **Plugin update / version drift.** Partially closed for v1.3.0. Confirmed with a real install, not assumed: Claude Code caches a plugin by its declared `version` (`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`) and tracks it as the active install's identity in `installed_plugins.json`, including the git commit for a directory-source install -- the plugin's version *is* the update/cache identity. `prepare-public-release.ps1` and `plugin-package-tests.ps1` now both fail a release candidate whose `.claude-plugin/plugin.json` disagrees with `VERSION`. Evidence: [`docs/evidence/plugin-version-identity-transcript.md`](docs/evidence/plugin-version-identity-transcript.md). **Still open:** whether an update replaces an already-loaded plugin mid-session without a restart, and whether a GitHub-hosted marketplace source behaves the same as the local-directory source tested -- neither was exercised. | M6 | Open, narrowed. Non-blocking. |
+| 1 | **Plugin update / version drift.** Narrowed for v1.3.0, not closed. Confirmed with a real install, not assumed: Claude Code caches a plugin by its declared `version` (`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`) and tracks it as the active install's identity in `installed_plugins.json`, including the git commit for a directory-source install -- the plugin's version *is* the update/cache identity. `prepare-public-release.ps1` and `plugin-package-tests.ps1` now both fail a release candidate whose `.claude-plugin/plugin.json` disagrees with `VERSION`. Evidence: [`docs/evidence/plugin-version-identity-transcript.md`](docs/evidence/plugin-version-identity-transcript.md). **Two specific gaps remain, accepted as non-blocking `v1.3.0` limitations rather than closed (`DEC-009`):** whether an update replaces an already-loaded plugin mid-session without a restart, and whether a GitHub-hosted marketplace source behaves the same as the local-directory source tested -- neither was exercised, and this decision does not authorize further live testing to close them. | M6 | Open, narrowed. Two gaps accepted as `v1.3.0` limitations (`DEC-009`). Non-blocking. |
 | 2 | **Cross-plugin hook ordering.** Closed to the level Claude Code's own contract makes provable. Primary source (`plugin-dev` skill, official marketplace): hooks from multiple plugins "merge ... and run in parallel," with "non-deterministic ordering" and no visibility into another hook's output -- there is no order to prove. A real install alongside an independent second `PreToolUse` hook matching the same tools confirmed neither plugin's registration or cached hook file was affected by installing or removing the other. `hook-advisory-tests.ps1` now asserts, deterministically, that the hook's own registration and source claim no priority/order field, read no other hook's output, and do not claim any tool exclusively. Evidence: [`docs/evidence/hook-coexistence-transcript.md`](docs/evidence/hook-coexistence-transcript.md). | M6 | **Closed**, 2026-08-02. |
-| 3 | **A git-source plugin install carries the whole repository** -- roughly 10 MB, of which ~6.7 MB is `tests/`. Only `skills/`, `hooks/` and the manifests are loaded; the rest is inert. **Accepted as a permanent, non-blocking limitation of the `v1.3.0` release** (`DEC-008`) -- not deferred pending a fix, an explicit trade-off the Human Owner signed off on. A future milestone may evaluate `git-subdir`, npm packaging, or a dedicated plugin package; this release does not, and does **not** duplicate or relocate the validator to work around it. | M6 | **Accepted limitation**, `v1.3.0` (`DEC-008`). Non-blocking. |
+| 3 | **A git-source plugin install carries the whole repository** -- roughly 10 MB, of which ~6.7 MB is `tests/`. Only `skills/`, `hooks/` and the manifests are loaded; the rest is inert. **Accepted as a non-blocking limitation of the `v1.3.0` release** (`DEC-008`) -- scoped to this release, not a rejection of ever fixing it. A future, separately authorized milestone may evaluate `git-subdir`, npm packaging, or a dedicated plugin package; this release does not, and does **not** duplicate or relocate the validator to work around it. | M6 | **Accepted limitation**, `v1.3.0` (`DEC-008`). Non-blocking. |
 | 4 | ~~`ci-check` matches a check run by name, not `check_run_id`.~~ **Fixed, Milestone 5.5.** `Test-CiCheckEvidence` now accepts an optional `check_run_id` that binds directly to one run (proving a legitimate re-run-to-green case verifies where the name search could not), and check-name comparison is case-sensitive throughout. Sol REQUEST CHANGES on the first pass (check names compared case-insensitively), then ACCEPT once fixed. Commit `ca6ae6a`, CI run `30748756130` (headSha `ca6ae6a`, not a later docs-only commit) 7/7. | M5 | **Closed**, 2026-08-02. |
 
 ### Deferred trust evidence
@@ -1139,9 +1404,17 @@ quietly dropped.
 
 ### Next
 
-With Milestones 1-6 and 5.5 all delivered and merged to `main`, nothing is
-implementation-ready without a Human Owner decision to start it. Candidates,
-none currently authorized:
+Authorized and implementation-ready:
+
+- **Milestone 7** (Onboarding and the Two Execution Paths) -- authorized for
+  implementation 2026-08-03 (`DEC-010`).
+- **Milestone 8.0** (Adversarial Review Evidence: research and go/no-go) --
+  authorized for research only 2026-08-03 (`DEC-011`); implementation
+  (Milestone 8.1) is a separate, not-yet-authorized decision on the research's
+  recommendation.
+
+Everything else still requires a Human Owner decision to start, none currently
+authorized:
 
 - The `v1.3.0` release: tagging, and any GitHub Release notes that go with
   it. The release candidate is prepared; the tag itself is a separate, explicit
@@ -1149,6 +1422,10 @@ none currently authorized:
 - Publishing the plugin to a public marketplace. Not implied by tagging a
   release, and not implied by the merge to `main`.
 - The deferred trust evidence above, if the Human Owner chooses to pick it up.
+- Milestone 9 implementation. Its local/opt-in boundary is confirmed
+  (`DEC-012`), but starting the milestone itself is a separate decision,
+  expected after Milestone 8.0's research concludes.
+- Milestone 8.1 implementation, pending Milestone 8.0's GO/NO-GO.
 
 Real-world use and problem reports are **deliberately not tracked here.** The
 Human Owner uses the framework directly and raises anything he finds as it
@@ -1163,6 +1440,12 @@ that has none.
 - **A large restructure to shrink the git-source plugin install size**
   (debt 3 above). Explicitly forbidden without a separate milestone and
   decision -- see that debt's own entry.
+- **Milestone 8.1 implementation.** Contingent on Milestone 8.0's research
+  producing a GO recommendation and a further, separate Human Owner decision --
+  a NO-GO is an accepted possible outcome, not a defect in the research.
+- **Any automatic promotion of a Milestone 9 `experimental` rule to
+  `enforced`, or any rule severity/authority change proposed by an AI.**
+  Permanent Non-Goal; see that section above.
 
 ## Success Signals
 

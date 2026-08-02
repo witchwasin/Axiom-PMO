@@ -1,11 +1,12 @@
 # Claude Code integration
 
-> **Status: CLOSED.** Independent review complete (ACCEPT WITH MINOR
-> REVISIONS, three rounds); Human Owner accepted and closed 2026-08-01
-> (`DEC-007`). Nothing here is published to a marketplace, no
-> release or tag exists, and it is not merged to `main`. The known limitations
-> below are open and were not closed by that acceptance. See
-> [`ROADMAP.md`](../../ROADMAP.md).
+> **Status: CLOSED and merged to `main`** (2026-08-01, `DEC-007`).
+> Independent review complete across three rounds, final verdict ACCEPT WITH
+> MINOR REVISIONS. Current product version `1.3.0`. Nothing here is
+> published to a marketplace, and no `v1.3.0` tag, GitHub Release, or
+> deployment exists yet -- those are separate, not-yet-made Human Owner
+> decisions. The known limitations below were not closed by the merge; see
+> [`ROADMAP.md`](../../ROADMAP.md) for current status and evidence.
 
 **Optional.** Milestones 1–5 are the Axiom-PMO product. Everything on this page
 is a bridge for teams who choose to continue implementation in Claude Code
@@ -40,11 +41,34 @@ Axiom-PMO verified handoff
 | PowerShell | Windows PowerShell 5.1, or PowerShell 7 on Windows, Linux or macOS |
 | Node.js | only for the `axiom` CLI wrapper; the PowerShell scripts run without it |
 
+## Get the framework
+
+Every command below reads from a real checkout of this repository — the
+plugin install alone does not give you `cli/axiom.mjs` or the PowerShell
+scripts on disk anywhere. Clone it once, next to (not inside) the project you
+will add the integration to:
+
+```bash
+git clone https://github.com/witchwasin/Axiom-PMO
+```
+
+The examples below assume you run them from **your own project's directory**,
+with the clone at `../Axiom-PMO` relative to it — the same layout the
+[15-minute walkthrough](claude-code-walkthrough.md) uses and the one this
+repository's own evidence was captured against. Adjust the path if your clone
+lives somewhere else; every command that touches it is written with an
+explicit path for exactly that reason.
+
 ## Install the plugin
 
 ```bash
-claude plugin marketplace add witchwasin/Axiom-PMO
+claude plugin marketplace add ../Axiom-PMO
 ```
+
+`claude plugin marketplace add <owner>/<repo>` (a bare GitHub reference, no
+local clone) is also accepted by the CLI, but every install this repository
+has actually captured evidence for used a local path — prefer the form above
+unless you have a specific reason not to.
 
 ```bash
 claude plugin install axiom-pmo@axiom-pmo
@@ -67,22 +91,25 @@ Nothing in your repository has changed at this point.
 
 ## Add the instruction block to a repository
 
-Preview first. This writes nothing:
+Run from inside **your project's directory**, pointing at the clone with a
+relative path (`../Axiom-PMO`, matching [Get the framework](#get-the-framework)
+above). Preview first. This writes nothing:
 
 ```bash
-node cli/axiom.mjs setup claude --project . --dry-run
+node ../Axiom-PMO/cli/axiom.mjs setup claude --project . --dry-run
 ```
 
 Then apply it:
 
 ```bash
-node cli/axiom.mjs setup claude --project .
+node ../Axiom-PMO/cli/axiom.mjs setup claude --project .
 ```
 
-Or run the script directly, without Node:
+Or run the script directly, without Node — same rule, path to the clone
+followed by `--project` pointing at your own repository:
 
 ```bash
-pwsh -File scripts/setup-claude-integration.ps1 -ProjectPath .
+pwsh -File ../Axiom-PMO/scripts/setup-claude-integration.ps1 -ProjectPath .
 ```
 
 What it does:
@@ -101,16 +128,17 @@ What it does:
   Superpowers, BMAD) and leaves all of it alone;
 - is idempotent — running it again reports "already up to date".
 
-To target `CLAUDE.md` instead:
+To target `CLAUDE.md` instead (same convention: run from your project, clone
+at `../Axiom-PMO`):
 
 ```bash
-node cli/axiom.mjs setup claude --project . --file CLAUDE.md
+node ../Axiom-PMO/cli/axiom.mjs setup claude --project . --file CLAUDE.md
 ```
 
 ## Remove it
 
 ```bash
-node cli/axiom.mjs setup claude --project . --uninstall
+node ../Axiom-PMO/cli/axiom.mjs setup claude --project . --uninstall
 ```
 
 Removes exactly the fenced block — the span between and including the markers,

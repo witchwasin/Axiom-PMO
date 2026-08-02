@@ -301,19 +301,35 @@ inside their own plugin install is beyond its reach.
 **Threat.** A plugin update swaps the framework out from under a project
 mid-work, so a contract exported by one version is verified by another.
 
-**Mitigation.** Partial. Marketplace entries can pin a `sha`, and the plugin
-version is asserted equal to the repository's `VERSION`. The execution contract
-carries its own digest, so a *contract* cannot be silently swapped.
+**Mitigation.** Narrowed during `v1.3.0` release preparation (2026-08-02), from
+assumption to a real, inspected install: Claude Code caches a plugin by its
+declared `version` in a version-keyed directory
+(`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`) and tracks it as
+the active install's identity, including the git commit for a
+directory-source install. The plugin's version *is* the update/cache
+identity -- not assumed, confirmed by reading Claude Code's own install
+records. `prepare-public-release.ps1` and `plugin-package-tests.ps1` both now
+fail a release candidate whose plugin manifest disagrees with `VERSION`. The
+execution contract also carries its own digest, so a *contract* cannot be
+silently swapped regardless.
 
-**Evidence.** `plugin-package-tests.ps1` version-consistency assertion. The
-`sha`-pinning mechanism is observed in the official marketplace, not exercised
-here.
+**Evidence.** `plugin-package-tests.ps1` version-consistency and
+release-check regression assertions.
+[`docs/evidence/plugin-version-identity-transcript.md`](../evidence/plugin-version-identity-transcript.md)
+-- a real install, not simulated (no isolated `~/.claude/` test mode exists in
+the CLI; checked before concluding this was unavoidable, restored afterward).
 
-**Residual.** **Real and untested.** Nothing verifies that an update cannot
-replace a pinned install during a session. Milestone 6.1's spike flagged this
-and it remains open.
+**Residual, accepted rather than closed (`DEC-009`).** Two specific gaps, both
+stated in the evidence transcript rather than glossed over: whether an update
+followed by a reinstall replaces an *already-loaded* plugin's content inside a
+session already running, without a restart; and whether a GitHub-hosted
+marketplace source behaves the same as the local-directory source this was
+tested against. Neither was exercised. The Human Owner accepted both as
+bounded, non-blocking `v1.3.0` limitations -- not as a judgment that they are
+permanently unresolvable, and not as authorization for further live testing
+against a real configuration to close them now.
 
-**Non-blocking for review, and it should be named in the review.**
+**Non-blocking.**
 
 ### 13. Coexistence with existing hooks, and platform reach
 
@@ -329,11 +345,21 @@ cannot hang an edit. It returns no decision, so it cannot suppress anything.
 Superpowers-style `hooks/hooks.json` and asserts it is byte-identical
 afterwards.
 
-**Residual, two of them.**
+**Residual, two of them -- one closed since, one unchanged.**
 
-**Hook ordering across plugins is not verified.** Claude Code's ordering and
-merge behaviour for multiple registered hooks was not inspected; what *is*
-verified is that this hook returns nothing that could override another.
+**Hook ordering across plugins.** Closed to the level Claude Code's own
+contract makes provable, during `v1.3.0` release preparation (2026-08-02).
+Primary source: Claude Code's plugin-development documentation states hooks
+from multiple plugins "merge ... and run in parallel," with "non-deterministic
+ordering" and no visibility into another hook's output -- there is no order to
+verify beyond that. A real install alongside an independent second
+`PreToolUse` hook matching the same tools confirmed neither plugin's
+registration nor cached hook file was affected by installing or removing the
+other. `hook-advisory-tests.ps1` now asserts, deterministically, that this
+hook's registration and source claim no priority/order field, read no other
+hook's output, and claim no tool exclusively -- the properties that make
+parallel, unordered execution safe for it specifically. Evidence:
+[`docs/evidence/hook-coexistence-transcript.md`](../evidence/hook-coexistence-transcript.md).
 
 **The advisory requires a POSIX shell.** The registered command is
 `sh "${CLAUDE_PLUGIN_ROOT}/hooks/scope-advisory.sh"`, so a PowerShell-only
@@ -346,7 +372,7 @@ the validators and the advisory's own PowerShell logic are all supported on
 PowerShell-only Windows. The boundary is documented and asserted in
 `hook-advisory-tests.ps1` rather than skipped.
 
-**Non-blocking, with an unverified interaction.**
+**Non-blocking.**
 
 ### 14. Maintainer content shipped to users
 
@@ -364,8 +390,10 @@ would have them report a clean result for a copy they never inspected.
 of which ~6.7 MB is `tests/`. Only `skills/`, `hooks/` and the manifests are
 loaded; the rest is inert. Reducing it means moving the plugin root into a
 subdirectory, which would require duplicating the validator there — forbidden
-by this milestone's own constraints. Recorded as a limitation rather than
-resolved.
+by this milestone's own constraints. **Accepted as a non-blocking `v1.3.0`
+limitation (`DEC-008`)**, scoped to this release rather than a rejection of
+ever addressing it — a future, separately authorized milestone may evaluate
+`git-subdir`, npm packaging, or a dedicated plugin package.
 
 **Non-blocking.**
 
@@ -477,9 +505,9 @@ output.
 | 9 | Malicious repository instructions | No | M5's problem, not made worse |
 | 10 | Authority escalation | No | None identified |
 | 11 | Plugin content drift | No | Gate covers the repo, not a user's install |
-| 12 | **Update / version mismatch** | No | **Real and untested** |
-| 13 | Coexistence with existing hooks | No | **Cross-plugin ordering unverified** |
-| 14 | Maintainer content shipped | No | **Whole repository ships on a git install** |
+| 12 | **Update / version mismatch** | No | Narrowed -- version *is* the cache identity, confirmed. Two specific gaps accepted as `v1.3.0` limitations (`DEC-009`), not closed |
+| 13 | Coexistence with existing hooks | No | **Closed**, 2026-08-02 -- see this threat's own entry above |
+| 14 | Maintainer content shipped | No | **Whole repository ships on a git install** -- accepted as a `v1.3.0` limitation (`DEC-008`) |
 | 15 | **Unsupported file encoding** | Was **FATAL** | **Closed.** UTF-16 users must convert by hand |
 | 16 | **Mutable marker metadata widening a deletion** | Was **MAJOR** | **Closed.** v1 blocks may leave a blank line behind |
 | 17 | **Provenance inferred from file contents** | Was **MAJOR** | **Closed.** An empty file may be left behind |

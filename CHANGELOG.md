@@ -27,8 +27,16 @@ off by default.
   final verdict **ACCEPT WITH MINOR REVISIONS**; accepted and closed by the
   Human Owner (`DEC-007`), certified at commit
   `3cc3f3e5a6df6490aa9c535556bcb81432186e00`, CI run
-  `30692748537`. Closure authorizes closure only -- not merged, tagged,
-  released, or published, and no known debt was closed by it.
+  `30692748537`. Closure itself authorized closure only, as of that date --
+  not merged, tagged, released, or published, and no known debt was closed
+  by it.
+
+  **Merged to `main` the same day, as a separate, explicit Human Owner
+  confirmation** (`DEC-007` did not authorize this on its own -- the merge
+  was a distinct decision, given after `DEC-007`'s own text was shown to
+  withhold it). Milestone 6 is part of this `1.3.0` release. Tagging, a
+  GitHub Release, and marketplace publication are still separate,
+  not-yet-made decisions.
 
   Ten findings across three rounds, all reproduced before being fixed, all
   in the code that writes to the user's own file:
@@ -92,13 +100,19 @@ off by default.
     without a POSIX shell does not receive the hook, by product decision:
     setup, the CLI, and validators remain fully supported there.
 
-  Known limitations, acknowledged by the Human Owner and **not closed** by
-  this closure: plugin update/version drift is untested, cross-plugin hook
-  ordering is unverified, and a git-source install carries the whole
-  repository (~10 MB, mostly `tests/`). Full list in
-  `docs/architecture/m6-threat-model.md`.
+  Known limitations at closure, updated during `1.3.0` release preparation
+  (2026-08-02): cross-plugin hook ordering is now **closed** to the level
+  Claude Code's own contract makes provable (real coexistence install, plus
+  deterministic no-order-dependency assertions); plugin update/version drift
+  is narrowed -- the plugin's version is confirmed to be the update/cache
+  identity, with two specific gaps accepted as bounded, non-blocking
+  `v1.3.0` limitations (`DEC-009`) rather than closed; a git-source install
+  carrying the whole repository (~10 MB, mostly `tests/`) is accepted as a
+  non-blocking `v1.3.0` limitation (`DEC-008`). None of these were closed by
+  the original Milestone 6 acceptance itself -- see
+  `docs/architecture/m6-threat-model.md` for the full, current record.
 
-  Tests: 17 spike, 40 packaging, 229 setup, 63 clean-room, 56 hook, 50 CLI.
+  Tests: 17 spike, 41 packaging, 229 setup, 63 clean-room, 59 hook, 50 CLI.
   The Human Owner has run `docs/guides/claude-code-walkthrough.md`. It has
   still not been run by anyone outside the team that built it, which is the
   independent signal that walkthrough exists to produce.

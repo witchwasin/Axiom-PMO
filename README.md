@@ -539,10 +539,12 @@ Next:
 - keep the optional Milestone 1 walkthrough and recording evidence packet
   available for future trust work;
 - Milestone 6, Claude Code integration — **optional, not part of the core
-  product**. Implemented, hardened, and **CLOSED** (2026-08-01) after three rounds
-  of independent review (final verdict: ACCEPT WITH MINOR REVISIONS) and Human
-  Owner acceptance (`DEC-007`). Not released, tagged, published, or merged --
-  closure authorizes none of those. Known limitations remain open — see the
+  product**. Implemented, hardened, **CLOSED** and **merged to `main`**
+  (2026-08-01) after three rounds of independent review (final verdict:
+  ACCEPT WITH MINOR REVISIONS) and Human Owner acceptance (`DEC-007`); the
+  merge itself was a separate Human Owner confirmation, since closure alone
+  did not authorize it. Not released, tagged, or published — those remain
+  separate, not-yet-made decisions. Known limitations documented — see the
   guide. It packages the framework as a Claude Code
   plugin and adds one fenced block to a repository's `AGENTS.md` so a verified
   handoff can be continued without re-interpreting the documents. It hands the
