@@ -1,9 +1,8 @@
 # Try the Claude Code integration — 15 minutes
 
 > **Status: CLOSED.** Independent review complete (ACCEPT WITH MINOR
-> REVISIONS); Human Owner accepted and closed 2026-08-01 (`DEC-007`). Not released, not published. The Human Owner has run this
-> walkthrough; nobody outside the team that built it has. That is a fact about
-> this page's audience so far, not a scheduled deliverable.
+> REVISIONS); Human Owner accepted and closed 2026-08-01 (`DEC-007`). Merged
+> to `main`; not yet tagged or published.
 
 You should not need to read `ROADMAP.md` to try this. Everything you need is
 below.

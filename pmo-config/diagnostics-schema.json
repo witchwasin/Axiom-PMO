@@ -150,57 +150,21 @@
           "verdict"
         ],
         "properties": {
-          "base_sha": {
-            "type": "string"
-          },
-          "head_sha": {
-            "type": "string"
-          },
-          "approved_include": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "approved_exclude": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "changed_in_scope": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "changed_out_of_scope": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "changed_excluded": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
+          "base_sha": { "type": "string" },
+          "head_sha": { "type": "string" },
+          "approved_include": { "type": "array", "items": { "type": "string" } },
+          "approved_exclude": { "type": "array", "items": { "type": "string" } },
+          "changed_in_scope": { "type": "array", "items": { "type": "string" } },
+          "changed_out_of_scope": { "type": "array", "items": { "type": "string" } },
+          "changed_excluded": { "type": "array", "items": { "type": "string" } },
           "exempt": {
             "type": "array",
             "items": {
               "type": "object",
-              "required": [
-                "path",
-                "reason"
-              ],
+              "required": ["path", "reason"],
               "properties": {
-                "path": {
-                  "type": "string"
-                },
-                "reason": {
-                  "type": "string"
-                }
+                "path": { "type": "string" },
+                "reason": { "type": "string" }
               }
             }
           },
@@ -209,53 +173,19 @@
             "description": "One entry per changed file git diff reported as a rename or copy (R/C status). Structured old/new path and per-side verdict, additive to the plain-path buckets above -- a renamed file's new_path still also appears in exactly one of changed_in_scope/changed_out_of_scope/changed_excluded/exempt per the combined-verdict rule.",
             "items": {
               "type": "object",
-              "required": [
-                "status",
-                "old_path",
-                "new_path",
-                "old_verdict",
-                "new_verdict"
-              ],
+              "required": ["status", "old_path", "new_path", "old_verdict", "new_verdict"],
               "properties": {
-                "status": {
-                  "type": "string"
-                },
-                "old_path": {
-                  "type": "string"
-                },
-                "new_path": {
-                  "type": "string"
-                },
-                "old_verdict": {
-                  "type": "string",
-                  "enum": [
-                    "excluded",
-                    "out_of_scope",
-                    "exempt",
-                    "in_scope"
-                  ]
-                },
-                "new_verdict": {
-                  "type": "string",
-                  "enum": [
-                    "excluded",
-                    "out_of_scope",
-                    "exempt",
-                    "in_scope"
-                  ]
-                }
+                "status": { "type": "string" },
+                "old_path": { "type": "string" },
+                "new_path": { "type": "string" },
+                "old_verdict": { "type": "string", "enum": ["excluded", "out_of_scope", "exempt", "in_scope"] },
+                "new_verdict": { "type": "string", "enum": ["excluded", "out_of_scope", "exempt", "in_scope"] }
               }
             }
           },
           "verdict": {
             "type": "string",
-            "enum": [
-              "pass",
-              "fail",
-              "scope_missing",
-              "invalid_scope",
-              "git_error"
-            ]
+            "enum": ["pass", "fail", "scope_missing", "invalid_scope", "git_error"]
           }
         }
       }

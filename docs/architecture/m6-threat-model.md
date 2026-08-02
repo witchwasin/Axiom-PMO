@@ -2,8 +2,8 @@
 
 > Status: **independent review complete — ACCEPT WITH MINOR REVISIONS.**
 > Threats 3, 6, 14, 15, 16 and 17 were blocking findings across three review
-> rounds. All are closed. Milestone 6 is closed (`DEC-007`); not released, not
-> published.
+> rounds. All are closed. Milestone 6 is closed (`DEC-007`) and merged to
+> `main`; not yet tagged or published.
 >
 > Four of this document's fifteen threats were found by a reviewer rather than
 > by the people who wrote the code. That ratio is the most useful number on
@@ -303,17 +303,22 @@ mid-work, so a contract exported by one version is verified by another.
 
 **Mitigation.** Partial. Marketplace entries can pin a `sha`, and the plugin
 version is asserted equal to the repository's `VERSION`. The execution contract
-carries its own digest, so a *contract* cannot be silently swapped.
+carries its own digest, so a *contract* cannot be silently swapped. For
+v1.3.0, release checks also require `.claude-plugin/plugin.json` to match
+`VERSION`.
 
-**Evidence.** `plugin-package-tests.ps1` version-consistency assertion. The
-`sha`-pinning mechanism is observed in the official marketplace, not exercised
-here.
+**Evidence.** `plugin-package-tests.ps1` version-consistency assertion and
+`docs/evidence/plugin-version-identity-transcript.md`, which captures a real
+local-directory install and shows the active install and cache are keyed by the
+plugin's declared version. The `sha`-pinning mechanism is observed in the
+official marketplace, not exercised here.
 
-**Residual.** **Real and untested.** Nothing verifies that an update cannot
-replace a pinned install during a session. Milestone 6.1's spike flagged this
-and it remains open.
+**Residual.** **Real and accepted for v1.3.0 (`DEC-009`).** Nothing verifies
+that an update cannot replace a pinned install during a session, and the
+GitHub-hosted marketplace-source update path was not exercised. Those are
+documented release limits, not blockers for v1.3.0.
 
-**Non-blocking for review, and it should be named in the review.**
+**Non-blocking for v1.3.0.**
 
 ### 13. Coexistence with existing hooks, and platform reach
 

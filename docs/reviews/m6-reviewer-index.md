@@ -22,11 +22,10 @@ for the other: independent review (ACCEPT WITH MINOR REVISIONS — the minor
 revisions applied in this closure pass) and Human Owner acceptance (`DEC-005`
 for testing, `DEC-007` for closure), as `AGENTS.md` rule 11 requires.
 
-Closure closed **no** known debt. Everything under
-[Known limitations and residual risks](#known-limitations-and-residual-risks)
-remains open. Closure itself authorized no merge, tag, release or publication;
-the merge to `main` was a separate Human Owner confirmation the following day,
-and tag/release/publication remain unauthorized.
+Closure itself authorized no merge, tag, release or publication; the merge to
+`main` was a separate Human Owner confirmation the following day, and
+tag/release/publication remain unauthorized. The remaining release-scope limits
+are documented in `DEC-008` and `DEC-009`.
 
 ### Review history
 
