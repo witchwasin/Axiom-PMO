@@ -418,7 +418,7 @@
     "DOCTOR-001": {
       "severity": "fail",
       "description": "Active skill runtime does not match skill manifest.",
-      "suggestion": "Align .claude/skills/ with pmo-config/skill-manifest.json. Archived skills belong in .claude-archive/."
+      "suggestion": "Align .claude/skills/ with pmo-config/skill-manifest.json."
     },
     "DOCTOR-002": {
       "severity": "fail",

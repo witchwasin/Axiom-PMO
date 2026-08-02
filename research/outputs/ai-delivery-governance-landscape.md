@@ -2,11 +2,9 @@
 
 Date: 2026-07-29
 Method: 4 parallel research tracks (adapted from the `feynman` `/deepresearch` protocol),
-synthesized and reviewed by hand. Full per-track findings and citation lists:
-`research/.drafts/track-a-native-agent-governance.md`,
-`research/.drafts/track-b-pr-ci-policy-tooling.md`,
-`research/.drafts/track-c-ai-governance-platforms.md`,
-`research/.drafts/track-d-developer-pain-evidence.md`.
+synthesized and reviewed by hand. Per-track working drafts were removed from the
+public tree during release cleanup; this retained file is the reviewed public
+brief.
 
 Every claim below is tagged **VENDOR-CLAIM** (marketing/docs, unverified independently) or
 **DOCUMENTED** (concrete technical reference — API, config key, exact feature behavior — still
@@ -150,8 +148,7 @@ additional ones surfaced during research.** Credo AI, Holistic AI, Aporia, Galil
 Guardrails AI, CalypsoAI, Lakera, Robust Intelligence/Cisco AI Defense, IBM watsonx.governance,
 Arthur AI: all govern **AI model/agent output and runtime behavior** — bias, hallucination,
 prompt injection, PII/data leakage, regulatory compliance of predictions. **VENDOR-CLAIM**
-throughout, cross-checked against each vendor's own product pages
-(see [track-c source list](../.drafts/track-c-ai-governance-platforms.md) for all 33 URLs).
+throughout, cross-checked against each vendor's own product pages.
 
 The closest approach found: **Arize AI** explicitly supports tracing/debugging workflows for
 "Cursor, Claude Code, OpenCode" coding agents **DOCUMENTED**
@@ -174,8 +171,7 @@ both that were reachable — IBM's own docs describe governing "AI assets, model
 agentic applications" including an agent-onboarding/risk-registration catalog; CalypsoAI's own
 support pages describe runtime prompt/output scanning, red-teaming, and agent-behavior
 monitoring. Both conclusions (different category from Axiom-PMO) are unchanged, now on
-first-party rather than secondary sourcing — see the updated
-[track-c entries](../.drafts/track-c-ai-governance-platforms.md) for full citations.
+first-party rather than secondary sourcing.
 
 ## 5. Is "independent verification of AI-generated code changes" a named category anywhere?
 
@@ -209,8 +205,7 @@ Two adjacent-but-not-matching finds:
   `anthropics/claude-code` (2026-02-26, 2026-03-11, 2026-04-06), describing force-push
   destroying repo history, auto-merge to production 11 seconds after PR creation with no
   review, and cross-repo destructive deletion despite explicit scoping instructions.
-  **DOCUMENTED** (direct issue links in
-  [track-d](../.drafts/track-d-developer-pain-evidence.md#1-github-issues-on-anthropicsclaude-code-unauthorizeddestructive-actions)).
+  **DOCUMENTED** by direct issue links reviewed during the research pass.
   A further 5 issue titles suggesting the same pattern (including configured approval gates
   being bypassed) were found via search but never individually fetched for date or resolution
   status — these are kept in an **unverified appendix**, not counted as confirmed incidents,
@@ -347,12 +342,7 @@ what was already planned.
 
 ## Sources
 
-Full per-track citation lists (145 distinct URLs total across the four tracks, before
-cross-track deduplication) are preserved in:
-
-- [research/.drafts/track-a-native-agent-governance.md](../.drafts/track-a-native-agent-governance.md#sources)
-- [research/.drafts/track-b-pr-ci-policy-tooling.md](../.drafts/track-b-pr-ci-policy-tooling.md#sources)
-- [research/.drafts/track-c-ai-governance-platforms.md](../.drafts/track-c-ai-governance-platforms.md#sources)
-- [research/.drafts/track-d-developer-pain-evidence.md](../.drafts/track-d-developer-pain-evidence.md#sources)
+Per-track working drafts were removed from the public tree during release
+cleanup.
 
 Key sources cited directly in this synthesis are linked inline above.

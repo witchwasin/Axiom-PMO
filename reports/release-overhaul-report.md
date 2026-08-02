@@ -61,13 +61,12 @@ mutation was performed.
 
 | Original path | Disposition | Reason |
 |---|---|---|
-| `reports/process-violation.md` | Source for `case-studies/unauthorized-git-mutation.md`; original sanitized + moved to `reports/archive/` | Extract the public lesson; retain sanitized history |
-| `reports/current-acceptance.md`, `executor-brief.md`, `final-hardening-plan.md`, `pending-issues.md`, `remediation-plan.md`, `round2-final-gate.md`, `round2-parallel-split.md`, `upgrade-baseline.md`, `upgrade-manifest.md`, `upgrade-plan-9plus.md` | Sanitized + moved to `reports/archive/` | Internal remediation notes; kept as sanitized audit trail |
-| `reports/archive/PMO-Template-Personal_Final-Review.md` | Renamed → `reports/archive/final-review.md`, sanitized | Filename carried the old product name |
-| `reports/archive/{acceptance-0.4.0,baseline,final-acceptance,patch-manifest}.md` | Sanitized in place | Contained handles/paths/SHAs |
+| `reports/process-violation.md` | Source for `case-studies/unauthorized-git-mutation.md`; original removed from the public tree | Extract the public lesson; avoid shipping internal working history |
+| `reports/current-acceptance.md`, `executor-brief.md`, `final-hardening-plan.md`, `pending-issues.md`, `remediation-plan.md`, `round2-final-gate.md`, `round2-parallel-split.md`, `upgrade-baseline.md`, `upgrade-manifest.md`, `upgrade-plan-9plus.md` | Removed from the public tree | Internal remediation notes; not part of the normal user journey |
+| Historical archive files | Removed from the public tree | Avoid shipping stale internal working history |
 | `CHANGELOG.md` history | Sanitized; new `1.0.0` entry added on top | Strip private repo identifiers, PR#, SHAs, reviewer, owner-deferred wording |
 | `.gitignore` | Thai comment translated to English; patterns unchanged | Public readability; keep all protections incl. tested `Quotation.xlsx` negation |
-| `reports/` root | Now holds `public-release-baseline.md` + `README.md` only | One clean public baseline + archive framing |
+| `reports/` root | Now holds public release evidence only | Keep the public evidence surface small |
 
 Sanitization was scripted with explicit UTF-8 I/O (Thai text and em-dashes
 preserved; verified no mojibake). Removed tokens: private repo URLs/PR links, the
@@ -168,6 +167,5 @@ policy was weakened; no golden was auto-updated to hide a behavioral change.
 
 - Branch: `main`. **No commit, push, tag, merge, branch deletion, or release was
   executed.**
-- Working tree: 29 modified, 12 moved (shown as delete + new for the report
-  relocation into `reports/archive/`), 32 new files.
+- Working tree: 29 modified, 12 moved, 32 new files.
 - All changes are staged for the human to review and commit.

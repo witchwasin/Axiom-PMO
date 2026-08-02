@@ -15,9 +15,9 @@ the project under its old name.
   architecture, governance, integrations, tutorials), experimental
   `integrations/` schemas, and cross-platform helpers (`Makefile`,
   `scripts/check.sh`, `scripts/check.cmd`).
-- **Reports.** The internal remediation/acceptance reports were sanitized and
-  moved under `reports/archive/`; a single public baseline remains at
-  `reports/public-release-baseline.md`.
+- **Reports.** Internal remediation/acceptance reports were reduced to
+  public-facing release notes and a case study; a single public baseline
+  remains at `reports/public-release-baseline.md`.
 
 ## What did NOT change (no action needed)
 

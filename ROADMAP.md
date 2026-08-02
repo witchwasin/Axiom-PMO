@@ -1,10 +1,11 @@
 # Axiom-PMO Productization Roadmap
 
 Status: roadmap of record
-Current tagged release: 1.2.0. Release candidate version: 1.3.0 (`VERSION`
-file). Milestone 6 merged to `main` 2026-08-01; Milestone 5.5 merged to
-`main` 2026-08-02. Neither is yet part of a tagged release -- tagging requires
-a separate, explicit Human Owner decision.
+Current tagged release: 1.3.0 (`VERSION` file, git tag `v1.3.0`). Milestone 6
+merged to `main` 2026-08-01; Milestone 5.5 merged to `main` 2026-08-02. The
+`v1.3.0` tag was authorized separately by the Human Owner on 2026-08-02. GitHub
+Release notes, marketplace publication, and npm publication remain separate
+decisions and have not occurred.
 Last updated: 2026-08-02
 
 Axiom-PMO is moving from an open-source governance framework into a developer
@@ -889,7 +890,7 @@ genuinely different things:
 | Findings | **2 FATAL, 8 MAJOR, 2 MINOR across three rounds -- all resolved** |
 | Milestone closure | **CLOSED** -- Human Owner, 2026-08-01 (`DEC-007`) |
 | Merge to `main` | **Done**, 2026-08-01 -- separately confirmed by the Human Owner directly in chat (`DEC-007` itself authorized closure only, not merge) |
-| Tag / release / publish | **not authorized** |
+| Tag / release / publish | Git tag `v1.3.0` done 2026-08-02; GitHub Release, marketplace publication, and npm publication not done |
 
 Milestone 6 is **closed and merged to `main`**, certified at the closure
 commit [`1d85d60`](https://github.com/witchwasin/Axiom-PMO/commit/1d85d6091bc07bd1eb59d221310f18adf5287b83)
@@ -926,9 +927,10 @@ confirmation was sought and given explicitly rather than inferred. A
 post-closure fix (Milestone 5.5, `ci-check` bound to `check_run_id`, commit
 `ca6ae6a`) landed on `main` the next day, 2026-08-02, itself independently
 reviewed by Independent AI Reviewer -- REQUEST CHANGES on the first pass (check names compared
-case-insensitively), then ACCEPT once fixed. Tag, release, and
-marketplace/npm publication remain **not authorized** by either event. The
-debt list below is unchanged by the merge, except where noted.
+case-insensitively), then ACCEPT once fixed. The git tag `v1.3.0` was
+authorized later by the Human Owner on 2026-08-02; GitHub Release,
+marketplace publication, and npm publication remain separate decisions. The
+debt list below is unchanged by the tag, except where noted.
 
 Authorized by the Human Owner on 2026-07-31 after the 6.1 spike was accepted.
 
@@ -1139,13 +1141,13 @@ quietly dropped.
 
 ### Next
 
-With Milestones 1-6 and 5.5 all delivered and merged to `main`, nothing is
+With Milestones 1-6 and 5.5 all delivered, merged to `main`, and tagged in
+`v1.3.0`, nothing is
 implementation-ready without a Human Owner decision to start it. Candidates,
 none currently authorized:
 
-- The `v1.3.0` release: tagging, and any GitHub Release notes that go with
-  it. The release candidate is prepared; the tag itself is a separate, explicit
-  Human Owner decision.
+- Creating GitHub Release notes for `v1.3.0`. The git tag exists; a GitHub
+  Release entry is optional and separate.
 - Publishing the plugin to a public marketplace. Not implied by tagging a
   release, and not implied by the merge to `main`.
 - The deferred trust evidence above, if the Human Owner chooses to pick it up.

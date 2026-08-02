@@ -37,20 +37,5 @@
       "path": ".claude/skills/pmo-git-safety",
       "purpose": "Branch, diff, sensitive file, commit, push, tag, and release safety."
     }
-  ],
-  "optional_archive": {
-    "root": ".claude-archive/optional-skills",
-    "skills": [
-      "agent-sessions-architecture",
-      "backend-code-review",
-      "design-system-patterns",
-      "frontend-testing",
-      "key-talking-point",
-      "senior-qa"
-    ]
-  },
-  "legacy_archive": {
-    "root": ".claude-archive/legacy-skills",
-    "note": "Legacy PMO skills are preserved for reference and must not be loaded by default."
-  }
+  ]
 }

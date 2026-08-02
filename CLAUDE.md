@@ -182,7 +182,7 @@ The active runtime is limited to the 7 skills in `pmo-config/skill-manifest.json
 - `pmo-governance`
 - `pmo-git-safety`
 
-Archived skills under `.claude-archive/` are not loaded by default.
+Only active skills under `.claude/skills/` are shipped and loaded by default.
 
 ---
 

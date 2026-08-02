@@ -3,7 +3,8 @@
 > Status: **independent review complete — ACCEPT WITH MINOR REVISIONS.**
 > Threats 3, 6, 14, 15, 16 and 17 were blocking findings across three review
 > rounds. All are closed. Milestone 6 is closed (`DEC-007`) and merged to
-> `main`; not yet tagged or published.
+> `main`, and included in the `v1.3.0` git tag. It is not published to a
+> marketplace or npm.
 >
 > Four of this document's fifteen threats were found by a reviewer rather than
 > by the people who wrote the code. That ratio is the most useful number on

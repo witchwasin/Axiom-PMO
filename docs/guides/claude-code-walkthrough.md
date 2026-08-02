@@ -2,7 +2,7 @@
 
 > **Status: CLOSED.** Independent review complete (ACCEPT WITH MINOR
 > REVISIONS); Human Owner accepted and closed 2026-08-01 (`DEC-007`). Merged
-> to `main`; not yet tagged or published.
+> to `main` and tagged in `v1.3.0`; not published to a marketplace or npm.
 
 You should not need to read `ROADMAP.md` to try this. Everything you need is
 below.

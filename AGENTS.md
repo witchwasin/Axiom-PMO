@@ -186,7 +186,7 @@ Active skill groups are defined in `pmo-config/skill-manifest.json`:
 `DESIGN/BUILD-SPEC.md` in addition to the normal delivery set, and walks the
 twelve lenses configured in `pmo-config/handoff-policy.json`.
 
-Archived skills under `.claude-archive/` are preserved for reference only and must not be loaded by default.
+Only active skills under `.claude/skills/` are shipped and loaded by default.
 
 ---
 
