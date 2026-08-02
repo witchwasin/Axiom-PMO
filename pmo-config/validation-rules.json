@@ -76,6 +76,18 @@
       "description": "Strict escalation triggered by a work item's strict trigger.",
       "suggestion": "No action needed. The work item declared a strict trigger, so the project was escalated automatically."
     },
+    "PATH-001": {
+      "severity": "warn",
+      "description": "PROJECT.md's Execution path is missing or not a recognized value (development_handoff / governed_ai_execution). Missing is reported at INFO and defaults to development_handoff; an unrecognized value is a WARN.",
+      "suggestion": "Set 'Execution path:' in PROJECT.md to development_handoff or governed_ai_execution. See docs/concepts/execution-paths.md.",
+      "documentation": "docs/rules/PATH-001.md"
+    },
+    "PATH-002": {
+      "severity": "warn",
+      "description": "The project declares development_handoff, but an active, unresolved execution package (.execution/<id>/EXECUTION-CONTRACT.json with no EXECUTION-RESULT.json yet, for a work item not marked Done) exists. Archived or completed execution evidence never triggers this.",
+      "suggestion": "Confirm whether the Execution path declaration in PROJECT.md is still current, or whether the execution package should be resolved (axiom verify) or archived.",
+      "documentation": "docs/rules/PATH-002.md"
+    },
     "APPROVAL-001": {
       "severity": "fail",
       "description": "Approval row is missing or incomplete.",
@@ -477,6 +489,12 @@
       "description": "Two rows in the framework's decision-log.md share a DEC-### id. Decision ids are reference targets -- ROADMAP, CHANGELOG and the EXEC-* authority rules all cite them, and EXEC-007 resolves them at runtime and treats more than one match as ambiguous. A duplicate makes every citation of that id unresolvable.",
       "suggestion": "Give the newer decision its own unused id and update the references that meant it, semantically rather than by global replacement. Do not change the content, decider, date, or approval state of either row. See docs/rules/DOCTOR-012.md.",
       "documentation": "docs/rules/DOCTOR-012.md"
+    },
+    "DOCTOR-013": {
+      "severity": "fail",
+      "description": "pmo-config/onboarding-questions.json is missing a question for a strict trigger declared in policy.json enums.strict_triggers, or carries a question for a trigger id the enum no longer declares. The interactive `axiom init` wizard's 'Help me decide' path reads its question list from that file keyed by trigger id -- an uncovered trigger would either be unaskable or ask about something that no longer exists.",
+      "suggestion": "Add or remove the matching entry in pmo-config/onboarding-questions.json so its keys exactly match policy.json enums.strict_triggers. See docs/rules/DOCTOR-013.md.",
+      "documentation": "docs/rules/DOCTOR-013.md"
     },
     "DOCTOR-STRUCT": {
       "severity": "fail",

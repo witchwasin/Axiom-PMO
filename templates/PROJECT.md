@@ -2,6 +2,7 @@
 
 > Status: draft / scope-approved / design-ready / release-approved
 > Default mode: Lite / Standard / Strict
+> Execution path: development_handoff / governed_ai_execution
 > Task source: file / github
 > Owner: <PM/PO>
 > Last updated: <YYYY-MM-DD>

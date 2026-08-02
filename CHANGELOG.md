@@ -2,7 +2,38 @@
 
 ## Unreleased
 
-_Nothing yet._
+**Milestone 7 — Onboarding and the Two Execution Paths.** Authorized for
+implementation 2026-08-03 (`DEC-011`), on branch
+`m7-onboarding-execution-paths`. Not yet released.
+
+- `execution_path` (`development_handoff` | `governed_ai_execution`) is now a
+  governed declaration in `PROJECT.md`, defaulting to `development_handoff`
+  so every existing project validates unchanged. New rules `PATH-001`
+  (declaration missing/unrecognized) and `PATH-002` (declaration looks stale
+  against an active, unresolved `.execution/**` package — archived or
+  completed execution evidence never triggers it).
+- `axiom init` prompts interactively on a TTY: which delivery path, then
+  which governance mode, with a "Help me decide" strict-trigger
+  questionnaire. Every answer is a declaration, never a claimed detection.
+  Non-interactive callers (CI, `--no-interactive`, or any flag already
+  supplied) are unaffected.
+- New `axiom status` verb: reports a project's execution path, effective
+  governance mode, current gate, and the validator's own next blocking
+  finding.
+- New `pmo-config/onboarding-questions.json`, kept in sync with
+  `policy.json`'s strict-trigger enum by a new `DOCTOR-013` check.
+- See [`docs/concepts/execution-paths.md`](docs/concepts/execution-paths.md)
+  and `research/m7-m9-proposal.md` for full design.
+
+Backward compatible. No existing required artifact changed for either path;
+the path-artifact delta is empty as of this milestone.
+
+**Milestone 8.0 — Adversarial Review Evidence: research.** Delivered,
+recommending **GO WITH REFRAME**. See
+[`docs/architecture/adversarial-review.md`](docs/architecture/adversarial-review.md).
+No code changed — this is the research and threat-model deliverable
+`DEC-012` authorized. Milestone 8.1 implementation is a separate, not yet
+authorized decision.
 
 ## 1.3.0 - 2026-08-02
 

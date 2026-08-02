@@ -115,7 +115,7 @@ Recommended effort allocation:
 | Milestone 5.5 - `ci-check` provenance hardening | **Delivered / CLOSED** -- Sol REQUEST CHANGES (check names compared case-insensitively), then ACCEPT after the fix; merged to `main` 2026-08-02 | Core product, post-closure fix. Binds `ci-check` evidence to `check_run_id` (closing the by-name permanent-false-negative case) and makes check-name comparison case-sensitive; commit `ca6ae6a`, CI run `30748756130` (headSha `ca6ae6a`) 7/7 |
 | Milestone 6 - Claude Code Integration Experience | **CLOSED and MERGED to `main`** -- three independent review rounds (R1: 1 FATAL + 1 MAJOR; R2: 1 FATAL + 4 MAJOR; R3: 3 MAJOR + 2 MINOR), all findings resolved; final verdict **ACCEPT WITH MINOR REVISIONS**; Human Owner accepted and closed 2026-08-01 (`DEC-007`); merge to `main` separately confirmed by the Human Owner directly in chat and completed the same day | Optional integration, not core product. Not tagged, released, or published to any marketplace. Known debts remain open. `docs/reviews/m6-reviewer-index.md`; decisions `DEC-003` (shape), `DEC-006` (boundary), `DEC-005` (testing), `DEC-007` (closure); commit `1d85d60`, CI run `30736667616` 7/7 |
 | Milestone 7 - Onboarding and the Two Execution Paths | **Authorized, implementation starting** -- design reviewed through two independent Sol rounds against `research/m7-m9-proposal.md`; Human Owner authorized implementation 2026-08-03 (`DEC-011`) | Core product. Two independent onboarding questions (who builds the work, how strictly is it governed), a governed `execution_path` declaration, and an `axiom status` verb. Design decision `DEC-011` |
-| Milestone 8.0 - Adversarial Review Evidence: research | **Authorized, not started** -- research and threat-model only; Human Owner authorized 2026-08-03 (`DEC-012`) | Core-product-adjacent research. Primary question: whether a `ci-observed` provenance tier can be bound tightly enough to mean an independent review actually produced the artifact, not merely that a CI job ran. NO-GO is an accepted outcome. Decision `DEC-012` |
+| Milestone 8.0 - Adversarial Review Evidence: research | **Research delivered; GO WITH REFRAME recommended, Human Owner decision pending** -- authorized for research only 2026-08-03 (`DEC-012`) | Core-product-adjacent research. [`docs/architecture/adversarial-review.md`](docs/architecture/adversarial-review.md). Primary question resolved: a `check_run_id` alone proves a CI job ran, not that a review produced the artifact; a concrete four-part binding (artifact digest, workflow digest, scope protection, contract identity) closes the gap using mechanisms already in production (`Test-CiCheckEvidence`, `REF-002`, `EXEC-004`). Recommendation is not an authorization -- Milestone 8.1 implementation remains a separate decision. Decision `DEC-012` |
 | Milestone 8.1 - Adversarial Review Evidence: implementation | **Not authorized** -- contingent on Milestone 8.0's GO/NO-GO recommendation and a further, separate Human Owner decision | Depends on Milestone 8.0 |
 | Milestone 9 - Failure Pattern Registry and Governed Improvement Proposals | **Proposed; boundary confirmed, implementation not authorized** -- local/opt-in boundary confirmed 2026-08-03 (`DEC-013`) | Local, opt-in aggregation over existing diagnostics, plus human-reviewed improvement candidates. Sequenced after Milestone 8.0 so its event schema can carry review-disposition data. Decision `DEC-013` |
 
@@ -1193,12 +1193,16 @@ rejected alternatives are `research/m7-m9-proposal.md` section 3.
 
 ### Milestone 8.0 - Research and go/no-go
 
-Status: **Authorized, research only, not started.** Human Owner authorized
-2026-08-03 (`DEC-012`). This milestone's central artifact sits on the same
+Status: **Research delivered** --
+[`docs/architecture/adversarial-review.md`](docs/architecture/adversarial-review.md),
+recommending **GO WITH REFRAME**. Human Owner authorized research only,
+2026-08-03 (`DEC-012`); this milestone's central artifact sits on the same
 self-attestation surface that cost Milestone 5 five review rounds, so
-implementation is deliberately not authorized alongside the research -- the
-Milestone 5.0/6.0 precedent (research, threat model, explicit GO/NO-GO) applies
-here for the same reason.
+implementation was deliberately not authorized alongside the research -- the
+Milestone 5.0/6.0 precedent (research, threat model, explicit GO/NO-GO)
+applied here for the same reason. The recommendation is candidate input, not
+an authorization: Milestone 8.1 implementation remains a separate, pending
+Human Owner decision.
 
 Primary research question:
 

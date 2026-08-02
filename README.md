@@ -39,6 +39,48 @@ integration — is an **optional bridge**, for teams who decide to continue
 implementation with Claude Code after the handoff is verified. You never need
 it to use Axiom-PMO. See [ROADMAP.md](ROADMAP.md#core-product-versus-optional-integration).
 
+## Two delivery paths, one governance model
+
+Axiom-PMO answers two independent questions about a piece of work, not one:
+
+```text
+Axis 1 — who builds it?               Development Handoff | Governed AI Execution
+Axis 2 — how strictly is it governed?  Lite | Standard | Strict
+```
+
+| | **Development Handoff** | **Governed AI Execution** |
+|---|---|---|
+| What it is | Prepare requirements, scope, design, and a work package a human developer or vendor can pick up and build | Hand an approved work item to an AI execution agent under a contract, then verify what it actually did against git ground truth |
+| The mechanism | The Handoff gate (`axiom handoff`) | `axiom export` → agent implements → `axiom run` → `axiom verify` |
+
+Both paths support all three governance modes — a vendor handoff can be
+Strict; a governed AI execution can be Lite. `axiom init` asks which path and
+which mode directly:
+
+```bash
+node cli/axiom.mjs init
+```
+
+Running interactively (on a TTY), it asks who will build the work, then what
+level of governance it needs — with a **Help me decide** option that asks a
+short series of yes/no questions and recommends Strict when one applies. Every
+answer is a **declaration you make**, never something the tool claims to have
+detected — there is no source material yet at `init` time to detect anything
+from. See [`docs/concepts/execution-paths.md`](docs/concepts/execution-paths.md).
+
+Non-interactively (CI, scripts, `--no-interactive`), pass flags as before:
+
+```bash
+node cli/axiom.mjs init --code P02-ABC --mode Standard --execution-path governed_ai_execution
+```
+
+Once a project exists, `axiom status` reports where it stands without having
+to re-read this file:
+
+```bash
+node cli/axiom.mjs status --project P02-ABC
+```
+
 ## Why this matters now
 
 AI coding agents can plan, implement, test, review, and produce their own
