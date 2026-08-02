@@ -1,10 +1,11 @@
 # Axiom-PMO Productization Roadmap
 
 Status: roadmap of record
-Current tagged release: 1.2.0 (`VERSION` file). Milestones 6 and 5.5 are
-merged to `main` as of 2026-08-01 but not yet part of a tagged release --
-tagging requires a separate, explicit Human Owner decision.
-Last updated: 2026-08-01
+Current tagged release: 1.2.0 (`VERSION` file). Milestone 6 merged to `main`
+2026-08-01; Milestone 5.5 merged to `main` 2026-08-02. Neither is yet part of
+a tagged release -- tagging requires a separate, explicit Human Owner
+decision.
+Last updated: 2026-08-02
 
 Axiom-PMO is moving from an open-source governance framework into a developer
 workflow tool for AI-assisted software delivery.
@@ -110,7 +111,7 @@ Recommended effort allocation:
 | Milestone 4 - GitHub Action | Delivered | Merged to `main` at `31d1e25`; child issues #12-#17 closed |
 | Milestone 4.5 - SCOPE-DIFF | Delivered | Human Owner accepted 2026-07-30 after two independent AI review rounds; merged to `main` at `6b42643` |
 | Milestone 5 - Execution Contract Verification MVP | **Delivered / CLOSED** -- Sol ACCEPT at round 5 after four REQUEST CHANGES rounds; Human Owner accepted and closed 2026-07-31 (`DEC-004`) | Core product. `docs/reference/execution-contract.md`; decisions `DEC-002`, `DEC-004`; commit `2888769`, CI run `30643605031` 7/7 |
-| Milestone 5.5 - `ci-check` provenance hardening | **Delivered / CLOSED** -- Sol ACCEPTED after one review round; merged to `main` 2026-08-01 | Core product, post-closure fix. Binds `ci-check` evidence to `check_run_id` (closing the by-name permanent-false-negative case) and makes check-name comparison case-sensitive; commit `ca6ae6a`, CI run `30748756130` 7/7 |
+| Milestone 5.5 - `ci-check` provenance hardening | **Delivered / CLOSED** -- Sol REQUEST CHANGES (check names compared case-insensitively), then ACCEPT after the fix; merged to `main` 2026-08-02 | Core product, post-closure fix. Binds `ci-check` evidence to `check_run_id` (closing the by-name permanent-false-negative case) and makes check-name comparison case-sensitive; commit `ca6ae6a`, CI run `30748756130` (headSha `ca6ae6a`) 7/7 |
 | Milestone 6 - Claude Code Integration Experience | **CLOSED and MERGED to `main`** -- three independent review rounds (R1: 1 FATAL + 1 MAJOR; R2: 1 FATAL + 4 MAJOR; R3: 3 MAJOR + 2 MINOR), all findings resolved; final verdict **ACCEPT WITH MINOR REVISIONS**; Human Owner accepted and closed 2026-08-01 (`DEC-007`); merge to `main` separately confirmed by the Human Owner directly in chat and completed the same day | Optional integration, not core product. Not tagged, released, or published to any marketplace. Known debts remain open. `docs/reviews/m6-reviewer-index.md`; decisions `DEC-003` (shape), `DEC-006` (boundary), `DEC-005` (testing), `DEC-007` (closure); commit `1d85d60`, CI run `30736667616` 7/7 |
 
 ## Roadmap Governance
@@ -149,7 +150,7 @@ Milestone 1 delivered, with walkthrough/recording evidence deferred
 -> Milestone 4 (delivered)
 -> Milestone 4.5 (delivered)
 -> Milestone 5 (delivered -- closed 2026-07-31)     <- end of core product
--> Milestone 5.5 (delivered -- closed 2026-08-01, post-closure fix)
+-> Milestone 5.5 (delivered -- closed 2026-08-02, post-closure fix)
 -> Milestone 6 (optional integration; closed and merged to `main` 2026-08-01)
 ```
 
@@ -922,12 +923,12 @@ The merge to `main` came separately: the Human Owner confirmed it directly in
 chat on 2026-08-01, after `DEC-007`'s closure record already existed and after
 being shown that `DEC-007`'s own text withheld merge authorization -- the
 confirmation was sought and given explicitly rather than inferred. A
-post-closure fix ([Milestone 5.5](#milestone-5-execution-contract-verification-mvp),
-`ci-check` bound to `check_run_id`, commit `ca6ae6a`) landed on `main`
-immediately afterward, itself independently reviewed and accepted by Sol.
-Tag, release, and marketplace/npm publication remain **not authorized** by
-either event. The debt list below is unchanged by the merge, except where
-noted.
+post-closure fix (Milestone 5.5, `ci-check` bound to `check_run_id`, commit
+`ca6ae6a`) landed on `main` the next day, 2026-08-02, itself independently
+reviewed by Sol -- REQUEST CHANGES on the first pass (check names compared
+case-insensitively), then ACCEPT once fixed. Tag, release, and
+marketplace/npm publication remain **not authorized** by either event. The
+debt list below is unchanged by the merge, except where noted.
 
 Authorized by the Human Owner on 2026-07-31 after the 6.1 spike was accepted.
 
@@ -1106,8 +1107,9 @@ Do not spend near-term effort on:
   final ACCEPT WITH MINOR REVISIONS, closed by the Human Owner (`DEC-007`),
   and merged to `main` 2026-08-01. **This completes Milestone 6.**
 - Milestone 5.5, `ci-check` provenance hardening: binds evidence to
-  `check_run_id` and makes check-name comparison case-sensitive. One Sol
-  review round, ACCEPTED, merged to `main` 2026-08-01.
+  `check_run_id` and makes check-name comparison case-sensitive. Sol REQUEST
+  CHANGES (check names compared case-insensitively), then ACCEPT once fixed;
+  merged to `main` 2026-08-02.
 
 ### Deferred technical debt
 
@@ -1122,7 +1124,7 @@ quietly dropped.
 | 1 | **Plugin update / version drift is untested.** Marketplace entries can pin a `sha`, but nothing verifies that an update cannot replace a pinned install mid-session. | M6 | Open. Non-blocking. |
 | 2 | **Cross-plugin hook ordering is unproven.** What *is* verified is that the advisory returns nothing that could override another plugin's hook; Claude Code's ordering and merge behaviour was not inspected. | M6 | Open. Non-blocking. |
 | 3 | **A git-source plugin install carries the whole repository** -- roughly 10 MB, of which ~6.7 MB is `tests/`. Only `skills/`, `hooks/` and the manifests are loaded; the rest is inert. | M6 | Open. Non-blocking. **Must not be resolved by duplicating the validator or by a large restructure without a separate milestone and decision.** |
-| 4 | ~~`ci-check` matches a check run by name, not `check_run_id`.~~ **Fixed, Milestone 5.5.** `Test-CiCheckEvidence` now accepts an optional `check_run_id` that binds directly to one run (proving a legitimate re-run-to-green case verifies where the name search could not), and check-name comparison is case-sensitive throughout. Sol ACCEPTED. Commit `ca6ae6a`, CI run `30748756130` 7/7. | M5 | **Closed**, 2026-08-01. |
+| 4 | ~~`ci-check` matches a check run by name, not `check_run_id`.~~ **Fixed, Milestone 5.5.** `Test-CiCheckEvidence` now accepts an optional `check_run_id` that binds directly to one run (proving a legitimate re-run-to-green case verifies where the name search could not), and check-name comparison is case-sensitive throughout. Sol REQUEST CHANGES on the first pass (check names compared case-insensitively), then ACCEPT once fixed. Commit `ca6ae6a`, CI run `30748756130` (headSha `ca6ae6a`, not a later docs-only commit) 7/7. | M5 | **Closed**, 2026-08-02. |
 
 ### Deferred trust evidence
 
