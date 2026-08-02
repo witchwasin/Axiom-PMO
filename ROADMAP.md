@@ -1,8 +1,10 @@
 # Axiom-PMO Productization Roadmap
 
 Status: roadmap of record
-Current product version: 1.1.1
-Last updated: 2026-07-29
+Current tagged release: 1.2.0 (`VERSION` file). Milestones 6 and 5.5 are
+merged to `main` as of 2026-08-01 but not yet part of a tagged release --
+tagging requires a separate, explicit Human Owner decision.
+Last updated: 2026-08-01
 
 Axiom-PMO is moving from an open-source governance framework into a developer
 workflow tool for AI-assisted software delivery.
@@ -108,7 +110,8 @@ Recommended effort allocation:
 | Milestone 4 - GitHub Action | Delivered | Merged to `main` at `31d1e25`; child issues #12-#17 closed |
 | Milestone 4.5 - SCOPE-DIFF | Delivered | Human Owner accepted 2026-07-30 after two independent AI review rounds; merged to `main` at `6b42643` |
 | Milestone 5 - Execution Contract Verification MVP | **Delivered / CLOSED** -- Independent AI Reviewer ACCEPT at round 5 after four REQUEST CHANGES rounds; Human Owner accepted and closed 2026-07-31 (`DEC-004`) | Core product. `docs/reference/execution-contract.md`; decisions `DEC-002`, `DEC-004`; commit `2888769`, CI run `30643605031` 7/7 |
-| Milestone 6 - Claude Code Integration Experience | **CLOSED** -- three independent review rounds (R1: 1 FATAL + 1 MAJOR; R2: 1 FATAL + 4 MAJOR; R3: 3 MAJOR + 2 MINOR), all findings resolved; final verdict **ACCEPT WITH MINOR REVISIONS**; Human Owner accepted and closed 2026-08-01 (`DEC-007`) | Optional integration, not core product. Not merged, tagged, released or published -- closure authorizes none of those. Known debts remain open. `docs/reviews/m6-reviewer-index.md`; decisions `DEC-003` (shape), `DEC-006` (boundary), `DEC-005` (testing), `DEC-007` (closure) |
+| Milestone 5.5 - `ci-check` provenance hardening | **Delivered / CLOSED** -- Independent AI Reviewer ACCEPTED after one review round; merged to `main` 2026-08-01 | Core product, post-closure fix. Binds `ci-check` evidence to `check_run_id` (closing the by-name permanent-false-negative case) and makes check-name comparison case-sensitive; commit `ca6ae6a`, CI run `30748756130` 7/7 |
+| Milestone 6 - Claude Code Integration Experience | **CLOSED and MERGED to `main`** -- three independent review rounds (R1: 1 FATAL + 1 MAJOR; R2: 1 FATAL + 4 MAJOR; R3: 3 MAJOR + 2 MINOR), all findings resolved; final verdict **ACCEPT WITH MINOR REVISIONS**; Human Owner accepted and closed 2026-08-01 (`DEC-007`); merge to `main` separately confirmed by the Human Owner directly in chat and completed the same day | Optional integration, not core product. Not tagged, released, or published to any marketplace. Known debts remain open. `docs/reviews/m6-reviewer-index.md`; decisions `DEC-003` (shape), `DEC-006` (boundary), `DEC-005` (testing), `DEC-007` (closure); commit `1d85d60`, CI run `30736667616` 7/7 |
 
 ## Roadmap Governance
 
@@ -146,7 +149,8 @@ Milestone 1 delivered, with walkthrough/recording evidence deferred
 -> Milestone 4 (delivered)
 -> Milestone 4.5 (delivered)
 -> Milestone 5 (delivered -- closed 2026-07-31)     <- end of core product
--> Milestone 6 (optional integration; implemented, under review)
+-> Milestone 5.5 (delivered -- closed 2026-08-01, post-closure fix)
+-> Milestone 6 (optional integration; closed and merged to `main` 2026-08-01)
 ```
 
 Milestone 2.5 sits between diagnostics and the CLI deliberately. The CLI's
@@ -883,12 +887,15 @@ genuinely different things:
 | Independent Independent AI Reviewer review | **complete -- ACCEPT WITH MINOR REVISIONS** |
 | Findings | **2 FATAL, 8 MAJOR, 2 MINOR across three rounds -- all resolved** |
 | Milestone closure | **CLOSED** -- Human Owner, 2026-08-01 (`DEC-007`) |
-| Release / tag / publish / merge | **not authorized** |
+| Merge to `main` | **Done**, 2026-08-01 -- separately confirmed by the Human Owner directly in chat (`DEC-007` itself authorized closure only, not merge) |
+| Tag / release / publish | **not authorized** |
 
-Milestone 6 is **closed**, certified at commit `3cc3f3e` and CI run
-[`30692748537`](https://github.com/witchwasin/Axiom-PMO/actions/runs/30692748537).
-It took three independent review rounds, every one of them REQUEST CHANGES,
-before the final verdict of ACCEPT WITH MINOR REVISIONS:
+Milestone 6 is **closed and merged to `main`**, certified at the closure
+commit [`1d85d60`](https://github.com/witchwasin/Axiom-PMO/commit/1d85d6091bc07bd1eb59d221310f18adf5287b83)
+and CI run [`30736667616`](https://github.com/witchwasin/Axiom-PMO/actions/runs/30736667616)
+(7/7 on `main` itself, post-merge). It took three independent review rounds,
+every one of them REQUEST CHANGES, before the final verdict of ACCEPT WITH
+MINOR REVISIONS:
 
 | Round | Findings |
 |---|---|
@@ -908,9 +915,19 @@ but kept one byte outside the span for cosmetics. The design that finally
 passed keeps nothing outside the span at all -- the first version of it with
 nothing left to trade away.
 
-Closure (`DEC-007`) authorizes **only** closure: no merge to `main`, no tag, no
-release, no marketplace or npm publication. It closes **no** known debt -- the
-list below is unchanged.
+Closure (`DEC-007`) authorized **only** closure: no merge, no tag, no release,
+no marketplace or npm publication, and it closed **no** known debt.
+
+The merge to `main` came separately: the Human Owner confirmed it directly in
+chat on 2026-08-01, after `DEC-007`'s closure record already existed and after
+being shown that `DEC-007`'s own text withheld merge authorization -- the
+confirmation was sought and given explicitly rather than inferred. A
+post-closure fix ([Milestone 5.5](#milestone-5-execution-contract-verification-mvp),
+`ci-check` bound to `check_run_id`, commit `ca6ae6a`) landed on `main`
+immediately afterward, itself independently reviewed and accepted by Independent AI Reviewer.
+Tag, release, and marketplace/npm publication remain **not authorized** by
+either event. The debt list below is unchanged by the merge, except where
+noted.
 
 Authorized by the Human Owner on 2026-07-31 after the 6.1 spike was accepted.
 
@@ -1083,19 +1100,29 @@ Do not spend near-term effort on:
   the core product** -- Milestones 1-5.
 - Milestone 6.0 research: integration shape decided (HYBRID), reviewed and
   revised 2026-07-30.
+- Milestone 6.1-6.5 (packaging spike through the optional advisory hook):
+  implemented, hardened, Human Owner tested and accepted (`DEC-005`),
+  independently reviewed by Independent AI Reviewer across three REQUEST CHANGES rounds to a
+  final ACCEPT WITH MINOR REVISIONS, closed by the Human Owner (`DEC-007`),
+  and merged to `main` 2026-08-01. **This completes Milestone 6.**
+- Milestone 5.5, `ci-check` provenance hardening: binds evidence to
+  `check_run_id` and makes check-name comparison case-sensitive. One Independent AI Reviewer
+  review round, ACCEPTED, merged to `main` 2026-08-01.
 
 ### Deferred technical debt
 
 Open, acknowledged, and deliberately not hidden. Nothing here was closed by
-Milestone 6's Human Owner acceptance (`DEC-005`), and none of it may be
-described as fixed until it is.
+Milestone 6's Human Owner acceptance (`DEC-005`) or by the subsequent merge to
+`main`, except item 4, which Milestone 5.5 fixed and is kept in this table
+struck through rather than deleted -- so the record shows it was tracked, not
+quietly dropped.
 
 | # | Debt | Milestone | Status |
 |---|---|---|---|
 | 1 | **Plugin update / version drift is untested.** Marketplace entries can pin a `sha`, but nothing verifies that an update cannot replace a pinned install mid-session. | M6 | Open. Non-blocking. |
 | 2 | **Cross-plugin hook ordering is unproven.** What *is* verified is that the advisory returns nothing that could override another plugin's hook; Claude Code's ordering and merge behaviour was not inspected. | M6 | Open. Non-blocking. |
 | 3 | **A git-source plugin install carries the whole repository** -- roughly 10 MB, of which ~6.7 MB is `tests/`. Only `skills/`, `hooks/` and the manifests are loaded; the rest is inert. | M6 | Open. Non-blocking. **Must not be resolved by duplicating the validator or by a large restructure without a separate milestone and decision.** |
-| 4 | **`ci-check` matches a check run by name, not `check_run_id`.** A check that failed and was later re-run green can produce a permanent false negative. | M5 | Open. Non-blocking per Independent AI Reviewer's earlier review. Not fixed. |
+| 4 | ~~`ci-check` matches a check run by name, not `check_run_id`.~~ **Fixed, Milestone 5.5.** `Test-CiCheckEvidence` now accepts an optional `check_run_id` that binds directly to one run (proving a legitimate re-run-to-green case verifies where the name search could not), and check-name comparison is case-sensitive throughout. Independent AI Reviewer ACCEPTED. Commit `ca6ae6a`, CI run `30748756130` 7/7. | M5 | **Closed**, 2026-08-01. |
 
 ### Deferred trust evidence
 
@@ -1110,29 +1137,32 @@ described as fixed until it is.
 
 ### Next
 
-- **Milestone 6.1 packaging spike** -- authorized by the Human Owner
-  2026-07-31. Prove what a Claude Code plugin can actually do with this
-  framework before any restructuring: executable invocation under the current
-  permission model, `pwsh` host resolution from a plugin install location,
-  dot-sourcing, framework-root versus project-root separation, and the
-  required skills layout. Directory moves are **not** authorized on
-  assumption; an approved fallback exists if native validator invocation does
-  not hold. Ends with an evidence packet and a stop for a Human Owner
-  decision -- M6.2-M6.4 do not begin without it.
-- External-user validation of the v1.2.0 GitHub Action and SCOPE-DIFF. This
-  needs the Human Owner personally and cannot be delegated; it is the main
-  source of independent signal about whether the shipped features are usable
-  by anyone who did not build them.
+With Milestones 1-6 and 5.5 all delivered and merged to `main`, nothing is
+implementation-ready without a Human Owner decision to start it. Candidates,
+none currently authorized:
+
+- **External-user validation of the v1.2.0 GitHub Action and SCOPE-DIFF, and
+  of the Milestone 6 Claude Code integration.** This needs the Human Owner
+  personally, or someone outside the team that built it, and cannot be
+  delegated to the AI -- it is the main source of independent signal about
+  whether the shipped features are usable by anyone who did not build them.
+  The M6 walkthrough (`docs/guides/claude-code-walkthrough.md`) exists for
+  this and has only been run by the Human Owner so far.
+- Any of the three open M6 debts (plugin update/version drift, cross-plugin
+  hook ordering, git-source install size) or the deferred trust evidence
+  below, if the Human Owner chooses to pick one up.
+- Publishing the plugin to a public marketplace, or a v1.3.0 (or later)
+  tagged release covering M6 and M5.5 -- both require a separate, explicit
+  Human Owner decision; neither is implied by the merge to `main`.
 
 ### Blocked
 
-- **Milestone 6 closure**, until independent re-review passes. The first review
-  returned REQUEST CHANGES; the findings are fixed and re-review is pending.
-- Publishing the plugin to a public marketplace, tagging a release, and merging
-  Milestone 6 to `main` -- all behind that same re-review.
-- Any enforcement mode for the advisory hook. It ships report-only; making it
-  block would be a separate proposal with its own acceptance, not a
-  configuration change.
+- **Any enforcement mode for the advisory hook.** It ships report-only by
+  default; making it block would be a separate proposal with its own
+  independent review and Human Owner acceptance, not a configuration change.
+- **A large restructure to shrink the git-source plugin install size**
+  (debt 3 above). Explicitly forbidden without a separate milestone and
+  decision -- see that debt's own entry.
 
 ## Success Signals
 
