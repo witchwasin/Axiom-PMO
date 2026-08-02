@@ -89,20 +89,31 @@ $marketplace = Get-Content -LiteralPath $marketplaceManifestPath -Raw | ConvertF
 
 Assert-True "plugin name is kebab-case as the manifest reference requires" `
   ([string]$plugin.name -cmatch '^[a-z][a-z0-9]*(-[a-z0-9]+)*$') ("name=" + $plugin.name)
-# The plugin carries the version of the release it will ship in, which is
-# ahead of VERSION while that release is unbuilt. Asserting equality was
-# correct until Milestone 6 existed; it now has to assert the relationship
-# instead -- the plugin must never claim a version already released, or an
-# installed 1.2.0 plugin and the released 1.2.0 would be different software.
+# The plugin manifest's version is the release's version. Full stop.
+#
+# This assertion has now been written three ways, and the reasoning matters
+# because the middle one was wrong. Originally it asserted equality. During
+# Milestone 6 the plugin was moved to 1.3.0 while VERSION was still 1.2.0 --
+# correct at that moment, since shipping a plugin stamped 1.2.0 that differed
+# from the released 1.2.0 would have given Claude Code two different builds
+# under one identity -- so the assertion was relaxed to "must be ahead".
+#
+# That relaxation had no expiry. It would have passed just as happily with the
+# plugin left at 1.3.0 forever while VERSION moved to 1.4.0 and beyond, which
+# is the same defect it was introduced to prevent, only later. A release
+# candidate has no "unbuilt release" to be ahead of: the release is this one.
+#
+# So equality is the released-state contract, and the drift window closes with
+# the release rather than staying open. scripts/prepare-public-release.ps1
+# checks the same equality across VERSION, CHANGELOG, every versioned config,
+# and this manifest -- one rule, enforced in two places, because the version a
+# plugin declares is the identity Claude Code caches and updates against.
 $repoVersion = ((Get-Content -LiteralPath (Join-Path $repo "VERSION") -Raw).Trim())
 Assert-True "plugin version is a valid semantic version" `
   ([string]$plugin.version -match '^\d+\.\d+\.\d+$') ("plugin=" + $plugin.version)
-Assert-True "plugin version does not collide with the released VERSION" `
-  ([string]$plugin.version -ne $repoVersion) `
-  ("plugin=" + $plugin.version + " VERSION=" + $repoVersion + " -- an unreleased plugin must not reuse a released version number")
-Assert-True "plugin version is ahead of the released VERSION, not behind" `
-  ([version][string]$plugin.version -gt [version]$repoVersion) `
-  ("plugin=" + $plugin.version + " VERSION=" + $repoVersion)
+Assert-True "plugin version equals the release VERSION" `
+  ([string]$plugin.version -eq $repoVersion) `
+  ("plugin=" + $plugin.version + " VERSION=" + $repoVersion + " -- the plugin's declared version is the identity Claude Code caches against; a mismatch ships bytes under a version that is not theirs")
 Assert-True "marketplace declares exactly the one plugin" `
   (@($marketplace.plugins).Count -eq 1)
 Assert-True "marketplace source is the repository root" `
@@ -296,6 +307,54 @@ Write-Host "reached the body"
     $previous = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     try { Remove-Item -LiteralPath $fakeRoot -Recurse -Force -ErrorAction SilentlyContinue } finally { $ErrorActionPreference = $previous }
+  }
+}
+
+# ---- Release-check catches plugin-manifest version drift --------------
+#
+# M6's version was deliberately allowed ahead of an unbuilt release; that
+# expired once the release existed, but scripts/prepare-public-release.ps1
+# never checked .claude-plugin/plugin.json in the first place -- it named six
+# config files by hand and the plugin manifest was not one of them. This is a
+# regression test for the fix: a release candidate whose plugin manifest
+# disagrees with VERSION must be caught by the one script whose job is
+# catching exactly that, not just by this suite.
+#
+# Exercised against a full filesystem copy of the repository rather than a
+# synthetic fixture, because the release-check script itself asserts it is
+# running inside a real framework checkout (VERSION + AGENTS.md present) --
+# the same FRAMEWORK-001 guard tested above -- so a partial fixture would fail
+# for the wrong reason before the version check is even reached.
+$releaseCheckRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("axiom-relcheck-" + [guid]::NewGuid().ToString("N").Substring(0, 8))
+try {
+  Copy-Item -LiteralPath $repo -Destination $releaseCheckRoot -Recurse -Force -Exclude @(".git")
+  # .git is excluded above; some hosts still leave a .git directory behind
+  # from directory-level excludes not recursing -- remove it explicitly so the
+  # copy cannot be mistaken for a repository with its own history.
+  $copiedGit = Join-Path $releaseCheckRoot ".git"
+  if (Test-Path -LiteralPath $copiedGit) { Remove-Item -LiteralPath $copiedGit -Recurse -Force -ErrorAction SilentlyContinue }
+
+  $copiedManifest = Join-Path $releaseCheckRoot ".claude-plugin/plugin.json"
+  $manifestDoc = Get-Content -LiteralPath $copiedManifest -Raw | ConvertFrom-Json
+  $manifestDoc.version = "9.9.9"
+  Set-Content -LiteralPath $copiedManifest -Value ($manifestDoc | ConvertTo-Json -Depth 6) -NoNewline
+
+  $previous = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try {
+    $checkOut = & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $releaseCheckRoot "scripts/prepare-public-release.ps1") -RepoPath $releaseCheckRoot 2>&1
+  } finally { $ErrorActionPreference = $previous }
+  $checkText = (@($checkOut) | ForEach-Object { [string]$_ }) -join "`n"
+
+  Assert-True "the release check reports version drift when plugin.json disagrees with VERSION" `
+    ($checkText -match "(?i)version drift") ($checkText.Substring(0, [Math]::Min(500, $checkText.Length)))
+  Assert-True "...and names the plugin manifest specifically, not just VERSION/CHANGELOG/config" `
+    ($checkText -match "(?i)PLUGIN=9\.9\.9") ($checkText.Substring(0, [Math]::Min(500, $checkText.Length)))
+} finally {
+  if (Test-Path -LiteralPath $releaseCheckRoot) {
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try { Remove-Item -LiteralPath $releaseCheckRoot -Recurse -Force -ErrorAction SilentlyContinue } finally { $ErrorActionPreference = $previous }
   }
 }
 

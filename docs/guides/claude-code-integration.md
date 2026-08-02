@@ -202,6 +202,33 @@ a valid `SCOPE.json`, and PowerShell on `PATH`. Any of those missing means
 silence rather than an error — a governance advisory that breaks an editing
 session has done more harm than the deviation it was watching for.
 
+## Version identity and updates
+
+Claude Code caches an installed plugin by its declared `version`, in a
+directory keyed on that string
+(`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`), and tracks the
+active install's version and source (including the git commit, for a
+directory-source install like this one) in its own install record. The
+version in `.claude-plugin/plugin.json` **is** the identity an update or a
+cache lookup resolves against -- confirmed by inspecting both directly on a
+real install, not assumed from the manifest schema alone.
+
+**A version bump is required whenever the plugin's shipped content
+changes** -- the skills mirror, the hooks, or the manifests themselves --
+because that is the only signal Claude Code has that there is something new
+to cache. `scripts/prepare-public-release.ps1` and
+`tests/helpers/plugin-package-tests.ps1` both enforce that
+`.claude-plugin/plugin.json`'s version equals the repository's own `VERSION`
+at release time, so a release cannot ship plugin bytes under a stale
+version number.
+
+**What remains unverified:** whether `claude plugin marketplace update`
+followed by a reinstall can replace an already-loaded plugin's content
+*during* an active session without a restart, and whether a
+GitHub-hosted marketplace source behaves identically to the local-directory
+source this was tested against. Full evidence and its stated limits:
+[`docs/evidence/plugin-version-identity-transcript.md`](../evidence/plugin-version-identity-transcript.md).
+
 ## Known limitations
 
 Stated rather than discovered later.

@@ -55,17 +55,35 @@ $versionText = (Get-Content -LiteralPath (Join-Path $repo "VERSION") -Raw).Trim(
 $changelogText = Get-Content -LiteralPath (Join-Path $repo "CHANGELOG.md") -Raw
 $changelogVersion = ""
 if ($changelogText -match '(?m)^##\s+([^\s]+)\s+-') { $changelogVersion = $Matches[1] }
+# Every versioned config, discovered rather than listed. The previous version
+# named six files by hand; five others carried a `version` and were never
+# checked, so drift in them was invisible to the one script whose job is
+# catching drift.
 $configVersions = @()
-foreach ($c in @("policy.json","skill-manifest.json","validation-rules.json","context-map.json","artifact-policy.json","reference-types.json")) {
-  $cfg = Get-Content -LiteralPath (Join-Path $repo "pmo-config/$c") -Raw | ConvertFrom-Json
-  $configVersions += $cfg.version
+foreach ($cfgFile in (Get-ChildItem -LiteralPath (Join-Path $repo "pmo-config") -Filter *.json -File | Sort-Object Name)) {
+  $cfg = Get-Content -LiteralPath $cfgFile.FullName -Raw | ConvertFrom-Json
+  if ($null -ne $cfg.version) { $configVersions += [string]$cfg.version }
 }
-$allVersions = @($versionText, $changelogVersion) + $configVersions | Sort-Object -Unique
-if ($allVersions.Count -eq 1) {
-  Write-Host "OK: all version fields = $versionText"
+
+# The Claude Code plugin manifest is a release surface too, and it is the one
+# that actually drifted: it was deliberately moved ahead of VERSION while the
+# release was unbuilt, and nothing here would have caught it staying ahead
+# after the release was built. A plugin whose declared version does not match
+# the release it ships in gives Claude Code the wrong cache/update identity.
+$pluginVersion = ""
+$pluginManifest = Join-Path $repo ".claude-plugin/plugin.json"
+if (Test-Path -LiteralPath $pluginManifest) {
+  $pluginVersion = [string]((Get-Content -LiteralPath $pluginManifest -Raw | ConvertFrom-Json).version)
+}
+
+$allVersions = @($versionText, $changelogVersion) + $configVersions
+if ($pluginVersion) { $allVersions += $pluginVersion }
+$distinctVersions = @($allVersions | Sort-Object -Unique)
+if ($distinctVersions.Count -eq 1) {
+  Write-Host "OK: all version fields = $versionText (VERSION, CHANGELOG, $($configVersions.Count) config file(s), plugin manifest)"
 } else {
-  $problems += "Version drift: VERSION=$versionText CHANGELOG=$changelogVersion CONFIG=$($configVersions -join ',')"
-  Write-Host "FAIL: version drift ($($allVersions -join ' / '))"
+  $problems += "Version drift: VERSION=$versionText CHANGELOG=$changelogVersion PLUGIN=$pluginVersion CONFIG=$(@($configVersions | Sort-Object -Unique) -join ',')"
+  Write-Host "FAIL: version drift ($($distinctVersions -join ' / '))"
 }
 
 # --- Public hygiene ----------------------------------------------------------

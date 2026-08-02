@@ -1,16 +1,14 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "schema_version": "1.0",
   "gate": "Handoff",
   "description": "Engineering handoff readiness policy. The Handoff gate answers 'is this contract complete enough for a developer to start, integrate, and demo?'. It introduces no new human approval: it reuses the existing Design Ready approval and checks only what the artifacts themselves declare.",
-
   "authority": {
     "introduces_new_approval": false,
     "reuses_approval_gate": "Design Ready",
     "semantic_review_is_approval": false,
     "note": "A semantic review recorded in HANDOFF-REVIEW.json is candidate evidence produced by a reviewer (often an AI). It never substitutes for a human approval row in PROJECT.md."
   },
-
   "blocking_points": [
     "before_build",
     "before_integration",
@@ -19,9 +17,12 @@
     "before_release",
     "non_blocking"
   ],
-
-  "handoff_targets": ["demo", "pilot", "production", "internal"],
-
+  "handoff_targets": [
+    "demo",
+    "pilot",
+    "production",
+    "internal"
+  ],
   "stage_verdicts": [
     "Contract Valid",
     "Ready to Start Development",
@@ -30,38 +31,101 @@
     "Ready for UAT",
     "Ready for Release"
   ],
-
   "stage_blocking_map": {
-    "Ready to Start Development": ["before_build"],
-    "Ready to Integrate": ["before_build", "before_integration"],
-    "Ready to Demo": ["before_build", "before_integration", "before_demo"],
-    "Ready for UAT": ["before_build", "before_integration", "before_demo", "before_uat"],
-    "Ready for Release": ["before_build", "before_integration", "before_demo", "before_uat", "before_release"]
+    "Ready to Start Development": [
+      "before_build"
+    ],
+    "Ready to Integrate": [
+      "before_build",
+      "before_integration"
+    ],
+    "Ready to Demo": [
+      "before_build",
+      "before_integration",
+      "before_demo"
+    ],
+    "Ready for UAT": [
+      "before_build",
+      "before_integration",
+      "before_demo",
+      "before_uat"
+    ],
+    "Ready for Release": [
+      "before_build",
+      "before_integration",
+      "before_demo",
+      "before_uat",
+      "before_release"
+    ]
   },
-
   "required_artifacts": {
-    "Lite": ["PROJECT.md", "DELIVERY.md", "HANDOFF.md"],
-    "Standard": ["PROJECT.md", "DELIVERY.md", "DESIGN", "HANDOFF.md", "DESIGN/BUILD-SPEC.md"],
-    "Strict": ["PROJECT.md", "DELIVERY.md", "DESIGN", "HANDOFF.md", "DESIGN/BUILD-SPEC.md", "RAID-log.md", "decision-log.md"]
+    "Lite": [
+      "PROJECT.md",
+      "DELIVERY.md",
+      "HANDOFF.md"
+    ],
+    "Standard": [
+      "PROJECT.md",
+      "DELIVERY.md",
+      "DESIGN",
+      "HANDOFF.md",
+      "DESIGN/BUILD-SPEC.md"
+    ],
+    "Strict": [
+      "PROJECT.md",
+      "DELIVERY.md",
+      "DESIGN",
+      "HANDOFF.md",
+      "DESIGN/BUILD-SPEC.md",
+      "RAID-log.md",
+      "decision-log.md"
+    ]
   },
-
   "semantic_review": {
     "artifact": "HANDOFF-REVIEW.json",
-    "required_modes": ["Standard", "Strict"],
-    "severity_when_missing": { "Lite": "warn", "Standard": "warn", "Strict": "fail" },
+    "required_modes": [
+      "Standard",
+      "Strict"
+    ],
+    "severity_when_missing": {
+      "Lite": "warn",
+      "Standard": "warn",
+      "Strict": "fail"
+    },
     "schema_version": "1.0",
-    "reviewer_kinds": ["ai", "human"],
-    "finding_severities": ["critical", "major", "minor", "info"],
-    "finding_statuses": ["open", "resolved", "accepted_risk", "deferred"],
+    "reviewer_kinds": [
+      "ai",
+      "human"
+    ],
+    "finding_severities": [
+      "critical",
+      "major",
+      "minor",
+      "info"
+    ],
+    "finding_statuses": [
+      "open",
+      "resolved",
+      "accepted_risk",
+      "deferred"
+    ],
     "closure_policy": {
       "$comment": "Who is allowed to say a finding is no longer open. Enforced by HANDOFF-010, not by prompt: an instruction an agent can ignore is not a control.",
-      "open_statuses": ["open"],
-      "ai_closable_statuses": ["resolved"],
+      "open_statuses": [
+        "open"
+      ],
+      "ai_closable_statuses": [
+        "resolved"
+      ],
       "human_only_close_lenses": [
         "privacy_and_data_classification",
         "environment_and_device_constraints"
       ],
-      "statuses_requiring_decision_ref": ["resolved", "accepted_risk", "deferred"],
+      "statuses_requiring_decision_ref": [
+        "resolved",
+        "accepted_risk",
+        "deferred"
+      ],
       "human_only_requires_decision_log_entry": true,
       "reviewer_kind_is_attestation": true,
       "note": "Any status other than open is a claim that someone decided something. That claim needs a resolvable decision reference. Accepting a risk or deferring work is a human judgement in every mode; an AI reviewer may additionally never close a finding under a human-only lens, whatever the decision reference says.",
@@ -70,7 +134,11 @@
     "freshness": {
       "mode": "dual_digest",
       "note": "Two digests, because a review can go stale two different ways. source_snapshot covers the material the requirements came from; review_inputs covers the governed artifacts the reviewer actually read. Changing BUILD-SPEC after a review leaves the source snapshot untouched, and without the second digest that review would still report as current.",
-      "stale_severity": { "Lite": "warn", "Standard": "warn", "Strict": "fail" },
+      "stale_severity": {
+        "Lite": "warn",
+        "Standard": "warn",
+        "Strict": "fail"
+      },
       "review_input_files": [
         "PROJECT.md",
         "DELIVERY.md",
@@ -85,21 +153,56 @@
       "review_input_note": "Files absent from a project are skipped, and their absence is itself part of the digest. HANDOFF-REVIEW.json is deliberately excluded: a review cannot invalidate itself by being written."
     },
     "lenses": [
-      { "id": "value_and_scope_slice", "title": "Does the scope slice deliver the value the target milestone must show?" },
-      { "id": "capability_lifecycle", "title": "Is each declared capability complete across its lifecycle, not just the happy path?" },
-      { "id": "data_cardinality_and_units", "title": "Do entities, cardinality, quantities, and units support the declared use cases?" },
-      { "id": "state_transitions_and_rollback", "title": "Does every state machine declare guards, terminal states, and reversal?" },
-      { "id": "concurrency_and_idempotency", "title": "Are concurrent writes, retries, and unique-id allocation specified?" },
-      { "id": "dependencies_and_build_order", "title": "Can the declared build sequence actually be executed in that order?" },
-      { "id": "ownership_and_capacity", "title": "Does every stream have a named owner, an integrator, and stated capacity?" },
-      { "id": "acceptance_seed_reachability", "title": "Can each acceptance case be reached from the declared seed data?" },
-      { "id": "automated_manual_test_split", "title": "Is each acceptance case classified as automated or manual, with a runner?" },
-      { "id": "privacy_and_data_classification", "title": "Do declared data elements, files, and free text have classification decisions?" },
-      { "id": "environment_and_device_constraints", "title": "Does the serving model satisfy the declared device and runtime capabilities?" },
-      { "id": "demo_startup_reset_and_recovery", "title": "Is there a declared startup, reset, degraded, and recovery path for the demo?" }
+      {
+        "id": "value_and_scope_slice",
+        "title": "Does the scope slice deliver the value the target milestone must show?"
+      },
+      {
+        "id": "capability_lifecycle",
+        "title": "Is each declared capability complete across its lifecycle, not just the happy path?"
+      },
+      {
+        "id": "data_cardinality_and_units",
+        "title": "Do entities, cardinality, quantities, and units support the declared use cases?"
+      },
+      {
+        "id": "state_transitions_and_rollback",
+        "title": "Does every state machine declare guards, terminal states, and reversal?"
+      },
+      {
+        "id": "concurrency_and_idempotency",
+        "title": "Are concurrent writes, retries, and unique-id allocation specified?"
+      },
+      {
+        "id": "dependencies_and_build_order",
+        "title": "Can the declared build sequence actually be executed in that order?"
+      },
+      {
+        "id": "ownership_and_capacity",
+        "title": "Does every stream have a named owner, an integrator, and stated capacity?"
+      },
+      {
+        "id": "acceptance_seed_reachability",
+        "title": "Can each acceptance case be reached from the declared seed data?"
+      },
+      {
+        "id": "automated_manual_test_split",
+        "title": "Is each acceptance case classified as automated or manual, with a runner?"
+      },
+      {
+        "id": "privacy_and_data_classification",
+        "title": "Do declared data elements, files, and free text have classification decisions?"
+      },
+      {
+        "id": "environment_and_device_constraints",
+        "title": "Does the serving model satisfy the declared device and runtime capabilities?"
+      },
+      {
+        "id": "demo_startup_reset_and_recovery",
+        "title": "Is there a declared startup, reset, degraded, and recovery path for the demo?"
+      }
     ]
   },
-
   "owner_policy": {
     "generic_tokens": [
       "TBD",
@@ -117,73 +220,402 @@
       "-"
     ],
     "comparison": "case_insensitive_trimmed",
-    "severity_by_mode": { "Lite": "warn", "Standard": "fail", "Strict": "fail" },
+    "severity_by_mode": {
+      "Lite": "warn",
+      "Standard": "fail",
+      "Strict": "fail"
+    },
     "note": "A generic token is not a name. HANDOFF-003 checks only whether the declared owner is one of these tokens or blank; it never checks whether a named person is the *right* person."
   },
-
   "handoff_document": {
     "metadata_fields": [
-      { "key": "Project", "required": true },
-      { "key": "Mode", "required": true, "enum_ref": "policy.enums.modes" },
-      { "key": "Handoff Target", "required": true, "enum_ref": "handoff_targets" },
-      { "key": "Horizon", "required": true },
-      { "key": "Handoff Owner", "required": true, "owner_field": true },
-      { "key": "Named Integrator", "required": true, "owner_field": true },
-      { "key": "Build Spec Ref", "required_modes": ["Standard", "Strict"] }
+      {
+        "key": "Project",
+        "required": true
+      },
+      {
+        "key": "Mode",
+        "required": true,
+        "enum_ref": "policy.enums.modes"
+      },
+      {
+        "key": "Handoff Target",
+        "required": true,
+        "enum_ref": "handoff_targets"
+      },
+      {
+        "key": "Horizon",
+        "required": true
+      },
+      {
+        "key": "Handoff Owner",
+        "required": true,
+        "owner_field": true
+      },
+      {
+        "key": "Named Integrator",
+        "required": true,
+        "owner_field": true
+      },
+      {
+        "key": "Build Spec Ref",
+        "required_modes": [
+          "Standard",
+          "Strict"
+        ]
+      }
     ],
     "sections": [
-      { "heading": "Build Now", "table": true, "columns": ["Item", "Work Item Ref", "Value Delivered", "Owner"], "required": true, "min_rows": 1, "rule": "HANDOFF-002" },
-      { "heading": "Deferred / Do Not Build", "table": true, "columns": ["Item", "Decision", "Reason", "Decision Ref"], "required": true, "min_rows": 0, "allow_explicit_none": true, "rule": "HANDOFF-002" },
-      { "heading": "Hard Constraints", "table": true, "columns": ["Constraint", "Type", "Source Ref"], "required": true, "min_rows": 0, "allow_explicit_none": true, "rule": "HANDOFF-002" },
-      { "heading": "Build Sequence and Dependencies", "table": true, "columns": ["Step", "Work Item Ref", "Depends On", "Owner", "Notes"], "required": true, "min_rows": 1, "rule": "HANDOFF-004" },
-      { "heading": "Environment and Device Matrix", "table": true, "columns": ["Environment", "Target Device / Browser", "Serving Model", "Decision Ref"], "required": true, "min_rows": 1, "rule": "HANDOFF-012" },
-      { "heading": "Demo Milestone", "table": true, "columns": ["Field", "Value"], "required_targets": ["demo", "pilot"], "min_rows": 1, "rule": "HANDOFF-008" },
-      { "heading": "Definition of Done", "table": true, "columns": ["Criterion", "Verification", "Owner"], "required": true, "min_rows": 1, "rule": "HANDOFF-002" },
-      { "heading": "Open Actions", "table": true, "columns": ["Action ID", "Description", "Owner", "Blocking Point", "Status"], "required": true, "min_rows": 0, "allow_explicit_none": true, "rule": "HANDOFF-009" }
+      {
+        "heading": "Build Now",
+        "table": true,
+        "columns": [
+          "Item",
+          "Work Item Ref",
+          "Value Delivered",
+          "Owner"
+        ],
+        "required": true,
+        "min_rows": 1,
+        "rule": "HANDOFF-002"
+      },
+      {
+        "heading": "Deferred / Do Not Build",
+        "table": true,
+        "columns": [
+          "Item",
+          "Decision",
+          "Reason",
+          "Decision Ref"
+        ],
+        "required": true,
+        "min_rows": 0,
+        "allow_explicit_none": true,
+        "rule": "HANDOFF-002"
+      },
+      {
+        "heading": "Hard Constraints",
+        "table": true,
+        "columns": [
+          "Constraint",
+          "Type",
+          "Source Ref"
+        ],
+        "required": true,
+        "min_rows": 0,
+        "allow_explicit_none": true,
+        "rule": "HANDOFF-002"
+      },
+      {
+        "heading": "Build Sequence and Dependencies",
+        "table": true,
+        "columns": [
+          "Step",
+          "Work Item Ref",
+          "Depends On",
+          "Owner",
+          "Notes"
+        ],
+        "required": true,
+        "min_rows": 1,
+        "rule": "HANDOFF-004"
+      },
+      {
+        "heading": "Environment and Device Matrix",
+        "table": true,
+        "columns": [
+          "Environment",
+          "Target Device / Browser",
+          "Serving Model",
+          "Decision Ref"
+        ],
+        "required": true,
+        "min_rows": 1,
+        "rule": "HANDOFF-012"
+      },
+      {
+        "heading": "Demo Milestone",
+        "table": true,
+        "columns": [
+          "Field",
+          "Value"
+        ],
+        "required_targets": [
+          "demo",
+          "pilot"
+        ],
+        "min_rows": 1,
+        "rule": "HANDOFF-008"
+      },
+      {
+        "heading": "Definition of Done",
+        "table": true,
+        "columns": [
+          "Criterion",
+          "Verification",
+          "Owner"
+        ],
+        "required": true,
+        "min_rows": 1,
+        "rule": "HANDOFF-002"
+      },
+      {
+        "heading": "Open Actions",
+        "table": true,
+        "columns": [
+          "Action ID",
+          "Description",
+          "Owner",
+          "Blocking Point",
+          "Status"
+        ],
+        "required": true,
+        "min_rows": 0,
+        "allow_explicit_none": true,
+        "rule": "HANDOFF-009"
+      }
     ],
     "deferred_explicit_none_token": "none",
     "demo_milestone_fields": [
-      { "key": "Demo Date", "required": true },
-      { "key": "Demo Device", "required": true },
-      { "key": "Integrator", "required": true, "owner_field": true },
-      { "key": "Capacity", "required": true },
-      { "key": "Reset Path", "required": true },
-      { "key": "Degraded Path", "required": true }
+      {
+        "key": "Demo Date",
+        "required": true
+      },
+      {
+        "key": "Demo Device",
+        "required": true
+      },
+      {
+        "key": "Integrator",
+        "required": true,
+        "owner_field": true
+      },
+      {
+        "key": "Capacity",
+        "required": true
+      },
+      {
+        "key": "Reset Path",
+        "required": true
+      },
+      {
+        "key": "Degraded Path",
+        "required": true
+      }
     ]
   },
-
   "build_spec": {
     "artifact": "DESIGN/BUILD-SPEC.md",
     "status_marker": "Status",
     "rationale_marker": "Rationale",
-    "status_values": ["specified", "not_required"],
+    "status_values": [
+      "specified",
+      "not_required"
+    ],
     "not_required_policy": {
       "requires_rationale": true,
       "min_rationale_words": 4,
       "note": "A section may be declared not_required only when the policy below allows it for that mode AND a rationale is written. Leaving a section body blank is never acceptable."
     },
     "sections": [
-      { "id": "technology_stack", "heading": "Technology Stack", "required_modes": ["Standard", "Strict"], "allow_not_required": false },
-      { "id": "runtime_and_deployment", "heading": "Runtime and Deployment Model", "required_modes": ["Standard", "Strict"], "allow_not_required": false },
-      { "id": "ui_framework", "heading": "UI Framework", "required_modes": ["Standard", "Strict"], "allow_not_required": true },
-      { "id": "target_devices", "heading": "Target Devices and Runtime Capabilities", "required_modes": ["Standard", "Strict"], "allow_not_required": false, "table": true, "columns": ["Capability", "Required By", "Serving Model", "Environment Decision"], "rule": "HANDOFF-012" },
-      { "id": "architecture_boundaries", "heading": "Architecture Boundaries", "required_modes": ["Standard", "Strict"], "allow_not_required": true },
-      { "id": "data_model", "heading": "Data Model", "required_modes": ["Standard", "Strict"], "allow_not_required": false, "table": true, "columns": ["Entity", "Attribute", "Type", "Unit", "Cardinality", "Constraint"] },
-      { "id": "api_contract", "heading": "API or Command Contract", "required_modes": ["Standard", "Strict"], "allow_not_required": true },
-      { "id": "state_machine", "heading": "State Machine and Transition Guards", "required_modes": ["Standard", "Strict"], "allow_not_required": true },
-      { "id": "transaction_boundaries", "heading": "Transaction Boundaries", "required_modes": ["Standard", "Strict"], "allow_not_required": true },
-      { "id": "concurrency", "heading": "Concurrency, Idempotency and ID Allocation", "required_modes": ["Standard", "Strict"], "allow_not_required": true },
-      { "id": "error_states", "heading": "Error, Empty and Loading States", "required_modes": ["Standard", "Strict"], "allow_not_required": true },
-      { "id": "file_processing", "heading": "File and Image Processing", "required_modes": ["Standard", "Strict"], "allow_not_required": true },
-      { "id": "security_privacy", "heading": "Security, Privacy and Data Inventory", "required_modes": ["Standard", "Strict"], "allow_not_required": false, "table": true, "columns": ["Data Element", "Contains Sensitive Data", "Classification Decision", "Retention Decision"], "rule": "HANDOFF-011" },
-      { "id": "retention", "heading": "Retention, Backup and Restore", "required_modes": ["Strict"], "allow_not_required": true },
-      { "id": "seed_data", "heading": "Seed Data", "required_modes": ["Standard", "Strict"], "allow_not_required": false },
-      { "id": "acceptance_cases", "heading": "Acceptance Cases", "required_modes": ["Standard", "Strict"], "allow_not_required": false, "table": true, "columns": ["Case ID", "Requirement Ref", "Given / When / Then", "Execution", "Fixture / Seed", "Reset"], "rule": "HANDOFF-006" },
-      { "id": "demo_reset", "heading": "Demo Reset Procedure", "required_targets": ["demo", "pilot"], "allow_not_required": true },
-      { "id": "known_limitations", "heading": "Known Limitations", "required_modes": ["Standard", "Strict"], "allow_not_required": true }
+      {
+        "id": "technology_stack",
+        "heading": "Technology Stack",
+        "required_modes": [
+          "Standard",
+          "Strict"
+        ],
+        "allow_not_required": false
+      },
+      {
+        "id": "runtime_and_deployment",
+        "heading": "Runtime and Deployment Model",
+        "required_modes": [
+          "Standard",
+          "Strict"
+        ],
+        "allow_not_required": false
+      },
+      {
+        "id": "ui_framework",
+        "heading": "UI Framework",
+        "required_modes": [
+          "Standard",
+          "Strict"
+        ],
+        "allow_not_required": true
+      },
+      {
+        "id": "target_devices",
+        "heading": "Target Devices and Runtime Capabilities",
+        "required_modes": [
+          "Standard",
+          "Strict"
+        ],
+        "allow_not_required": false,
+        "table": true,
+        "columns": [
+          "Capability",
+          "Required By",
+          "Serving Model",
+          "Environment Decision"
+        ],
+        "rule": "HANDOFF-012"
+      },
+      {
+        "id": "architecture_boundaries",
+        "heading": "Architecture Boundaries",
+        "required_modes": [
+          "Standard",
+          "Strict"
+        ],
+        "allow_not_required": true
+      },
+      {
+        "id": "data_model",
+        "heading": "Data Model",
+        "required_modes": [
+          "Standard",
+          "Strict"
+        ],
+        "allow_not_required": false,
+        "table": true,
+        "columns": [
+          "Entity",
+          "Attribute",
+          "Type",
+          "Unit",
+          "Cardinality",
+          "Constraint"
+        ]
+      },
+      {
+        "id": "api_contract",
+        "heading": "API or Command Contract",
+        "required_modes": [
+          "Standard",
+          "Strict"
+        ],
+        "allow_not_required": true
+      },
+      {
+        "id": "state_machine",
+        "heading": "State Machine and Transition Guards",
+        "required_modes": [
+          "Standard",
+          "Strict"
+        ],
+        "allow_not_required": true
+      },
+      {
+        "id": "transaction_boundaries",
+        "heading": "Transaction Boundaries",
+        "required_modes": [
+          "Standard",
+          "Strict"
+        ],
+        "allow_not_required": true
+      },
+      {
+        "id": "concurrency",
+        "heading": "Concurrency, Idempotency and ID Allocation",
+        "required_modes": [
+          "Standard",
+          "Strict"
+        ],
+        "allow_not_required": true
+      },
+      {
+        "id": "error_states",
+        "heading": "Error, Empty and Loading States",
+        "required_modes": [
+          "Standard",
+          "Strict"
+        ],
+        "allow_not_required": true
+      },
+      {
+        "id": "file_processing",
+        "heading": "File and Image Processing",
+        "required_modes": [
+          "Standard",
+          "Strict"
+        ],
+        "allow_not_required": true
+      },
+      {
+        "id": "security_privacy",
+        "heading": "Security, Privacy and Data Inventory",
+        "required_modes": [
+          "Standard",
+          "Strict"
+        ],
+        "allow_not_required": false,
+        "table": true,
+        "columns": [
+          "Data Element",
+          "Contains Sensitive Data",
+          "Classification Decision",
+          "Retention Decision"
+        ],
+        "rule": "HANDOFF-011"
+      },
+      {
+        "id": "retention",
+        "heading": "Retention, Backup and Restore",
+        "required_modes": [
+          "Strict"
+        ],
+        "allow_not_required": true
+      },
+      {
+        "id": "seed_data",
+        "heading": "Seed Data",
+        "required_modes": [
+          "Standard",
+          "Strict"
+        ],
+        "allow_not_required": false
+      },
+      {
+        "id": "acceptance_cases",
+        "heading": "Acceptance Cases",
+        "required_modes": [
+          "Standard",
+          "Strict"
+        ],
+        "allow_not_required": false,
+        "table": true,
+        "columns": [
+          "Case ID",
+          "Requirement Ref",
+          "Given / When / Then",
+          "Execution",
+          "Fixture / Seed",
+          "Reset"
+        ],
+        "rule": "HANDOFF-006"
+      },
+      {
+        "id": "demo_reset",
+        "heading": "Demo Reset Procedure",
+        "required_targets": [
+          "demo",
+          "pilot"
+        ],
+        "allow_not_required": true
+      },
+      {
+        "id": "known_limitations",
+        "heading": "Known Limitations",
+        "required_modes": [
+          "Standard",
+          "Strict"
+        ],
+        "allow_not_required": true
+      }
     ]
   },
-
   "table_headers": {
     "$comment": "HANDOFF-013. The validator reads table cells by column name, so a renamed or reordered header does not raise an error -- it silently yields empty cells, and the failure surfaces as some downstream rule complaining about a value the author did in fact fill in. Asserting the header turns that into one accurate diagnostic.",
     "rule": "HANDOFF-013",
@@ -193,7 +625,6 @@
     "order_note": "Order is part of the contract because the columns are declared as an ordered list and a reader scanning two projects should find the same shape in both. A reordered header is reported separately from a renamed one.",
     "scope_note": "Only tables whose columns are declared in this file. Column *counts* in templates are already covered by TABLE-001; this is about names and order in project artifacts."
   },
-
   "project_identity": {
     "$comment": "HANDOFF-014. PROJECT.md's own heading is the project's declaration of identity; the handoff artifacts have to agree with it. The exposure is a project started by copying another: HANDOFF.md keeps the old code, every other check passes, and the sheet names a project that is not the one being validated.",
     "rule": "HANDOFF-014",
@@ -202,47 +633,97 @@
     "authority_pattern": "^#\\s+PROJECT\\s+-\\s+(.+?)\\s*$",
     "authority_note": "The heading, not the directory name: a project can legitimately live in a differently named folder, so the folder is the weaker source.",
     "cross_checked": [
-      { "artifact": "HANDOFF.md", "field": "Project", "kind": "metadata" },
-      { "artifact": "HANDOFF-REVIEW.json", "field": "project_code", "kind": "json" }
+      {
+        "artifact": "HANDOFF.md",
+        "field": "Project",
+        "kind": "metadata"
+      },
+      {
+        "artifact": "HANDOFF-REVIEW.json",
+        "field": "project_code",
+        "kind": "json"
+      }
     ],
     "comparison": "case_sensitive_trimmed"
   },
-
   "acceptance_cases": {
-    "execution_classes": ["automated", "manual", "exploratory"],
+    "execution_classes": [
+      "automated",
+      "manual",
+      "exploratory"
+    ],
     "fixture_none_token": "none",
     "rule_missing_execution": "HANDOFF-006",
     "rule_missing_fixture": "HANDOFF-007"
   },
-
   "sensitive_data": {
-    "declared_yes_values": ["yes", "true", "y"],
-    "declared_no_values": ["no", "false", "n"],
+    "declared_yes_values": [
+      "yes",
+      "true",
+      "y"
+    ],
+    "declared_no_values": [
+      "no",
+      "false",
+      "n"
+    ],
     "requires_decision_when_declared_sensitive": true,
     "requires_explicit_declaration": true,
     "rule": "HANDOFF-011",
     "note": "The validator never infers sensitivity from a domain word. It reads the 'Contains Sensitive Data' column the author wrote. If that column says yes, a Classification Decision reference must exist.",
     "undeclared_note": "A value that is neither a yes nor a no -- blank, 'maybe', 'unclear', 'probably not' -- is an undeclared classification, not a negative one. Treating it as no let a row opt out of HANDOFF-011 by being vague, which is the opposite of what a data inventory is for. The author must decide; the validator still never decides for them."
   },
-
   "environment_capabilities": {
-    "unresolved_tokens": ["open", "undecided", "tbd", "unknown", "not decided"],
+    "unresolved_tokens": [
+      "open",
+      "undecided",
+      "tbd",
+      "unknown",
+      "not decided"
+    ],
     "requires_serving_model": true,
     "requires_environment_decision": true,
     "rule": "HANDOFF-012",
     "note": "The validator never infers that a capability needs HTTPS or a camera. It reads the declared Capability rows and checks that each one has a resolved Serving Model and Environment Decision."
   },
-
   "score": {
     "total": 100,
     "dimensions": [
-      { "id": "source_scope_integrity", "title": "Source and scope integrity", "points": 15 },
-      { "id": "requirement_design_traceability", "title": "Requirement and design traceability", "points": 15 },
-      { "id": "engineering_contract", "title": "Engineering contract", "points": 20 },
-      { "id": "acceptance_seed_testability", "title": "Acceptance, seed and testability", "points": 15 },
-      { "id": "dependency_owner_capacity", "title": "Dependency, owner and capacity", "points": 15 },
-      { "id": "security_privacy_environment", "title": "Security, privacy and environment", "points": 10 },
-      { "id": "demo_operational_readiness", "title": "Demo and operational readiness", "points": 10 }
+      {
+        "id": "source_scope_integrity",
+        "title": "Source and scope integrity",
+        "points": 15
+      },
+      {
+        "id": "requirement_design_traceability",
+        "title": "Requirement and design traceability",
+        "points": 15
+      },
+      {
+        "id": "engineering_contract",
+        "title": "Engineering contract",
+        "points": 20
+      },
+      {
+        "id": "acceptance_seed_testability",
+        "title": "Acceptance, seed and testability",
+        "points": 15
+      },
+      {
+        "id": "dependency_owner_capacity",
+        "title": "Dependency, owner and capacity",
+        "points": 15
+      },
+      {
+        "id": "security_privacy_environment",
+        "title": "Security, privacy and environment",
+        "points": 10
+      },
+      {
+        "id": "demo_operational_readiness",
+        "title": "Demo and operational readiness",
+        "points": 10
+      }
     ],
     "open_finding_penalty": {
       "$comment": "Points deducted from a dimension for each OPEN review finding whose lens belongs to it. A finding that a reader raised and nobody closed is missing evidence, and the score has to show that even when no deterministic rule fired -- otherwise a project reads 100/100 while its own review says the demo will not work.",
@@ -278,10 +759,27 @@
       "demo_startup_reset_and_recovery": "demo_operational_readiness"
     },
     "caps": [
-      { "id": "deterministic_fail", "when": "any deterministic FAIL diagnostic", "verdict": "BLOCKED", "max_score": null },
-      { "id": "review_absent_or_stale", "when": "semantic review missing or stale", "max_score": 70 },
-      { "id": "missing_owner_or_sequence", "when": "no named owner or no build sequence", "max_score": 69 },
-      { "id": "open_before_build_critical", "when": "an open critical finding blocks before_build", "max_score": 49 }
+      {
+        "id": "deterministic_fail",
+        "when": "any deterministic FAIL diagnostic",
+        "verdict": "BLOCKED",
+        "max_score": null
+      },
+      {
+        "id": "review_absent_or_stale",
+        "when": "semantic review missing or stale",
+        "max_score": 70
+      },
+      {
+        "id": "missing_owner_or_sequence",
+        "when": "no named owner or no build sequence",
+        "max_score": 69
+      },
+      {
+        "id": "open_before_build_critical",
+        "when": "an open critical finding blocks before_build",
+        "max_score": 49
+      }
     ],
     "disclaimer": "A readiness score summarizes declared evidence. It is not an approval, it does not transfer accountability, and no gate may be passed on the strength of a score alone."
   }
