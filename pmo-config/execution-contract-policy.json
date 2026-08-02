@@ -22,7 +22,10 @@
         "name",
         "commit_sha"
       ],
-      "reason": "A CI check queried live via `gh api repos/<owner>/<repo>/commits/<sha>/check-runs`, matched by name, whose *observed* conclusion (never the result's own claimed `conclusion` field, which is informational only) must be `success`. No `gh` CLI, no authentication, or no resolvable GitHub remote all mean 'unverified,' never a silent pass.",
+      "optional": [
+        "check_run_id"
+      ],
+      "reason": "A CI check queried live via the GitHub API, whose *observed* conclusion (never the result's own claimed `conclusion` field, which is informational only) must be `success`. No `gh` CLI, no authentication, or no resolvable GitHub remote all mean 'unverified,' never a silent pass. With `check_run_id` present, the entry queries `gh api repos/<owner>/<repo>/check-runs/<id>` directly and binds it to `commit_sha` and `name` -- immune to a same-named sibling run in either direction, including a failed attempt later re-run to green. Without it, the entry falls back to `gh api repos/<owner>/<repo>/commits/<sha>/check-runs` matched by name, which requires every completed run under that name to agree and so cannot verify a legitimate rerun once a same-named failure exists in the API's history for that commit -- a known, documented cost of that path, closed by citing check_run_id instead.",
       "structurally_checkable": true
     },
     {

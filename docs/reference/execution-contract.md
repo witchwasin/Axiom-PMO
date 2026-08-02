@@ -130,7 +130,7 @@ the whole design:
 
 | Adapter | Requires | What is actually checked | Provenance |
 |---|---|---|---|
-| `ci-check` | `name`, `commit_sha` | Live GitHub API query for a check run matching `name` on that commit. The **observed** conclusion must be `success`; the entry's own `conclusion` field is never read. No `gh`, no auth, or no resolvable remote all mean *unverified*. | `externally-observed` |
+| `ci-check` | `name`, `commit_sha` (+ optional `check_run_id`) | Live GitHub API query. With `check_run_id`, queries that exact run and binds it to `commit_sha`/`name`; without it, searches by `name` on the commit and requires every completed run under that name to agree. The **observed** conclusion must be `success`; the entry's own `conclusion` field is never read. No `gh`, no auth, or no resolvable remote all mean *unverified*. | `externally-observed` |
 | `junit-artifact` | `path`, `sha256` | `path` resolved inside the project root, the real file hashed and compared to the claimed digest, XML parsed with DTD processing prohibited, `failures + errors` summing to zero. | `artifact-observed` |
 | `runner-exit-record` | `run_record_path` | The sealed file `axiom run` produced, reopened, its digest recomputed against the `.sha256` sidecar, its work-item and contract bindings confirmed, sealed exit code `0`. | `artifact-observed` |
 | `agent-assertion` | `name` | Nothing. Recorded for context only. | `agent-claimed` |

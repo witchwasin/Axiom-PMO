@@ -1704,6 +1704,61 @@ function Get-VouchedRecordDigest {
   } finally { Remove-ExecFixture $dir }
 }.Invoke()
 
+# ---- Case: ci-check with check_run_id, no resolvable remote -> unverified -
+# M5.5: check_run_id is a new, optional binding path (queries the check run
+# directly instead of searching by name, so a legitimately re-run-to-green
+# check is not permanently entangled with its own earlier failure -- see
+# scripts/lib/execution-contract-evidence.ps1's Test-CiCheckEvidence).
+# Offline-testable half only: a live GitHub-API-verified positive case for
+# this path is in tests/helpers/ci-check-evidence-live-tests.ps1. What this
+# proves is narrower and just as necessary -- the new branch is not a
+# shortcut around the "no gh / no remote" guards the name-based path already
+# had, and a claimed success is still never trusted.
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $f = Get-BaseResultFields -Dir $dir
+    $doc = [ordered]@{
+      contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
+      changed_files = @()
+      test_evidence = @([ordered]@{
+        type = "ci-check"; name = "unit tests"; commit_sha = $f.Head
+        check_run_id = "123456789"; conclusion = "success"
+      })
+    }
+    Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "ci-check check_run_id, no remote: EXEC-005 raised" `
+      ((Get-Rules $r.Json) -contains "EXEC-005") ("verdict=" + $r.Json.execution_verification.verdict)
+    Assert-True "ci-check check_run_id, no remote: the claimed conclusion is still never trusted" `
+      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-005" }) | Select-Object -First 1).message -notmatch "success.*success")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: ci-check check_run_id that is not an integer -> unverified -----
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $f = Get-BaseResultFields -Dir $dir
+    $doc = [ordered]@{
+      contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
+      changed_files = @()
+      test_evidence = @([ordered]@{
+        type = "ci-check"; name = "unit tests"; commit_sha = $f.Head
+        check_run_id = "not-a-number"
+      })
+    }
+    Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "ci-check non-numeric check_run_id: EXEC-005 raised, not a crash" `
+      ((Get-Rules $r.Json) -contains "EXEC-005") ("verdict=" + $r.Json.execution_verification.verdict)
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
 # ---- MAJOR fix: contract digest sidecar is mandatory, not best-effort -----
 
 # ---- Case: sidecar deleted after export -> EXEC-002, not a silent pass ----
