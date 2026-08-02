@@ -449,8 +449,7 @@ but must be disclosed and human-reviewed.
 ## Visual Identity
 
 Axiom-PMO uses a restrained engineering-documentation visual system: quiet,
-inspectable, and precise. The public deck is available at
-[`Slide Deck/Axiom-PMO-Overview.pptx`](Slide%20Deck/Axiom-PMO-Overview.pptx).
+inspectable, and precise.
 
 | Token | Hex | Use |
 |---|---|---|
