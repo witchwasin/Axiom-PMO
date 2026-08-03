@@ -248,6 +248,19 @@ try {
     & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tempRepo "scripts/validate-project.ps1") -ProjectPath (Join-Path $tempRepo "examples/HANDOFF-DEMO") -Mode Standard -Gate Handoff -Format Json
   }
 
+  # M9: marking an existing rule experimental with a blocking severity must
+  # make pmo-doctor itself fail on DOCTOR-014 -- proves the ceiling ("an
+  # experimental rule may never block") is a real, enforced invariant and not
+  # only documentation in pmo-config/learning-policy.json.
+  $validationRulesPath = Join-Path $tempRepo "pmo-config/validation-rules.json"
+  $validationRules = Get-Content -LiteralPath $validationRulesPath -Raw | ConvertFrom-Json
+  $validationRules.rules.'STRUCT-001' | Add-Member -NotePropertyName lifecycle -NotePropertyValue "experimental" -Force
+  $validationRules | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $validationRulesPath -Encoding utf8
+
+  Invoke-ExpectTextRuleFailure "experimental rule with blocking severity mutation" "DOCTOR-014" {
+    & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tempRepo "scripts/pmo-doctor.ps1") -RepoPath $tempRepo
+  }
+
   Write-Host "[PASS] Config mutation tests prove JSON runtime config is source of truth"
 } finally {
   if (Test-Path -LiteralPath $workRoot) {

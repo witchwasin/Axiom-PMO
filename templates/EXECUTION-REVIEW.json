@@ -1,0 +1,58 @@
+{
+  "$comment": [
+    "Machine-readable adversarial review of an AI-executed work item (Milestone 8.1).",
+    "",
+    "This file is CANDIDATE EVIDENCE, not an approval. A verdict recorded here",
+    "never changes a validator exit code and never substitutes for a human",
+    "approval row in PROJECT.md. See pmo-config/adversarial-review-policy.json",
+    "and docs/architecture/adversarial-review.md for the full design.",
+    "",
+    "provenance.tier determines whether this artifact can satisfy Strict on its",
+    "own: artifact-observed cannot (needs a human review-evidence-accepted",
+    "claim in decision-log.md); externally-observed and human-attested can,",
+    "provided their required bindings hold -- see AREV-003/AREV-004.",
+    "",
+    "Finding status authority is by ROLE, not by reviewer_kind: the executor",
+    "may only move a finding from open to disputed, never to any closure",
+    "state, and a finding under a human-only category (security, legal,",
+    "business, privacy) may only be closed by a human citing a decision",
+    "record. See closure_policy in the policy file and AREV-006.",
+    "",
+    "Remove this $comment block in a real project file."
+  ],
+  "schema_version": "1.0",
+  "review_id": "AR-001",
+  "contract_sha256": "<sha256 of the EXECUTION-CONTRACT.json this review covers>",
+  "base_sha": "<base commit the contract was exported against>",
+  "head_sha": "<head commit the execution result claims>",
+  "reviewed_at": "<YYYY-MM-DD>",
+  "reviewer_kind": "ai",
+  "reviewer": "<model or person identifier>",
+  "provenance": {
+    "tier": "artifact-observed",
+    "$tier_options_note": "artifact-observed | externally-observed | human-attested",
+    "check_run_id": null,
+    "$check_run_id_note": "Required, and independently queried, when tier is externally-observed."
+  },
+  "findings": [
+    {
+      "finding_id": "AF-001",
+      "category": "acceptance-criteria-gap",
+      "severity": "major",
+      "artifact": "src/example.ps1",
+      "item_id": "<D-002>",
+      "description": "<What is wrong, in one or two sentences. Do not quote source or requirement content verbatim.>",
+      "evidence_refs": ["<FILE:src/example.ps1>", "<D-002 Acceptance Criteria>"],
+      "suggestion": "<The concrete change that would resolve it.>",
+      "status": "open",
+      "decision_ref": null,
+      "$decision_ref_note": "Required for false_positive, accepted_risk, or deferred. Must lead with a resolvable DEC-### that carries an axiom-authority: type=review-finding-disposition binding."
+    }
+  ],
+  "recommendation": {
+    "$comment": "A recommendation, not a verdict. A human decides whether to act on it.",
+    "verdict": "request_changes",
+    "$verdict_options_note": "approve | request_changes -- never authoritative; AREV-* never reads this field to decide pass/fail.",
+    "notes": "<One paragraph: what a reader most needs to know before acting on this review.>"
+  }
+}

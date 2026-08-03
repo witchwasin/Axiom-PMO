@@ -2,7 +2,148 @@
 
 ## Unreleased
 
-_Nothing yet._
+**Milestone 7 — Onboarding and the Two Execution Paths.** Authorized for
+implementation 2026-08-03 (`DEC-011`), on branch
+`m7-onboarding-execution-paths`. Not yet released.
+
+- `execution_path` (`development_handoff` | `governed_ai_execution`) is now a
+  governed declaration in `PROJECT.md`, defaulting to `development_handoff`
+  so every existing project validates unchanged. New rules `PATH-001`
+  (declaration missing/unrecognized) and `PATH-002` (declaration looks stale
+  against an active, unresolved `.execution/**` package — archived or
+  completed execution evidence never triggers it).
+- `axiom init` prompts interactively on a TTY: which delivery path, then
+  which governance mode, with a "Help me decide" strict-trigger
+  questionnaire. Every answer is a declaration, never a claimed detection.
+  Non-interactive callers (CI, `--no-interactive`, or any flag already
+  supplied) are unaffected.
+- New `axiom status` verb: reports a project's execution path, effective
+  governance mode, current gate, and the validator's own next blocking
+  finding.
+- New `pmo-config/onboarding-questions.json`, kept in sync with
+  `policy.json`'s strict-trigger enum by a new `DOCTOR-013` check.
+- See [`docs/concepts/execution-paths.md`](docs/concepts/execution-paths.md)
+  and `research/m7-m9-proposal.md` for full design.
+
+Backward compatible. No existing required artifact changed for either path;
+the path-artifact delta is empty as of this milestone.
+
+**Milestone 8.0 — Adversarial Review Evidence: research.** Delivered,
+recommending **GO WITH REFRAME**. See
+[`docs/architecture/adversarial-review.md`](docs/architecture/adversarial-review.md).
+No code changed — this is the research and threat-model deliverable
+`DEC-012` authorized.
+
+**Milestone 8.1 — Adversarial Review Evidence: implementation.** Authorized
+2026-08-03 (`DEC-014`) and implemented, pending independent review before
+merge to `main`.
+
+- New `AREV-001`..`AREV-006` rules (`scripts/lib/adversarial-review-validator.ps1`),
+  checked by `axiom verify` whenever `EXECUTION-REVIEW.json` exists or is
+  required for the project's effective mode (Lite disabled, Standard
+  advisory, Strict required).
+- Reuses `pmo-config/execution-contract-policy.json`'s existing
+  `evidence_provenance` model (`artifact-observed`, `externally-observed`)
+  rather than a parallel one, adding only `human-attested`. A new
+  `review-evidence-accepted` authority-claim type is registered alongside
+  `test-evidence-accepted`, reusing `EXEC-007`'s existing promotion
+  mechanism unchanged.
+- `externally-observed` requires all four bindings from
+  `docs/architecture/adversarial-review.md` §3.3 -- reusing `Test-CiCheckEvidence`'s
+  `check_run_id` binding unchanged, plus an API-attested artifact digest, a
+  pinned workflow content digest, and contract/commit identity. Ships with
+  `pinned_workflow_digest: null` by default, so it fails closed until an
+  organization pins its own review workflow.
+- Finding-lifecycle authority by role, not by AI/human kind: the executor may
+  only move a finding to `disputed`; only a human may close a finding under a
+  security/legal/business/privacy category.
+- `axiom export` now adds the pinned review-workflow path to every
+  contract's `prohibited_paths` by default, so `EXEC-004` protects it.
+- New `axiom verify --preflight` flag: runs the mechanical `EXEC-*` checks
+  and skips the one check that can make a live GitHub API call.
+- `tests/helpers/adversarial-review-tests.ps1` (now 24 cases, written
+  adversarially): self-forged decision records, executor self-closure, an AI
+  reviewer closing a human-only-category finding, artifact-observed alone
+  never satisfying Strict, an unrelated successful check run on the same
+  commit not satisfying `externally-observed`.
+
+**Independent AI Reviewer independent review, round 1: REQUEST CHANGES.** 1 FATAL, 2 MAJOR, all
+fixed; pending re-review before merge to `main`.
+
+- **FATAL** — `externally-observed` verified `check_run_id`'s commit,
+  status, conclusion, artifact digest, and the pinned workflow's content
+  digest, but never verified the cited check run was actually *produced by*
+  the pinned workflow. An unrelated successful check run on the same commit,
+  primed to print the review artifact's digest in its own output, passed
+  every check. Fixed by resolving the check run's `check_suite.id` to its
+  GitHub Actions workflow run and requiring that run's `path` match the
+  pinned workflow path — reproduced and regression-tested with a stubbed
+  `gh` against both the attack and the legitimate case.
+- **MAJOR** — `closure_policy.settable_by` was loaded from policy and never
+  applied: an `ai`-kind reviewer could set `false_positive`/`accepted_risk`/
+  `deferred` on any finding, human-only category or not, whenever a bound
+  decision resolved outside the verified range. Fixed by deriving the
+  human-only-status set from policy and enforcing it.
+- (Third finding was against Milestone 9 — see below.)
+
+**Independent AI Reviewer independent review, round 2: scope-locked final direction.** One
+compatibility fix required and applied; no other finding raised.
+
+- A legitimate GitHub Actions workflow-run `path` can carry a trailing
+  `@ref` (e.g. `.github/workflows/adversarial-review.yml@main`), which
+  round 1's exact-match comparison would have rejected as a false
+  mismatch. Fixed by normalizing the suffix away before comparing —
+  strictly more lenient about the suffix format, never about the path text
+  the round-1 FATAL fix binds against. New regression case added
+  alongside the existing unrelated-workflow negative case (kept unchanged
+  per Independent AI Reviewer's explicit instruction); `tests/helpers/adversarial-review-tests.ps1`
+  now 25 cases.
+- Two items recorded as known, non-blocking limitations rather than
+  implemented, per Independent AI Reviewer's explicit scope lock — see
+  `docs/architecture/adversarial-review.md` §11: non-closure transitions
+  (`disputed`) inside a reviewer-authored review file are not fully
+  actor-attributed at the per-finding level, and a `workflow_id` binding is
+  optional future hardening. Neither weakens any enforced authority
+  guarantee.
+
+**Milestone 9 — Failure Pattern Registry and Governed Improvement
+Proposals.** Boundary confirmed 2026-08-03 (`DEC-013`), authorized and
+implemented the same day (`DEC-015`), pending independent review before
+merge to `main`.
+
+- New `scripts/aggregate-diagnostics.ps1`: one immutable event file per
+  validation run (`.axiom/learning/events/<utc-timestamp>-<run-id>.jsonl`,
+  never reopened), a rebuildable `FAILURE-PATTERNS.json`, and
+  `IMPROVEMENT-CANDIDATE.json` proposals for clusters crossing a
+  multi-dimensional threshold (distinct projects/commits/days-span -- never
+  a raw occurrence count).
+- Local and opt-in: no network call anywhere in the script; raw events and
+  the per-repository salt are git-ignored by default
+  (`.axiom/learning/events/`, `.axiom/learning/salt`).
+- Every event field carries an explicit retain/normalize/hash/drop
+  disposition (`pmo-config/learning-policy.json field_disposition`) --
+  "metadata-only" is not treated as a privacy guarantee by itself.
+- New optional `lifecycle` field on catalog rules, with a new `DOCTOR-014`
+  enforcing the invariant that an `experimental` rule can never carry a
+  blocking severity.
+- `tests/helpers/learning-registry-tests.ps1` (now 15 cases) plus a
+  `DOCTOR-014` case in `tests/helpers/config-mutation-tests.ps1`: no
+  artifact content or free text reaches an event, rebuild-from-events
+  equality, twenty reruns of one unfixed defect produce zero candidates, an
+  experimental rule with a blocking severity fails `pmo-doctor` itself.
+
+**Independent AI Reviewer independent review, round 1: REQUEST CHANGES.** 1 MAJOR, fixed;
+pending re-review before merge to `main`.
+
+- **MAJOR** — `ConvertTo-NormalizedItemId` replaced digits only (`\d+` ->
+  `#`), so a purely alphabetic id (`ACME-fraud-case`, `patient-HIV`) passed
+  through byte-for-byte unchanged into every event; `execution_path` was
+  copied verbatim from `PROJECT.md`'s regex capture with no enum validation
+  despite `learning-policy.json` already declaring it a closed enum. Both
+  are now allowlist/enum-validated against new
+  `item_id_allowed_patterns` / `execution_path_allowed_values` policy
+  fields — anything not matching is bucketed to `"other"` / `"unknown"`,
+  never partially sanitized and retained.
 
 ## 1.3.0 - 2026-08-02
 

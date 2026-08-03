@@ -1,0 +1,63 @@
+{
+  "version": "1.3.0",
+  "schema_version": "1.0",
+  "purpose": "Runtime policy for Milestone 9 (Failure Pattern Registry and Governed Improvement Proposals, scripts/aggregate-diagnostics.ps1). Organizational memory over diagnostics the validator already emits -- an aggregator, not a new engine.",
+  "boundary": {
+    "local_and_opt_in": true,
+    "network_transmission": "never, by default or implicitly. Any future external or cross-organization aggregation requires a separate milestone and Human Owner decision.",
+    "raw_events_git_ignored_by_default": true,
+    "note": "See DEC-013, DEC-015. This boundary is not a default that can be silently widened -- widening it is the separate decision this file describes, not a configuration change to this file."
+  },
+  "storage": {
+    "events_dir": ".axiom/learning/events",
+    "event_file_pattern": "<UTC-ISO-timestamp>-<run-id>.jsonl",
+    "note": "One immutable file per validation run, written once and never reopened -- two runs cannot collide by construction, because two runs never share a file. FAILURE-PATTERNS.json is rebuildable from these events at any time and is never itself the source of truth; a corrupted registry is a rebuild, not a data-loss event.",
+    "registry_path": ".axiom/learning/FAILURE-PATTERNS.json",
+    "salt_path": ".axiom/learning/salt"
+  },
+  "field_disposition": {
+    "_note": "'Metadata-only' is not a privacy guarantee by itself -- a bare artifact path can disclose a subject without a byte of content (customers/acme/fraud-investigation.md). Every field carries an explicit, auditable disposition rather than a blanket policy. Independent AI Reviewer's independent review of the first implementation found item_id normalization only replaced digits (an alphabetic id such as 'ACME-fraud-case' passed through unchanged) and execution_path was copied verbatim from PROJECT.md without enum validation despite being declared retain-as-closed-enum here -- both are now allowlist/enum-validated, never pattern-substituted or copied raw.",
+    "retain": ["rule_id", "level", "blocking", "mode", "gate"],
+    "retain_if_governed_artifact_else_other": ["artifact"],
+    "retain_if_valid_enum_else_unknown": ["execution_path"],
+    "retain_if_matches_allowed_pattern_else_other": ["item_id"],
+    "hash_with_repository_salt": ["project"],
+    "drop_always": ["message", "suggestion", "field", "documentation_url", "run_command", "cwd"]
+  },
+  "item_id_allowed_patterns": ["^D-\\d+$", "^REQ-\\d+$", "^AF-\\d+$", "^DEC-\\d+$", "^TEST-\\d+$", "^REL-\\d+$", "^BR-\\d+$"],
+  "execution_path_allowed_values": ["development_handoff", "governed_ai_execution"],
+  "governed_artifact_allowlist": [
+    "PROJECT.md", "DELIVERY.md", "HANDOFF.md", "RELEASE.md", "RAID-log.md",
+    "decision-log.md", "SCOPE.json", "RTM.json", "HANDOFF-REVIEW.json",
+    "EXECUTION-CONTRACT.json", "EXECUTION-RESULT.json", "EXECUTION-REVIEW.json",
+    "DESIGN/BUILD-SPEC.md", "DESIGN/FLOW.puml", "DESIGN/WIREFRAME.md"
+  ],
+  "clustering": {
+    "note": "Never a raw occurrence count -- twenty reruns against one unfixed defect must register as one problem, not twenty. A cluster is scored on how many DISTINCT dimensions it spans.",
+    "dimensions": ["run_id", "commit_hash", "item_id_pattern", "project_hash"],
+    "candidate_threshold": {
+      "min_distinct_projects": 3,
+      "min_distinct_commits": 5,
+      "min_days_span": 3,
+      "note": "All three must be met. A cluster confined to one project or one unresolved item, however many times it re-fired, does not cross this threshold."
+    }
+  },
+  "dispositions": ["true_defect", "false_positive", "user_error", "undetermined"],
+  "improvement_candidate": {
+    "remedy_categories": [
+      "documentation", "onboarding", "error_message_wording", "changed_default",
+      "validator_defect", "false_positive_reduction", "review_prompt_wording",
+      "new_deterministic_rule"
+    ],
+    "note": "A candidate must weigh the full remedy set -- 'add a new rule' is never the default, matching this roadmap's existing prohibition on rules added only to increase perceived coverage. A candidate whose disposition_summary is dominated by false_positive should propose fixing the rule, not adding another one.",
+    "ai_authored_status_ceiling": "proposed",
+    "status_enum": ["proposed", "reviewed", "approved", "rejected", "implemented"],
+    "status_change_requires": "a DEC-### for any status other than proposed when the candidate was AI-authored"
+  },
+  "rule_lifecycle": {
+    "values": ["experimental", "enforced", "deprecated"],
+    "default_when_absent": "enforced",
+    "invariant": "A rule with lifecycle=experimental may carry severity info or warn only -- never fail, fail_release, or any blocking severity. Promotion experimental -> enforced requires a DEC-### and a ROADMAP.md entry.",
+    "enforced_by": "DOCTOR-014"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "version": "1.3.0",
+  "schema_version": "1.0",
+  "$comment": "Wording for `axiom init`'s 'Help me decide' path. One entry per pmo-config/policy.json enums.strict_triggers id -- pmo-doctor DOCTOR-013 fails if the two ever disagree. This file supplies presentation text only; the trigger list, the mode-escalation logic, and the enum itself stay in policy.json so this file can never become a second source of truth for what a strict trigger IS.",
+  "questions": {
+    "payment": {
+      "question": "Does this work involve payment or a financial transaction?",
+      "help_text": "Charging, refunding, invoicing, or moving money between accounts.",
+      "recommended_mode": "Strict"
+    },
+    "financial_calculation": {
+      "question": "Does this work calculate a financial amount that must be correct?",
+      "help_text": "Pricing, tax, interest, payroll, or any figure someone is paid or charged based on.",
+      "recommended_mode": "Strict"
+    },
+    "pii": {
+      "question": "Will this work collect, process, or store personal information?",
+      "help_text": "Names, phone numbers, email addresses, ID numbers, health data, or location.",
+      "recommended_mode": "Strict"
+    },
+    "sensitive_data": {
+      "question": "Does this work touch confidential or sensitive customer data?",
+      "help_text": "Data a customer would not want disclosed, even if it is not personal information -- contracts, internal pricing, security details.",
+      "recommended_mode": "Strict"
+    },
+    "authentication": {
+      "question": "Does this work change how users sign in or how identity is verified?",
+      "help_text": "Login, password reset, multi-factor authentication, session handling.",
+      "recommended_mode": "Strict"
+    },
+    "authorization": {
+      "question": "Does this work change who is allowed to do what?",
+      "help_text": "Roles, access control, feature gating by user type.",
+      "recommended_mode": "Strict"
+    },
+    "permission": {
+      "question": "Does this work change permission levels or access grants?",
+      "help_text": "Admin rights, sharing settings, elevated access for a user or a service.",
+      "recommended_mode": "Strict"
+    },
+    "irreversible_action": {
+      "question": "Can this work take an action that cannot be undone?",
+      "help_text": "Permanent deletion, an irreversible financial transfer, sending something that cannot be recalled.",
+      "recommended_mode": "Strict"
+    },
+    "external_integration": {
+      "question": "Does this work integrate with an external system outside your control?",
+      "help_text": "A third-party API, payment processor, or partner service.",
+      "recommended_mode": "Strict"
+    },
+    "legal_compliance": {
+      "question": "Does this work need to satisfy a specific legal or compliance requirement?",
+      "help_text": "GDPR, accessibility law, industry regulation, a contractual obligation.",
+      "recommended_mode": "Strict"
+    },
+    "production_data_migration": {
+      "question": "Does this work migrate or transform real production data?",
+      "help_text": "A schema change, backfill, or data move that runs against live customer data.",
+      "recommended_mode": "Strict"
+    },
+    "critical_infrastructure": {
+      "question": "Does this work touch infrastructure that other systems depend on to run?",
+      "help_text": "Shared databases, authentication services, deployment pipelines, core APIs.",
+      "recommended_mode": "Strict"
+    },
+    "public_sector_formal_acceptance": {
+      "question": "Does this work require formal acceptance by a public-sector body?",
+      "help_text": "A government client or regulator with its own sign-off process.",
+      "recommended_mode": "Strict"
+    }
+  }
+}

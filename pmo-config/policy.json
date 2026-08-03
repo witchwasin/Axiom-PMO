@@ -39,6 +39,7 @@
     "approval_statuses": ["pending", "approved", "rejected"],
     "approval_gates": ["Scope Approved", "Design Ready", "Release Approved"],
     "task_sources": ["file", "github"],
+    "execution_paths": ["development_handoff", "governed_ai_execution"],
     "strict_triggers": [
       "payment",
       "financial_calculation",
