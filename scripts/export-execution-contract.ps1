@@ -115,6 +115,22 @@ if (-not $scope.Valid) {
   Fail-Export "SCOPE.json is invalid: $($scope.Error)"
 }
 
+# M8.1: the pinned adversarial-review workflow path (if one is configured) is
+# always added to prohibited_paths, on top of whatever SCOPE.json's own
+# Exclude list already names. This is what lets AREV-003's externally-observed
+# binding rely on EXEC-004 to catch an executor editing the review workflow
+# within the very commit range under verification -- reusing scope protection
+# that already exists, rather than adding a second mechanism for one path.
+$reviewWorkflowPaths = @()
+$adversarialReviewPolicyPath = Join-Path $repoRoot "pmo-config/adversarial-review-policy.json"
+if (Test-Path -LiteralPath $adversarialReviewPolicyPath -PathType Leaf) {
+  $adversarialReviewPolicy = Get-Content -LiteralPath $adversarialReviewPolicyPath -Raw | ConvertFrom-Json
+  $pinnedWorkflowPath = [string]$adversarialReviewPolicy.externally_observed_binding.pinned_workflow_path
+  if (-not [string]::IsNullOrWhiteSpace($pinnedWorkflowPath)) {
+    $reviewWorkflowPaths = @($pinnedWorkflowPath)
+  }
+}
+
 # --- base commit -------------------------------------------------------------
 
 $baseSha = & git -C $gitRoot rev-parse --verify --quiet "HEAD^{commit}" 2>$null
@@ -166,7 +182,7 @@ $contract = [ordered]@{
   required_tests = @(Split-CellList ([string]$item.'Test Checklist'))
   base_sha = $baseSha
   allowed_paths = @($scope.Include)
-  prohibited_paths = @($scope.Exclude)
+  prohibited_paths = @(@($scope.Exclude) + $reviewWorkflowPaths | Select-Object -Unique)
   # Defaults from pmo-config/execution-contract-policy.json's stated posture:
   # an agent may work on a branch, and nothing else, unless -Grant names more.
   # Written explicitly rather than left to be defaulted at verification time --

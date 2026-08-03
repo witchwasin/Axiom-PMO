@@ -523,6 +523,33 @@ if ($policy -and $onboardingQuestions) {
   Add-Result FAIL "policy.json or onboarding-questions.json could not be loaded" "DOCTOR-013"
 }
 
+# DOCTOR-014 (M9): a rule catalog entry with lifecycle=experimental must never
+# carry a blocking severity. An experimental rule is one Axiom-PMO has not yet
+# promoted to enforced by a Human Owner DEC-### -- letting it fail or
+# fail_release a real gate would make an unreviewed rule block real work,
+# which defeats the entire point of having an experimental stage. A rule with
+# no lifecycle field is implicitly "enforced" (pmo-config/learning-policy.json
+# rule_lifecycle.default_when_absent) and is not checked here.
+if ($validationRules -and $validationRules.rules) {
+  $blockingSeverities = @("fail", "fail_release")
+  $experimentalBlocking = @()
+  foreach ($prop in $validationRules.rules.PSObject.Properties) {
+    $entry = $prop.Value
+    if (-not $entry.PSObject.Properties["lifecycle"]) { continue }
+    if ([string]$entry.lifecycle -ne "experimental") { continue }
+    if ($blockingSeverities -contains [string]$entry.severity) {
+      $experimentalBlocking += $prop.Name
+    }
+  }
+  if ($experimentalBlocking.Count -eq 0) {
+    Add-Result PASS "No experimental rule carries a blocking severity" "DOCTOR-014"
+  } else {
+    Add-Result FAIL ("Experimental rules with a blocking severity (promotion to enforced requires a DEC-### and a ROADMAP.md entry first): " + ((Sort-Ordinal -Values ([string[]]$experimentalBlocking)) -join ", ")) "DOCTOR-014"
+  }
+} else {
+  Add-Result FAIL "validation-rules.json could not be loaded" "DOCTOR-014"
+}
+
 # DOCTOR-011: $IsWindows must not be used as a bare host test.
 #
 # It does not exist in Windows PowerShell 5.1 -- it is $null there, and 5.1

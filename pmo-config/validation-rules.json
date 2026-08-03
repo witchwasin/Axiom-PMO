@@ -338,6 +338,42 @@
       "suggestion": "Report the actual base and head commits and the complete changed-file list. If a commit cannot be resolved, the checkout is likely shallow -- fetch enough history for the base commit to be present before verifying.",
       "documentation": "docs/rules/EXEC-008.md"
     },
+    "AREV-001": {
+      "severity": "fail",
+      "description": "EXECUTION-REVIEW.json is missing, or present but structurally invalid, at an enforcement level (Standard: warn, Strict: fail) that requires it. Also the PASS row when the artifact is present and parses.",
+      "suggestion": "Produce an adversarial review of the execution and record it as EXECUTION-REVIEW.json beside the execution contract, using templates/EXECUTION-REVIEW.json. See docs/architecture/adversarial-review.md.",
+      "documentation": "docs/rules/AREV-001.md"
+    },
+    "AREV-002": {
+      "severity": "fail",
+      "description": "The review's contract_sha256, base_sha, or head_sha does not match the execution under verification -- it cannot be cited as evidence for a different contract or diff.",
+      "suggestion": "Re-generate the review against the exact contract digest and commit range being verified.",
+      "documentation": "docs/rules/AREV-002.md"
+    },
+    "AREV-003": {
+      "severity": "fail",
+      "description": "provenance.tier is unrecognized, or is artifact-observed without a bound review-evidence-accepted human authority claim, or is externally-observed without all four required bindings (check run, artifact digest, workflow digest, contract identity) resolving, or is human-attested by the same actor as the executor -- at an enforcement level that requires the tier to satisfy Strict on its own.",
+      "suggestion": "Either bind the review to an externally-observed CI check with a pinned, verifiable workflow digest, have a named human who is not the executor attest it, or have a human record a review-evidence-accepted authority claim in decision-log.md for an artifact-observed review. See pmo-config/adversarial-review-policy.json evidence_provenance.",
+      "documentation": "docs/rules/AREV-003.md"
+    },
+    "AREV-004": {
+      "severity": "fail",
+      "description": "A finding is missing finding_id, or carries an invalid severity, category, or status, or is missing a description or suggestion.",
+      "suggestion": "Fill every required field on every finding using the enums in pmo-config/adversarial-review-policy.json.",
+      "documentation": "docs/rules/AREV-004.md"
+    },
+    "AREV-005": {
+      "severity": "fail",
+      "description": "A finding-status transition violates authority-by-role: a finding under a human-only category (security, legal, business, privacy) was closed by a non-human reviewer, or EXECUTION-RESULT.json itself claims the executor set a finding to any status other than open/disputed.",
+      "suggestion": "Only a human may close a human-only-category finding, and the executor may only move a finding to disputed, with evidence -- never to a closure or acceptance state.",
+      "documentation": "docs/rules/AREV-005.md"
+    },
+    "AREV-006": {
+      "severity": "fail",
+      "description": "A finding whose status requires a decision record (false_positive, accepted_risk, deferred) cites one that does not resolve in decision-log.md, or resolves but was itself added or edited within the commit range under verification.",
+      "suggestion": "Cite a real, resolvable DEC-### that predates the commit range under verification, or record the decision first.",
+      "documentation": "docs/rules/AREV-006.md"
+    },
     "HANDOFF-001": {
       "severity": "fail",
       "description": "A required handoff artifact is missing or its metadata contract is incomplete.",
@@ -495,6 +531,12 @@
       "description": "pmo-config/onboarding-questions.json is missing a question for a strict trigger declared in policy.json enums.strict_triggers, or carries a question for a trigger id the enum no longer declares. The interactive `axiom init` wizard's 'Help me decide' path reads its question list from that file keyed by trigger id -- an uncovered trigger would either be unaskable or ask about something that no longer exists.",
       "suggestion": "Add or remove the matching entry in pmo-config/onboarding-questions.json so its keys exactly match policy.json enums.strict_triggers. See docs/rules/DOCTOR-013.md.",
       "documentation": "docs/rules/DOCTOR-013.md"
+    },
+    "DOCTOR-014": {
+      "severity": "fail",
+      "description": "A rule catalog entry carries lifecycle=experimental but a blocking severity (fail or fail_release). An experimental rule -- one not yet promoted to enforced by a Human Owner DEC-### and a ROADMAP.md entry -- must never be able to block a real gate.",
+      "suggestion": "Set the rule's severity to info or warn while it remains experimental, or record a DEC-### promoting it to enforced and add the corresponding ROADMAP.md entry. See docs/rules/DOCTOR-014.md.",
+      "documentation": "docs/rules/DOCTOR-014.md"
     },
     "DOCTOR-STRUCT": {
       "severity": "fail",

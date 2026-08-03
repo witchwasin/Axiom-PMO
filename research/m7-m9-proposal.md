@@ -1,19 +1,22 @@
 # Proposal — Milestones 7, 8, 9
 
-> **Status: revision 3, ACCEPTED. M7 authorized for implementation; M8.0
-> authorized for research only; M9's boundary confirmed, implementation not
-> authorized.**
+> **Status: revision 3, ACCEPTED. M7, M8.1, and M9 all implemented, pending
+> independent review before merge to `main`. M8.0's research (GO WITH
+> REFRAME) is what M8.1 was authorized and built against.**
 >
 > Revisions 1 and 2 were each reviewed by Sol; revision 3 received Sol's
-> verdict ACCEPT. The Human Owner then authorized this proposal on 2026-08-03:
+> verdict ACCEPT. The Human Owner authorized this proposal on 2026-08-03:
 > `DEC-011` (Milestone 7 implementation), `DEC-012` (Milestone 8.0 research
 > only, plus the Strict/human-attested confirmation), `DEC-013` (Milestone 9's
 > local/opt-in boundary, plus the Permanent Non-Goals section in
-> `ROADMAP.md`). §0 records the disposition of every review finding across all
+> `ROADMAP.md`). After Milestone 8.0's research was delivered
+> (`docs/architecture/adversarial-review.md`), the Human Owner authorized
+> Milestone 8.1 and Milestone 9 implementation the same day: `DEC-014`,
+> `DEC-015`. §0 records the disposition of every review finding across all
 > three rounds; §7 is now a record of what was decided, not an open list.
 >
-> Implementation work for Milestone 7 proceeds on branch
-> `m7-onboarding-execution-paths`, off `main`.
+> All implementation work proceeds on branch `m7-onboarding-execution-paths`,
+> off `main`.
 >
 > Each milestone section is written in the roadmap's own planning shape so it
 > was pasted into `ROADMAP.md` largely unedited.

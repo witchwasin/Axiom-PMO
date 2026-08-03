@@ -38,7 +38,14 @@ function Invoke-ExecutionContractVerification {
     # Defaults to the sibling EXECUTION-CONTRACT.json next to the result --
     # the layout `axiom export` produces. Overridable so a caller can verify a
     # result against a contract stored elsewhere (a release archive, say).
-    [string]$ContractPath = $null
+    [string]$ContractPath = $null,
+
+    # M8.1: skip the AREV-* adversarial-review check. Every EXEC-* mechanical
+    # check (contract integrity, identity, scope, git-state reconciliation)
+    # still runs unchanged -- this only skips the one check that can make a
+    # live GitHub API call, so a diff whose base does not even resolve is
+    # never the reason a review-check network call was spent.
+    [switch]$Preflight
   )
 
   $resolvedResultPath = $ResultPath
@@ -647,9 +654,27 @@ function Invoke-ExecutionContractVerification {
   }
   $verdict.authority_violations = $violations.ToArray()
 
+  # --- Milestone 8.1: Adversarial Review Evidence (AREV-*) -------------------
+  #
+  # Deliberately after every EXEC-* check above, not before: AREV-003's
+  # artifact-observed promotion and AREV-005/006's finding-lifecycle checks
+  # both need to know whether decision-log.md was changed within the verified
+  # commit range, which $observedPaths (populated during the git-observation
+  # pass above) already answers -- reusing it here rather than recomputing it
+  # is also what keeps the "was the decision record itself edited in-range"
+  # rule identical between EXEC-007 and AREV-006 instead of two implementations
+  # that could quietly drift apart.
+  if (-not $Preflight) {
+    $effectiveMode = Get-EffectiveModeForVerification -ProjectPath $ProjectPath
+    Test-AdversarialReviewEvidence -ProjectPath $ProjectPath -ContractPath $ContractPath -Contract $contract `
+      -EffectiveMode $effectiveMode -ResultDocument $doc -VerdictBaseSha $verdict.base_sha -VerdictHeadSha $verdict.head_sha `
+      -WorkItemId $verdict.work_item_id -FrameworkRoot $FrameworkRoot -GitRepoRoot $GitRepoRoot `
+      -ObservedPaths $observedPaths -DecisionLogRelPath $decisionLogRelPath
+  }
+
   # --- verdict --------------------------------------------------------------
 
-  $failed = ($script:messages | Where-Object { $_.level -eq "FAIL" -and $_.rule_id -like "EXEC-*" }).Count
+  $failed = ($script:messages | Where-Object { $_.level -eq "FAIL" -and ($_.rule_id -like "EXEC-*" -or $_.rule_id -like "AREV-*") }).Count
   if ($failed -eq 0) {
     Add-Result PASS "Execution result verified against the approved contract and observed git state: $($observation.CommitCount) commit(s), $(@($observedPaths | Select-Object -Unique).Count) changed file(s), all within approved scope." "EXEC-001"
     $verdict.verdict = "pass"

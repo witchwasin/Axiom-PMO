@@ -76,6 +76,10 @@
     },
     "test-evidence-accepted": {
       "human_only": true
+    },
+    "review-evidence-accepted": {
+      "human_only": true,
+      "note": "M8.1: promotes an artifact-observed EXECUTION-REVIEW.json to satisfy Strict, exactly as test-evidence-accepted promotes artifact-observed test evidence. See pmo-config/adversarial-review-policy.json and AREV-003."
     }
   },
   "actor_authority": {
@@ -93,7 +97,8 @@
         "scope-change",
         "risk-mode-downgrade",
         "implementation-complete",
-        "test-evidence-accepted"
+        "test-evidence-accepted",
+        "review-evidence-accepted"
       ],
       "note": "A claim with actor 'human' is not self-proving. It must cite a decision record (decision_ref) that resolves in the project's decision-log.md; commit authorship alone is not proof of a human actor because it can be set to any value."
     }
