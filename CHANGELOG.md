@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.4.0 - 2026-08-04
+
 **Milestones 7, 8.0, 8.1, and 9 — CLOSED and MERGED to `main`, 2026-08-03**
 (`DEC-016`), merge commit `1235034`. Independently reviewed by Independent AI Reviewer across
 three rounds: round 1 REQUEST CHANGES (1 FATAL + 2 MAJOR against Milestones

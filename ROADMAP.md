@@ -52,21 +52,30 @@ control layer they operate inside.
 ### Core product versus optional integration
 
 Set by the Human Owner (Witchwasin K., 2026-07-31), recorded as `DEC-006`, and
-binding on how this repository is documented and presented.
+binding on how this repository is documented and presented. Amended
+2026-08-04 (`DEC-017`) to extend the boundary to Milestone 7 -- onboarding is
+required infrastructure for using the product at all, unlike Milestone 6.
+Milestones 8.0, 8.1, and 9 remain outside the core boundary, on the same
+optional footing as Milestone 6.
 
-> **Milestones 1-5 are the core Axiom-PMO product: a governance and
-> development-handoff framework. Milestone 6 is an optional bridge for users
-> who later choose to continue implementation with Claude Code.**
+> **Milestones 1-7 are the core Axiom-PMO product: a governance and
+> development-handoff framework, including onboarding (`axiom init`) and the
+> two execution paths. Milestone 6 is an optional bridge for users who later
+> choose to continue implementation with Claude Code. Milestones 8.0, 8.1,
+> and 9 are optional, adjacent governance capabilities -- adversarial review
+> evidence and the local failure-pattern registry -- on the same optional
+> footing as Milestone 6.**
 
-| | Core product - Milestones 1 to 5 | Optional integration - Milestone 6 |
+| | Core product - Milestones 1 to 7 | Optional - Milestone 6, 8.0, 8.1, 9 |
 |---|---|---|
-| What it is | Governance, handoff readiness, scope and evidence verification, a developer-ready delivery package | A bridge from a verified handoff to Claude Code |
-| Who it serves | PM, Product Owner, or an AI acting as one, preparing work a developer can pick up | Teams who decide to continue implementation with an AI execution tool |
+| What it is | Governance, onboarding, handoff readiness, scope and evidence verification, a developer-ready delivery package | Milestone 6: a bridge from a verified handoff to Claude Code. Milestones 8.0/8.1/9: adversarial review evidence and a local, opt-in failure-pattern registry |
+| Who it serves | PM, Product Owner, or an AI acting as one, preparing work a developer can pick up | Teams who continue implementation with Claude Code, or who want independent-review evidence and local diagnostics on top of the core |
 | Required to use Axiom-PMO | Yes | **No** |
-| What it does *not* do | Write the system | Turn Axiom-PMO into a coding framework |
+| What it does *not* do | Write the system | Turn Axiom-PMO into a coding framework, or become a requirement to reach any core gate |
 
 What the core exists to do:
 
+- ask which delivery path and governance mode apply, once, at onboarding;
 - prepare a development handoff that is complete;
 - let a PM, Product Owner, or AI hand a work package to a developer who can
   pick it up and build;
@@ -77,7 +86,11 @@ What the core exists to do:
 
 Milestone 6 exists so that a verified handoff can be continued in Claude Code
 without re-interpreting the documents or rebuilding an integration from
-scratch. It is an execution integration, not a change of product.
+scratch. It is an execution integration, not a change of product. Milestones
+8.0, 8.1, and 9 exist so a project can, if it chooses, add independent
+adversarial-review evidence and a local record of recurring diagnostic
+findings on top of the core gates -- neither is needed to reach Scope
+Approved, Design Ready, Handoff, or Release.
 
 This repository is **not** primarily a place for developers to come and write
 the system. Documentation must not read that way.
@@ -126,10 +139,10 @@ Recommended effort allocation:
 | Milestone 5 - Execution Contract Verification MVP | **Delivered / CLOSED** -- Independent AI Reviewer ACCEPT at round 5 after four REQUEST CHANGES rounds; Human Owner accepted and closed 2026-07-31 (`DEC-004`) | Core product. `docs/reference/execution-contract.md`; decisions `DEC-002`, `DEC-004`; commit `2888769`, CI run `30643605031` 7/7 |
 | Milestone 5.5 - `ci-check` provenance hardening | **Delivered / CLOSED** -- Independent AI Reviewer REQUEST CHANGES (check names compared case-insensitively), then ACCEPT after the fix; merged to `main` 2026-08-02 | Core product, post-closure fix. Binds `ci-check` evidence to `check_run_id` (closing the by-name permanent-false-negative case) and makes check-name comparison case-sensitive; commit `ca6ae6a`, CI run `30748756130` (headSha `ca6ae6a`) 7/7 |
 | Milestone 6 - Claude Code Integration Experience | **CLOSED and MERGED to `main`** -- three independent review rounds (R1: 1 FATAL + 1 MAJOR; R2: 1 FATAL + 4 MAJOR; R3: 3 MAJOR + 2 MINOR), all findings resolved; final verdict **ACCEPT WITH MINOR REVISIONS**; Human Owner accepted and closed 2026-08-01 (`DEC-007`); merge to `main` separately confirmed by the Human Owner directly in chat and completed the same day | Optional integration, not core product. Not tagged, released, or published to any marketplace. Known debts remain open. `docs/reviews/m6-reviewer-index.md`; decisions `DEC-003` (shape), `DEC-006` (boundary), `DEC-005` (testing), `DEC-007` (closure); commit `1d85d60`, CI run `30736667616` 7/7 |
-| Milestone 7 - Onboarding and the Two Execution Paths | **CLOSED and MERGED to `main`** -- Independent AI Reviewer final review (round 3, against `70fbe99`): ACCEPT, no finding raised against this milestone across any round; Human Owner closed and merged 2026-08-03 (`DEC-016`) | Core product. Two independent onboarding questions (who builds the work, how strictly is it governed), a governed `execution_path` declaration, and an `axiom status` verb. Design decision `DEC-011`; closure `DEC-016`; merge commit `1235034` |
-| Milestone 8.0 - Adversarial Review Evidence: research | **CLOSED and MERGED to `main`** -- GO WITH REFRAME recommended; Human Owner closed alongside 8.1/9, 2026-08-03 (`DEC-016`) | Core-product-adjacent research. [`docs/architecture/adversarial-review.md`](docs/architecture/adversarial-review.md). Primary question resolved: a `check_run_id` alone proves a CI job ran, not that a review produced the artifact; a concrete four-part binding (artifact digest, workflow digest, scope protection, contract identity) closes the gap using mechanisms already in production (`Test-CiCheckEvidence`, `REF-002`, `EXEC-004`). Decisions `DEC-012`, `DEC-016`; merge commit `1235034` |
-| Milestone 8.1 - Adversarial Review Evidence: implementation | **CLOSED and MERGED to `main`** -- three independent Independent AI Reviewer review rounds (R1: 1 FATAL + 2 MAJOR; R2: 1 compatibility finding; R3: ACCEPT), all findings resolved; Human Owner closed and merged 2026-08-03 (`DEC-016`) | `AREV-001`..`AREV-006`, `pmo-config/adversarial-review-policy.json`, `templates/EXECUTION-REVIEW.json`, `axiom verify --preflight`. Known limitations recorded, not closed: non-closure transitions inside a reviewer-authored review file are not fully actor-attributed at the per-finding level; a `workflow_id` binding is optional future hardening (`docs/architecture/adversarial-review.md` §11). Decisions `DEC-014`, `DEC-016`; merge commit `1235034` |
-| Milestone 9 - Failure Pattern Registry and Governed Improvement Proposals | **CLOSED and MERGED to `main`** -- Independent AI Reviewer round 1: 1 MAJOR, fixed; round 3 final: ACCEPT; Human Owner closed and merged 2026-08-03 (`DEC-016`) | `scripts/aggregate-diagnostics.ps1`, `pmo-config/learning-policy.json`, `DOCTOR-014`. Local, opt-in aggregation over existing diagnostics, plus human-reviewed improvement candidates. Decisions `DEC-013`, `DEC-015`, `DEC-016`; merge commit `1235034` |
+| Milestone 7 - Onboarding and the Two Execution Paths | **CLOSED and MERGED to `main`** -- Independent AI Reviewer final review (round 3, against `70fbe99`): ACCEPT, no finding raised against this milestone across any round; Human Owner closed and merged 2026-08-03 (`DEC-016`) | Core product (boundary extended by `DEC-017`, 2026-08-04). Two independent onboarding questions (who builds the work, how strictly is it governed), a governed `execution_path` declaration, and an `axiom status` verb. Design decision `DEC-011`; closure `DEC-016`; boundary `DEC-017`; merge commit `1235034` |
+| Milestone 8.0 - Adversarial Review Evidence: research | **CLOSED and MERGED to `main`** -- GO WITH REFRAME recommended; Human Owner closed alongside 8.1/9, 2026-08-03 (`DEC-016`) | Optional, adjacent to the core product (confirmed by `DEC-017`, 2026-08-04) -- research only. [`docs/architecture/adversarial-review.md`](docs/architecture/adversarial-review.md). Primary question resolved: a `check_run_id` alone proves a CI job ran, not that a review produced the artifact; a concrete four-part binding (artifact digest, workflow digest, scope protection, contract identity) closes the gap using mechanisms already in production (`Test-CiCheckEvidence`, `REF-002`, `EXEC-004`). Decisions `DEC-012`, `DEC-016`, `DEC-017`; merge commit `1235034` |
+| Milestone 8.1 - Adversarial Review Evidence: implementation | **CLOSED and MERGED to `main`** -- three independent Independent AI Reviewer review rounds (R1: 1 FATAL + 2 MAJOR; R2: 1 compatibility finding; R3: ACCEPT), all findings resolved; Human Owner closed and merged 2026-08-03 (`DEC-016`) | Optional, adjacent to the core product (confirmed by `DEC-017`, 2026-08-04). `AREV-001`..`AREV-006`, `pmo-config/adversarial-review-policy.json`, `templates/EXECUTION-REVIEW.json`, `axiom verify --preflight`. Known limitations recorded, not closed: non-closure transitions inside a reviewer-authored review file are not fully actor-attributed at the per-finding level; a `workflow_id` binding is optional future hardening (`docs/architecture/adversarial-review.md` §11). Decisions `DEC-014`, `DEC-016`, `DEC-017`; merge commit `1235034` |
+| Milestone 9 - Failure Pattern Registry and Governed Improvement Proposals | **CLOSED and MERGED to `main`** -- Independent AI Reviewer round 1: 1 MAJOR, fixed; round 3 final: ACCEPT; Human Owner closed and merged 2026-08-03 (`DEC-016`) | Optional, adjacent to the core product (confirmed by `DEC-017`, 2026-08-04). `scripts/aggregate-diagnostics.ps1`, `pmo-config/learning-policy.json`, `DOCTOR-014`. Local, opt-in aggregation over existing diagnostics, plus human-reviewed improvement candidates. Decisions `DEC-013`, `DEC-015`, `DEC-016`, `DEC-017`; merge commit `1235034` |
 
 ## Roadmap Governance
 
@@ -166,13 +179,13 @@ Milestone 1 delivered, with walkthrough/recording evidence deferred
 -> Milestone 3.5 (accepted)
 -> Milestone 4 (delivered)
 -> Milestone 4.5 (delivered)
--> Milestone 5 (delivered -- closed 2026-07-31)     <- end of core product
+-> Milestone 5 (delivered -- closed 2026-07-31)
 -> Milestone 5.5 (delivered -- closed 2026-08-02, post-closure fix)
 -> Milestone 6 (optional integration; closed and merged to `main` 2026-08-01)
--> Milestone 7 (closed and merged to `main` 2026-08-03)
--> Milestone 8.0 (research delivered 2026-08-03, GO WITH REFRAME; closed and merged 2026-08-03)
--> Milestone 9 (closed and merged to `main` 2026-08-03)
--> Milestone 8.1 (closed and merged to `main` 2026-08-03)
+-> Milestone 7 (closed and merged to `main` 2026-08-03)             <- end of core product (DEC-017)
+-> Milestone 8.0 (optional, research delivered 2026-08-03, GO WITH REFRAME; closed and merged 2026-08-03)
+-> Milestone 9 (optional; closed and merged to `main` 2026-08-03)
+-> Milestone 8.1 (optional; closed and merged to `main` 2026-08-03)
 ```
 
 Milestone 8.0 is sequenced ahead of Milestone 9 for a concrete reason, not only
@@ -740,9 +753,12 @@ Both records are required and neither substitutes for the other: Independent AI 
 is independent review evidence, and the Human Owner confirmation is the
 approval (`AGENTS.md` rule 11).
 
-Milestone 5 is part of the **core product**. Milestones 1-5 together are the
-core Axiom-PMO governance and development-handoff framework; see
-[Core product versus optional integration](#core-product-versus-optional-integration).
+Milestone 5 is part of the **core product**. Milestones 1-5 together were the
+core Axiom-PMO governance and development-handoff framework at the time of
+this closure; the boundary was later extended to Milestone 7 (`DEC-017`,
+2026-08-04) -- see
+[Core product versus optional integration](#core-product-versus-optional-integration)
+for the current definition.
 
 It took five rounds and four REQUEST CHANGES to get here. The findings below
 are kept in full rather than summarized away, because the sequence is the
@@ -885,11 +901,12 @@ repository state alone.
 
 > **Optional integration. Not part of the core product.**
 >
-> Milestones 1-5 are the core Axiom-PMO product. A team can adopt Axiom-PMO,
-> run every gate, and hand verified work to a developer without ever touching
-> Milestone 6. This milestone exists only for teams who then choose to
-> continue implementation with Claude Code, so that a verified handoff can be
-> picked up directly instead of re-interpreted.
+> Milestones 1-7 are the core Axiom-PMO product (boundary extended from 1-5
+> by `DEC-017`, 2026-08-04). A team can adopt Axiom-PMO, run every gate, and
+> hand verified work to a developer without ever touching Milestone 6. This
+> milestone exists only for teams who then choose to continue implementation
+> with Claude Code, so that a verified handoff can be picked up directly
+> instead of re-interpreted.
 
 Objective: let a verified Axiom-PMO handoff be continued in Claude Code
 without re-interpreting the documents or rebuilding an integration -- without
@@ -1468,8 +1485,9 @@ Do not spend near-term effort on:
 - Milestone 5.0 research and go/no-go decision (GO WITH REFRAME), recorded
   2026-07-30.
 - Milestone 5.1-5.4 Execution Contract Verification: five review rounds,
-  Human Owner accepted and closed 2026-07-31 (`DEC-004`). **This completes
-  the core product** -- Milestones 1-5.
+  Human Owner accepted and closed 2026-07-31 (`DEC-004`). **This completed
+  the core product at the time** -- Milestones 1-5. The boundary was later
+  extended to Milestone 7 (`DEC-017`, 2026-08-04).
 - Milestone 6.0 research: integration shape decided (HYBRID), reviewed and
   revised 2026-07-30.
 - Milestone 6.1-6.5 (packaging spike through the optional advisory hook):

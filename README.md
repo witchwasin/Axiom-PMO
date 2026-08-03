@@ -11,9 +11,9 @@ developers or execution frameworks.**
 
 [![Axiom-PMO Checks](https://github.com/witchwasin/Axiom-PMO/actions/workflows/pmo-checks.yml/badge.svg)](https://github.com/witchwasin/Axiom-PMO/actions/workflows/pmo-checks.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](CHANGELOG.md)
 
-Version `1.3.0` · MIT License · PowerShell reference implementation (Windows
+Version `1.4.0` · MIT License · PowerShell reference implementation (Windows
 PowerShell 5.1 and PowerShell 7; Linux/macOS via `pwsh`)
 
 ---
@@ -34,10 +34,14 @@ actually matches the evidence and the repository.
 | Verify scope, tests, evidence, and authority | Replace your execution framework |
 | Check that an AI's report matches real repository state | Act as the repo you build the product in |
 
-**Milestones 1–5 are the core product.** Milestone 6 — the Claude Code
-integration — is an **optional bridge**, for teams who decide to continue
-implementation with Claude Code after the handoff is verified. You never need
-it to use Axiom-PMO. See [ROADMAP.md](ROADMAP.md#core-product-versus-optional-integration).
+**Milestones 1–7 are the core product**, including onboarding (`axiom init`)
+and the two execution paths. Milestone 6 — the Claude Code integration — is
+an **optional bridge**, for teams who decide to continue implementation with
+Claude Code after the handoff is verified; Milestones 8.0, 8.1, and 9 are
+**optional, adjacent governance capabilities** — adversarial review evidence
+and a local failure-pattern registry — that a project can use fully without
+ever touching. You never need any of them to use Axiom-PMO. See
+[ROADMAP.md](ROADMAP.md#core-product-versus-optional-integration).
 
 ## Two delivery paths, one governance model
 
@@ -516,7 +520,7 @@ Typography: Tahoma / Arial (sans-serif) for voice; Consolas / Courier New
 | **Process** | [Lite](docs/process/lite.md) · [Standard](docs/process/standard.md) · [Strict](docs/process/strict.md) |
 | **Tutorials** | [your first project](docs/tutorials/first-project.md) · [using it with an AI agent](docs/tutorials/using-with-an-ai-agent.md) |
 | **Integrations** | [overview](docs/integrations/overview.md) · [Superpowers](docs/integrations/superpowers.md) · [BMAD](docs/integrations/bmad.md) · [spec-kit](docs/integrations/spec-kit.md) · [OpenSpec](docs/integrations/openspec.md) |
-| **Releases** | [1.3.0](docs/releases/v1.3.0.md) · [1.2.0](docs/releases/v1.2.0.md) · [1.1.1](docs/releases/v1.1.1.md) · [1.1.0](docs/releases/v1.1.0.md) · [1.0.0](docs/releases/v1.0.0.md) · [changelog](CHANGELOG.md) |
+| **Releases** | [1.4.0](docs/releases/v1.4.0.md) · [1.3.0](docs/releases/v1.3.0.md) · [1.2.0](docs/releases/v1.2.0.md) · [1.1.1](docs/releases/v1.1.1.md) · [1.1.0](docs/releases/v1.1.0.md) · [1.0.0](docs/releases/v1.0.0.md) · [changelog](CHANGELOG.md) |
 
 If you are an AI agent working in this repository, start with
 [`AGENTS.md`](AGENTS.md), [`CLAUDE.md`](CLAUDE.md), and
@@ -551,10 +555,6 @@ Closed 2026-07-31:
   five rounds by an independent AI reviewer, then **accepted and closed by
   the Human Owner**. **This completes the core product.**
 
-Next:
-
-- keep the optional Milestone 1 walkthrough and recording evidence packet
-  available for future trust work;
 - Milestone 6, Claude Code integration — **optional, not part of the core
   product**. Implemented, hardened, and **CLOSED** (2026-08-01) after three rounds
   of independent review (final verdict: ACCEPT WITH MINOR REVISIONS) and Human
@@ -567,8 +567,26 @@ Next:
   [the integration guide](docs/guides/claude-code-integration.md) and
   [the 15-minute walkthrough](docs/guides/claude-code-walkthrough.md).
 
-The active roadmap is intentionally limited to Milestones 1 through 6, of
-which **1 through 5 are the product** and 6 is an optional integration.
+Closed and merged to `main` 2026-08-03 (not part of the `v1.3.0` tag):
+
+- Milestone 7, Onboarding and the Two Execution Paths — **core product**
+  (boundary extended by `DEC-017`). `axiom init` asks two independent
+  questions once (who builds the work, how strictly is it governed) and
+  records a governed `execution_path` declaration.
+- Milestones 8.0 and 8.1, Adversarial Review Evidence, and Milestone 9,
+  Failure Pattern Registry — **optional, adjacent governance capabilities**,
+  not part of the core product. Independent-review provenance tiers and a
+  local, opt-in diagnostics registry that a project can use fully without
+  ever touching.
+
+Next:
+
+- keep the optional Milestone 1 walkthrough and recording evidence packet
+  available for future trust work.
+
+The active roadmap now spans Milestones 1 through 9, of which **1 through 7
+are the product** (`DEC-006`, amended by `DEC-017`) and Milestones 6, 8.0,
+8.1, and 9 are optional.
 
 The roadmap is intended to be reviewed weekly. Engineering findings,
 integration requests, and developer feedback may be accepted when they
@@ -580,20 +598,28 @@ strengthen the product direction without weakening governance.
 
 ## Project status
 
-Version `1.3.0`. The validation engine, governance model, and diagnostic
+Version `1.4.0`. The validation engine, governance model, and diagnostic
 contract are stable. 1.1 added the `Handoff` gate between `Design` and
 `Release`; 1.2 added a reusable GitHub Action and SCOPE-DIFF changed-file
 scope enforcement, so a pull request can be checked — and, optionally,
-blocked — directly in CI. 1.3 adds the optional Claude Code integration
-(Milestone 6) and hardens `ci-check` execution evidence (Milestone 5.5).
+blocked — directly in CI. 1.3 added the optional Claude Code integration
+(Milestone 6) and hardened `ci-check` execution evidence (Milestone 5.5). 1.4
+adds onboarding and the two execution paths (Milestone 7, now part of the
+core product per `DEC-017`), plus two optional governance capabilities:
+adversarial review evidence (Milestones 8.0/8.1) and a local, opt-in
+failure-pattern registry (Milestone 9). See
+[`docs/releases/v1.4.0.md`](docs/releases/v1.4.0.md) for upgrade notes.
 
-**Milestones 1–6 are complete.** Milestones 1–5 are the core governance and
-development-handoff framework; Milestone 6 is an optional bridge and nothing
-in 1–5 requires it. There is no npm package: Milestone 3 Phase B is
-deferred, and the plugin is not published to any public marketplace.
+**Milestones 1–9 are complete.** Milestones 1–7 are the core governance and
+development-handoff framework (`DEC-006`, amended by `DEC-017`); Milestones
+6, 8.0, 8.1, and 9 are optional and nothing in the core requires them. There
+is no npm package: Milestone 3 Phase B is deferred, and the plugin is not
+published to any public marketplace.
 
-Upgrading from 1.2 requires no migration: the Claude Code plugin and its
-advisory hook are both opt-in, the hook is off by default, and every existing
-local invocation and Action usage is unaffected. Migrating from the
-previous private layout? See
+Upgrading from 1.3 requires no migration: Milestone 7's `execution_path`
+declaration defaults to `development_handoff` so every existing project and
+fixture is unaffected, and Milestones 8.0/8.1/9 are opt-in capabilities that
+change nothing for a project that never invokes them. See
+[`docs/releases/v1.4.0.md`](docs/releases/v1.4.0.md) for details. Migrating
+from the previous private layout? See
 [`docs/migration/from-pmo-template-personal.md`](docs/migration/from-pmo-template-personal.md).
