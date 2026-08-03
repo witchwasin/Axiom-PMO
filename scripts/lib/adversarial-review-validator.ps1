@@ -62,12 +62,25 @@ function Get-EffectiveModeForVerification {
   return $effectiveMode
 }
 
-# The four bindings docs/architecture/adversarial-review.md §3.3 requires
-# before an externally-observed review means anything stronger than "a CI job
-# with this name completed." Reuses Test-CiCheckEvidence's exact check_run_id
-# binding (head_sha, name, status, conclusion) via the same gh api call
-# pattern, then adds the workflow-digest and artifact-digest bindings that
-# check_run_id alone does not cover.
+# The bindings docs/architecture/adversarial-review.md §3.3 requires before an
+# externally-observed review means anything stronger than "a CI job on this
+# commit happened to succeed." Sol's independent review of this branch found
+# the first version of this function FATAL: it verified head_sha, status,
+# conclusion, the artifact digest, and the pinned workflow's content digest,
+# but never verified that the cited check_run_id was actually PRODUCED BY the
+# pinned workflow -- an unrelated successful check run on the same commit,
+# primed to print the review artifact's digest in its own output, passed
+# every check while the pinned workflow never ran. Demonstrated, not
+# theorised: exactly the class of gap Milestone 5's round-1/round-2 reviews
+# found in EXECUTION-RESULT.json's own evidence adapters, one level up.
+#
+# The fix resolves the check run to the GitHub Actions workflow run that
+# actually produced it (check run -> check_suite.id -> workflow runs under
+# that check suite), and requires ITS path to be the pinned workflow path.
+# This also subsumes the "check name" binding Test-CiCheckEvidence uses for
+# ci-check evidence: once the check run is proven to come from the pinned
+# workflow, a same-named-but-different-workflow forgery is impossible by
+# construction, so a separate name comparison would be redundant.
 function Test-ExternallyObservedReviewBinding {
   param(
     $Review,
@@ -134,6 +147,38 @@ function Test-ExternallyObservedReviewBinding {
     return $result
   }
 
+  # Binding 0 (the FATAL fix): the check run must be attributable to the
+  # pinned workflow, not merely present on the right commit. A check run
+  # created by GitHub Actions carries a check_suite.id; every workflow run
+  # under that check suite is queryable, and each carries the workflow
+  # file's own repo-relative `path`. Requiring a match is what makes an
+  # unrelated same-commit check run unable to stand in for the pinned one,
+  # whatever it is named or however successfully it completes.
+  $workflowRelPath = [string]$binding.pinned_workflow_path
+  $checkSuiteId = $null
+  if ($run.check_suite -and $run.check_suite.id) { $checkSuiteId = [string]$run.check_suite.id }
+  if ([string]::IsNullOrWhiteSpace($checkSuiteId)) {
+    $result.Reason = "check run $parsedId carries no check_suite id -- cannot resolve which GitHub Actions workflow, if any, produced it, so it cannot be attributed to the pinned review workflow"
+    return $result
+  }
+  $runsApi = Invoke-NativeCapture { gh api "repos/$ownerRepo/actions/runs?check_suite_id=$checkSuiteId" }
+  if ($runsApi.ExitCode -ne 0) {
+    $result.Reason = "the GitHub API query for workflow runs under check suite $checkSuiteId failed -- cannot independently verify"
+    return $result
+  }
+  $runsResponse = $null
+  try {
+    $runsResponse = ($runsApi.Output | Out-String) | ConvertFrom-Json
+  } catch {
+    $result.Reason = "the GitHub API response for workflow runs under check suite $checkSuiteId could not be parsed"
+    return $result
+  }
+  $matchingWorkflowRuns = @($runsResponse.workflow_runs | Where-Object { [string]$_.path -eq $workflowRelPath })
+  if ($matchingWorkflowRuns.Count -eq 0) {
+    $result.Reason = "check run $parsedId's check suite is not associated with any workflow run at the pinned path '$workflowRelPath' -- this check run cannot be attributed to the pinned review workflow, whatever it is named or however successfully it completed"
+    return $result
+  }
+
   # Binding 1: the check run's own API-attested output must carry the digest
   # of the review artifact's real bytes -- never the review file's own claim
   # about its digest, which would be circular (the file cannot attest to
@@ -152,7 +197,6 @@ function Test-ExternallyObservedReviewBinding {
   # commit range under verification -- a change here is also caught
   # independently by EXEC-004 once the pinned path is a default
   # prohibited_paths entry (see scripts/export-execution-contract.ps1).
-  $workflowRelPath = [string]$binding.pinned_workflow_path
   $workflowShowResult = Invoke-NativeCapture { git -C $GitRepoRoot show "$($Review.head_sha):$workflowRelPath" }
   if ($workflowShowResult.ExitCode -ne 0) {
     $result.Reason = "the pinned review workflow '$workflowRelPath' could not be read at commit $($Review.head_sha)"
@@ -311,6 +355,25 @@ function Test-AdversarialReviewEvidence {
   $humanOnlyCategories = @($closurePolicy.human_only_categories)
   $reviewerKind = [string]$doc.reviewer_kind
 
+  # Sol's independent review found $settableBy was loaded from policy and
+  # never actually applied -- an ai-kind reviewer could set
+  # false_positive/accepted_risk/deferred directly, human-only category or
+  # not, as long as a bound decision resolved outside the verified range.
+  # Enforced here, driven by policy rather than a hardcoded list:
+  # EXECUTION-REVIEW.json's findings[] is authored by the reviewer role, so a
+  # status settable_by restricts to "human" and no other role may only appear
+  # here when reviewer_kind is literally human -- the one case where
+  # "reviewer" and "human" are provably the same actor.
+  $humanOnlyStatuses = @()
+  if ($settableBy) {
+    foreach ($prop in $settableBy.PSObject.Properties) {
+      $allowedRoles = @($prop.Value | ForEach-Object { [string]$_ })
+      if ($allowedRoles.Count -eq 1 -and $allowedRoles[0] -eq "human") {
+        $humanOnlyStatuses += $prop.Name
+      }
+    }
+  }
+
   foreach ($finding in @($doc.findings)) {
     $findingId = [string]$finding.finding_id
     $status = [string]$finding.status
@@ -330,14 +393,16 @@ function Test-AdversarialReviewEvidence {
       }
     }
 
-    if ($humanOnlyCategories -contains $category -and $status -eq "resolved" -and $reviewerKind -ne "human") {
+    if ($humanOnlyStatuses -contains $status -and $reviewerKind -ne "human") {
+      Add-Result FAIL "$findingId has status '$status', which closure_policy.settable_by restricts to human authority, but reviewer_kind is '$reviewerKind'. An ai-kind reviewer may not set this status on any finding, human-only category or not." "AREV-005" -Artifact "EXECUTION-REVIEW.json" -ItemId $findingId -Field "status"
+    } elseif ($humanOnlyCategories -contains $category -and $status -eq "resolved" -and $reviewerKind -ne "human") {
       Add-Result FAIL "$findingId is category '$category' (human-only) and was set to 'resolved' by a non-human reviewer (reviewer_kind: $reviewerKind). An AI reviewer may never close a human-only-category finding under any status." "AREV-005" -Artifact "EXECUTION-REVIEW.json" -ItemId $findingId -Field "status"
     } elseif ($nonClosure -contains $status) {
-      # open/disputed: no settable_by check needed here -- this file cannot
-      # tell who set a status, only whether the status itself is a closure.
-      # A per-transition actor record is future work; today's guarantee is
-      # that an executor's own EXECUTION-RESULT.json can never claim a
-      # closure status on a finding at all (checked separately, below).
+      # open/disputed: no further settable_by check needed -- this file
+      # cannot tell who set a non-closure status, only whether the status
+      # itself is a closure. An executor's own EXECUTION-RESULT.json can
+      # never claim a closure status on a finding at all (checked
+      # separately, below).
       continue
     }
   }

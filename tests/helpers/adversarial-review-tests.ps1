@@ -342,6 +342,30 @@ Write-Host ""
   } finally { Remove-ReviewFixture $dir }
 }.Invoke()
 
+# ---- Case: AI reviewer sets accepted_risk on a NON-human-only-category finding, with a valid independent decision ----
+#
+# Sol's independent review found this MAJOR: closure_policy.settable_by was
+# loaded but never enforced, so an ai-kind reviewer could set
+# false_positive/accepted_risk/deferred on any finding -- not just
+# human-only-category ones -- whenever a bound decision resolved. The
+# category is deliberately "other" here (not a human-only category), so the
+# only thing that should stop this is settable_by itself.
+{
+  $dir = New-ReviewFixture -Mode "Standard"
+  try {
+    Invoke-Export -Dir $dir
+    $id = New-BaseResult -Dir $dir
+    $logPath = Join-Path $dir "decision-log.md"
+    $log = (Get-Content -LiteralPath $logPath -Raw).TrimEnd("`n") + "`n| 2026-07-31 | DEC-300 | Accept the risk for AF-001 | accept | accept | axiom-authority: type=review-finding-disposition; work_item=AF-001; contract=$($id.Digest) | none | risk accepted |"
+    Set-Content -LiteralPath $logPath -Value $log -NoNewline
+    New-Review -Dir $dir -Identity $id -Overrides @{ reviewer_kind = "ai" } `
+      -Findings @([ordered]@{ finding_id = "AF-001"; category = "other"; severity = "minor"; status = "accepted_risk"; description = "d"; suggestion = "s"; decision_ref = "DEC-300" })
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "ai reviewer setting accepted_risk on a non-human-only-category finding: AREV-005 raised" `
+      ((Get-Rules $r.Json) -contains "AREV-005")
+  } finally { Remove-ReviewFixture $dir }
+}.Invoke()
+
 # ---- Case: accepted_risk with an unresolvable decision_ref -----------------
 {
   $dir = New-ReviewFixture -Mode "Standard"
@@ -392,6 +416,114 @@ Write-Host ""
     Assert-True "decision added within verified range: reason names decision-log.md" `
       ((@($r.Json.results | Where-Object { $_.rule_id -eq "AREV-006" -and $_.artifact -eq "decision-log.md" }).Count) -gt 0)
   } finally { Remove-ReviewFixture $dir }
+}.Invoke()
+
+# ---- externally-observed binding: check run must be attributable to the pinned workflow ----
+#
+# Sol's independent review of this branch found this FATAL: the original
+# implementation verified head_sha/status/conclusion/artifact-digest/
+# workflow-digest but never verified that the cited check_run_id was actually
+# produced by the pinned workflow. An unrelated successful check run on the
+# same commit, primed to print the review artifact's digest in its own
+# output, passed every check. Reproduced here with a stubbed `gh` (the live
+# GitHub API cannot be made hermetic for a test suite) against an isolated
+# framework copy with a real pinned workflow digest configured, exercising
+# both the attack (check_suite maps to an unrelated workflow path) and the
+# legitimate case (check_suite maps to the pinned path) through the same
+# code path a real check_run_id would take.
+{
+  $isolatedFramework = Join-Path ([System.IO.Path]::GetTempPath()) ("axiom-arev-ext-" + [System.Guid]::NewGuid().ToString("N"))
+  $dir = New-ReviewFixture -Mode "Strict"
+  $stubBinDir = Join-Path ([System.IO.Path]::GetTempPath()) ("axiom-arev-stub-" + [System.Guid]::NewGuid().ToString("N"))
+  $previousPath = $env:PATH
+  try {
+    New-Item -ItemType Directory -Path $isolatedFramework -Force | Out-Null
+    Copy-Item -LiteralPath (Join-Path $repo "pmo-config") -Destination (Join-Path $isolatedFramework "pmo-config") -Recurse -Force
+    Copy-Item -LiteralPath (Join-Path $repo "scripts") -Destination (Join-Path $isolatedFramework "scripts") -Recurse -Force
+
+    $workflowRelPath = ".github/workflows/adversarial-review.yml"
+    $workflowContent = "name: adversarial-review`non: [pull_request]`n"
+    $workflowFullPath = Join-Path $dir $workflowRelPath
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $workflowFullPath) | Out-Null
+    Set-Content -LiteralPath $workflowFullPath -Value $workflowContent -NoNewline
+    Invoke-FixtureGit $dir add -A
+    Invoke-FixtureGit $dir commit -q -m "add pinned review workflow"
+    Invoke-FixtureGit $dir remote add origin "https://github.com/fake-owner/fake-repo.git"
+
+    Invoke-Export -Dir $dir
+    $id = New-BaseResult -Dir $dir
+    $realWorkflowDigest = (Get-FileHash -LiteralPath $workflowFullPath -Algorithm SHA256).Hash.ToLowerInvariant()
+
+    $isolatedPolicyPath = Join-Path $isolatedFramework "pmo-config/adversarial-review-policy.json"
+    $isolatedPolicy = Get-Content -LiteralPath $isolatedPolicyPath -Raw | ConvertFrom-Json
+    $isolatedPolicy.externally_observed_binding.pinned_workflow_path = $workflowRelPath
+    $isolatedPolicy.externally_observed_binding.pinned_workflow_digest = $realWorkflowDigest
+    $isolatedPolicy | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $isolatedPolicyPath -Encoding utf8
+
+    New-Item -ItemType Directory -Path $stubBinDir -Force | Out-Null
+    $stubGhPath = Join-Path $stubBinDir "gh"
+    $env:PATH = "$stubBinDir" + [System.IO.Path]::PathSeparator + $previousPath
+    $psArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $isolatedFramework "scripts/verify-execution-result.ps1"),
+      "-ProjectPath", $dir, "-ResultPath", (Join-Path $dir ".execution/D-001/EXECUTION-RESULT.json"), "-Format", "Json")
+
+    # Each scenario regenerates the stub AFTER writing the review file, so the
+    # digest the stub echoes is always the real digest of the bytes on disk at
+    # that moment -- New-Review's JSON changes shape slightly per call
+    # (different check_run_id text embedded), so a digest captured before a
+    # later New-Review call would be stale, not a forged artifact.
+    function Write-StubGh {
+      param([string]$CheckSuiteId, [string]$WorkflowPathForSuite, [string]$Digest)
+      $stubScript = @"
+#!/usr/bin/env bash
+set -e
+path="`$2"
+case "`$path" in
+  repos/*/check-runs/*)
+    echo '{"head_sha":"$($id.Head)","status":"completed","conclusion":"success","output":{"summary":"$Digest","text":""},"check_suite":{"id":$CheckSuiteId}}'
+    ;;
+  repos/*/actions/runs\?check_suite_id=$CheckSuiteId)
+    echo '{"workflow_runs":[{"path":"$WorkflowPathForSuite"}]}'
+    ;;
+  *)
+    echo '{}'
+    ;;
+esac
+"@
+      Set-Content -LiteralPath $stubGhPath -Value $stubScript -NoNewline
+      & chmod +x $stubGhPath
+    }
+
+    # Attack: check run belongs to a check suite whose workflow run path is
+    # UNRELATED to the pinned one -- Sol's exact reproduction.
+    New-Review -Dir $dir -Identity $id -Overrides @{ provenance = [ordered]@{ tier = "externally-observed"; check_run_id = "456" } }
+    $attackDigest = (Get-FileHash -LiteralPath (Join-Path $dir ".execution/D-001/EXECUTION-REVIEW.json") -Algorithm SHA256).Hash.ToLowerInvariant()
+    Write-StubGh -CheckSuiteId "888" -WorkflowPathForSuite ".github/workflows/unrelated.yml" -Digest $attackDigest
+    $prevEap = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+    $attackOutput = & $pwshExe @psArgs 2>$null
+    $ErrorActionPreference = $prevEap
+    $attackJson = $null
+    try { $attackJson = ($attackOutput | Out-String) | ConvertFrom-Json } catch { }
+    Assert-True "unrelated successful check run on the same commit: AREV-003 still raised (workflow attribution missing)" `
+      ((Get-Rules $attackJson) -contains "AREV-003")
+
+    # Legitimate: check run belongs to a check suite whose workflow run path
+    # IS the pinned one.
+    New-Review -Dir $dir -Identity $id -Overrides @{ provenance = [ordered]@{ tier = "externally-observed"; check_run_id = "123" } }
+    $legitDigest = (Get-FileHash -LiteralPath (Join-Path $dir ".execution/D-001/EXECUTION-REVIEW.json") -Algorithm SHA256).Hash.ToLowerInvariant()
+    Write-StubGh -CheckSuiteId "999" -WorkflowPathForSuite $workflowRelPath -Digest $legitDigest
+    $prevEap = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+    $legitOutput = & $pwshExe @psArgs 2>$null
+    $ErrorActionPreference = $prevEap
+    $legitJson = $null
+    try { $legitJson = ($legitOutput | Out-String) | ConvertFrom-Json } catch { }
+    Assert-True "check run genuinely attributed to the pinned workflow: AREV-003 not raised" `
+      ((Get-Rules $legitJson) -notcontains "AREV-003")
+  } finally {
+    $env:PATH = $previousPath
+    Remove-ReviewFixture $dir
+    Remove-Item -LiteralPath $isolatedFramework -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $stubBinDir -Recurse -Force -ErrorAction SilentlyContinue
+  }
 }.Invoke()
 
 Write-Host ""

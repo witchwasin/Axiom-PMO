@@ -61,13 +61,24 @@ function Get-ProjectHash {
   return (($sha256.ComputeHash($bytes)) | ForEach-Object { $_.ToString("x2") }) -join ""
 }
 
-# item_id retains its shape (D-###, REQ-###) so a cluster can group "the same
-# kind of row" without retaining which specific row -- the literal id is
-# dropped, never the pattern it follows.
+# item_id retains its SHAPE (D-###, REQ-###) so a cluster can group "the same
+# kind of row" without retaining which specific row -- but only for a shape on
+# the allowlist. Sol's independent review found the first version of this
+# replaced digits only ('\d+' -> '#'), so a purely alphabetic id such as
+# 'ACME-fraud-case' or 'patient-HIV' passed through byte-for-byte unchanged --
+# a substitution rule is not an allowlist. An id that does not match any
+# allowed pattern is bucketed to "other", the same closed-set treatment
+# Get-GovernedArtifactOrOther already gives an unlisted artifact name, never
+# partially sanitized and retained.
 function ConvertTo-NormalizedItemId {
-  param([string]$ItemId)
+  param([string]$ItemId, $AllowedPatterns)
   if ([string]::IsNullOrWhiteSpace($ItemId)) { return $null }
-  return ($ItemId -replace '\d+', '#')
+  foreach ($pattern in @($AllowedPatterns)) {
+    if ($ItemId -match [string]$pattern) {
+      return ($ItemId -replace '\d+', '#')
+    }
+  }
+  return "other"
 }
 
 function Get-GovernedArtifactOrOther {
@@ -75,6 +86,18 @@ function Get-GovernedArtifactOrOther {
   if ([string]::IsNullOrWhiteSpace($Artifact)) { return $null }
   if (@($Allowlist) -contains $Artifact) { return $Artifact }
   return "other"
+}
+
+# execution_path is declared a closed enum in policy but was previously
+# copied verbatim from PROJECT.md's regex capture with no validation --
+# Sol's independent review found a malformed value (which PATH-001 already
+# flags as invalid at validate-project.ps1 level) would still be retained
+# into every event from that project. Enum-validated here as well, never
+# retained raw.
+function ConvertTo-NormalizedExecutionPath {
+  param([string]$ExecutionPath, $AllowedValues)
+  if (@($AllowedValues) -contains $ExecutionPath) { return $ExecutionPath }
+  return "unknown"
 }
 
 # --- 1. Record this run's diagnostics as one immutable event file ----------
@@ -112,6 +135,7 @@ if (-not $RebuildOnly) {
     if ($projectText -match '(?m)^\s*>?\s*Execution path:\s*(.+?)\s*$') { $executionPathMatch = $Matches[1] }
   }
   if (-not $executionPathMatch) { $executionPathMatch = "development_handoff" }
+  $executionPathMatch = ConvertTo-NormalizedExecutionPath -ExecutionPath $executionPathMatch -AllowedValues $policy.execution_path_allowed_values
 
   $commitHash = $null
   $previousEap = $ErrorActionPreference
@@ -139,7 +163,7 @@ if (-not $RebuildOnly) {
       gate = [string]$envelope.gate
       execution_path = $executionPathMatch
       artifact = (Get-GovernedArtifactOrOther -Artifact ([string]$row.artifact) -Allowlist $allowlist)
-      item_id = (ConvertTo-NormalizedItemId -ItemId ([string]$row.item_id))
+      item_id = (ConvertTo-NormalizedItemId -ItemId ([string]$row.item_id) -AllowedPatterns $policy.item_id_allowed_patterns)
       project_hash = $projectHash
       commit_hash = $commitHash
     }

@@ -116,8 +116,8 @@ Recommended effort allocation:
 | Milestone 6 - Claude Code Integration Experience | **CLOSED and MERGED to `main`** -- three independent review rounds (R1: 1 FATAL + 1 MAJOR; R2: 1 FATAL + 4 MAJOR; R3: 3 MAJOR + 2 MINOR), all findings resolved; final verdict **ACCEPT WITH MINOR REVISIONS**; Human Owner accepted and closed 2026-08-01 (`DEC-007`); merge to `main` separately confirmed by the Human Owner directly in chat and completed the same day | Optional integration, not core product. Not tagged, released, or published to any marketplace. Known debts remain open. `docs/reviews/m6-reviewer-index.md`; decisions `DEC-003` (shape), `DEC-006` (boundary), `DEC-005` (testing), `DEC-007` (closure); commit `1d85d60`, CI run `30736667616` 7/7 |
 | Milestone 7 - Onboarding and the Two Execution Paths | **Authorized, implementation starting** -- design reviewed through two independent Sol rounds against `research/m7-m9-proposal.md`; Human Owner authorized implementation 2026-08-03 (`DEC-011`) | Core product. Two independent onboarding questions (who builds the work, how strictly is it governed), a governed `execution_path` declaration, and an `axiom status` verb. Design decision `DEC-011` |
 | Milestone 8.0 - Adversarial Review Evidence: research | **Research delivered; GO WITH REFRAME recommended, Human Owner decision pending** -- authorized for research only 2026-08-03 (`DEC-012`) | Core-product-adjacent research. [`docs/architecture/adversarial-review.md`](docs/architecture/adversarial-review.md). Primary question resolved: a `check_run_id` alone proves a CI job ran, not that a review produced the artifact; a concrete four-part binding (artifact digest, workflow digest, scope protection, contract identity) closes the gap using mechanisms already in production (`Test-CiCheckEvidence`, `REF-002`, `EXEC-004`). Recommendation is not an authorization -- Milestone 8.1 implementation remains a separate decision. Decision `DEC-012` |
-| Milestone 8.1 - Adversarial Review Evidence: implementation | **Implemented, pending independent review** -- Human Owner authorized 2026-08-03 (`DEC-014`) on the Milestone 8.0 GO WITH REFRAME recommendation | `AREV-001`..`AREV-006`, `pmo-config/adversarial-review-policy.json`, `templates/EXECUTION-REVIEW.json`, `axiom verify --preflight`. Independent review before merge to `main` is required and not waived by this authorization |
-| Milestone 9 - Failure Pattern Registry and Governed Improvement Proposals | **Implemented, pending independent review** -- Human Owner authorized 2026-08-03 (`DEC-015`) | `scripts/aggregate-diagnostics.ps1`, `pmo-config/learning-policy.json`, `DOCTOR-014`. Local, opt-in aggregation over existing diagnostics, plus human-reviewed improvement candidates |
+| Milestone 8.1 - Adversarial Review Evidence: implementation | **Sol round 1: REQUEST CHANGES (1 FATAL, 2 MAJOR) -- all three fixed; pending re-review.** Human Owner authorized 2026-08-03 (`DEC-014`) on the Milestone 8.0 GO WITH REFRAME recommendation | `AREV-001`..`AREV-006`, `pmo-config/adversarial-review-policy.json`, `templates/EXECUTION-REVIEW.json`, `axiom verify --preflight`. Independent review before merge to `main` is required and not waived by this authorization |
+| Milestone 9 - Failure Pattern Registry and Governed Improvement Proposals | **Sol round 1: REQUEST CHANGES (1 MAJOR) -- fixed; pending re-review.** Human Owner authorized 2026-08-03 (`DEC-015`) | `scripts/aggregate-diagnostics.ps1`, `pmo-config/learning-policy.json`, `DOCTOR-014`. Local, opt-in aggregation over existing diagnostics, plus human-reviewed improvement candidates |
 
 ## Roadmap Governance
 
@@ -1245,8 +1245,9 @@ Owner decision so they are not relitigated under later review pressure
 
 ### Milestone 8.1 - Implementation
 
-Status: **Implemented, pending independent review before merge to `main`.**
-Human Owner authorized implementation on the Milestone 8.0 recommendation,
+Status: **Sol independent review, round 1: REQUEST CHANGES -- 1 FATAL, 2
+MAJOR, all three fixed; pending re-review before merge to `main`.** Human
+Owner authorized implementation on the Milestone 8.0 recommendation,
 2026-08-03 (`DEC-014`). Delivers `pmo-config/adversarial-review-policy.json`,
 `templates/EXECUTION-REVIEW.json`, `scripts/lib/adversarial-review-validator.ps1`
 (`AREV-001`..`AREV-006`), the `review-evidence-accepted` authority-claim type
@@ -1259,6 +1260,27 @@ covers the adversarial cases directly -- self-forged decision records,
 executor self-closure, an AI reviewer closing a human-only-category finding,
 artifact-observed alone never satisfying Strict.
 
+Round 1 found:
+
+- **FATAL** -- `externally-observed` bound `check_run_id` to the right
+  commit, status, conclusion, artifact digest, and pinned-workflow content
+  digest, but never verified the check run was actually *produced by* the
+  pinned workflow. An unrelated successful check run on the same commit,
+  primed to print the review artifact's digest in its own output, passed
+  every check. Fixed by resolving the check run's `check_suite.id` to its
+  GitHub Actions workflow run and requiring that run's `path` to be the
+  pinned workflow path -- reproduced and regression-tested with a stubbed
+  `gh` (the live API cannot be made hermetic for a test suite) against both
+  the attack and the legitimate case.
+- **MAJOR** -- `closure_policy.settable_by` was loaded from policy and never
+  applied: an `ai`-kind reviewer could set `false_positive`/`accepted_risk`/
+  `deferred` on any finding, human-only category or not, whenever a bound
+  decision resolved outside the verified range. Fixed by deriving the
+  human-only-status set from policy (not hardcoded) and enforcing it.
+
+(A third round-1 finding, MAJOR, was against Milestone 9's aggregator, not
+this one -- see that milestone's own status below.)
+
 ## Milestone 9 - Failure Pattern Registry and Governed Improvement Proposals
 
 Objective: organizational memory over diagnostics the validator already
@@ -1266,9 +1288,10 @@ emits -- recurring findings clustered and disposed as true defect, false
 positive, or user error, surfaced as human-reviewed improvement candidates.
 Full design is `research/m7-m9-proposal.md` section 4.
 
-Status: **Implemented, pending independent review before merge to `main`.**
-Human Owner confirmed the milestone's local/opt-in boundary 2026-08-03
-(`DEC-013`) and authorized implementation the same day (`DEC-015`). Delivers
+Status: **Sol independent review, round 1: REQUEST CHANGES -- 1 MAJOR,
+fixed; pending re-review before merge to `main`.** Human Owner confirmed the
+milestone's local/opt-in boundary 2026-08-03 (`DEC-013`) and authorized
+implementation the same day (`DEC-015`). Delivers
 `pmo-config/learning-policy.json`, `scripts/aggregate-diagnostics.ps1`,
 `templates/IMPROVEMENT-CANDIDATE.json`, and `DOCTOR-014`.
 `tests/helpers/learning-registry-tests.ps1` and a `DOCTOR-014` case added to
@@ -1276,8 +1299,19 @@ Human Owner confirmed the milestone's local/opt-in boundary 2026-08-03
 free text reaches an event, an unlisted artifact is bucketed to `"other"`,
 rebuilding the registry from events reproduces it exactly, twenty reruns of
 one unfixed defect in one project produce zero improvement candidates, and
-an experimental rule with a blocking severity fails `pmo-doctor` itself. The
-boundary this milestone depends on:
+an experimental rule with a blocking severity fails `pmo-doctor` itself.
+
+Round 1 found **MAJOR** -- `ConvertTo-NormalizedItemId` replaced digits only
+(`\d+` -> `#`), so a purely alphabetic id (`ACME-fraud-case`, `patient-HIV`)
+passed through byte-for-byte unchanged into every event; `execution_path`
+was copied verbatim from `PROJECT.md`'s regex capture with no enum
+validation despite `learning-policy.json` already declaring it a closed
+enum. Both are now allowlist/enum-validated against
+`item_id_allowed_patterns` / `execution_path_allowed_values` -- anything not
+matching is bucketed to `"other"` / `"unknown"`, never partially sanitized
+and retained.
+
+The boundary this milestone depends on:
 
 ```text
 Local and opt-in. No network transmission, by default or implicitly.
@@ -1437,11 +1471,14 @@ quietly dropped.
 Implemented, pending independent review before merge to `main` (branch
 `m7-onboarding-execution-paths`, off `main`):
 
-- **Milestone 7** (Onboarding and the Two Execution Paths) -- `DEC-011`.
+- **Milestone 7** (Onboarding and the Two Execution Paths) -- `DEC-011`. Not
+  yet reviewed.
 - **Milestone 8.1** (Adversarial Review Evidence: implementation) -- `DEC-014`,
-  on the Milestone 8.0 GO WITH REFRAME recommendation.
+  on the Milestone 8.0 GO WITH REFRAME recommendation. Sol round 1: REQUEST
+  CHANGES (1 FATAL, 2 MAJOR), all fixed; pending re-review.
 - **Milestone 9** (Failure Pattern Registry and Governed Improvement
-  Proposals) -- `DEC-015`.
+  Proposals) -- `DEC-015`. Sol round 1: REQUEST CHANGES (1 MAJOR), fixed;
+  pending re-review.
 
 None of these three is authorized to merge to `main` on the strength of this
 implementation alone -- independent review is required first, the same as
