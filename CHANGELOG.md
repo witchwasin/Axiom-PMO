@@ -2,9 +2,19 @@
 
 ## Unreleased
 
+**Milestones 7, 8.0, 8.1, and 9 — CLOSED and MERGED to `main`, 2026-08-03**
+(`DEC-016`), merge commit `1235034`. Independently reviewed by Sol across
+three rounds: round 1 REQUEST CHANGES (1 FATAL + 2 MAJOR against Milestones
+8.1/9, all fixed and regression-tested); round 2 REQUEST CHANGES (1
+compatibility finding against Milestone 8.1, fixed and regression-tested,
+plus two items recorded as known limitations rather than implemented per
+Sol's explicit scope lock); round 3 final verdict **ACCEPT** for all four
+milestones. Not part of the `v1.3.0` tag; no further tag or release
+authorized by this closure.
+
 **Milestone 7 — Onboarding and the Two Execution Paths.** Authorized for
 implementation 2026-08-03 (`DEC-011`), on branch
-`m7-onboarding-execution-paths`. Not yet released.
+`m7-onboarding-execution-paths`.
 
 - `execution_path` (`development_handoff` | `governed_ai_execution`) is now a
   governed declaration in `PROJECT.md`, defaulting to `development_handoff`
@@ -35,8 +45,7 @@ No code changed — this is the research and threat-model deliverable
 `DEC-012` authorized.
 
 **Milestone 8.1 — Adversarial Review Evidence: implementation.** Authorized
-2026-08-03 (`DEC-014`) and implemented, pending independent review before
-merge to `main`.
+2026-08-03 (`DEC-014`), implemented, and closed (`DEC-016`).
 
 - New `AREV-001`..`AREV-006` rules (`scripts/lib/adversarial-review-validator.ps1`),
   checked by `axiom verify` whenever `EXECUTION-REVIEW.json` exists or is
@@ -108,8 +117,7 @@ compatibility fix required and applied; no other finding raised.
 
 **Milestone 9 — Failure Pattern Registry and Governed Improvement
 Proposals.** Boundary confirmed 2026-08-03 (`DEC-013`), authorized and
-implemented the same day (`DEC-015`), pending independent review before
-merge to `main`.
+implemented the same day (`DEC-015`), closed (`DEC-016`).
 
 - New `scripts/aggregate-diagnostics.ps1`: one immutable event file per
   validation run (`.axiom/learning/events/<utc-timestamp>-<run-id>.jsonl`,
