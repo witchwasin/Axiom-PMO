@@ -471,6 +471,19 @@ Write-Host ""
     # that moment -- New-Review's JSON changes shape slightly per call
     # (different check_run_id text embedded), so a digest captured before a
     # later New-Review call would be stale, not a forged artifact.
+    #
+    # A CI run on this branch found the bash-only version of this stub was
+    # never being picked up on Windows: a file named `gh` with a bash shebang
+    # has no extension Windows executable-resolution recognizes, so on
+    # Windows runners the REAL gh CLI (present on GitHub-hosted runners) ran
+    # instead, made a genuine network call against the fake remote, and
+    # failed for a real reason rather than the scenario's intended one -- the
+    # attack case looked like it passed by coincidence (a real failure and an
+    # expected failure both raise AREV-003), but the two legitimate-match
+    # cases failed for real on windows-2025. Writing gh.cmd (found first,
+    # since the stub directory is prepended to PATH) alongside the bash `gh`
+    # closes that gap: gh.cmd delegates to a small generated PowerShell
+    # script, so the matching logic itself is not duplicated in batch syntax.
     function Write-StubGh {
       param([string]$CheckSuiteId, [string]$WorkflowPathForSuite, [string]$Digest)
       $stubScript = @"
@@ -491,6 +504,20 @@ esac
 "@
       Set-Content -LiteralPath $stubGhPath -Value $stubScript -NoNewline
       & chmod +x $stubGhPath
+
+      $logicScript = @"
+param([string]`$Verb, [string]`$Path)
+if (`$Path -like "*check-runs*") {
+  Write-Output '{"head_sha":"$($id.Head)","status":"completed","conclusion":"success","output":{"summary":"$Digest","text":""},"check_suite":{"id":$CheckSuiteId}}'
+} elseif (`$Path -like "*check_suite_id=$CheckSuiteId*") {
+  Write-Output '{"workflow_runs":[{"path":"$WorkflowPathForSuite"}]}'
+} else {
+  Write-Output '{}'
+}
+"@
+      Set-Content -LiteralPath (Join-Path $stubBinDir "gh-logic.ps1") -Value $logicScript -NoNewline
+      $cmdScript = "@echo off`r`n`"$pwshExe`" -NoProfile -File `"%~dp0gh-logic.ps1`" %*`r`n"
+      Set-Content -LiteralPath (Join-Path $stubBinDir "gh.cmd") -Value $cmdScript -NoNewline
     }
 
     # Attack: check run belongs to a check suite whose workflow run path is
