@@ -116,8 +116,8 @@ Recommended effort allocation:
 | Milestone 6 - Claude Code Integration Experience | **CLOSED and MERGED to `main`** -- three independent review rounds (R1: 1 FATAL + 1 MAJOR; R2: 1 FATAL + 4 MAJOR; R3: 3 MAJOR + 2 MINOR), all findings resolved; final verdict **ACCEPT WITH MINOR REVISIONS**; Human Owner accepted and closed 2026-08-01 (`DEC-007`); merge to `main` separately confirmed by the Human Owner directly in chat and completed the same day | Optional integration, not core product. Not tagged, released, or published to any marketplace. Known debts remain open. `docs/reviews/m6-reviewer-index.md`; decisions `DEC-003` (shape), `DEC-006` (boundary), `DEC-005` (testing), `DEC-007` (closure); commit `1d85d60`, CI run `30736667616` 7/7 |
 | Milestone 7 - Onboarding and the Two Execution Paths | **Authorized, implementation starting** -- design reviewed through two independent Independent AI Reviewer rounds against `research/m7-m9-proposal.md`; Human Owner authorized implementation 2026-08-03 (`DEC-011`) | Core product. Two independent onboarding questions (who builds the work, how strictly is it governed), a governed `execution_path` declaration, and an `axiom status` verb. Design decision `DEC-011` |
 | Milestone 8.0 - Adversarial Review Evidence: research | **Research delivered; GO WITH REFRAME recommended, Human Owner decision pending** -- authorized for research only 2026-08-03 (`DEC-012`) | Core-product-adjacent research. [`docs/architecture/adversarial-review.md`](docs/architecture/adversarial-review.md). Primary question resolved: a `check_run_id` alone proves a CI job ran, not that a review produced the artifact; a concrete four-part binding (artifact digest, workflow digest, scope protection, contract identity) closes the gap using mechanisms already in production (`Test-CiCheckEvidence`, `REF-002`, `EXEC-004`). Recommendation is not an authorization -- Milestone 8.1 implementation remains a separate decision. Decision `DEC-012` |
-| Milestone 8.1 - Adversarial Review Evidence: implementation | **Independent AI Reviewer round 1: REQUEST CHANGES (1 FATAL, 2 MAJOR) -- all three fixed; pending re-review.** Human Owner authorized 2026-08-03 (`DEC-014`) on the Milestone 8.0 GO WITH REFRAME recommendation | `AREV-001`..`AREV-006`, `pmo-config/adversarial-review-policy.json`, `templates/EXECUTION-REVIEW.json`, `axiom verify --preflight`. Independent review before merge to `main` is required and not waived by this authorization |
-| Milestone 9 - Failure Pattern Registry and Governed Improvement Proposals | **Independent AI Reviewer round 1: REQUEST CHANGES (1 MAJOR) -- fixed; pending re-review.** Human Owner authorized 2026-08-03 (`DEC-015`) | `scripts/aggregate-diagnostics.ps1`, `pmo-config/learning-policy.json`, `DOCTOR-014`. Local, opt-in aggregation over existing diagnostics, plus human-reviewed improvement candidates |
+| Milestone 8.1 - Adversarial Review Evidence: implementation | **Independent AI Reviewer round 1: REQUEST CHANGES (1 FATAL, 2 MAJOR), fixed. Round 2: scope-locked, one compatibility fix required, applied; pending final review.** Human Owner authorized 2026-08-03 (`DEC-014`) on the Milestone 8.0 GO WITH REFRAME recommendation | `AREV-001`..`AREV-006`, `pmo-config/adversarial-review-policy.json`, `templates/EXECUTION-REVIEW.json`, `axiom verify --preflight`. Independent review before merge to `main` is required and not waived by this authorization |
+| Milestone 9 - Failure Pattern Registry and Governed Improvement Proposals | **Independent AI Reviewer round 1: REQUEST CHANGES (1 MAJOR), fixed. Round 2: no new finding, scope-locked.** Human Owner authorized 2026-08-03 (`DEC-015`) | `scripts/aggregate-diagnostics.ps1`, `pmo-config/learning-policy.json`, `DOCTOR-014`. Local, opt-in aggregation over existing diagnostics, plus human-reviewed improvement candidates |
 
 ## Roadmap Governance
 
@@ -1281,6 +1281,31 @@ Round 1 found:
 (A third round-1 finding, MAJOR, was against Milestone 9's aggregator, not
 this one -- see that milestone's own status below.)
 
+**Round 2: scope-locked final direction.** Independent AI Reviewer confirmed the round-1 fixes
+close the substantive gaps and declined to reopen the milestone, requiring
+one small compatibility fix only: a legitimate GitHub API workflow-run
+`path` can carry a trailing `@ref` (e.g.
+`.github/workflows/adversarial-review.yml@main`), which the round-1 exact-
+match comparison would have rejected as a false mismatch. Fixed by
+normalizing the `@ref` suffix away before comparing -- more lenient about
+the suffix format only, never about the path text the FATAL fix binds
+against. One positive regression case added
+(`tests/helpers/adversarial-review-tests.ps1`, now 25 cases) alongside the
+existing unrelated-workflow negative case, which round 2 explicitly said to
+retain unchanged.
+
+Independent AI Reviewer also drew an explicit line, in the same round-2 response, between what
+would be blocking and what is an acceptable, recorded limitation of this
+milestone's artifact model -- see
+[`docs/architecture/adversarial-review.md`](docs/architecture/adversarial-review.md#11-known-limitations-recorded-not-blocking-closure)
+§11: non-closure transitions (`disputed`) inside a reviewer-authored review
+file are not fully actor-attributed at the per-finding level, and a
+`workflow_id` binding is optional future hardening, not required to close.
+Neither weakens any authority guarantee already enforced (`disputed` stays
+blocking, no closure state reachable by an executor or a non-human reviewer
+on a human-only category), and round 2 explicitly excluded implementing
+either from this milestone's scope.
+
 ## Milestone 9 - Failure Pattern Registry and Governed Improvement Proposals
 
 Objective: organizational memory over diagnostics the validator already
@@ -1289,7 +1314,8 @@ positive, or user error, surfaced as human-reviewed improvement candidates.
 Full design is `research/m7-m9-proposal.md` section 4.
 
 Status: **Independent AI Reviewer independent review, round 1: REQUEST CHANGES -- 1 MAJOR,
-fixed; pending re-review before merge to `main`.** Human Owner confirmed the
+fixed. Round 2: no new finding against this milestone, scope-locked;
+pending final review before merge to `main`.** Human Owner confirmed the
 milestone's local/opt-in boundary 2026-08-03 (`DEC-013`) and authorized
 implementation the same day (`DEC-015`). Delivers
 `pmo-config/learning-policy.json`, `scripts/aggregate-diagnostics.ps1`,
@@ -1471,14 +1497,17 @@ quietly dropped.
 Implemented, pending independent review before merge to `main` (branch
 `m7-onboarding-execution-paths`, off `main`):
 
-- **Milestone 7** (Onboarding and the Two Execution Paths) -- `DEC-011`. Not
-  yet reviewed.
+- **Milestone 7** (Onboarding and the Two Execution Paths) -- `DEC-011`. Independent AI Reviewer
+  round 2: no finding raised; carried in the same final-review request as
+  Milestone 8.1 and Milestone 9.
 - **Milestone 8.1** (Adversarial Review Evidence: implementation) -- `DEC-014`,
   on the Milestone 8.0 GO WITH REFRAME recommendation. Independent AI Reviewer round 1: REQUEST
-  CHANGES (1 FATAL, 2 MAJOR), all fixed; pending re-review.
+  CHANGES (1 FATAL, 2 MAJOR), fixed. Round 2: scope-locked, one
+  compatibility fix required and applied (workflow-run `path@ref`
+  normalization); pending final review.
 - **Milestone 9** (Failure Pattern Registry and Governed Improvement
-  Proposals) -- `DEC-015`. Independent AI Reviewer round 1: REQUEST CHANGES (1 MAJOR), fixed;
-  pending re-review.
+  Proposals) -- `DEC-015`. Independent AI Reviewer round 1: REQUEST CHANGES (1 MAJOR), fixed.
+  Round 2: no new finding, scope-locked; pending final review.
 
 None of these three is authorized to merge to `main` on the strength of this
 implementation alone -- independent review is required first, the same as

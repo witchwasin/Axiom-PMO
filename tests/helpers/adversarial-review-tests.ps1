@@ -518,6 +518,21 @@ esac
     try { $legitJson = ($legitOutput | Out-String) | ConvertFrom-Json } catch { }
     Assert-True "check run genuinely attributed to the pinned workflow: AREV-003 not raised" `
       ((Get-Rules $legitJson) -notcontains "AREV-003")
+
+    # Independent AI Reviewer round-2 compatibility finding: a legitimate GitHub API response can
+    # carry a trailing @ref on the workflow run's path (e.g.
+    # ".github/workflows/adversarial-review.yml@main") -- must still match
+    # the pinned path once normalized, not be rejected as a mismatch.
+    New-Review -Dir $dir -Identity $id -Overrides @{ provenance = [ordered]@{ tier = "externally-observed"; check_run_id = "123" } }
+    $refSuffixDigest = (Get-FileHash -LiteralPath (Join-Path $dir ".execution/D-001/EXECUTION-REVIEW.json") -Algorithm SHA256).Hash.ToLowerInvariant()
+    Write-StubGh -CheckSuiteId "999" -WorkflowPathForSuite "$workflowRelPath@main" -Digest $refSuffixDigest
+    $prevEap = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+    $refSuffixOutput = & $pwshExe @psArgs 2>$null
+    $ErrorActionPreference = $prevEap
+    $refSuffixJson = $null
+    try { $refSuffixJson = ($refSuffixOutput | Out-String) | ConvertFrom-Json } catch { }
+    Assert-True "workflow run path with a trailing @ref still matches the pinned path: AREV-003 not raised" `
+      ((Get-Rules $refSuffixJson) -notcontains "AREV-003")
   } finally {
     $env:PATH = $previousPath
     Remove-ReviewFixture $dir

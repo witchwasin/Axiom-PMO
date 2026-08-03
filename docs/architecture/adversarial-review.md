@@ -282,3 +282,52 @@ No `AREV-*` rule, `EXECUTION-REVIEW.json` schema, or
 `pmo-config/adversarial-review-policy.json` file exists yet. This document is
 the research and recommendation `DEC-012` asked for; Milestone 8.1
 implementation requires a further, separate Human Owner decision.
+
+> **Update, post-implementation:** the Human Owner authorized implementation
+> on this recommendation (`DEC-014`). `AREV-001`..`AREV-006`,
+> `pmo-config/adversarial-review-policy.json`, and
+> `templates/EXECUTION-REVIEW.json` now exist. §11 below records the
+> limitations Independent AI Reviewer's independent review confirmed as acceptable to close
+> against, rather than requiring further implementation.
+
+## 11. Known limitations (recorded, not blocking closure)
+
+Independent AI Reviewer's independent review of the implementation (two rounds; round 1: 1
+FATAL, 2 MAJOR, all fixed and regression-tested; round 2: one compatibility
+fix) drew an explicit line between what a defect against the four §3.3
+bindings would be — genuinely blocking — and what is a scoped, acceptable
+limitation of this milestone's artifact model. The following are recorded
+per that boundary, not implemented, because implementing them was
+explicitly out of round 2's scope:
+
+- **Non-closure transitions are not fully actor-attributed.** The artifact
+  model can prove who authored `EXECUTION-REVIEW.json` as a whole
+  (`reviewer_kind`) and can prove the executor never set a closure status
+  (`AREV-005`, via `EXECUTION-RESULT.json`'s `review_finding_dispositions`).
+  It cannot prove, at the level of an individual finding, which specific
+  actor set a *non-closure* status such as `disputed` inside a
+  reviewer-authored review file — policy conceptually assigns that
+  transition to the executor, but the file format has no per-transition
+  actor record. This does not weaken any authority guarantee already
+  enforced: `disputed` remains blocking, is never treated as a pass, the
+  executor still cannot reach any closure or acceptance state, human-only
+  statuses remain human-only (`AREV-005`), and a non-human reviewer still
+  cannot resolve a human-only-category finding. A transition ledger or a
+  separate actor-history artifact would close this gap; out of scope for
+  M8.1, and not required to close it.
+- **`workflow_id` binding is optional future hardening, not required.** The
+  round-1 fix binds a check run to its workflow run's `path`, normalized
+  against a trailing `@ref` (round 2). A workflow's stable numeric
+  `workflow_id` would bind slightly more precisely against a workflow that
+  was renamed or moved, but path-based binding is sufficient to close the
+  FATAL gap round 1 found and is not required to be strengthened further to
+  close this milestone.
+- **No enterprise identity proof, reusable-workflow model, additional CI
+  provider abstraction, or broader CI provenance hardening** is implemented.
+  Each would be real work with its own design and review; none is required
+  by anything this milestone's threat model demonstrated.
+
+These are recorded here so they stay visible rather than silently
+forgotten, in the same spirit `ROADMAP.md`'s Deferred technical debt table
+already keeps Milestone 6's open items visible. None is a precondition for
+Independent AI Reviewer's final review or Human Owner closure.

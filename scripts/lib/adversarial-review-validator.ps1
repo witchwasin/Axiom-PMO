@@ -173,7 +173,13 @@ function Test-ExternallyObservedReviewBinding {
     $result.Reason = "the GitHub API response for workflow runs under check suite $checkSuiteId could not be parsed"
     return $result
   }
-  $matchingWorkflowRuns = @($runsResponse.workflow_runs | Where-Object { [string]$_.path -eq $workflowRelPath })
+  # Independent AI Reviewer round-2 compatibility finding: a workflow run's own `path` field can
+  # carry a trailing `@ref` (e.g. `.github/workflows/adversarial-review.yml@main`)
+  # -- a legitimate GitHub API value, not a forgery attempt. Normalized away
+  # before comparison; this only makes the match more lenient about the
+  # suffix format, never about the path text itself, so it cannot weaken the
+  # binding the FATAL fix (round 1) added.
+  $matchingWorkflowRuns = @($runsResponse.workflow_runs | Where-Object { (([string]$_.path) -replace '@.*$', '') -eq $workflowRelPath })
   if ($matchingWorkflowRuns.Count -eq 0) {
     $result.Reason = "check run $parsedId's check suite is not associated with any workflow run at the pinned path '$workflowRelPath' -- this check run cannot be attributed to the pinned review workflow, whatever it is named or however successfully it completed"
     return $result
