@@ -338,7 +338,15 @@ Write-Host ""
     $id = New-BaseResult -Dir $dir
     New-Review -Dir $dir -Identity $id -Findings @([ordered]@{ finding_id = "AF-001"; category = "other"; severity = "minor"; status = "disputed"; description = "d"; suggestion = "s" })
     $r = Invoke-Verify -Dir $dir
-    Assert-True "disputed status alone: no AREV-005" ((Get-Rules $r.Json) -notcontains "AREV-005")
+    # $null -ne $r.Json is the anti-vacuous anchor: Get-Rules returns @() when
+    # the verify run produced nothing parseable, and @() -notcontains anything
+    # is TRUE -- so without this the case reports PASS when verification
+    # crashed outright. Same shape as the M9 privacy assertions CI caught
+    # passing against empty output. Every other -notcontains/-notmatch case in
+    # this file is already anchored by a positive assertion beside it; this
+    # one was the exception.
+    Assert-True "disputed status alone: no AREV-005" `
+      (($null -ne $r.Json) -and ((Get-Rules $r.Json) -notcontains "AREV-005"))
   } finally { Remove-ReviewFixture $dir }
 }.Invoke()
 

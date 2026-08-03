@@ -12,6 +12,57 @@ Sol's explicit scope lock); round 3 final verdict **ACCEPT** for all four
 milestones. Not part of the `v1.3.0` tag; no further tag or release
 authorized by this closure.
 
+### Post-closure errata — two production defects found by CI after `DEC-016`
+
+Recorded rather than quietly folded in: these were found **after** the
+milestones were closed and merged, by the GitHub Actions run the closure
+push itself triggered. Both were host-conditional and invisible to every
+check that existed at review time — the maintainer machine cannot run
+Windows PowerShell 5.1 at all, and the independent reviewer's environment
+could not reach `github.com` to check the branch out. Neither defect
+promoted untrusted evidence or widened a boundary; both failed closed.
+Fixed on `main` at `1309cb6`, which supersedes `4ae5f35` as the minimum
+publishable baseline.
+
+- **Milestone 8.1, `Out-String` newline reconstruction** (`247e83d`).
+  `Test-ExternallyObservedReviewBinding` recomputed the pinned workflow's
+  SHA-256 from `git show … | Out-String`. `Out-String` rejoins stripped
+  lines with the **platform** newline: LF on Linux/macOS (which reproduces
+  an LF file byte-for-byte, so it matched), CRLF on Windows (so the digest
+  could never match). Effect: the `externally-observed` tier was
+  non-functional on Windows — it rejected a legitimate pinned workflow as
+  tampered. Fixed by reading the blob's exact bytes via
+  `Start-Process -RedirectStandardOutput` and `git cat-file blob` (not
+  `git show`, which can apply working-tree eol/smudge conversion and would
+  make the digest depend on the verifier's git config rather than on the
+  commit). `pmo-config/adversarial-review-policy.json` now documents
+  `digest_semantics`: the pinned value is the digest of the git **blob** at
+  the verified commit, not of the working-tree file.
+- **Milestone 9, `RandomNumberGenerator::Fill()` on 5.1** (`1309cb6`). A
+  .NET Core 2.1+ API, absent from the .NET Framework that Windows
+  PowerShell 5.1 runs on. `Get-RepositorySalt` threw before returning, so
+  the entire M9 aggregator produced no events and no
+  `FAILURE-PATTERNS.json` on that host, while all three pwsh 7 jobs passed
+  on identical code. Fixed with `RNGCryptoServiceProvider`.
+
+**The finding worth carrying forward** is neither crash. M9's three privacy
+assertions were written as `-notmatch` against the joined event text, so
+with zero events they passed **vacuously** — reporting green against an
+empty string while the feature was completely broken on 5.1. A check that
+cannot fail is not evidence. They are now anchored on event text being
+non-empty. The two crashes are the host-portability class
+`docs/architecture/powershell-portability.md` already predicts; a
+vacuously-passing assertion is a governance gap nothing was looking for.
+
+Independently acknowledged by Sol against the post-closure diff through
+`1309cb6`: no milestone reopening required, `DEC-016` stands, M7/M8.0/M8.1/M9
+remain CLOSED, and `1309cb6` supersedes `4ae5f35` as the minimum
+publish/release baseline. Sol's release-readiness follow-ups (a Windows
+PowerShell 5.1 production-path release gate, and an audit of other negative
+assertions for the vacuous-pass pattern) belong to the separate, **not yet
+authorized** public release-preparation work — not to these closed
+milestones.
+
 **Milestone 7 — Onboarding and the Two Execution Paths.** Authorized for
 implementation 2026-08-03 (`DEC-011`), on branch
 `m7-onboarding-execution-paths`.
