@@ -486,6 +486,23 @@ Write-Host ""
     # script, so the matching logic itself is not duplicated in batch syntax.
     function Write-StubGh {
       param([string]$CheckSuiteId, [string]$WorkflowPathForSuite, [string]$Digest)
+
+      # A first attempt wrote BOTH the bash `gh` and a `gh.cmd` into the same
+      # stub directory, expecting Windows to skip the extensionless bash file
+      # and find gh.cmd. Re-running CI on that fix still failed identically --
+      # Windows command resolution matches the literal, extensionless "gh"
+      # file in a PATH directory before trying PATHEXT-appended alternatives
+      # in that same directory, so the bash script (not a valid Windows
+      # executable) was still what got invoked, still failed for a real
+      # reason. Writing only ONE stub, chosen by host, removes the collision
+      # entirely rather than hoping resolution order favors the right one.
+      if (Test-WindowsHost) {
+        Remove-Item -LiteralPath $stubGhPath -Force -ErrorAction SilentlyContinue
+      } else {
+        Remove-Item -LiteralPath (Join-Path $stubBinDir "gh.cmd") -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath (Join-Path $stubBinDir "gh-logic.ps1") -Force -ErrorAction SilentlyContinue
+      }
+
       $stubScript = @"
 #!/usr/bin/env bash
 set -e
@@ -502,9 +519,6 @@ case "`$path" in
     ;;
 esac
 "@
-      Set-Content -LiteralPath $stubGhPath -Value $stubScript -NoNewline
-      & chmod +x $stubGhPath
-
       $logicScript = @"
 param([string]`$Verb, [string]`$Path)
 if (`$Path -like "*check-runs*") {
@@ -515,9 +529,15 @@ if (`$Path -like "*check-runs*") {
   Write-Output '{}'
 }
 "@
-      Set-Content -LiteralPath (Join-Path $stubBinDir "gh-logic.ps1") -Value $logicScript -NoNewline
-      $cmdScript = "@echo off`r`n`"$pwshExe`" -NoProfile -File `"%~dp0gh-logic.ps1`" %*`r`n"
-      Set-Content -LiteralPath (Join-Path $stubBinDir "gh.cmd") -Value $cmdScript -NoNewline
+
+      if (Test-WindowsHost) {
+        Set-Content -LiteralPath (Join-Path $stubBinDir "gh-logic.ps1") -Value $logicScript -NoNewline
+        $cmdScript = "@echo off`r`n`"$pwshExe`" -NoProfile -File `"%~dp0gh-logic.ps1`" %*`r`n"
+        Set-Content -LiteralPath (Join-Path $stubBinDir "gh.cmd") -Value $cmdScript -NoNewline
+      } else {
+        Set-Content -LiteralPath $stubGhPath -Value $stubScript -NoNewline
+        & chmod +x $stubGhPath
+      }
     }
 
     # Attack: check run belongs to a check suite whose workflow run path is
