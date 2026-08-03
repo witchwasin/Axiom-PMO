@@ -81,6 +81,13 @@ release gate, and an audit of other negative assertions for the
 vacuous-pass pattern) belong to the separate, **not yet authorized** public
 release-preparation work — not to these closed milestones.
 
+Sol separately acknowledged the `f10b608` baseline move itself (same day):
+agrees with the CI-infrastructure classification, confirms `DEC-016` and
+all four milestone closures are unaffected with no reopening or re-review
+required, and confirms any future release candidate or tag should be built
+from `f10b608` or later. No action pending from Sol on this point; the
+Public Release Readiness Pass remains separate, not-yet-authorized work.
+
 **Milestone 7 — Onboarding and the Two Execution Paths.** Authorized for
 implementation 2026-08-03 (`DEC-011`), on branch
 `m7-onboarding-execution-paths`.
