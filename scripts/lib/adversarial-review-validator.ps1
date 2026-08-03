@@ -24,6 +24,60 @@ function Read-AdversarialReviewPolicy {
   return (Get-Content -LiteralPath $policyPath -Raw | ConvertFrom-Json)
 }
 
+# Read a git blob's EXACT bytes, without letting PowerShell reconstruct them
+# from captured text.
+#
+# The obvious version -- `Invoke-NativeCapture { git show ... }` then
+# `$output | Out-String` -- is wrong, and wrong in a way that only shows up on
+# Windows. `git show` returns an array of lines with their terminators
+# stripped; `Out-String` rejoins them using the PLATFORM newline. On Linux and
+# macOS that is LF, which happens to reproduce a normal LF-terminated file
+# byte-for-byte, so a SHA-256 over it matches the file's real digest and every
+# test passes. On Windows the same code rejoins with CRLF, so the recomputed
+# digest can never equal the pinned digest of the real file, and a legitimate
+# pinned workflow is rejected as tampered.
+#
+# CI caught exactly this: `pmo-checks` and `pmo-checks-windows-pwsh7` failed
+# the two AREV-003 legitimate-match cases while the Linux and macOS pwsh7 jobs
+# passed on identical code. It is the same class of defect
+# docs/architecture/powershell-portability.md exists to prevent -- a construct
+# that looks ordinary and behaves differently per host, silently.
+#
+# Start-Process with -RedirectStandardOutput writes the child's stdout to a
+# file at the OS level, with no PowerShell string decoding in the path, so the
+# bytes read back are the blob's actual bytes. Returns $null on any failure;
+# callers treat that as "could not be read", never as a pass.
+function Get-GitBlobBytes {
+  param(
+    [Parameter(Mandatory = $true)][string]$GitRepoRoot,
+    [Parameter(Mandatory = $true)][string]$Revision
+  )
+
+  $outFile = [System.IO.Path]::GetTempFileName()
+  $errFile = [System.IO.Path]::GetTempFileName()
+  try {
+    # Quoted explicitly: Windows PowerShell 5.1's Start-Process joins
+    # -ArgumentList with spaces and does not quote for you, so a repository
+    # path containing a space would otherwise split into two arguments.
+    # `cat-file blob`, not `show`: `git show <rev>:<path>` can apply
+    # working-tree conversion (eol/smudge filters), which makes the bytes it
+    # emits depend on the caller's git configuration. `cat-file blob` emits
+    # the stored object, so the digest is a property of the commit rather
+    # than of whoever happens to be verifying it.
+    $proc = Start-Process -FilePath "git" `
+      -ArgumentList @("-C", "`"$GitRepoRoot`"", "cat-file", "blob", "`"$Revision`"") `
+      -RedirectStandardOutput $outFile -RedirectStandardError $errFile `
+      -NoNewWindow -Wait -PassThru
+    if ($proc.ExitCode -ne 0) { return $null }
+    return [System.IO.File]::ReadAllBytes($outFile)
+  } catch {
+    return $null
+  } finally {
+    Remove-Item -LiteralPath $outFile -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $errFile -Force -ErrorAction SilentlyContinue
+  }
+}
+
 function Read-ExecutionReview {
   param([Parameter(Mandatory = $true)][string]$Path)
 
@@ -203,12 +257,11 @@ function Test-ExternallyObservedReviewBinding {
   # commit range under verification -- a change here is also caught
   # independently by EXEC-004 once the pinned path is a default
   # prohibited_paths entry (see scripts/export-execution-contract.ps1).
-  $workflowShowResult = Invoke-NativeCapture { git -C $GitRepoRoot show "$($Review.head_sha):$workflowRelPath" }
-  if ($workflowShowResult.ExitCode -ne 0) {
+  $workflowBytes = Get-GitBlobBytes -GitRepoRoot $GitRepoRoot -Revision "$($Review.head_sha):$workflowRelPath"
+  if ($null -eq $workflowBytes) {
     $result.Reason = "the pinned review workflow '$workflowRelPath' could not be read at commit $($Review.head_sha)"
     return $result
   }
-  $workflowBytes = [System.Text.Encoding]::UTF8.GetBytes(($workflowShowResult.Output | Out-String))
   $workflowDigest = ([System.Security.Cryptography.SHA256]::Create().ComputeHash($workflowBytes) | ForEach-Object { $_.ToString("x2") }) -join ""
   if ($workflowDigest -ne ([string]$binding.pinned_workflow_digest).ToLowerInvariant()) {
     $result.Reason = "the review workflow '$workflowRelPath' at commit $($Review.head_sha) does not match the digest pinned in policy -- the workflow was modified since it was pinned, so this run cannot be trusted as the reviewed one"
