@@ -86,6 +86,26 @@ fixed; pending re-review before merge to `main`.
   human-only-status set from policy and enforcing it.
 - (Third finding was against Milestone 9 — see below.)
 
+**Sol independent review, round 2: scope-locked final direction.** One
+compatibility fix required and applied; no other finding raised.
+
+- A legitimate GitHub Actions workflow-run `path` can carry a trailing
+  `@ref` (e.g. `.github/workflows/adversarial-review.yml@main`), which
+  round 1's exact-match comparison would have rejected as a false
+  mismatch. Fixed by normalizing the suffix away before comparing —
+  strictly more lenient about the suffix format, never about the path text
+  the round-1 FATAL fix binds against. New regression case added
+  alongside the existing unrelated-workflow negative case (kept unchanged
+  per Sol's explicit instruction); `tests/helpers/adversarial-review-tests.ps1`
+  now 25 cases.
+- Two items recorded as known, non-blocking limitations rather than
+  implemented, per Sol's explicit scope lock — see
+  `docs/architecture/adversarial-review.md` §11: non-closure transitions
+  (`disputed`) inside a reviewer-authored review file are not fully
+  actor-attributed at the per-finding level, and a `workflow_id` binding is
+  optional future hardening. Neither weakens any enforced authority
+  guarantee.
+
 **Milestone 9 — Failure Pattern Registry and Governed Improvement
 Proposals.** Boundary confirmed 2026-08-03 (`DEC-013`), authorized and
 implemented the same day (`DEC-015`), pending independent review before
