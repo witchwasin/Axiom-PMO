@@ -19,7 +19,13 @@ jobs:
   # cannot drift away from the environment most Windows developers still have.
   pmo-checks:
     runs-on: windows-2025
-    timeout-minutes: 15
+    # This job runs run-all-checks.ps1 twice (normal pass + fault-injection
+    # pass) plus a hygiene check, on the slowest host (Windows PowerShell
+    # 5.1). 15 minutes was sized before M7-M9 grew the suite; two verified
+    # CI runs on 2026-08-03 (commit 4750395) timed out mid-suite with every
+    # executed assertion still PASS, not failing content. 30 minutes leaves
+    # real margin instead of chasing the ceiling again as the suite grows.
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -70,7 +76,10 @@ jobs:
   # it as a required check separately (a human action).
   pmo-checks-windows-pwsh7:
     runs-on: windows-2025
-    timeout-minutes: 15
+    # Single run-all-checks.ps1 pass, but on 2026-08-03 (commit 4750395) it
+    # still finished with only ~13s of margin inside the old 15-minute
+    # budget. Same growth pressure as pmo-checks above; matching headroom.
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
