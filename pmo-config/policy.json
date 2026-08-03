@@ -1,5 +1,5 @@
 ﻿{
-  "version": "1.3.0",
+  "version": "1.4.0",
   "schema_version": "1.0",
   "sentinel_rules": {
     "not_required": {
