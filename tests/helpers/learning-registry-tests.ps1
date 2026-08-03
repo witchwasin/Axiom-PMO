@@ -73,9 +73,16 @@ Write-Host ""
     $eventFiles = Get-ChildItem -LiteralPath (Join-Path $isolated ".axiom/learning/events") -Filter "*.jsonl"
     Assert-True "at least one event file was written" ($eventFiles.Count -gt 0)
     $allText = ($eventFiles | Get-Content) -join "`n"
-    Assert-True "no event carries a 'message' key" ($allText -notmatch '"message"')
-    Assert-True "no event carries a 'suggestion' key" ($allText -notmatch '"suggestion"')
-    Assert-True "no event carries a raw markdown/source path outside the governed allowlist" ($allText -notmatch '\.md"' -or $allText -match '"artifact":"(PROJECT|DELIVERY|HANDOFF|RELEASE|RAID-log|decision-log)\.md"')
+    # Every privacy assertion below is anchored on $allText being non-empty.
+    # Without that anchor they pass vacuously when no events were produced at
+    # all -- which is exactly what happened on Windows PowerShell 5.1 when the
+    # aggregator threw before writing anything: three "no event carries X"
+    # checks reported PASS against an empty string while the feature was
+    # completely broken. A privacy check that cannot fail proves nothing.
+    $haveEvents = -not [string]::IsNullOrWhiteSpace($allText)
+    Assert-True "no event carries a 'message' key" ($haveEvents -and $allText -notmatch '"message"')
+    Assert-True "no event carries a 'suggestion' key" ($haveEvents -and $allText -notmatch '"suggestion"')
+    Assert-True "no event carries a raw markdown/source path outside the governed allowlist" ($haveEvents -and ($allText -notmatch '\.md"' -or $allText -match '"artifact":"(PROJECT|DELIVERY|HANDOFF|RELEASE|RAID-log|decision-log)\.md"'))
   } finally { Remove-IsolatedRepoRoot $isolated }
 }.Invoke()
 

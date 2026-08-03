@@ -47,7 +47,21 @@ function Get-RepositorySalt {
     return (Get-Content -LiteralPath $SaltPath -Raw).Trim()
   }
   $bytes = New-Object byte[] 32
-  [System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+  # RNGCryptoServiceProvider, not RandomNumberGenerator::Fill(): Fill() is a
+  # .NET Core 2.1+ API and does not exist in the .NET Framework that Windows
+  # PowerShell 5.1 runs on -- a required host for this framework. Using it
+  # threw on 5.1 before this function returned, so the entire M9 aggregator
+  # produced no events and no registry there, while every pwsh 7 host passed.
+  # CI caught it: `pmo-checks` (5.1) failed while the three pwsh 7 jobs were
+  # green. Same lesson as docs/architecture/powershell-portability.md records
+  # -- an API that resolves on the development host is not evidence it
+  # resolves on 5.1.
+  $rng = New-Object System.Security.Cryptography.RNGCryptoServiceProvider
+  try {
+    $rng.GetBytes($bytes)
+  } finally {
+    $rng.Dispose()
+  }
   $salt = ($bytes | ForEach-Object { $_.ToString("x2") }) -join ""
   New-Item -ItemType Directory -Force -Path (Split-Path -Parent $SaltPath) | Out-Null
   Set-Content -LiteralPath $SaltPath -Value $salt -NoNewline
