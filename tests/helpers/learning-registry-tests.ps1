@@ -132,6 +132,39 @@ Write-Host ""
     ((Get-Content -LiteralPath (Join-Path $repo ".gitignore") -Raw) -match [regex]::Escape(".axiom/learning/events/"))
 }.Invoke()
 
+# ---- Case: an alphabetic, potentially sensitive item_id is NOT retained ----
+#
+# Independent AI Reviewer's independent review found ConvertTo-NormalizedItemId only replaced
+# digits ('\d+' -> '#'), so an id with no digits at all -- 'ACME-fraud-case',
+# 'patient-HIV' -- passed through byte-for-byte unchanged. It is now an
+# allowlist: only a shape in pmo-config/learning-policy.json
+# item_id_allowed_patterns is pattern-substituted; anything else is bucketed
+# to "other", never partially sanitized and retained. Tested by dot-sourcing
+# the script for its (side-effect-free) function definitions, since real
+# validate-project.ps1 output never produces a non-conforming item_id --
+# ENUM-001 already rejects one -- so this specific adversarial input has to
+# be constructed directly.
+{
+  $isolated = New-IsolatedRepoRoot
+  try {
+    . (Join-Path $isolated "scripts/aggregate-diagnostics.ps1") -RepoRoot $isolated -RebuildOnly | Out-Null
+
+    Assert-True "'D-123' (allowlisted shape) normalizes to 'D-#'" `
+      ((ConvertTo-NormalizedItemId -ItemId "D-123" -AllowedPatterns $policy.item_id_allowed_patterns) -eq "D-#")
+    Assert-True "'ACME-fraud-case' (no digits, not an allowlisted shape) is bucketed to 'other', not retained" `
+      ((ConvertTo-NormalizedItemId -ItemId "ACME-fraud-case" -AllowedPatterns $policy.item_id_allowed_patterns) -eq "other")
+    Assert-True "'patient-HIV' is bucketed to 'other', not retained" `
+      ((ConvertTo-NormalizedItemId -ItemId "patient-HIV" -AllowedPatterns $policy.item_id_allowed_patterns) -eq "other")
+    Assert-True "a governed shape with extra trailing text ('D-123-extra') is bucketed to 'other', not partially matched" `
+      ((ConvertTo-NormalizedItemId -ItemId "D-123-extra" -AllowedPatterns $policy.item_id_allowed_patterns) -eq "other")
+
+    Assert-True "'development_handoff' (valid enum) is retained" `
+      ((ConvertTo-NormalizedExecutionPath -ExecutionPath "development_handoff" -AllowedValues $policy.execution_path_allowed_values) -eq "development_handoff")
+    Assert-True "a malformed execution_path value is normalized to 'unknown', not retained raw" `
+      ((ConvertTo-NormalizedExecutionPath -ExecutionPath "customer-acme-secret-migration" -AllowedValues $policy.execution_path_allowed_values) -eq "unknown")
+  } finally { Remove-IsolatedRepoRoot $isolated }
+}.Invoke()
+
 Write-Host ""
 Write-Host "Summary: PASS=$pass FAIL=$fail"
 if ($fail -gt 0) { exit 1 }

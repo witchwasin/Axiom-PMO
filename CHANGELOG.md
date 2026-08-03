@@ -61,10 +61,30 @@ merge to `main`.
   contract's `prohibited_paths` by default, so `EXEC-004` protects it.
 - New `axiom verify --preflight` flag: runs the mechanical `EXEC-*` checks
   and skips the one check that can make a live GitHub API call.
-- `tests/helpers/adversarial-review-tests.ps1` (21 cases, written
+- `tests/helpers/adversarial-review-tests.ps1` (now 24 cases, written
   adversarially): self-forged decision records, executor self-closure, an AI
   reviewer closing a human-only-category finding, artifact-observed alone
-  never satisfying Strict.
+  never satisfying Strict, an unrelated successful check run on the same
+  commit not satisfying `externally-observed`.
+
+**Independent AI Reviewer independent review, round 1: REQUEST CHANGES.** 1 FATAL, 2 MAJOR, all
+fixed; pending re-review before merge to `main`.
+
+- **FATAL** — `externally-observed` verified `check_run_id`'s commit,
+  status, conclusion, artifact digest, and the pinned workflow's content
+  digest, but never verified the cited check run was actually *produced by*
+  the pinned workflow. An unrelated successful check run on the same commit,
+  primed to print the review artifact's digest in its own output, passed
+  every check. Fixed by resolving the check run's `check_suite.id` to its
+  GitHub Actions workflow run and requiring that run's `path` match the
+  pinned workflow path — reproduced and regression-tested with a stubbed
+  `gh` against both the attack and the legitimate case.
+- **MAJOR** — `closure_policy.settable_by` was loaded from policy and never
+  applied: an `ai`-kind reviewer could set `false_positive`/`accepted_risk`/
+  `deferred` on any finding, human-only category or not, whenever a bound
+  decision resolved outside the verified range. Fixed by deriving the
+  human-only-status set from policy and enforcing it.
+- (Third finding was against Milestone 9 — see below.)
 
 **Milestone 9 — Failure Pattern Registry and Governed Improvement
 Proposals.** Boundary confirmed 2026-08-03 (`DEC-013`), authorized and
@@ -86,11 +106,24 @@ merge to `main`.
 - New optional `lifecycle` field on catalog rules, with a new `DOCTOR-014`
   enforcing the invariant that an `experimental` rule can never carry a
   blocking severity.
-- `tests/helpers/learning-registry-tests.ps1` (9 cases) plus a `DOCTOR-014`
-  case in `tests/helpers/config-mutation-tests.ps1`: no artifact content or
-  free text reaches an event, rebuild-from-events equality, twenty reruns of
-  one unfixed defect produce zero candidates, an experimental rule with a
-  blocking severity fails `pmo-doctor` itself.
+- `tests/helpers/learning-registry-tests.ps1` (now 15 cases) plus a
+  `DOCTOR-014` case in `tests/helpers/config-mutation-tests.ps1`: no
+  artifact content or free text reaches an event, rebuild-from-events
+  equality, twenty reruns of one unfixed defect produce zero candidates, an
+  experimental rule with a blocking severity fails `pmo-doctor` itself.
+
+**Independent AI Reviewer independent review, round 1: REQUEST CHANGES.** 1 MAJOR, fixed;
+pending re-review before merge to `main`.
+
+- **MAJOR** — `ConvertTo-NormalizedItemId` replaced digits only (`\d+` ->
+  `#`), so a purely alphabetic id (`ACME-fraud-case`, `patient-HIV`) passed
+  through byte-for-byte unchanged into every event; `execution_path` was
+  copied verbatim from `PROJECT.md`'s regex capture with no enum validation
+  despite `learning-policy.json` already declaring it a closed enum. Both
+  are now allowlist/enum-validated against new
+  `item_id_allowed_patterns` / `execution_path_allowed_values` policy
+  fields — anything not matching is bucketed to `"other"` / `"unknown"`,
+  never partially sanitized and retained.
 
 ## 1.3.0 - 2026-08-02
 

@@ -16,13 +16,16 @@
     "salt_path": ".axiom/learning/salt"
   },
   "field_disposition": {
-    "_note": "'Metadata-only' is not a privacy guarantee by itself -- a bare artifact path can disclose a subject without a byte of content (customers/acme/fraud-investigation.md). Every field carries an explicit, auditable disposition rather than a blanket policy.",
-    "retain": ["rule_id", "level", "blocking", "mode", "gate", "execution_path"],
+    "_note": "'Metadata-only' is not a privacy guarantee by itself -- a bare artifact path can disclose a subject without a byte of content (customers/acme/fraud-investigation.md). Every field carries an explicit, auditable disposition rather than a blanket policy. Independent AI Reviewer's independent review of the first implementation found item_id normalization only replaced digits (an alphabetic id such as 'ACME-fraud-case' passed through unchanged) and execution_path was copied verbatim from PROJECT.md without enum validation despite being declared retain-as-closed-enum here -- both are now allowlist/enum-validated, never pattern-substituted or copied raw.",
+    "retain": ["rule_id", "level", "blocking", "mode", "gate"],
     "retain_if_governed_artifact_else_other": ["artifact"],
-    "normalize_to_id_pattern": ["item_id"],
+    "retain_if_valid_enum_else_unknown": ["execution_path"],
+    "retain_if_matches_allowed_pattern_else_other": ["item_id"],
     "hash_with_repository_salt": ["project"],
     "drop_always": ["message", "suggestion", "field", "documentation_url", "run_command", "cwd"]
   },
+  "item_id_allowed_patterns": ["^D-\\d+$", "^REQ-\\d+$", "^AF-\\d+$", "^DEC-\\d+$", "^TEST-\\d+$", "^REL-\\d+$", "^BR-\\d+$"],
+  "execution_path_allowed_values": ["development_handoff", "governed_ai_execution"],
   "governed_artifact_allowlist": [
     "PROJECT.md", "DELIVERY.md", "HANDOFF.md", "RELEASE.md", "RAID-log.md",
     "decision-log.md", "SCOPE.json", "RTM.json", "HANDOFF-REVIEW.json",
