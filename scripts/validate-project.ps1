@@ -60,6 +60,7 @@ $repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
 . (Join-Path $PSScriptRoot "lib/reference-resolver.ps1")
 . (Join-Path $PSScriptRoot "lib/result-writer.ps1")
 . (Join-Path $PSScriptRoot "lib/mode-resolver.ps1")
+. (Join-Path $PSScriptRoot "lib/execution-path-validator.ps1")
 . (Join-Path $PSScriptRoot "lib/artifact-policy.ps1")
 . (Join-Path $PSScriptRoot "lib/approval-validator.ps1")
 . (Join-Path $PSScriptRoot "lib/source-validator.ps1")
@@ -126,6 +127,8 @@ $deliveryPath = Join-Path $project "DELIVERY.md"
 $workItemResult = Test-DeliveryWorkItems -Project $project -DeliveryPath $deliveryPath -Gate $Gate -PolicyEnums $policyEnums -ProjectReqIds $projectReqIds -ProjectBusinessIds $projectBusinessIds -ProjectTaskSource $projectTaskSource
 $workItems = $workItemResult.WorkItems
 $deliveryIds = $workItemResult.DeliveryIds
+
+Test-ExecutionPath -Project $project -PolicyEnums $policyEnums -WorkItems $workItems
 
 Test-RaidBlocker -Project $project -Gate $Gate
 

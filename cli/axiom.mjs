@@ -19,8 +19,9 @@
 //   127 no PowerShell host found (this file's own failure, not the validator's)
 
 import { spawnSync } from "node:child_process";
-import { existsSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
+import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -127,6 +128,149 @@ function resolveProjectPath(value) {
   return null;
 }
 
+// --- interactive prompting (M7 onboarding) ----------------------------------
+//
+// Presentation only, by the same rule as the rest of this file: every trigger
+// id, question, and mode-resolution decision is read from pmo-config/*.json,
+// never written into this script. This file only asks and forwards.
+//
+// Built on node:readline/promises rather than a raw fs.readSync(0, ...) loop:
+// a synchronous fd read is not guaranteed to block on every platform/TTY
+// combination (it can return EAGAIN or a short read before input has
+// arrived), where readline's event-driven read is the correct, documented
+// way to read a line from a controlling terminal.
+
+function isInteractive() {
+  return Boolean(process.stdin.isTTY) && Boolean(process.stdout.isTTY);
+}
+
+// Numbered menu: prints options, loops until a valid 1..N is entered so a
+// stray keystroke can never silently select the wrong path or mode.
+async function promptChoice(rl, question, options) {
+  for (;;) {
+    process.stdout.write(`\n${question}\n`);
+    options.forEach((opt, i) => {
+      process.stdout.write(`  ${i + 1}. ${opt.label}\n`);
+    });
+    const raw = (await rl.question("> ")).trim();
+    const index = Number.parseInt(raw, 10);
+    if (Number.isInteger(index) && index >= 1 && index <= options.length) {
+      return options[index - 1].value;
+    }
+    process.stdout.write(`Please enter a number from 1 to ${options.length}.\n`);
+  }
+}
+
+async function promptYesNo(rl, question) {
+  const raw = (await rl.question(`${question} [y/N] `)).trim();
+  return /^y(es)?$/i.test(raw);
+}
+
+// pmo-config/*.json ship with a UTF-8 BOM (PowerShell's ConvertFrom-Json
+// tolerates it; JSON.parse does not) -- strip it the same way the framework's
+// own Python tooling reads these files with encoding="utf-8-sig".
+function loadRepoJson(relPath) {
+  const raw = readFileSync(join(REPO_ROOT, relPath), "utf8");
+  return JSON.parse(raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw);
+}
+
+// The "Help me decide" path: one question per pmo-config/policy.json
+// enums.strict_triggers entry, wording from
+// pmo-config/onboarding-questions.json (kept in sync by DOCTOR-013). The
+// answer is a DECLARATION, not a detection -- there is no source material at
+// init time to detect anything from, so the wording never claims the system
+// found something.
+async function runHelpMeDecide(rl) {
+  const policy = loadRepoJson("pmo-config/policy.json");
+  const questions = loadRepoJson("pmo-config/onboarding-questions.json");
+  const triggers = policy.enums?.strict_triggers ?? [];
+
+  for (const triggerId of triggers) {
+    const entry = questions.questions?.[triggerId];
+    const label = entry?.question ?? `Does this work involve: ${triggerId}?`;
+    if (await promptYesNo(rl, `\n${label}`)) {
+      process.stdout.write(
+        `\nYou declared that this work involves: ${triggerId}.\n` +
+          "Strict triggers are non-downgradable, so the effective mode is Strict.\n",
+      );
+      return { mode: "Strict", trigger: triggerId, question: label };
+    }
+  }
+  process.stdout.write("\nNo strict triggers declared. Recommending Standard.\n");
+  return { mode: "Standard", trigger: "none", question: null };
+}
+
+// Runs only for whichever of {code, mode, executionPath} the caller did not
+// already supply via flags -- flags always win over the interactive prompt,
+// never the other way around.
+async function runInteractiveInit(rl, existing) {
+  const answers = { ...existing };
+
+  process.stdout.write("\nAxiom-PMO project setup\n");
+
+  while (!answers.code) {
+    answers.code = (await rl.question("\nProject code (e.g. P02-ABC): ")).trim();
+  }
+
+  if (!answers.executionPath) {
+    answers.executionPath = await promptChoice(rl, "How will this work be delivered?", [
+      {
+        value: "development_handoff",
+        label:
+          "Development Handoff -- prepare requirements, scope, and design for a developer or vendor to build",
+      },
+      {
+        value: "governed_ai_execution",
+        label:
+          "Governed AI Execution -- an AI execution framework builds it under Axiom-PMO's scope, contract, and evidence checks",
+      },
+    ]);
+  }
+
+  let strictTrigger = "none";
+  let modeReason = null;
+  let modeApprovedBy = null;
+
+  if (!answers.mode) {
+    const choice = await promptChoice(rl, "What level of governance does this work require?", [
+      { value: "Lite", label: "Lite -- small, low-risk work, easy to fix if wrong" },
+      { value: "Standard", label: "Standard -- normal feature delivery" },
+      {
+        value: "Strict",
+        label: "Strict -- payment, PII, auth, permissions, compliance, or similarly high-risk work",
+      },
+      { value: "help", label: "Help me decide" },
+    ]);
+    if (choice === "help") {
+      const decided = await runHelpMeDecide(rl);
+      answers.mode = decided.mode;
+      strictTrigger = decided.trigger;
+      if (decided.trigger !== "none") {
+        modeReason = `declared at interactive init: ${decided.question}`;
+        modeApprovedBy = (await rl.question("\nYour name (recorded as Mode Approved By): ")).trim() || "Unknown";
+      }
+    } else {
+      answers.mode = choice;
+    }
+  }
+
+  const flowSteps =
+    answers.executionPath === "governed_ai_execution"
+      ? "Source -> Requirements -> Scope -> Design -> Approved Execution Contract -> AI Implementation -> Evidence Verification -> Human Approval"
+      : "Source -> Requirements -> Scope -> Design -> Handoff -> Human Approval";
+
+  process.stdout.write("\nYour Axiom-PMO Setup\n\n");
+  process.stdout.write(`Execution Path:   ${answers.executionPath}\n`);
+  process.stdout.write(`Governance Mode:  ${answers.mode}\n`);
+  process.stdout.write(`Expected Flow:    ${flowSteps}\n`);
+
+  if (!(await promptYesNo(rl, "\nCreate this project?"))) {
+    return null;
+  }
+
+  return { ...answers, strictTrigger, modeReason, modeApprovedBy };
+}
+
 // --- commands ---------------------------------------------------------------
 
 const COMMANDS = {
@@ -158,9 +302,16 @@ const COMMANDS = {
   },
 
   init: {
-    summary: "Create a new project from the templates",
-    usage: "axiom init --code <PROJECT-CODE> [--mode Standard] [--handoff] [--target demo] [--horizon-days 14]",
+    summary: "Create a new project from the templates (interactive on a TTY)",
+    usage:
+      "axiom init [--code <PROJECT-CODE>] [--mode Standard] [--execution-path development_handoff] [--handoff] [--target demo] [--horizon-days 14] [--no-interactive]",
     build: (args) => buildInit(args),
+  },
+
+  status: {
+    summary: "Show a project's execution path, governance mode, and next required action",
+    usage: "axiom status --project <path> [--json]",
+    build: (args) => buildStatus(args),
   },
 
   export: {
@@ -177,7 +328,7 @@ const COMMANDS = {
 
   verify: {
     summary: "Verify an execution result against its contract and observed git state",
-    usage: "axiom verify --project <path> --result <path> [--contract <path>] [--json]",
+    usage: "axiom verify --project <path> --result <path> [--contract <path>] [--json] [--preflight]",
     build: (args) => buildVerify(args),
   },
 
@@ -366,6 +517,8 @@ function buildVerify(args) {
   rest = json.rest;
   const failOnWarning = takeFlag(rest, "fail-on-warning");
   rest = failOnWarning.rest;
+  const preflight = takeFlag(rest, "preflight");
+  rest = preflight.rest;
 
   if (!project.value) {
     return { usageError: "verify requires --project <path>" };
@@ -391,6 +544,7 @@ function buildVerify(args) {
   }
   if (json.present) scriptArgs.push("-Format", "Json");
   if (failOnWarning.present) scriptArgs.push("-FailOnWarning");
+  if (preflight.present) scriptArgs.push("-Preflight");
   return { script: "scripts/verify-execution-result.ps1", scriptArgs: [...scriptArgs, ...rest] };
 }
 
@@ -419,12 +573,14 @@ function buildRun(args) {
   return { script: "scripts/run-execution-command.ps1", scriptArgs: [...scriptArgs, ...rest] };
 }
 
-function buildInit(args) {
+async function buildInit(args) {
   let rest = args;
   const code = takeOption(rest, "code");
   rest = code.rest;
   const mode = takeOption(rest, "mode");
   rest = mode.rest;
+  const executionPath = takeOption(rest, "execution-path");
+  rest = executionPath.rest;
   const output = takeOption(rest, "output");
   rest = output.rest;
   const target = takeOption(rest, "target");
@@ -433,17 +589,74 @@ function buildInit(args) {
   rest = horizon.rest;
   const handoff = takeFlag(rest, "handoff");
   rest = handoff.rest;
+  const noInteractive = takeFlag(rest, "no-interactive");
+  rest = noInteractive.rest;
 
-  if (!code.value) {
+  let resolvedCode = code.value;
+  let resolvedMode = mode.value;
+  let resolvedExecutionPath = executionPath.value;
+  let strictTrigger;
+  let modeReason;
+  let modeApprovedBy;
+
+  // Two independent questions (who builds it, how strictly is it governed),
+  // asked only for whatever a flag did not already answer, and only on a
+  // TTY -- CI, `make demo`, and every scripted caller pass flags and must
+  // never block waiting for input that will never arrive.
+  const shouldPrompt = isInteractive() && !noInteractive.present && (!resolvedCode || !resolvedMode || !resolvedExecutionPath);
+  if (shouldPrompt) {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    let answers;
+    try {
+      answers = await runInteractiveInit(rl, { code: resolvedCode, mode: resolvedMode, executionPath: resolvedExecutionPath });
+    } finally {
+      rl.close();
+    }
+    if (!answers) {
+      return { cancelled: true };
+    }
+    resolvedCode = answers.code;
+    resolvedMode = answers.mode;
+    resolvedExecutionPath = answers.executionPath;
+    strictTrigger = answers.strictTrigger;
+    modeReason = answers.modeReason;
+    modeApprovedBy = answers.modeApprovedBy;
+  }
+
+  if (!resolvedCode) {
     return { usageError: "init requires --code <PROJECT-CODE>" };
   }
 
-  const scriptArgs = ["-ProjectCode", code.value, "-Mode", mode.value ?? "Standard"];
+  const scriptArgs = ["-ProjectCode", resolvedCode, "-Mode", resolvedMode ?? "Standard"];
+  if (resolvedExecutionPath) scriptArgs.push("-ExecutionPath", resolvedExecutionPath);
+  if (strictTrigger) scriptArgs.push("-StrictTrigger", strictTrigger);
+  if (modeReason) scriptArgs.push("-ModeReason", modeReason);
+  if (modeApprovedBy) scriptArgs.push("-ModeApprovedBy", modeApprovedBy);
   if (output.value) scriptArgs.push("-OutputRoot", output.value);
   if (handoff.present) scriptArgs.push("-IncludeHandoff");
   if (target.value) scriptArgs.push("-Target", target.value);
   if (horizon.value) scriptArgs.push("-HorizonDays", horizon.value);
   return { script: "scripts/new-project.ps1", scriptArgs: [...scriptArgs, ...rest] };
+}
+
+function buildStatus(args) {
+  let rest = args;
+  const project = takeOption(rest, "project");
+  rest = project.rest;
+  const json = takeFlag(rest, "json");
+  rest = json.rest;
+
+  if (!project.value) {
+    return { usageError: "status requires --project <path>" };
+  }
+  const projectPath = resolveProjectPath(project.value);
+  if (!projectPath) {
+    return { usageError: `project directory not found: ${project.value}` };
+  }
+
+  const scriptArgs = ["-ProjectPath", projectPath];
+  if (json.present) scriptArgs.push("-Format", "Json");
+  return { script: "scripts/pmo-status.ps1", scriptArgs: [...scriptArgs, ...rest] };
 }
 
 // --- execution --------------------------------------------------------------
@@ -509,9 +722,11 @@ function printUsage() {
     "",
     "Examples:",
     "  node cli/axiom.mjs demo",
+    "  node cli/axiom.mjs init                     interactive on a TTY: asks delivery path, then governance mode",
+    "  node cli/axiom.mjs init --code P02-ABC --mode Standard --handoff --target demo",
+    "  node cli/axiom.mjs status --project examples/HANDOFF-DEMO",
     "  node cli/axiom.mjs handoff --project examples/HANDOFF-DEMO --mode Standard",
     "  node cli/axiom.mjs validate --project examples/STANDARD-FEATURE --gate Release --fail-on-warning",
-    "  node cli/axiom.mjs init --code P02-ABC --mode Standard --handoff --target demo",
     "  node cli/axiom.mjs setup claude --project . --dry-run",
     "",
     "Unrecognised options are forwarded to the underlying PowerShell script.",
@@ -520,7 +735,7 @@ function printUsage() {
   process.stdout.write(lines.join("\n") + "\n");
 }
 
-function main() {
+async function main() {
   const argv = process.argv.slice(2);
 
   if (argv.length === 0 || argv[0] === "--help" || argv[0] === "-h" || argv[0] === "help") {
@@ -536,7 +751,11 @@ function main() {
     return EXIT_USAGE;
   }
 
-  const plan = command.build(argv.slice(1));
+  const plan = await command.build(argv.slice(1));
+  if (plan.cancelled) {
+    process.stdout.write("Cancelled.\n");
+    return 0;
+  }
   if (plan.usageError) {
     process.stderr.write(`${plan.usageError}\n`);
     if (command.usage) process.stderr.write(`\n  ${command.usage}\n`);
@@ -595,4 +814,4 @@ function main() {
 // 8 KB -- the output looked fine in a terminal (a TTY flushes synchronously)
 // and failed to parse under `| jq`. Setting exitCode lets Node exit naturally
 // once stdout has flushed.
-process.exitCode = main();
+process.exitCode = await main();

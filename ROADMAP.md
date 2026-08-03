@@ -6,7 +6,7 @@ merged to `main` 2026-08-01; Milestone 5.5 merged to `main` 2026-08-02. The
 `v1.3.0` tag was authorized separately by the Human Owner on 2026-08-02. GitHub
 Release notes, marketplace publication, and npm publication remain separate
 decisions and have not occurred.
-Last updated: 2026-08-02
+Last updated: 2026-08-03
 
 Axiom-PMO is moving from an open-source governance framework into a developer
 workflow tool for AI-assisted software delivery.
@@ -114,6 +114,10 @@ Recommended effort allocation:
 | Milestone 5 - Execution Contract Verification MVP | **Delivered / CLOSED** -- Sol ACCEPT at round 5 after four REQUEST CHANGES rounds; Human Owner accepted and closed 2026-07-31 (`DEC-004`) | Core product. `docs/reference/execution-contract.md`; decisions `DEC-002`, `DEC-004`; commit `2888769`, CI run `30643605031` 7/7 |
 | Milestone 5.5 - `ci-check` provenance hardening | **Delivered / CLOSED** -- Sol REQUEST CHANGES (check names compared case-insensitively), then ACCEPT after the fix; merged to `main` 2026-08-02 | Core product, post-closure fix. Binds `ci-check` evidence to `check_run_id` (closing the by-name permanent-false-negative case) and makes check-name comparison case-sensitive; commit `ca6ae6a`, CI run `30748756130` (headSha `ca6ae6a`) 7/7 |
 | Milestone 6 - Claude Code Integration Experience | **CLOSED and MERGED to `main`** -- three independent review rounds (R1: 1 FATAL + 1 MAJOR; R2: 1 FATAL + 4 MAJOR; R3: 3 MAJOR + 2 MINOR), all findings resolved; final verdict **ACCEPT WITH MINOR REVISIONS**; Human Owner accepted and closed 2026-08-01 (`DEC-007`); merge to `main` separately confirmed by the Human Owner directly in chat and completed the same day | Optional integration, not core product. Not tagged, released, or published to any marketplace. Known debts remain open. `docs/reviews/m6-reviewer-index.md`; decisions `DEC-003` (shape), `DEC-006` (boundary), `DEC-005` (testing), `DEC-007` (closure); commit `1d85d60`, CI run `30736667616` 7/7 |
+| Milestone 7 - Onboarding and the Two Execution Paths | **Authorized, implementation starting** -- design reviewed through two independent Sol rounds against `research/m7-m9-proposal.md`; Human Owner authorized implementation 2026-08-03 (`DEC-011`) | Core product. Two independent onboarding questions (who builds the work, how strictly is it governed), a governed `execution_path` declaration, and an `axiom status` verb. Design decision `DEC-011` |
+| Milestone 8.0 - Adversarial Review Evidence: research | **Research delivered; GO WITH REFRAME recommended, Human Owner decision pending** -- authorized for research only 2026-08-03 (`DEC-012`) | Core-product-adjacent research. [`docs/architecture/adversarial-review.md`](docs/architecture/adversarial-review.md). Primary question resolved: a `check_run_id` alone proves a CI job ran, not that a review produced the artifact; a concrete four-part binding (artifact digest, workflow digest, scope protection, contract identity) closes the gap using mechanisms already in production (`Test-CiCheckEvidence`, `REF-002`, `EXEC-004`). Recommendation is not an authorization -- Milestone 8.1 implementation remains a separate decision. Decision `DEC-012` |
+| Milestone 8.1 - Adversarial Review Evidence: implementation | **Sol round 1: REQUEST CHANGES (1 FATAL, 2 MAJOR), fixed. Round 2: scope-locked, one compatibility fix required, applied; pending final review.** Human Owner authorized 2026-08-03 (`DEC-014`) on the Milestone 8.0 GO WITH REFRAME recommendation | `AREV-001`..`AREV-006`, `pmo-config/adversarial-review-policy.json`, `templates/EXECUTION-REVIEW.json`, `axiom verify --preflight`. Independent review before merge to `main` is required and not waived by this authorization |
+| Milestone 9 - Failure Pattern Registry and Governed Improvement Proposals | **Sol round 1: REQUEST CHANGES (1 MAJOR), fixed. Round 2: no new finding, scope-locked.** Human Owner authorized 2026-08-03 (`DEC-015`) | `scripts/aggregate-diagnostics.ps1`, `pmo-config/learning-policy.json`, `DOCTOR-014`. Local, opt-in aggregation over existing diagnostics, plus human-reviewed improvement candidates |
 
 ## Roadmap Governance
 
@@ -153,7 +157,16 @@ Milestone 1 delivered, with walkthrough/recording evidence deferred
 -> Milestone 5 (delivered -- closed 2026-07-31)     <- end of core product
 -> Milestone 5.5 (delivered -- closed 2026-08-02, post-closure fix)
 -> Milestone 6 (optional integration; closed and merged to `main` 2026-08-01)
+-> Milestone 7 (authorized 2026-08-03, implementation starting)
+-> Milestone 8.0 (research delivered 2026-08-03, GO WITH REFRAME)
+-> Milestone 9 (implemented 2026-08-03; pending independent review)
+-> Milestone 8.1 (implemented 2026-08-03; pending independent review)
 ```
+
+Milestone 8.0 is sequenced ahead of Milestone 9 for a concrete reason, not only
+risk ordering: Milestone 9's diagnostic-event schema needs to know what
+review-disposition data Milestone 8 will produce, and building Milestone 9
+first would mean changing that schema afterward.
 
 Milestone 2.5 sits between diagnostics and the CLI deliberately. The CLI's
 `handoff` verb and the GitHub Action's per-stage reporting both depend on the
@@ -1066,6 +1079,331 @@ Claude Code users can add Axiom-PMO to a real repository without losing existing
 Claude, Superpowers, BMAD, or custom agent configuration.
 ```
 
+## Milestone 7 - Onboarding and the Two Execution Paths
+
+Objective: replace "read the README, infer a mental model, guess a workflow"
+with two independent questions, answered once, that select a real path through
+the framework.
+
+Status: **Authorized, implementation starting.** Human Owner authorized
+implementation 2026-08-03 (`DEC-011`), after design review across two
+independent Sol rounds. Full design, rejected alternatives, and the reasoning
+for each is `research/m7-m9-proposal.md` section 2.
+
+Core product. The capability is not new -- both execution paths already exist
+as working engines (the Handoff gate, and export/run/verify) -- this milestone
+names them, makes them selectable, and stops asking a new user to infer either
+from scratch.
+
+Two axes, kept independent because they are not the same decision:
+
+```text
+Axis 1 -- who builds it?          Development Handoff | Governed AI Execution
+Axis 2 -- how strictly is it governed?   Lite | Standard | Strict
+```
+
+A vendor handoff can be Strict. A governed AI execution can be Lite. Collapsing
+the two into one question would produce the wrong mental model from the first
+minute.
+
+### The declaration, not detection, boundary
+
+At `init` there is no source material, no requirement, no work item -- nothing
+to detect from. The wizard therefore never claims the system found a risk; it
+records what the user declared:
+
+```text
+GOOD   You declared that this work handles personal data.
+       Strict triggers are non-downgradable, so the effective mode is Strict.
+
+BAD    The system detected personal data.
+```
+
+The declaration is written into the existing `Strict Trigger` / `Mode Reason` /
+`Mode Approved By` columns already defined in
+`pmo-config/policy.json table_schemas.delivery_work_items` and shipped in
+`templates/DELIVERY.md` -- not a new artifact, not a new reference type, and
+nothing under `source/`, which stays user-owned per `AGENTS.md` rule 9. Two
+earlier drafts of this design got this wrong in each direction (an AI
+`evidence_status`, then a generated file under `source/REQ/`) before the
+existing schema was found to already have the right home for it.
+`Mode Approved By` is prefilled from `git config user.name` and requires
+confirmation; it is documented as **attested**, the same standing
+`handoff-policy.json` already gives `reviewer_kind` -- no offline validator can
+prove who typed a name, and claiming otherwise would be false assurance.
+
+### Scope
+
+- `execution_path` (`development_handoff` | `governed_ai_execution`) declared
+  in `PROJECT.md` front matter, defaulting to `development_handoff` so every
+  existing project, example, and fixture is unaffected. New rules `PATH-001`
+  (missing/unrecognized declaration; `info` when absent, `warn` when present
+  but invalid) and `PATH-002` (the declaration contradicts an *active,
+  unresolved* execution package for a work item that is not `Done` --
+  archived or completed execution evidence never triggers it, so a legitimate
+  switch back to Development Handoff does not warn forever).
+- The path is a **current delivery strategy, not project identity**: changing
+  it is an ordinary edit to `PROJECT.md`. A path may add required artifacts and
+  must never remove any -- a machine-tested invariant, not a documentation
+  promise. No new CLI verb for switching it; `axiom status` shows it.
+- `artifact-policy.json` is **not** restructured in this milestone. The
+  path-artifact delta is empty today; it gains its first real entry when
+  Milestone 8 defines `EXECUTION-REVIEW.json`.
+- Interactive `axiom init`: the two questions above, plus a `Help me decide`
+  path that asks one question per entry in `policy.json enums.strict_triggers`,
+  with wording read from a new `pmo-config/onboarding-questions.json` --
+  checked against the trigger enum by a doctor rule so the wording cannot drift
+  behind it -- then a pre-creation summary before anything is written.
+- Non-interactive stays the default whenever stdin is not a TTY, so CI and
+  `make demo` cannot hang; flags always win over prompts.
+- `axiom status`: a read-only verb reporting the declared path, the effective
+  mode and why, the current gate, and the next blocking finding -- derived
+  from the validator's own diagnostics, never a second, independent opinion
+  that could disagree with it.
+- README restructured so both paths are visible above the fold.
+
+### Non-goals
+
+- No new approval, gate, or authority.
+- No detection of risk from source material -- declaration only.
+- No file created, edited, or deleted under `source/`.
+- No new required artifact for either path in this milestone.
+- No `artifact-policy.json` restructure.
+
+### Constraint carried from `cli/axiom.mjs`'s own file header
+
+The CLI contains zero validation logic today and must keep containing zero,
+because a second implementation in JavaScript would drift from the PowerShell
+reference and nobody would know which one was right. The wizard's prompting
+lives in `cli/axiom.mjs`; every trigger list, question, and mode-resolution
+rule lives in `pmo-config/*.json` and PowerShell.
+
+## Milestone 8 - Adversarial Review Evidence
+
+Objective: give AI-executed work independent, evidence-backed review as
+**candidate evidence**, for the defect classes deterministic rules structurally
+cannot reach -- behaviour changed inside an approved file, a test that passes
+while testing the wrong thing, an implementation that satisfies the letter of
+an acceptance criterion and not its intent, a behaviour change hidden inside a
+refactor.
+
+Named "Adversarial Review **Evidence**," never "Gate": it is not authority, and
+a verdict must never change a validator exit code. Full design and the
+rejected alternatives are `research/m7-m9-proposal.md` section 3.
+
+### Milestone 8.0 - Research and go/no-go
+
+Status: **Research delivered** --
+[`docs/architecture/adversarial-review.md`](docs/architecture/adversarial-review.md),
+recommending **GO WITH REFRAME**. Human Owner authorized research only,
+2026-08-03 (`DEC-012`); this milestone's central artifact sits on the same
+self-attestation surface that cost Milestone 5 five review rounds, so
+implementation was deliberately not authorized alongside the research -- the
+Milestone 5.0/6.0 precedent (research, threat model, explicit GO/NO-GO)
+applied here for the same reason. The recommendation is candidate input, not
+an authorization: Milestone 8.1 implementation remains a separate, pending
+Human Owner decision.
+
+Primary research question:
+
+```text
+A check_run_id proves a CI job ran. It does not prove that an independent
+adversarial review produced this artifact.
+```
+
+A CI job can copy a file the executor wrote, call a script that never invokes a
+reviewer, use a modified prompt, or upload a placeholder. The research must
+determine what binding set (workflow identity and commit, reviewer
+adapter/command identity, review-policy version, prompt/config digest,
+`contract_sha256`, `base_sha`, `head_sha`, review-artifact digest) makes a
+`ci-observed` provenance tier mean something, and must state the ceiling
+honestly: even fully bound, what is proven is *"a named workflow, at a known
+commit, produced this file,"* never what happened inside the model call. If the
+achievable assurance does not justify the machinery, **NO-GO is a correct and
+accepted outcome.**
+
+Also to be resolved by the research, with two points already settled by Human
+Owner decision so they are not relitigated under later review pressure
+(`DEC-012`):
+
+- a three-tier provenance model (`ci-observed`, `human-attested`,
+  `artifact-observed` -- the last requiring human acceptance, exactly as
+  `EXEC-005` already requires for artifact-observed test evidence);
+- **a `human-attested` review, by someone other than the executor, satisfies
+  Strict identically to an AI-produced one** -- Strict must never become a
+  requirement to purchase a second model;
+- a finding-lifecycle authority model where the executor may move an `open`
+  finding only to `disputed` (which remains blocking, and is not a closure),
+  and only a human may close a finding under a security, legal, business, or
+  privacy category, mirroring `HANDOFF-010`;
+- a deterministic preflight (an existing-checks flag, not a new verb or gate)
+  run before the review, so a review is never spent on a diff whose base does
+  not resolve;
+- evaluator isolation: the approved requirement, scope, contract, diff, and
+  test artifacts, never the executor's chain of thought, persuasion, a prior
+  verdict, or the narrative fields of `EXECUTION-RESULT.json`.
+
+### Milestone 8.1 - Implementation
+
+Status: **Sol independent review, round 1: REQUEST CHANGES -- 1 FATAL, 2
+MAJOR, all three fixed; pending re-review before merge to `main`.** Human
+Owner authorized implementation on the Milestone 8.0 recommendation,
+2026-08-03 (`DEC-014`). Delivers `pmo-config/adversarial-review-policy.json`,
+`templates/EXECUTION-REVIEW.json`, `scripts/lib/adversarial-review-validator.ps1`
+(`AREV-001`..`AREV-006`), the `review-evidence-accepted` authority-claim type
+(registered in `pmo-config/execution-contract-policy.json` alongside
+`test-evidence-accepted`, reusing `EXEC-007`'s existing promotion mechanism
+rather than a parallel one), the pinned review-workflow path added by default
+to `axiom export`'s `prohibited_paths` so `EXEC-004` protects it, and
+`axiom verify --preflight`. `tests/helpers/adversarial-review-tests.ps1`
+covers the adversarial cases directly -- self-forged decision records,
+executor self-closure, an AI reviewer closing a human-only-category finding,
+artifact-observed alone never satisfying Strict.
+
+Round 1 found:
+
+- **FATAL** -- `externally-observed` bound `check_run_id` to the right
+  commit, status, conclusion, artifact digest, and pinned-workflow content
+  digest, but never verified the check run was actually *produced by* the
+  pinned workflow. An unrelated successful check run on the same commit,
+  primed to print the review artifact's digest in its own output, passed
+  every check. Fixed by resolving the check run's `check_suite.id` to its
+  GitHub Actions workflow run and requiring that run's `path` to be the
+  pinned workflow path -- reproduced and regression-tested with a stubbed
+  `gh` (the live API cannot be made hermetic for a test suite) against both
+  the attack and the legitimate case.
+- **MAJOR** -- `closure_policy.settable_by` was loaded from policy and never
+  applied: an `ai`-kind reviewer could set `false_positive`/`accepted_risk`/
+  `deferred` on any finding, human-only category or not, whenever a bound
+  decision resolved outside the verified range. Fixed by deriving the
+  human-only-status set from policy (not hardcoded) and enforcing it.
+
+(A third round-1 finding, MAJOR, was against Milestone 9's aggregator, not
+this one -- see that milestone's own status below.)
+
+**Round 2: scope-locked final direction.** Sol confirmed the round-1 fixes
+close the substantive gaps and declined to reopen the milestone, requiring
+one small compatibility fix only: a legitimate GitHub API workflow-run
+`path` can carry a trailing `@ref` (e.g.
+`.github/workflows/adversarial-review.yml@main`), which the round-1 exact-
+match comparison would have rejected as a false mismatch. Fixed by
+normalizing the `@ref` suffix away before comparing -- more lenient about
+the suffix format only, never about the path text the FATAL fix binds
+against. One positive regression case added
+(`tests/helpers/adversarial-review-tests.ps1`, now 25 cases) alongside the
+existing unrelated-workflow negative case, which round 2 explicitly said to
+retain unchanged.
+
+Sol also drew an explicit line, in the same round-2 response, between what
+would be blocking and what is an acceptable, recorded limitation of this
+milestone's artifact model -- see
+[`docs/architecture/adversarial-review.md`](docs/architecture/adversarial-review.md#11-known-limitations-recorded-not-blocking-closure)
+§11: non-closure transitions (`disputed`) inside a reviewer-authored review
+file are not fully actor-attributed at the per-finding level, and a
+`workflow_id` binding is optional future hardening, not required to close.
+Neither weakens any authority guarantee already enforced (`disputed` stays
+blocking, no closure state reachable by an executor or a non-human reviewer
+on a human-only category), and round 2 explicitly excluded implementing
+either from this milestone's scope.
+
+## Milestone 9 - Failure Pattern Registry and Governed Improvement Proposals
+
+Objective: organizational memory over diagnostics the validator already
+emits -- recurring findings clustered and disposed as true defect, false
+positive, or user error, surfaced as human-reviewed improvement candidates.
+Full design is `research/m7-m9-proposal.md` section 4.
+
+Status: **Sol independent review, round 1: REQUEST CHANGES -- 1 MAJOR,
+fixed. Round 2: no new finding against this milestone, scope-locked;
+pending final review before merge to `main`.** Human Owner confirmed the
+milestone's local/opt-in boundary 2026-08-03 (`DEC-013`) and authorized
+implementation the same day (`DEC-015`). Delivers
+`pmo-config/learning-policy.json`, `scripts/aggregate-diagnostics.ps1`,
+`templates/IMPROVEMENT-CANDIDATE.json`, and `DOCTOR-014`.
+`tests/helpers/learning-registry-tests.ps1` and a `DOCTOR-014` case added to
+`tests/helpers/config-mutation-tests.ps1` assert: no artifact content or
+free text reaches an event, an unlisted artifact is bucketed to `"other"`,
+rebuilding the registry from events reproduces it exactly, twenty reruns of
+one unfixed defect in one project produce zero improvement candidates, and
+an experimental rule with a blocking severity fails `pmo-doctor` itself.
+
+Round 1 found **MAJOR** -- `ConvertTo-NormalizedItemId` replaced digits only
+(`\d+` -> `#`), so a purely alphabetic id (`ACME-fraud-case`, `patient-HIV`)
+passed through byte-for-byte unchanged into every event; `execution_path`
+was copied verbatim from `PROJECT.md`'s regex capture with no enum
+validation despite `learning-policy.json` already declaring it a closed
+enum. Both are now allowlist/enum-validated against
+`item_id_allowed_patterns` / `execution_path_allowed_values` -- anything not
+matching is bucketed to `"other"` / `"unknown"`, never partially sanitized
+and retained.
+
+The boundary this milestone depends on:
+
+```text
+Local and opt-in. No network transmission, by default or implicitly.
+Raw diagnostic events git-ignored by default; sharing the derived registry is
+explicit and opt-in. Any future external or cross-organization aggregation
+requires its own separate milestone and Human Owner decision.
+```
+
+No aggregation exists today, so this is closer to a 0/10 than the 3/10 it was
+first scored at.
+
+Deliberately small -- an aggregator over JSON the validator already emits, not
+a new engine:
+
+- one immutable event file per validation run (`.axiom/learning/events/<utc
+  timestamp>-<run-id>.jsonl`), never reopened once written, so two runs cannot
+  collide by construction, aggregated into a rebuildable `FAILURE-PATTERNS.json`
+  -- a corrupted registry is a rebuild, not a data-loss event;
+- every field carries an explicit retain/normalize/hash/drop disposition,
+  because "metadata-only" is not a privacy guarantee on its own (a bare
+  artifact path such as `customers/acme/fraud-investigation.md` discloses the
+  subject without a byte of content);
+- clustering scored on distinct run ids, commits, work items, projects, and
+  time window -- never a raw occurrence count, so twenty reruns against one
+  unfixed defect register as one problem, not twenty;
+- an `IMPROVEMENT-CANDIDATE.json` must weigh the full remedy set --
+  documentation, onboarding, wording, a changed default, a validator defect,
+  false-positive reduction -- with "add a new rule" never the default remedy,
+  consistent with this roadmap's existing prohibition on rules added only to
+  increase perceived coverage; an AI-authored candidate's `status` may only
+  ever be `proposed`;
+- an optional `lifecycle` (`experimental` | `enforced` | `deprecated`) on
+  catalog rules in `validation-rules.json`, with one invariant a doctor check
+  enforces: an experimental rule may be `info` or `warn` and never blocking;
+  promotion to `enforced` requires a `DEC-###` and a roadmap entry.
+
+Detection and visibility only, stated as such rather than claimed as
+prevention -- see Permanent Non-Goals below.
+
+## Permanent Non-Goals
+
+Distinct from `Not Now` below. `Not Now` is near-term effort allocation and may
+be revisited on its own schedule. A Permanent Non-Goal is excluded by design;
+reversing one is a change to what Axiom-PMO is, not a scheduling decision.
+
+- **Autonomous policy mutation.** An AI may not change a rule's severity,
+  promote an experimental rule to enforced, alter authority policy, reduce a
+  Strict requirement, change a schema so its own output passes, or approve a
+  rule it proposed. Nothing offline can *prevent* an agent with write access
+  from editing `pmo-config/*.json` -- claiming otherwise would be the same
+  false assurance this framework exists to prevent, and the Milestone 6
+  round-1 finding (ownership decided by a self-declared digest) is the local
+  precedent for why a self-declared control is not a control. What is real is
+  detection and visibility: flagging any change to a severity, authority, or
+  lifecycle field under `pmo-config/**` inside a verified commit range as
+  requiring a human decision reference (the mechanism `EXEC-007` already uses
+  for a decision record edited inside the range under verification),
+  `CODEOWNERS` on `pmo-config/**`, and a `SCOPE-DIFF`-style prohibited-path
+  default so an execution contract does not grant `pmo-config/**` without a
+  deliberate grant. An AI that can change the rule it is judged by is the exact
+  failure mode this framework exists to prevent -- `AGENTS.md` rule 11 already
+  says this for handoff findings; this generalizes it.
+
+  What an AI may do: **observe -> aggregate -> propose -> supply evidence.**
+  What only a human may do: **review -> authorize -> promote -> accept risk.**
+
 ## Not Now
 
 Do not spend near-term effort on:
@@ -1112,6 +1450,21 @@ Do not spend near-term effort on:
   `check_run_id` and makes check-name comparison case-sensitive. Sol REQUEST
   CHANGES (check names compared case-insensitively), then ACCEPT once fixed;
   merged to `main` 2026-08-02.
+- Milestones 7, 8.0, and 9 design: proposed by the Human Owner, drafted and
+  revised across three rounds against two independent Sol reviews
+  (`research/m7-m9-proposal.md`). Milestone 7 authorized for implementation and
+  Milestone 8.0 authorized for research only, 2026-08-03 (`DEC-011`,
+  `DEC-012`); Milestone 9's local/opt-in boundary confirmed the same day
+  (`DEC-013`) ahead of any implementation authorization; a Permanent Non-Goals
+  section adopted for autonomous policy mutation.
+- Milestone 7 implemented: `execution_path` declaration, `PATH-001`/`PATH-002`,
+  interactive `axiom init`, `axiom status`. Milestone 8.0 research delivered
+  (`docs/architecture/adversarial-review.md`, GO WITH REFRAME). Human Owner
+  authorized Milestone 8.1 and Milestone 9 implementation the same day
+  (`DEC-014`, `DEC-015`); both implemented -- `AREV-001`..`AREV-006`,
+  `axiom verify --preflight`, and the Failure Pattern Registry
+  (`scripts/aggregate-diagnostics.ps1`, `DOCTOR-014`). All three pending
+  independent review before merge to `main`.
 
 ### Deferred technical debt
 
@@ -1141,10 +1494,27 @@ quietly dropped.
 
 ### Next
 
-With Milestones 1-6 and 5.5 all delivered, merged to `main`, and tagged in
-`v1.3.0`, nothing is
-implementation-ready without a Human Owner decision to start it. Candidates,
-none currently authorized:
+Implemented, pending independent review before merge to `main` (branch
+`m7-onboarding-execution-paths`, off `main`):
+
+- **Milestone 7** (Onboarding and the Two Execution Paths) -- `DEC-011`. Sol
+  round 2: no finding raised; carried in the same final-review request as
+  Milestone 8.1 and Milestone 9.
+- **Milestone 8.1** (Adversarial Review Evidence: implementation) -- `DEC-014`,
+  on the Milestone 8.0 GO WITH REFRAME recommendation. Sol round 1: REQUEST
+  CHANGES (1 FATAL, 2 MAJOR), fixed. Round 2: scope-locked, one
+  compatibility fix required and applied (workflow-run `path@ref`
+  normalization); pending final review.
+- **Milestone 9** (Failure Pattern Registry and Governed Improvement
+  Proposals) -- `DEC-015`. Sol round 1: REQUEST CHANGES (1 MAJOR), fixed.
+  Round 2: no new finding, scope-locked; pending final review.
+
+None of these three is authorized to merge to `main` on the strength of this
+implementation alone -- independent review is required first, the same as
+every prior milestone.
+
+Everything else still requires a Human Owner decision to start, none currently
+authorized:
 
 - Creating GitHub Release notes for `v1.3.0`. The git tag exists; a GitHub
   Release entry is optional and separate.
@@ -1165,6 +1535,10 @@ that has none.
 - **A large restructure to shrink the git-source plugin install size**
   (debt 3 above). Explicitly forbidden without a separate milestone and
   decision -- see that debt's own entry.
+- **Any automatic promotion of a Milestone 9 `experimental` rule to
+  `enforced`, or any rule severity/authority change proposed by an AI.**
+  Permanent Non-Goal; see that section above. `DOCTOR-014` enforces the
+  severity half of this deterministically.
 
 ## Success Signals
 

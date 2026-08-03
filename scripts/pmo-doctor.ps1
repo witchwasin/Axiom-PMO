@@ -23,6 +23,7 @@ $referenceTypesPath = Join-Path $repo "pmo-config/reference-types.json"
 $artifactPolicyPath = Join-Path $repo "pmo-config/artifact-policy.json"
 $handoffPolicyPath = Join-Path $repo "pmo-config/handoff-policy.json"
 $diagnosticsSchemaPath = Join-Path $repo "pmo-config/diagnostics-schema.json"
+$onboardingQuestionsPath = Join-Path $repo "pmo-config/onboarding-questions.json"
 $policy = $null
 $skillManifest = $null
 $validationRules = $null
@@ -30,6 +31,7 @@ $referenceTypesConfig = $null
 $artifactPolicy = $null
 $handoffPolicy = $null
 $diagnosticsSchema = $null
+$onboardingQuestions = $null
 if (Test-Path -LiteralPath $policyPath -PathType Leaf) {
   $policy = Get-Content -LiteralPath $policyPath -Raw | ConvertFrom-Json
 }
@@ -50,6 +52,9 @@ if (Test-Path -LiteralPath $handoffPolicyPath -PathType Leaf) {
 }
 if (Test-Path -LiteralPath $diagnosticsSchemaPath -PathType Leaf) {
   $diagnosticsSchema = Get-Content -LiteralPath $diagnosticsSchemaPath -Raw | ConvertFrom-Json
+}
+if (Test-Path -LiteralPath $onboardingQuestionsPath -PathType Leaf) {
+  $onboardingQuestions = Get-Content -LiteralPath $onboardingQuestionsPath -Raw | ConvertFrom-Json
 }
 
 $pass = 0
@@ -286,6 +291,7 @@ $schemaVersionConfigs = [ordered]@{
   "context-map.json" = $contextMapConfig
   "handoff-policy.json" = $handoffPolicy
   "diagnostics-schema.json" = $diagnosticsSchema
+  "onboarding-questions.json" = $onboardingQuestions
 }
 $schemaVersionProblems = @()
 foreach ($name in $schemaVersionConfigs.Keys) {
@@ -488,6 +494,60 @@ if (Test-Path -LiteralPath $decisionLogPath) {
   }
 } else {
   Add-Result FAIL "decision-log.md not found" "DOCTOR-012"
+}
+
+# DOCTOR-013: pmo-config/onboarding-questions.json must cover exactly the
+# strict triggers policy.json declares -- no more, no fewer. The interactive
+# `axiom init` wizard's "Help me decide" path reads its question wording from
+# this file keyed by trigger id; an uncovered trigger would be unaskable, and
+# a stale entry would ask about a trigger that no longer exists.
+if ($policy -and $onboardingQuestions) {
+  $declaredTriggers = @($policy.enums.strict_triggers)
+  $questionKeys = @()
+  if ($onboardingQuestions.questions) {
+    $questionKeys = @($onboardingQuestions.questions.PSObject.Properties.Name)
+  }
+  $triggersWithoutQuestion = @($declaredTriggers | Where-Object { $questionKeys -notcontains $_ })
+  $questionsWithoutTrigger = @($questionKeys | Where-Object { $declaredTriggers -notcontains $_ })
+  if ($triggersWithoutQuestion.Count -eq 0 -and $questionsWithoutTrigger.Count -eq 0) {
+    Add-Result PASS "onboarding-questions.json covers exactly the declared strict triggers ($($declaredTriggers.Count))" "DOCTOR-013"
+  } else {
+    if ($triggersWithoutQuestion.Count -gt 0) {
+      Add-Result FAIL ("Strict triggers with no onboarding question: " + ((Sort-Ordinal -Values ([string[]]$triggersWithoutQuestion)) -join ", ")) "DOCTOR-013"
+    }
+    if ($questionsWithoutTrigger.Count -gt 0) {
+      Add-Result FAIL ("onboarding-questions.json entries for triggers no longer declared: " + ((Sort-Ordinal -Values ([string[]]$questionsWithoutTrigger)) -join ", ")) "DOCTOR-013"
+    }
+  }
+} else {
+  Add-Result FAIL "policy.json or onboarding-questions.json could not be loaded" "DOCTOR-013"
+}
+
+# DOCTOR-014 (M9): a rule catalog entry with lifecycle=experimental must never
+# carry a blocking severity. An experimental rule is one Axiom-PMO has not yet
+# promoted to enforced by a Human Owner DEC-### -- letting it fail or
+# fail_release a real gate would make an unreviewed rule block real work,
+# which defeats the entire point of having an experimental stage. A rule with
+# no lifecycle field is implicitly "enforced" (pmo-config/learning-policy.json
+# rule_lifecycle.default_when_absent) and is not checked here.
+if ($validationRules -and $validationRules.rules) {
+  $blockingSeverities = @("fail", "fail_release")
+  $experimentalBlocking = @()
+  foreach ($prop in $validationRules.rules.PSObject.Properties) {
+    $entry = $prop.Value
+    if (-not $entry.PSObject.Properties["lifecycle"]) { continue }
+    if ([string]$entry.lifecycle -ne "experimental") { continue }
+    if ($blockingSeverities -contains [string]$entry.severity) {
+      $experimentalBlocking += $prop.Name
+    }
+  }
+  if ($experimentalBlocking.Count -eq 0) {
+    Add-Result PASS "No experimental rule carries a blocking severity" "DOCTOR-014"
+  } else {
+    Add-Result FAIL ("Experimental rules with a blocking severity (promotion to enforced requires a DEC-### and a ROADMAP.md entry first): " + ((Sort-Ordinal -Values ([string[]]$experimentalBlocking)) -join ", ")) "DOCTOR-014"
+  }
+} else {
+  Add-Result FAIL "validation-rules.json could not be loaded" "DOCTOR-014"
 }
 
 # DOCTOR-011: $IsWindows must not be used as a bare host test.

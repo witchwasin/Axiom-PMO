@@ -1,0 +1,95 @@
+{
+  "version": "1.3.0",
+  "schema_version": "1.0",
+  "purpose": "Runtime policy for Milestone 8.1 adversarial review evidence (scripts/lib/adversarial-review-validator.ps1). Defines what an EXECUTION-REVIEW.json may claim, which claims Axiom-PMO can verify against external ground truth, and who may set which finding status. Design rationale and threat model: docs/architecture/adversarial-review.md.",
+  "core_principle": "An EXECUTION-REVIEW.json is candidate evidence, never authority. A verdict recorded in it must never change a validator exit code, and it never substitutes for a human approval row in PROJECT.md -- the same standing pmo-config/handoff-policy.json already gives a semantic handoff review.",
+  "authority": {
+    "review_is_approval": false,
+    "note": "AREV-* checks whether the artifact is structurally sound and whose provenance it carries. They never judge whether the review's content is thorough, correct, or intelligent -- that is not a deterministic question."
+  },
+  "enforcement_by_mode": {
+    "Lite": "disabled",
+    "Standard": "advisory",
+    "Strict": "required"
+  },
+  "severity_when_missing": {
+    "Lite": null,
+    "Standard": "warn",
+    "Strict": "fail"
+  },
+  "evidence_provenance": {
+    "_note": "Reuses execution-contract-policy.json's evidence_provenance vocabulary rather than inventing a parallel one. artifact-observed and externally-observed keep their existing meaning; human-attested is the one tier that does not fit either, because a human is neither an unverifiable artifact nor an impersonation-proof external system -- it is a named, accountable person.",
+    "artifact-observed": {
+      "proves": "The review artifact is internally consistent and structurally valid. It does NOT prove a review happened -- the executing agent can write this file in a path it controls, exactly as EXECUTION-RESULT.json's own core principle already states.",
+      "satisfies_strict_alone": false,
+      "may_be_promoted_by": "a human authority claim of type review-evidence-accepted, bound to this contract, citing a decision record that resolves in decision-log.md and was not itself added or edited within the commit range under verification"
+    },
+    "externally-observed": {
+      "proves": "A workflow the executor cannot impersonate produced this artifact, PROVIDED all four bindings below are satisfied. A check_run_id alone -- without the other three -- proves only that a CI job of that name completed successfully, not that it ran a review or produced this file.",
+      "satisfies_strict_alone": true,
+      "required_bindings": [
+        "check_run_id resolves live via the GitHub API and its head_sha/name/status/conclusion match the review entry (reuses Test-CiCheckEvidence's existing binding unchanged)",
+        "the check run's own API-attested output carries the SHA-256 digest of the actual EXECUTION-REVIEW.json bytes on disk, recomputed and compared -- never the file's own internal claim about its digest, which would be circular",
+        "the workflow file at externally_observed_binding.pinned_workflow_path has, AT THE COMMIT BEING VERIFIED, a content digest equal to externally_observed_binding.pinned_workflow_digest",
+        "contract_sha256/base_sha/head_sha recorded on the review entry match the contract and result under verification"
+      ]
+    },
+    "human-attested": {
+      "proves": "A named person, not the executor, is accountable for this review. Satisfies Strict identically to externally-observed -- Strict must never become a requirement to purchase a second AI model.",
+      "satisfies_strict_alone": true,
+      "attestation_note": "reviewer_kind and reviewer are self-declarations. No offline validator can prove who typed a JSON field -- the same standing pmo-config/handoff-policy.json already gives reviewer_kind. What is enforced is that the reviewer is not also the executor named in the execution result, and that any closure this reviewer performs under a human-only category cites a real, resolvable decision record."
+    }
+  },
+  "externally_observed_binding": {
+    "pinned_workflow_path": ".github/workflows/adversarial-review.yml",
+    "pinned_workflow_digest": null,
+    "note": "pinned_workflow_digest is null by default: no adversarial-review workflow has been authored or pinned yet. Until an organization sets this to the real SHA-256 of its own review workflow file, an externally-observed review cannot satisfy Strict on its own -- it fails closed to unverified, the same posture Test-CiCheckEvidence already takes when the gh CLI or a resolvable remote is unavailable. This is deliberate: a partial binding is artifact-observed wearing a stronger name, and must not be sold as more."
+  },
+  "finding_severities": ["critical", "major", "minor", "info"],
+  "finding_categories": [
+    "acceptance-criteria-gap",
+    "hidden-behavior-change",
+    "test-validity",
+    "scope-letter-not-intent",
+    "maintenance-risk",
+    "security",
+    "legal",
+    "business",
+    "privacy",
+    "other"
+  ],
+  "finding_statuses": ["open", "disputed", "resolved", "false_positive", "accepted_risk", "deferred"],
+  "closure_policy": {
+    "$comment": "Authority attaches to ROLE (reviewer / executor / human), never to KIND (ai / human) -- an AI serving as a human-attested reviewer's assistant still cannot self-close, and a human executor is still an executor. Enforced by AREV-006, not by prompt.",
+    "open_statuses": ["open"],
+    "settable_by": {
+      "open": ["reviewer"],
+      "disputed": ["executor"],
+      "resolved": ["reviewer"],
+      "false_positive": ["human"],
+      "accepted_risk": ["human"],
+      "deferred": ["human"]
+    },
+    "non_closure_statuses": ["open", "disputed"],
+    "statuses_requiring_decision_ref": ["false_positive", "accepted_risk", "deferred"],
+    "human_only_categories": ["security", "legal", "business", "privacy"],
+    "human_only_close_note": "A finding under a human-only category may be marked resolved by a reviewer only when reviewer_kind is human, or closed to false_positive/accepted_risk/deferred by a human citing a decision record -- an AI reviewer may never close a human-only-category finding under any status, whatever the decision reference says. Mirrors HANDOFF-010 exactly."
+  },
+  "evaluator_isolation": {
+    "sees": [
+      "the approved requirement, scope, and acceptance criteria",
+      "the execution contract",
+      "the diff between base_sha and head_sha",
+      "test artifacts and evidence entries",
+      "relevant architecture constraints"
+    ],
+    "does_not_see": [
+      "the executor's chain of thought or persuasion",
+      "a prior reviewer's verdict",
+      "the narrative fields of EXECUTION-RESULT.json -- written by the actor under review and a claim by this framework's own core principle"
+    ]
+  },
+  "preflight": {
+    "note": "axiom verify --preflight runs only the EXEC-* checks that do not require EXECUTION-REVIEW.json to exist yet: contract integrity (EXEC-002), identity match (EXEC-003), scope (EXEC-004), and git-state reconciliation (EXEC-008). It is a flag on the existing verify command, never a new verb or gate, so a review is never spent on a diff whose base does not resolve."
+  }
+}

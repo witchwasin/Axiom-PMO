@@ -15,7 +15,12 @@ param(
   [ValidateSet("Text", "Json")]
   [string]$Format = "Text",
 
-  [switch]$FailOnWarning
+  [switch]$FailOnWarning,
+
+  # M8.1: run only the mechanical EXEC-* checks (contract integrity, identity,
+  # scope, git-state reconciliation) and skip AREV-*, which can make a live
+  # GitHub API call. Never a new verb or gate -- a flag on this one.
+  [switch]$Preflight
 )
 
 # Milestone 5.2/5.3 entry point: check an execution result against the
@@ -51,6 +56,8 @@ $gitRoot = (Resolve-Path -LiteralPath $GitRepoRoot).Path
 . (Join-Path $PSScriptRoot "lib/execution-contract-git.ps1")
 . (Join-Path $PSScriptRoot "lib/execution-contract-evidence.ps1")
 . (Join-Path $PSScriptRoot "lib/execution-contract-validator.ps1")
+. (Join-Path $PSScriptRoot "lib/mode-resolver.ps1")
+. (Join-Path $PSScriptRoot "lib/adversarial-review-validator.ps1")
 
 $script:messages = New-Object System.Collections.Generic.List[object]
 $script:pass = 0
@@ -69,7 +76,8 @@ $verification = Invoke-ExecutionContractVerification `
   -ResultPath $resolvedResult `
   -GitRepoRoot $gitRoot `
   -FrameworkRoot $repoRoot `
-  -ContractPath $ContractPath
+  -ContractPath $ContractPath `
+  -Preflight:$Preflight
 
 $exitCode = 0
 if ($script:fail -gt 0) { $exitCode = 1 }

@@ -1,0 +1,39 @@
+{
+  "$comment": [
+    "Machine-generated proposal from Milestone 9's Failure Pattern Registry.",
+    "",
+    "This is a PROPOSAL, not a decision. An AI-authored candidate's status may",
+    "only ever be 'proposed' -- any other value requires a DEC-### recorded by",
+    "a human. An AI must never promote, approve, or implement its own",
+    "candidate. See pmo-config/learning-policy.json and the Permanent",
+    "Non-Goals section of ROADMAP.md.",
+    "",
+    "recommended_remedies must weigh the full remedy set, not default to",
+    "'add a new rule' -- a rule that fires mostly as a false positive is a",
+    "defect in the rule, not evidence the codebase needs more rules.",
+    "",
+    "Remove this $comment block in a real generated file."
+  ],
+  "schema_version": "1.0",
+  "candidate_id": "IMP-001",
+  "generated_at": "<YYYY-MM-DDTHH:MM:SSZ>",
+  "trigger": {
+    "rule_id": "<RULE-ID>",
+    "distinct_projects": 0,
+    "distinct_commits": 0,
+    "distinct_run_ids": 0,
+    "days_span": 0
+  },
+  "disposition_summary": {
+    "true_defect": 0,
+    "false_positive": 0,
+    "user_error": 0,
+    "undetermined": 0
+  },
+  "hypothesis": "<What pattern the cluster suggests, in one or two sentences. No requirement, artifact, or source content quoted.>",
+  "recommended_remedies": [
+    "<one or more of: documentation | onboarding | error_message_wording | changed_default | validator_defect | false_positive_reduction | review_prompt_wording | new_deterministic_rule>"
+  ],
+  "authority_required": "Human Owner",
+  "status": "proposed"
+}
