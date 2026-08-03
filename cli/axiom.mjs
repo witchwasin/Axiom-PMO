@@ -328,7 +328,7 @@ const COMMANDS = {
 
   verify: {
     summary: "Verify an execution result against its contract and observed git state",
-    usage: "axiom verify --project <path> --result <path> [--contract <path>] [--json]",
+    usage: "axiom verify --project <path> --result <path> [--contract <path>] [--json] [--preflight]",
     build: (args) => buildVerify(args),
   },
 
@@ -517,6 +517,8 @@ function buildVerify(args) {
   rest = json.rest;
   const failOnWarning = takeFlag(rest, "fail-on-warning");
   rest = failOnWarning.rest;
+  const preflight = takeFlag(rest, "preflight");
+  rest = preflight.rest;
 
   if (!project.value) {
     return { usageError: "verify requires --project <path>" };
@@ -542,6 +544,7 @@ function buildVerify(args) {
   }
   if (json.present) scriptArgs.push("-Format", "Json");
   if (failOnWarning.present) scriptArgs.push("-FailOnWarning");
+  if (preflight.present) scriptArgs.push("-Preflight");
   return { script: "scripts/verify-execution-result.ps1", scriptArgs: [...scriptArgs, ...rest] };
 }
 

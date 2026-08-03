@@ -110,3 +110,14 @@ P*/confidenciacal/
 # Slide Deck — generated backups (safe to delete, regenerated on export)
 # ==========================
 Slide Deck/**/backup/
+
+# ==========================
+# Milestone 9: Failure Pattern Registry raw events -- local, opt-in (DEC-013,
+# DEC-015). Ignored by default because raw diagnostic events are per-run
+# local observations, not something committing by default should push into
+# shared history without anyone choosing to. Sharing is explicit: commit
+# .axiom/learning/FAILURE-PATTERNS.json (the derived, rebuildable registry)
+# instead, if a team wants that shared.
+# ==========================
+.axiom/learning/events/
+.axiom/learning/salt

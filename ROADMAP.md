@@ -116,8 +116,8 @@ Recommended effort allocation:
 | Milestone 6 - Claude Code Integration Experience | **CLOSED and MERGED to `main`** -- three independent review rounds (R1: 1 FATAL + 1 MAJOR; R2: 1 FATAL + 4 MAJOR; R3: 3 MAJOR + 2 MINOR), all findings resolved; final verdict **ACCEPT WITH MINOR REVISIONS**; Human Owner accepted and closed 2026-08-01 (`DEC-007`); merge to `main` separately confirmed by the Human Owner directly in chat and completed the same day | Optional integration, not core product. Not tagged, released, or published to any marketplace. Known debts remain open. `docs/reviews/m6-reviewer-index.md`; decisions `DEC-003` (shape), `DEC-006` (boundary), `DEC-005` (testing), `DEC-007` (closure); commit `1d85d60`, CI run `30736667616` 7/7 |
 | Milestone 7 - Onboarding and the Two Execution Paths | **Authorized, implementation starting** -- design reviewed through two independent Independent AI Reviewer rounds against `research/m7-m9-proposal.md`; Human Owner authorized implementation 2026-08-03 (`DEC-011`) | Core product. Two independent onboarding questions (who builds the work, how strictly is it governed), a governed `execution_path` declaration, and an `axiom status` verb. Design decision `DEC-011` |
 | Milestone 8.0 - Adversarial Review Evidence: research | **Research delivered; GO WITH REFRAME recommended, Human Owner decision pending** -- authorized for research only 2026-08-03 (`DEC-012`) | Core-product-adjacent research. [`docs/architecture/adversarial-review.md`](docs/architecture/adversarial-review.md). Primary question resolved: a `check_run_id` alone proves a CI job ran, not that a review produced the artifact; a concrete four-part binding (artifact digest, workflow digest, scope protection, contract identity) closes the gap using mechanisms already in production (`Test-CiCheckEvidence`, `REF-002`, `EXEC-004`). Recommendation is not an authorization -- Milestone 8.1 implementation remains a separate decision. Decision `DEC-012` |
-| Milestone 8.1 - Adversarial Review Evidence: implementation | **Not authorized** -- contingent on Milestone 8.0's GO/NO-GO recommendation and a further, separate Human Owner decision | Depends on Milestone 8.0 |
-| Milestone 9 - Failure Pattern Registry and Governed Improvement Proposals | **Proposed; boundary confirmed, implementation not authorized** -- local/opt-in boundary confirmed 2026-08-03 (`DEC-013`) | Local, opt-in aggregation over existing diagnostics, plus human-reviewed improvement candidates. Sequenced after Milestone 8.0 so its event schema can carry review-disposition data. Decision `DEC-013` |
+| Milestone 8.1 - Adversarial Review Evidence: implementation | **Implemented, pending independent review** -- Human Owner authorized 2026-08-03 (`DEC-014`) on the Milestone 8.0 GO WITH REFRAME recommendation | `AREV-001`..`AREV-006`, `pmo-config/adversarial-review-policy.json`, `templates/EXECUTION-REVIEW.json`, `axiom verify --preflight`. Independent review before merge to `main` is required and not waived by this authorization |
+| Milestone 9 - Failure Pattern Registry and Governed Improvement Proposals | **Implemented, pending independent review** -- Human Owner authorized 2026-08-03 (`DEC-015`) | `scripts/aggregate-diagnostics.ps1`, `pmo-config/learning-policy.json`, `DOCTOR-014`. Local, opt-in aggregation over existing diagnostics, plus human-reviewed improvement candidates |
 
 ## Roadmap Governance
 
@@ -158,9 +158,9 @@ Milestone 1 delivered, with walkthrough/recording evidence deferred
 -> Milestone 5.5 (delivered -- closed 2026-08-02, post-closure fix)
 -> Milestone 6 (optional integration; closed and merged to `main` 2026-08-01)
 -> Milestone 7 (authorized 2026-08-03, implementation starting)
--> Milestone 8.0 (research, authorized 2026-08-03, not started)
--> Milestone 9 (proposed; boundary confirmed 2026-08-03; implementation not authorized)
--> Milestone 8.1 (not authorized; contingent on Milestone 8.0's recommendation)
+-> Milestone 8.0 (research delivered 2026-08-03, GO WITH REFRAME)
+-> Milestone 9 (implemented 2026-08-03; pending independent review)
+-> Milestone 8.1 (implemented 2026-08-03; pending independent review)
 ```
 
 Milestone 8.0 is sequenced ahead of Milestone 9 for a concrete reason, not only
@@ -1245,10 +1245,19 @@ Owner decision so they are not relitigated under later review pressure
 
 ### Milestone 8.1 - Implementation
 
-Status: **Not authorized.** Contingent on Milestone 8.0's GO/NO-GO
-recommendation and a further, separate Human Owner decision. Nothing in this
-roadmap entry authorizes any `AREV-*` rule, `EXECUTION-REVIEW.json` schema, or
-policy file to be written.
+Status: **Implemented, pending independent review before merge to `main`.**
+Human Owner authorized implementation on the Milestone 8.0 recommendation,
+2026-08-03 (`DEC-014`). Delivers `pmo-config/adversarial-review-policy.json`,
+`templates/EXECUTION-REVIEW.json`, `scripts/lib/adversarial-review-validator.ps1`
+(`AREV-001`..`AREV-006`), the `review-evidence-accepted` authority-claim type
+(registered in `pmo-config/execution-contract-policy.json` alongside
+`test-evidence-accepted`, reusing `EXEC-007`'s existing promotion mechanism
+rather than a parallel one), the pinned review-workflow path added by default
+to `axiom export`'s `prohibited_paths` so `EXEC-004` protects it, and
+`axiom verify --preflight`. `tests/helpers/adversarial-review-tests.ps1`
+covers the adversarial cases directly -- self-forged decision records,
+executor self-closure, an AI reviewer closing a human-only-category finding,
+artifact-observed alone never satisfying Strict.
 
 ## Milestone 9 - Failure Pattern Registry and Governed Improvement Proposals
 
@@ -1257,10 +1266,18 @@ emits -- recurring findings clustered and disposed as true defect, false
 positive, or user error, surfaced as human-reviewed improvement candidates.
 Full design is `research/m7-m9-proposal.md` section 4.
 
-Status: **Proposed; boundary confirmed, implementation not authorized.** Human
-Owner confirmed the milestone's local/opt-in boundary ahead of any
-implementation authorization, 2026-08-03 (`DEC-013`), because it is a design
-constraint the milestone depends on rather than an implementation detail:
+Status: **Implemented, pending independent review before merge to `main`.**
+Human Owner confirmed the milestone's local/opt-in boundary 2026-08-03
+(`DEC-013`) and authorized implementation the same day (`DEC-015`). Delivers
+`pmo-config/learning-policy.json`, `scripts/aggregate-diagnostics.ps1`,
+`templates/IMPROVEMENT-CANDIDATE.json`, and `DOCTOR-014`.
+`tests/helpers/learning-registry-tests.ps1` and a `DOCTOR-014` case added to
+`tests/helpers/config-mutation-tests.ps1` assert: no artifact content or
+free text reaches an event, an unlisted artifact is bucketed to `"other"`,
+rebuilding the registry from events reproduces it exactly, twenty reruns of
+one unfixed defect in one project produce zero improvement candidates, and
+an experimental rule with a blocking severity fails `pmo-doctor` itself. The
+boundary this milestone depends on:
 
 ```text
 Local and opt-in. No network transmission, by default or implicitly.
@@ -1380,6 +1397,14 @@ Do not spend near-term effort on:
   `DEC-012`); Milestone 9's local/opt-in boundary confirmed the same day
   (`DEC-013`) ahead of any implementation authorization; a Permanent Non-Goals
   section adopted for autonomous policy mutation.
+- Milestone 7 implemented: `execution_path` declaration, `PATH-001`/`PATH-002`,
+  interactive `axiom init`, `axiom status`. Milestone 8.0 research delivered
+  (`docs/architecture/adversarial-review.md`, GO WITH REFRAME). Human Owner
+  authorized Milestone 8.1 and Milestone 9 implementation the same day
+  (`DEC-014`, `DEC-015`); both implemented -- `AREV-001`..`AREV-006`,
+  `axiom verify --preflight`, and the Failure Pattern Registry
+  (`scripts/aggregate-diagnostics.ps1`, `DOCTOR-014`). All three pending
+  independent review before merge to `main`.
 
 ### Deferred technical debt
 
@@ -1409,15 +1434,18 @@ quietly dropped.
 
 ### Next
 
-Authorized and implementation-ready:
+Implemented, pending independent review before merge to `main` (branch
+`m7-onboarding-execution-paths`, off `main`):
 
-- **Milestone 7** (Onboarding and the Two Execution Paths) -- authorized for
-  implementation 2026-08-03 (`DEC-011`); implementation branch
-  `m7-onboarding-execution-paths`, off `main`.
-- **Milestone 8.0** (Adversarial Review Evidence: research and go/no-go) --
-  authorized for research only 2026-08-03 (`DEC-012`); implementation
-  (Milestone 8.1) is a separate, not-yet-authorized decision on the research's
-  recommendation.
+- **Milestone 7** (Onboarding and the Two Execution Paths) -- `DEC-011`.
+- **Milestone 8.1** (Adversarial Review Evidence: implementation) -- `DEC-014`,
+  on the Milestone 8.0 GO WITH REFRAME recommendation.
+- **Milestone 9** (Failure Pattern Registry and Governed Improvement
+  Proposals) -- `DEC-015`.
+
+None of these three is authorized to merge to `main` on the strength of this
+implementation alone -- independent review is required first, the same as
+every prior milestone.
 
 Everything else still requires a Human Owner decision to start, none currently
 authorized:
@@ -1427,10 +1455,6 @@ authorized:
 - Publishing the plugin to a public marketplace. Not implied by tagging a
   release, and not implied by the merge to `main`.
 - The deferred trust evidence above, if the Human Owner chooses to pick it up.
-- Milestone 9 implementation. Its local/opt-in boundary is confirmed
-  (`DEC-013`), but starting the milestone itself is a separate decision,
-  expected after Milestone 8.0's research concludes.
-- Milestone 8.1 implementation, pending Milestone 8.0's GO/NO-GO.
 
 Real-world use and problem reports are **deliberately not tracked here.** The
 Human Owner uses the framework directly and raises anything he finds as it
@@ -1445,12 +1469,10 @@ that has none.
 - **A large restructure to shrink the git-source plugin install size**
   (debt 3 above). Explicitly forbidden without a separate milestone and
   decision -- see that debt's own entry.
-- **Milestone 8.1 implementation.** Contingent on Milestone 8.0's research
-  producing a GO recommendation and a further, separate Human Owner decision --
-  a NO-GO is an accepted possible outcome, not a defect in the research.
 - **Any automatic promotion of a Milestone 9 `experimental` rule to
   `enforced`, or any rule severity/authority change proposed by an AI.**
-  Permanent Non-Goal; see that section above.
+  Permanent Non-Goal; see that section above. `DOCTOR-014` enforces the
+  severity half of this deterministically.
 
 ## Success Signals
 
