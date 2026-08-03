@@ -43,7 +43,8 @@
   "externally_observed_binding": {
     "pinned_workflow_path": ".github/workflows/adversarial-review.yml",
     "pinned_workflow_digest": null,
-    "note": "pinned_workflow_digest is null by default: no adversarial-review workflow has been authored or pinned yet. Until an organization sets this to the real SHA-256 of its own review workflow file, an externally-observed review cannot satisfy Strict on its own -- it fails closed to unverified, the same posture Test-CiCheckEvidence already takes when the gh CLI or a resolvable remote is unavailable. This is deliberate: a partial binding is artifact-observed wearing a stronger name, and must not be sold as more."
+    "note": "pinned_workflow_digest is null by default: no adversarial-review workflow has been authored or pinned yet. Until an organization sets this, an externally-observed review cannot satisfy Strict on its own -- it fails closed to unverified, the same posture Test-CiCheckEvidence already takes when the gh CLI or a resolvable remote is unavailable. This is deliberate: a partial binding is artifact-observed wearing a stronger name, and must not be sold as more.",
+    "digest_semantics": "SHA-256 of the workflow file's GIT BLOB at the verified commit, not of the file as it sits in your working tree. The two differ whenever git normalizes line endings on commit (core.autocrlf, or a text attribute), so compute it the same way the validator reads it: `git cat-file blob <commit>:.github/workflows/adversarial-review.yml | shasum -a 256`. Reading the blob rather than the working tree is deliberate -- it makes the pinned value a property of the commit under verification, not of whichever machine happens to be running the check."
   },
   "finding_severities": ["critical", "major", "minor", "info"],
   "finding_categories": [

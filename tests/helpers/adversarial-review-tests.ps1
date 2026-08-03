@@ -580,6 +580,7 @@ if (`$Path -like "*check-runs*") {
     try { $refSuffixJson = ($refSuffixOutput | Out-String) | ConvertFrom-Json } catch { }
     Assert-True "workflow run path with a trailing @ref still matches the pinned path: AREV-003 not raised" `
       ((Get-Rules $refSuffixJson) -notcontains "AREV-003")
+
   } finally {
     $env:PATH = $previousPath
     Remove-ReviewFixture $dir
