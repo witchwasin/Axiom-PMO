@@ -85,8 +85,34 @@ Sol separately acknowledged the `f10b608` baseline move itself (same day):
 agrees with the CI-infrastructure classification, confirms `DEC-016` and
 all four milestone closures are unaffected with no reopening or re-review
 required, and confirms any future release candidate or tag should be built
-from `f10b608` or later. No action pending from Sol on this point; the
-Public Release Readiness Pass remains separate, not-yet-authorized work.
+from `f10b608` or later. No action pending from Sol on this point.
+
+### Public Release Readiness Pass — scoped to Sol's four follow-ups, 2026-08-03
+
+Explicitly scoped down to only Sol's four post-closure follow-up items, not
+a full public-release audit. Status of each:
+
+1. **Changelog record of both production defects** — done, above.
+2. **Audit other negative/privacy assertions for the vacuous-pass
+   pattern** — done: all 8 `-notmatch`/`-notcontains` candidates across
+   `tests/helpers/*.ps1` checked; 1 genuine case found and fixed (see
+   above).
+3. **Release candidates/tags built only from a commit with complete remote
+   CI evidence** — recorded as policy in `ROADMAP.md` (`f10b608` minimum
+   baseline).
+4. **Make the Windows PowerShell 5.1 job (`pmo-checks`) a real, enforced
+   release gate via GitHub branch protection required status checks** —
+   **not applicable.** The `witchwasin/Axiom-PMO` repository is on a plan
+   that does not support branch protection rules (confirmed by the Human
+   Owner 2026-08-03); this is a GitHub account/plan constraint, not a
+   framework or process choice, and Claude does not modify GitHub security
+   settings even with explicit permission. `pmo-checks` remains a real CI
+   job whose result is checked manually (as done throughout this session)
+   rather than a GitHub-enforced merge gate. If the plan changes, revisit
+   this item using the check names already confirmed against `e0d4967`:
+   `pmo-checks`, `pmo-checks-windows-pwsh7`, `pmo-checks-linux-pwsh7`,
+   `pmo-checks-macos-pwsh7`, `dogfood-ci-check-evidence`,
+   `dogfood-github-action`, `dogfood-scope-diff`.
 
 **Milestone 7 — Onboarding and the Two Execution Paths.** Authorized for
 implementation 2026-08-03 (`DEC-011`), on branch
