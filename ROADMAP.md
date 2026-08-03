@@ -9,12 +9,15 @@ authorized separately by the Human Owner on 2026-08-02. GitHub Release notes,
 marketplace publication, npm publication, and any further tag remain separate
 decisions and have not occurred.
 
-**Minimum publishable baseline: `1309cb6`.** Two post-closure production
+**Minimum publishable baseline: `f10b608`.** Two post-closure production
 defects were found by CI after the Milestone 7-9 merge and fixed on `main`
 -- both host-conditional, both failing closed, neither promoting untrusted
-evidence (full errata in `CHANGELOG.md`). A release candidate must therefore
-be built from `1309cb6` or later, never from `1235034` or `4ae5f35`, which
-are closed-but-not-publishable across the supported hosts.
+evidence -- followed by a CI-infrastructure defect: the Windows
+PowerShell 5.1 job's 15-minute timeout no longer fit the grown test suite,
+so `1309cb6` itself was never confirmed green on all hosts by real CI
+(full errata in `CHANGELOG.md`). A release candidate must therefore be
+built from `f10b608` or later, never from `1235034`, `4ae5f35`, or
+`1309cb6`, none of which are publishable across the supported hosts.
 Last updated: 2026-08-03
 
 Axiom-PMO is moving from an open-source governance framework into a developer

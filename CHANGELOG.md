@@ -12,17 +12,16 @@ Sol's explicit scope lock); round 3 final verdict **ACCEPT** for all four
 milestones. Not part of the `v1.3.0` tag; no further tag or release
 authorized by this closure.
 
-### Post-closure errata — two production defects found by CI after `DEC-016`
+### Post-closure errata — two production defects and one CI-infra defect found after `DEC-016`
 
 Recorded rather than quietly folded in: these were found **after** the
 milestones were closed and merged, by the GitHub Actions run the closure
-push itself triggered. Both were host-conditional and invisible to every
-check that existed at review time — the maintainer machine cannot run
-Windows PowerShell 5.1 at all, and the independent reviewer's environment
-could not reach `github.com` to check the branch out. Neither defect
-promoted untrusted evidence or widened a boundary; both failed closed.
-Fixed on `main` at `1309cb6`, which supersedes `4ae5f35` as the minimum
-publishable baseline.
+push itself triggered. Both production defects were host-conditional and
+invisible to every check that existed at review time — the maintainer
+machine cannot run Windows PowerShell 5.1 at all, and the independent
+reviewer's environment could not reach `github.com` to check the branch
+out. Neither defect promoted untrusted evidence or widened a boundary;
+both failed closed. Fixed on `main` at `1309cb6`.
 
 - **Milestone 8.1, `Out-String` newline reconstruction** (`247e83d`).
   `Test-ExternallyObservedReviewBinding` recomputed the pinned workflow's
@@ -45,6 +44,22 @@ publishable baseline.
   `FAILURE-PATTERNS.json` on that host, while all three pwsh 7 jobs passed
   on identical code. Fixed with `RNGCryptoServiceProvider`.
 
+A third, CI-infrastructure-only defect surfaced next, on the `1309cb6`
+errata-documentation commit (`4750395`): the `pmo-checks` job (Windows
+PowerShell 5.1) was killed twice in a row by `timeout-minutes: 15`, not by
+a failing assertion — every check that ran before the cutoff was PASS.
+`pmo-checks-windows-pwsh7`, which runs the suite once instead of twice,
+finished the same commit with about 13 seconds of margin inside the same
+15-minute budget. The M7-M9 additions (adversarial-review-tests,
+learning-registry-tests, onboarding/execution-path fixtures) grew the
+Windows suite past a budget sized earlier in the project. Fixed at
+`f10b608` by raising both Windows jobs in
+`.github/workflows/pmo-checks.yml` to `timeout-minutes: 30`. Verified
+green on real GitHub Actions (run `30837469629`) across all 7 jobs.
+`f10b608` supersedes `1309cb6` as the minimum publishable baseline —
+`1309cb6` was correct but its own CI evidence was incomplete because of
+this timeout, so it was never itself confirmed green on all hosts.
+
 **The finding worth carrying forward** is neither crash. M9's three privacy
 assertions were written as `-notmatch` against the joined event text, so
 with zero events they passed **vacuously** — reporting green against an
@@ -56,12 +71,15 @@ vacuously-passing assertion is a governance gap nothing was looking for.
 
 Independently acknowledged by Sol against the post-closure diff through
 `1309cb6`: no milestone reopening required, `DEC-016` stands, M7/M8.0/M8.1/M9
-remain CLOSED, and `1309cb6` supersedes `4ae5f35` as the minimum
-publish/release baseline. Sol's release-readiness follow-ups (a Windows
-PowerShell 5.1 production-path release gate, and an audit of other negative
-assertions for the vacuous-pass pattern) belong to the separate, **not yet
-authorized** public release-preparation work — not to these closed
-milestones.
+remain CLOSED. The CI-timeout fix at `f10b608` is a workflow-infrastructure
+change, not a milestone code change, and does not require separate Sol
+review; it is recorded here for the same reason as the two production
+defects above — real CI evidence, not self-report, decides the baseline.
+`f10b608` is the current minimum publish/release baseline. Sol's
+release-readiness follow-ups (a Windows PowerShell 5.1 production-path
+release gate, and an audit of other negative assertions for the
+vacuous-pass pattern) belong to the separate, **not yet authorized** public
+release-preparation work — not to these closed milestones.
 
 **Milestone 7 — Onboarding and the Two Execution Paths.** Authorized for
 implementation 2026-08-03 (`DEC-011`), on branch
