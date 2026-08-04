@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0",
+  "project_code": "STANDARD-FEATURE",
+  "reviewed_at": "2026-08-04",
+  "reviewer_kind": "ai",
+  "reviewer": "claude-sonnet-5",
+  "handoff_target": "internal",
+  "source_snapshot": {
+    "source_ids": ["MOM-20260710", "REQ-20260710"],
+    "digest": "5dc9e7eb106f589be40bad402490d7341dca107e54c5fe21e8caed1d4791a520"
+  },
+  "review_inputs": {
+    "digest": "5ef23092c67f44b85f799f1f597b8e3b4320a1485d6d7ae2dc88990903383300"
+  },
+  "lenses": [
+    { "lens": "value_and_scope_slice", "status": "reviewed" },
+    { "lens": "capability_lifecycle", "status": "reviewed" },
+    { "lens": "data_cardinality_and_units", "status": "reviewed" },
+    { "lens": "state_transitions_and_rollback", "status": "reviewed" },
+    { "lens": "concurrency_and_idempotency", "status": "reviewed" },
+    { "lens": "dependencies_and_build_order", "status": "reviewed" },
+    { "lens": "ownership_and_capacity", "status": "reviewed" },
+    { "lens": "acceptance_seed_reachability", "status": "reviewed" },
+    { "lens": "automated_manual_test_split", "status": "reviewed" },
+    { "lens": "privacy_and_data_classification", "status": "reviewed" },
+    { "lens": "environment_and_device_constraints", "status": "reviewed" },
+    { "lens": "demo_startup_reset_and_recovery", "status": "reviewed" }
+  ],
+  "findings": [
+    {
+      "finding_id": "HF-001",
+      "lens": "state_transitions_and_rollback",
+      "severity": "minor",
+      "artifact": "DESIGN/BUILD-SPEC.md",
+      "item_id": "state_machine",
+      "field": "body",
+      "description": "BUILD-SPEC declares that a ticket may move from any status to any other status (not strictly To Do -> In Progress -> Review/Test -> Done). Source (REQ-20260710 row 1, MOM-20260710 item 2) says only that staff 'can move tickets across four delivery statuses' and does not say whether transitions are unrestricted or sequential; this detail was filled in during BUILD-SPEC authoring, not sourced.",
+      "evidence_refs": ["DESIGN/BUILD-SPEC.md State Machine and Transition Guards", "PROJECT.md REQ-001", "source/REQ row 1"],
+      "suggestion": "Confirm with the actual PM/Tech Lead whether unrestricted transitions were the intended and already-built behavior, or whether the shipped board is in fact sequential-only; correct BUILD-SPEC if it does not match what D-001 actually built.",
+      "owner": "Demo Tech Lead",
+      "blocking_point": "non_blocking",
+      "status": "open",
+      "decision_ref": null
+    }
+  ],
+  "recommendation": {
+    "ready_to_start_development": true,
+    "ready_to_demo": false,
+    "notes": "This handoff is retroactive documentation for a slice (D-001) already marked Done and released; the deterministic contract is fully consistent (scope, design, data model, API, state machine, security/privacy inventory, and acceptance cases all resolve cleanly). One open finding (HF-001) flags an unsourced assumption about transition freedom in the state machine section that should be checked against what was actually built, but it does not block anything since the work is already shipped. Not marked ready-to-demo because Handoff Target is internal with no demo scheduled, not because of any defect."
+  }
+}
