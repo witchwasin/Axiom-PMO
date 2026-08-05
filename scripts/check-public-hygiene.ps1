@@ -55,6 +55,23 @@ if (-not (Test-Path -LiteralPath $allowlistPath -PathType Leaf)) {
 }
 
 $script:allowlist = Get-Content -LiteralPath $allowlistPath -Raw | ConvertFrom-Json
+
+# Private/internal project names are maintainer-local, not committed: a
+# public script must not hardcode the very names it exists to catch.
+# pmo-config/private-hygiene-patterns.example.json documents the shape;
+# the real file lives at .local/private-hygiene-patterns.json (gitignored).
+# Absent that file, this check is silently skipped -- public-safe patterns
+# above still run.
+$privatePatternsPath = Join-Path $repo ".local/private-hygiene-patterns.json"
+$privateChecks = @()
+if (Test-Path -LiteralPath $privatePatternsPath -PathType Leaf) {
+  $privateConfig = Get-Content -LiteralPath $privatePatternsPath -Raw | ConvertFrom-Json
+  $i = 0
+  foreach ($pattern in $privateConfig.private_patterns) {
+    $i++
+    $privateChecks += @{ Id = "PRIVATE-LOCAL-{0:D3}" -f $i; Pattern = $pattern; Regex = $false; Description = "private project name (local denylist)" }
+  }
+}
 # "Continue" around the git calls: this script sets ErrorActionPreference to
 # Stop, and Windows PowerShell 5.1 turns a native command's stderr into a
 # terminating error under Stop (see docs/architecture/powershell-portability.md
@@ -83,13 +100,6 @@ $selfExcludedPaths = @(
 
 $checks = @(
   @{ Id = "OLD-NAME-001"; Pattern = "PMO-Template-Personal"; Regex = $false; Description = "old private product name" },
-  @{ Id = "PRIVATE-PROJECT-001"; Pattern = "PRIVATE-PROJECT-001"; Regex = $false; Description = "private project name" },
-  @{ Id = "PRIVATE-PROJECT-002"; Pattern = "PRIVATE-PROJECT-002"; Regex = $false; Description = "private project name" },
-  @{ Id = "PRIVATE-PROJECT-003"; Pattern = "PRIVATE-PROJECT-003"; Regex = $false; Description = "private project name" },
-  @{ Id = "PRIVATE-PROJECT-004"; Pattern = "PRIVATE-PROJECT-004"; Regex = $false; Description = "private project name" },
-  @{ Id = "PRIVATE-PROJECT-005"; Pattern = "PRIVATE-PROJECT-005"; Regex = $false; Description = "private project name" },
-  @{ Id = "PRIVATE-PROJECT-006"; Pattern = "PRIVATE-PROJECT-006"; Regex = $false; Description = "private project name" },
-  @{ Id = "PRIVATE-PROJECT-007"; Pattern = "PRIVATE-PROJECT-007"; Regex = $false; Description = "private project name" },
   @{ Id = "LOCAL-PATH-001"; Pattern = '[A-Z]:\\Users\\'; Regex = $true; Description = "Windows local user path" },
   @{ Id = "LOCAL-PATH-002"; Pattern = '/Users/[^/\s]+'; Regex = $true; Description = "macOS local user path" },
   @{ Id = "LOCAL-PATH-003"; Pattern = '~/Documents/'; Regex = $true; Description = "home Documents path" },
@@ -104,7 +114,7 @@ $checks = @(
   @{ Id = "SECRET-004"; Pattern = 'AKIA[0-9A-Z]{16}'; Regex = $true; Description = "AWS access key-like string" },
   @{ Id = "SECRET-005"; Pattern = 'BEGIN PRIVATE KEY'; Regex = $true; Description = "private key marker" },
   @{ Id = "SECRET-006"; Pattern = 'Bearer\s+[A-Za-z0-9._~+/-]+=*'; Regex = $true; Description = "Bearer token-like string" }
-)
+) + $privateChecks
 
 $problems = @()
 

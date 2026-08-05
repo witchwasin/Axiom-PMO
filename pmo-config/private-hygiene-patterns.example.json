@@ -1,0 +1,8 @@
+{
+  "_comment": "Copy this file to .local/private-hygiene-patterns.json (gitignored) and list your own private/internal project or company names there. scripts/check-public-hygiene.ps1 loads that file if present and adds each entry as a literal-match check, skipping this check entirely when the file is absent. Never commit the real file or real names.",
+  "private_patterns": [
+    "PRIVATE_COMPANY_NAME",
+    "PRIVATE_CUSTOMER_NAME",
+    "PRIVATE_PROJECT_NAME"
+  ]
+}
