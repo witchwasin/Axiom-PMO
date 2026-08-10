@@ -62,8 +62,10 @@ Invoke-Check "doctor-markdown" { & $ps -NoProfile -ExecutionPolicy Bypass -File 
 # pass; measured at ~2.5 minutes per CI run, growing with every fixture added.
 Invoke-Check "validation-fixtures" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/run-validation-tests.ps1") -RepoPath $repo -VerifyGolden }
 # The example goldens were verified nowhere: not here, and not in the workflow.
-# They are cheap (three cases) and they are what proves the README's worked
-# examples still produce what the docs say they produce.
+# They are cheap (four cases) and they are what proves the README's worked
+# examples still produce what the docs say they produce. One of the four runs
+# STANDARD-FEATURE at -Gate Handoff, because the Release run below exercises no
+# HANDOFF-### rule and so cannot see a handoff regression in that example.
 Invoke-Check "example-golden" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/golden/capture-examples.ps1") -RepoPath $repo -Verify }
 Invoke-Check "config-mutation" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/config-mutation-tests.ps1") -RepoPath $repo }
 Invoke-Check "diagnostics-contract" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/diagnostics-contract-tests.ps1") -RepoPath $repo }
