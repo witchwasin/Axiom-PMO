@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="icon-title">
+  <title id="icon-title">RoomBook app icon</title>
+  <rect x="0" y="0" width="64" height="64" rx="14" fill="#1A1B2E"/>
+  <rect x="12.5" y="17.5" width="39" height="29" rx="5" fill="none" stroke="#9FA3C7" stroke-width="3"/>
+  <rect x="26" y="21" width="12" height="22" rx="2" fill="#8F86F0"/>
+</svg>

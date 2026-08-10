@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{PROJECT_NAME}} - Design System</title>
+
+<!--
+  One-page visual design system sheet.
+
+  What this is
+  A visual overview. It shows the agreed look of the product on a single page so a
+  human can react to it before anyone builds a prototype or accepts a handoff.
+
+  What this is not
+  A component workshop. It does not run, it does not exercise every permutation of
+  every control, and it is not a substitute for a live component library once the
+  product is under development. The contract lives in DESIGN/DESIGN-SYSTEM.md.
+
+  Authority
+  Canonical: this file, DESIGN/DESIGN-SYSTEM.md, and the SVG files in DESIGN/BRAND/.
+  Derived: any screenshot, exported PDF, or printed copy taken from this page.
+  When a derived copy and a canonical file disagree, the canonical file wins.
+
+  How to fill this in
+  This file is a blank form and will not render meaningfully until it is filled,
+  because the colour and type tokens are still placeholders. To see what a finished
+  sheet looks like, open examples/STANDARD-FEATURE/DESIGN/DESIGN-SYSTEM.html.
+
+  1. Replace every {{PLACEHOLDER}}. The project validator treats a leftover
+     {{...}} in a project file as an unfilled placeholder and will report it.
+  2. The :root block below is the single source of colour and type values.
+     The same token names appear in DESIGN/DESIGN-SYSTEM.md. Keep them in step.
+  3. Replace the inline SVG marks with the real contents of DESIGN/BRAND/*.svg.
+  4. Duplicate a .phone block for each screen. Only screens that already exist
+     in DESIGN/WIREFRAME.md may appear here.
+
+  Deliberate constraints
+  - Self-contained. No external stylesheet, script, font, or image request.
+  - Light canvas only. The palette is the subject, so the page never inverts it.
+  - Print sets A3 portrait so this renders as one clean sheet.
+-->
+
+<style>
+:root{
+  /* Colour tokens. Mirror of the Design Tokens - Color table. */
+  --color-ink-900:      {{COLOR_INK_900}};
+  --color-ink-700:      {{COLOR_INK_700}};
+  --color-ink-500:      {{COLOR_INK_500}};
+  --color-brand-500:    {{COLOR_BRAND_500}};
+  --color-brand-100:    {{COLOR_BRAND_100}};
+  --color-accent-500:   {{COLOR_ACCENT_500}};
+  --color-surface-50:   {{COLOR_SURFACE_50}};
+  --color-surface-0:    #FFFFFF;
+  --color-line:         #E5E7EB;
+  --color-success-500:  #16A34A;
+  --color-warning-500:  #D97706;
+  --color-danger-500:   #DC2626;
+  --color-info-500:     #2563EB;
+
+  /* Type tokens. Mirror of the Design Tokens - Typography table. */
+  --font-primary: {{FONT_PRIMARY}}, "IBM Plex Sans Thai", "Noto Sans Thai",
+                  -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --type-display: 700 32px/40px var(--font-primary);
+  --type-title:   700 19px/28px var(--font-primary);
+  --type-body:    400 15px/24px var(--font-primary);
+  --type-caption: 400 12px/16px var(--font-primary);
+
+  /* Spacing and radius tokens. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+
+  /* Border and elevation tokens. Mirror of the Design Tokens - Border and Elevation table. */
+  --border-hairline: 1px solid var(--color-line);
+  --border-focus: 2px solid var(--color-brand-500);
+  --elevation-0: none;
+  --elevation-1: 0 1px 2px rgba(13,27,42,.06);
+  --elevation-2: 0 8px 24px rgba(13,27,42,.12);
+}
+
+*{ box-sizing: border-box; }
+html{ -webkit-text-size-adjust: 100%; }
+body{
+  margin: 0;
+  padding: var(--space-6);
+  background: var(--color-surface-50);
+  color: var(--color-ink-900);
+  font: var(--type-body);
+}
+.sheet{ max-width: 1040px; margin: 0 auto; display: grid; gap: var(--space-4); }
+
+/* Provenance bar. Makes a screenshot of this page self-describing. */
+.provenance{
+  display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4);
+  align-items: center; justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-0); border: 1px solid var(--color-line);
+  border-radius: var(--radius-md); font: var(--type-caption);
+  color: var(--color-ink-500);
+}
+.provenance strong{ color: var(--color-ink-900); font-weight: 700; }
+.provenance .notice{
+  padding: 2px var(--space-2); border-radius: 999px;
+  background: #FEF3C7; color: #92400E; font-weight: 700;
+}
+
+.card{
+  background: var(--color-surface-0); border: var(--border-hairline);
+  border-radius: var(--radius-lg); padding: var(--space-6);
+  box-shadow: var(--elevation-1);
+}
+.elevation-demo{ display: grid; gap: var(--space-3); }
+.elevation-demo > div{
+  padding: var(--space-3); border-radius: var(--radius-sm);
+  background: var(--color-surface-0); font: var(--type-caption);
+}
+.el-0{ border: var(--border-hairline); box-shadow: var(--elevation-0); }
+.el-1{ border: var(--border-hairline); box-shadow: var(--elevation-1); }
+.el-2{ border: var(--border-hairline); box-shadow: var(--elevation-2); }
+.el-focus{ border: var(--border-focus); }
+.label{
+  font: 700 11px/16px var(--font-primary); letter-spacing: .09em;
+  text-transform: uppercase; color: var(--color-brand-500);
+  margin: 0 0 var(--space-3);
+}
+.label.muted{ color: var(--color-ink-500); }
+h1,h2,h3{ margin: 0; }
+p{ margin: 0 0 var(--space-2); }
+.small{ font: var(--type-caption); color: var(--color-ink-500); }
+
+.grid{ display: grid; gap: var(--space-4); }
+.grid-3{ grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.grid-4{ grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.stack{ display: grid; gap: var(--space-2); }
+
+/* ---- Identity ---- */
+.identity{ display: grid; grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr); gap: var(--space-8); }
+.lockup{ display: flex; align-items: center; gap: var(--space-4); }
+.lockup .wordmark{ font: var(--type-display); letter-spacing: -.01em; }
+.lockup .wordmark span{ display: block; }
+.tagline{ margin-top: var(--space-4); font: var(--type-body); color: var(--color-ink-700); }
+.symbols{ display: flex; gap: var(--space-6); margin-top: var(--space-4); }
+.symbol{ text-align: center; }
+.symbol .glyph{
+  height: 44px; display: flex; align-items: center; justify-content: center;
+  font: 700 30px/1 var(--font-primary); color: var(--color-ink-900);
+}
+.symbol .name{ font: 700 11px/16px var(--font-primary); letter-spacing: .06em; text-transform: uppercase; }
+.symbol .meaning{ font: var(--type-caption); color: var(--color-ink-500); }
+
+/* ---- Palette ---- */
+.swatches{ display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.swatch{ width: 64px; }
+.swatch .chip{ height: 56px; border-radius: var(--radius-sm); border: 1px solid var(--color-line); }
+.swatch .hex{ font: 400 10px/16px var(--font-primary); color: var(--color-ink-500); margin-top: var(--space-1); }
+
+/* ---- Typography specimen ---- */
+.specimen .sample{ font: var(--type-display); }
+.specimen .glyphset{ font: var(--type-caption); color: var(--color-ink-500); word-break: break-all; }
+
+/* ---- App icon ---- */
+.icons{ display: flex; align-items: flex-end; gap: var(--space-3); }
+.appicon{
+  width: 96px; height: 96px; border-radius: 22px; background: var(--color-ink-900);
+  display: flex; align-items: center; justify-content: center;
+}
+.appicon.sm{ width: 48px; height: 48px; border-radius: 12px; }
+.appicon.light{ background: var(--color-surface-0); border: 1px solid var(--color-line); }
+
+/* ---- Components ---- */
+.btn{
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  width: 100%; padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm);
+  font: 700 14px/20px var(--font-primary); border: 1px solid transparent; cursor: default;
+}
+.btn-primary{ background: var(--color-brand-500); color: #fff; }
+.btn-primary.is-hover{ filter: brightness(.92); }
+.btn-primary.is-pressed{ filter: brightness(.82); }
+.btn-secondary{ background: var(--color-surface-0); color: var(--color-brand-500); border-color: var(--color-brand-500); }
+.btn-tertiary{ background: var(--color-surface-0); color: var(--color-ink-700); border-color: var(--color-line); }
+.btn-disabled{ background: #EEF1F5; color: #A9B2BF; }
+.state-note{ font: 400 10px/14px var(--font-primary); color: var(--color-ink-500); text-align: center; }
+
+.badge{
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  padding: 4px var(--space-2); border-radius: 999px;
+  font: 700 11px/16px var(--font-primary);
+}
+.badge-success{ background: #E8F7EF; color: #0F7A46; }
+.badge-warning{ background: #FEF3C7; color: #92400E; }
+.badge-info{ background: #EDE9FE; color: #5B21B6; }
+.badge-neutral{ background: #EEF1F5; color: var(--color-ink-700); }
+
+.field{
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--space-3); border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm); color: var(--color-ink-500); font: var(--type-body);
+}
+.field.is-focus{ border-color: var(--color-brand-500); box-shadow: 0 0 0 3px var(--color-brand-100); }
+.field.is-error{ border-color: var(--color-danger-500); color: var(--color-danger-500); }
+
+.nav{ display: flex; justify-content: space-around; border: 1px solid var(--color-line); border-radius: var(--radius-md); padding: var(--space-2) 0; }
+.nav-item{ text-align: center; font: 400 10px/14px var(--font-primary); color: var(--color-ink-500); }
+.nav-item .dot{ width: 18px; height: 18px; margin: 0 auto var(--space-1); border-radius: 5px; background: #D8DEE7; }
+.nav-item.is-active{ color: var(--color-brand-500); font-weight: 700; }
+.nav-item.is-active .dot{ background: var(--color-brand-500); }
+
+.progress{ height: 8px; border-radius: 999px; background: #E6EAF0; overflow: hidden; }
+.progress > span{ display: block; height: 100%; border-radius: 999px; background: var(--color-brand-500); }
+.stepper{ display: flex; align-items: flex-start; gap: var(--space-2); }
+.step{ flex: 1; text-align: center; font: 400 10px/14px var(--font-primary); color: var(--color-ink-500); }
+.step .bullet{
+  width: 22px; height: 22px; margin: 0 auto var(--space-1); border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  font: 700 11px/1 var(--font-primary); background: #E6EAF0; color: var(--color-ink-500);
+}
+.step.is-done .bullet{ background: var(--color-brand-500); color: #fff; }
+.step.is-current .bullet{ background: var(--color-ink-900); color: #fff; }
+
+.alert{
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-3); border-radius: var(--radius-sm);
+  font: 400 13px/20px var(--font-primary); border: 1px solid transparent;
+}
+.alert-success{ background: #ECFDF3; border-color: #BBF7D0; color: #166534; }
+.alert-warning{ background: #FFFBEB; border-color: #FDE68A; color: #92400E; }
+.alert-danger{ background: #FEF2F2; border-color: #FECACA; color: #991B1B; }
+.alert-info{ background: #EFF6FF; border-color: #BFDBFE; color: #1E40AF; }
+
+.tile{ border: 1px solid var(--color-line); border-radius: var(--radius-md); padding: var(--space-4); }
+.tile.dark{ background: var(--color-ink-900); color: #fff; border-color: var(--color-ink-900); }
+.tile .metric{ font: var(--type-display); }
+.tile .metric small{ font: var(--type-caption); opacity: .8; }
+
+/* ---- Screens ---- */
+.screens{ display: flex; flex-wrap: wrap; gap: var(--space-4); }
+.screen{ width: 188px; }
+.phone{
+  border: 1px solid var(--color-line); border-radius: var(--radius-lg);
+  overflow: hidden; background: var(--color-surface-0); display: flex; flex-direction: column;
+}
+.phone-status{
+  display: flex; justify-content: space-between; padding: 6px 10px;
+  font: 700 9px/12px var(--font-primary); color: var(--color-ink-500);
+}
+.phone-body{ padding: 0 10px 10px; display: grid; gap: var(--space-2); align-content: start; min-height: 300px; }
+.phone-nav{ margin-top: auto; }
+.screen .caption{ text-align: center; font: 700 12px/16px var(--font-primary); color: var(--color-ink-900); margin-top: var(--space-2); }
+.screen .states{ text-align: center; font: 400 10px/14px var(--font-primary); color: var(--color-ink-500); }
+.screen .states b{ color: var(--color-warning-500); font-weight: 700; }
+.mini{ font: 400 10px/14px var(--font-primary); }
+.mini-title{ font: 700 12px/18px var(--font-primary); }
+
+/* ---- Value props ---- */
+.valueprops{ background: var(--color-ink-900); color: #fff; border-color: var(--color-ink-900); }
+.valueprops .label{ color: var(--color-brand-500); }
+.prop .name{ font: 700 14px/20px var(--font-primary); color: var(--color-brand-500); }
+.prop .text{ font: var(--type-caption); color: #C7D0DC; }
+
+@media (max-width: 720px){
+  body{ padding: var(--space-3); }
+  .identity{ grid-template-columns: 1fr; gap: var(--space-6); }
+}
+
+@media print{
+  @page{ size: A3 portrait; margin: 10mm; }
+  body{ padding: 0; background: #fff; }
+  .card{ break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<main class="sheet">
+
+  <div class="provenance">
+    <span><strong>{{PROJECT_CODE}}</strong> &middot; Design System &middot; stage {{STAGE}} &middot; {{DATE}}</span>
+    <span>Visual overview &middot; canonical source DESIGN/DESIGN-SYSTEM.md</span>
+    <span class="notice">Sample data, illustrative only</span>
+  </div>
+
+  <!-- ============ IDENTITY ============ -->
+  <section class="card identity">
+    <div>
+      <div class="lockup">
+        <!-- Replace with the contents of DESIGN/BRAND/logo-primary.svg -->
+        <svg width="76" height="76" viewBox="0 0 76 76" role="img" aria-label="{{PROJECT_NAME}} logo">
+          <rect x="2" y="2" width="72" height="72" rx="20" fill="var(--color-brand-500)"/>
+          <path d="M26 54V22h16a10 10 0 0 1 0 20h-6l12 12" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="wordmark"><span>{{WORDMARK_LINE_1}}</span><span>{{WORDMARK_LINE_2}}</span></div>
+      </div>
+      <p class="tagline">{{TAGLINE}}</p>
+    </div>
+    <div>
+      <p class="label">Logo concept</p>
+      <p>{{LOGO_CONCEPT}}</p>
+      <div class="symbols">
+        <div class="symbol">
+          <div class="glyph">{{SYMBOL_1_GLYPH}}</div>
+          <div class="name">{{SYMBOL_1_NAME}}</div>
+          <div class="meaning">{{SYMBOL_1_MEANING}}</div>
+        </div>
+        <div class="symbol">
+          <div class="glyph">{{SYMBOL_2_GLYPH}}</div>
+          <div class="name">{{SYMBOL_2_NAME}}</div>
+          <div class="meaning">{{SYMBOL_2_MEANING}}</div>
+        </div>
+        <div class="symbol">
+          <div class="glyph">{{SYMBOL_3_GLYPH}}</div>
+          <div class="name">{{SYMBOL_3_NAME}}</div>
+          <div class="meaning">{{SYMBOL_3_MEANING}}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PALETTE / TYPE / ICON ============ -->
+  <div class="grid grid-3">
+    <section class="card">
+      <p class="label">Colour palette</p>
+      <div class="swatches">
+        <div class="swatch"><div class="chip" style="background:var(--color-ink-900)"></div><div class="hex">{{COLOR_INK_900}}</div></div>
+        <div class="swatch"><div class="chip" style="background:var(--color-ink-700)"></div><div class="hex">{{COLOR_INK_700}}</div></div>
+        <div class="swatch"><div class="chip" style="background:var(--color-brand-500)"></div><div class="hex">{{COLOR_BRAND_500}}</div></div>
+        <div class="swatch"><div class="chip" style="background:var(--color-accent-500)"></div><div class="hex">{{COLOR_ACCENT_500}}</div></div>
+        <div class="swatch"><div class="chip" style="background:var(--color-surface-50)"></div><div class="hex">{{COLOR_SURFACE_50}}</div></div>
+      </div>
+      <p class="small" style="margin-top:12px">Token names and contrast ratios are recorded in DESIGN-SYSTEM.md.</p>
+    </section>
+
+    <section class="card specimen">
+      <p class="label">Typography</p>
+      <p class="small">Primary family</p>
+      <div class="sample">{{FONT_PRIMARY}}</div>
+      <p style="margin-top:8px">{{TAGLINE}}</p>
+      <p class="glyphset">ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789</p>
+    </section>
+
+    <section class="card">
+      <p class="label">App icon and variants</p>
+      <div class="icons">
+        <div class="appicon">
+          <svg width="52" height="52" viewBox="0 0 76 76" role="img" aria-label="App icon">
+            <path d="M26 54V22h16a10 10 0 0 1 0 20h-6l12 12" fill="none" stroke="var(--color-brand-500)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="appicon sm light">
+          <svg width="26" height="26" viewBox="0 0 76 76" role="img" aria-label="App icon, light variant">
+            <path d="M26 54V22h16a10 10 0 0 1 0 20h-6l12 12" fill="none" stroke="var(--color-brand-500)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="appicon sm">
+          <svg width="26" height="26" viewBox="0 0 76 76" role="img" aria-label="App icon, dark variant">
+            <path d="M26 54V22h16a10 10 0 0 1 0 20h-6l12 12" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <p class="small" style="margin-top:12px">Minimum sizes and clear space are recorded in DESIGN/BRAND/BRAND.md.</p>
+    </section>
+
+    <section class="card">
+      <p class="label">Border and elevation</p>
+      <div class="elevation-demo">
+        <div class="el-0">elevation-0 &middot; flat on the page</div>
+        <div class="el-1">elevation-1 &middot; grouped content</div>
+        <div class="el-2">elevation-2 &middot; layered above the page</div>
+        <div class="el-focus">border-focus &middot; keyboard focus, never removed</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ COMPONENT LIBRARY ============ -->
+  <section class="card">
+    <p class="label">Component library</p>
+    <div class="grid grid-4">
+
+      <div class="stack">
+        <p class="label muted">Buttons</p>
+        <div class="state-note">variants</div>
+        <div class="btn btn-primary">{{BUTTON_PRIMARY_LABEL}}</div>
+        <div class="btn btn-secondary">{{BUTTON_SECONDARY_LABEL}}</div>
+        <div class="btn btn-tertiary">{{BUTTON_TERTIARY_LABEL}}</div>
+        <div class="state-note" style="margin-top:8px">states of the primary variant</div>
+        <div class="btn btn-primary is-hover">{{BUTTON_PRIMARY_LABEL}}</div>
+        <div class="state-note">hover</div>
+        <div class="btn btn-primary is-pressed">{{BUTTON_PRIMARY_LABEL}}</div>
+        <div class="state-note">pressed</div>
+        <div class="btn btn-disabled">{{BUTTON_PRIMARY_LABEL}}</div>
+        <div class="state-note">disabled</div>
+      </div>
+
+      <div class="stack">
+        <p class="label muted">Badges and tags</p>
+        <div><span class="badge badge-success">{{BADGE_SUCCESS}}</span></div>
+        <div><span class="badge badge-warning">{{BADGE_WARNING}}</span></div>
+        <div><span class="badge badge-info">{{BADGE_INFO}}</span></div>
+        <div>
+          <span class="badge badge-neutral">{{TAG_1}}</span>
+          <span class="badge badge-neutral">{{TAG_2}}</span>
+        </div>
+
+        <p class="label muted" style="margin-top:12px">Input fields</p>
+        <div class="field"><span>{{INPUT_1_PLACEHOLDER}}</span></div>
+        <div class="field is-focus"><span>{{INPUT_2_PLACEHOLDER}}</span></div>
+        <div class="state-note">focus</div>
+        <div class="field is-error"><span>{{INPUT_ERROR_MESSAGE}}</span></div>
+        <div class="state-note">error</div>
+      </div>
+
+      <div class="stack">
+        <p class="label muted">Navigation</p>
+        <div class="nav">
+          <div class="nav-item is-active"><div class="dot"></div>{{NAV_1}}</div>
+          <div class="nav-item"><div class="dot"></div>{{NAV_2}}</div>
+          <div class="nav-item"><div class="dot"></div>{{NAV_3}}</div>
+          <div class="nav-item"><div class="dot"></div>{{NAV_4}}</div>
+        </div>
+
+        <p class="label muted" style="margin-top:12px">Progress and indicators</p>
+        <div class="progress"><span style="width:{{PROGRESS_PERCENT}}"></span></div>
+        <div class="small">{{PROGRESS_LABEL}}</div>
+        <div class="stepper" style="margin-top:8px">
+          <div class="step is-done"><div class="bullet">1</div>{{STEP_1}}</div>
+          <div class="step is-done"><div class="bullet">2</div>{{STEP_2}}</div>
+          <div class="step is-current"><div class="bullet">3</div>{{STEP_3}}</div>
+          <div class="step"><div class="bullet">4</div>{{STEP_4}}</div>
+        </div>
+      </div>
+
+      <div class="stack">
+        <p class="label muted">Cards</p>
+        <div class="tile dark">
+          <div class="small">{{CARD_METRIC_LABEL}}</div>
+          <div class="metric">{{CARD_METRIC_VALUE}} <small>{{CARD_METRIC_UNIT}}</small></div>
+        </div>
+        <div class="tile">
+          <div class="mini-title">{{CARD_TITLE}}</div>
+          <div class="small">{{CARD_BODY}}</div>
+        </div>
+
+        <p class="label muted" style="margin-top:12px">Alerts and messages</p>
+        <div class="alert alert-success">{{ALERT_SUCCESS}}</div>
+        <div class="alert alert-warning">{{ALERT_WARNING}}</div>
+        <div class="alert alert-danger">{{ALERT_DANGER}}</div>
+        <div class="alert alert-info">{{ALERT_INFO}}</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ SCREEN EXAMPLES ============ -->
+  <section class="card">
+    <p class="label">Screen examples</p>
+    <div class="screens">
+
+      <!-- Duplicate this .screen block per wireframe screen. -->
+      <div class="screen">
+        <div class="phone">
+          <div class="phone-status"><span>9:41</span><span>{{SCREEN_1_ID}}</span></div>
+          <div class="phone-body">
+            <div class="mini-title">{{SCREEN_1_TITLE}}</div>
+            <div class="tile"><div class="mini">{{SCREEN_1_BLOCK_1}}</div></div>
+            <div class="tile"><div class="mini">{{SCREEN_1_BLOCK_2}}</div></div>
+            <div class="btn btn-primary" style="font-size:12px">{{SCREEN_1_ACTION}}</div>
+            <div class="phone-nav">
+              <div class="nav">
+                <div class="nav-item is-active"><div class="dot"></div>{{NAV_1}}</div>
+                <div class="nav-item"><div class="dot"></div>{{NAV_2}}</div>
+                <div class="nav-item"><div class="dot"></div>{{NAV_3}}</div>
+                <div class="nav-item"><div class="dot"></div>{{NAV_4}}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">{{SCREEN_1_CAPTION}}</div>
+        <div class="states">drawn: {{SCREEN_1_STATES_COVERED}}<br><b>not drawn: {{SCREEN_1_STATES_MISSING}}</b></div>
+      </div>
+
+      <div class="screen">
+        <div class="phone">
+          <div class="phone-status"><span>9:41</span><span>{{SCREEN_2_ID}}</span></div>
+          <div class="phone-body">
+            <div class="mini-title">{{SCREEN_2_TITLE}}</div>
+            <div class="tile"><div class="mini">{{SCREEN_2_BLOCK_1}}</div></div>
+            <div class="tile"><div class="mini">{{SCREEN_2_BLOCK_2}}</div></div>
+            <div class="phone-nav">
+              <div class="nav">
+                <div class="nav-item"><div class="dot"></div>{{NAV_1}}</div>
+                <div class="nav-item is-active"><div class="dot"></div>{{NAV_2}}</div>
+                <div class="nav-item"><div class="dot"></div>{{NAV_3}}</div>
+                <div class="nav-item"><div class="dot"></div>{{NAV_4}}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">{{SCREEN_2_CAPTION}}</div>
+        <div class="states">drawn: {{SCREEN_2_STATES_COVERED}}<br><b>not drawn: {{SCREEN_2_STATES_MISSING}}</b></div>
+      </div>
+
+      <div class="screen">
+        <div class="phone">
+          <div class="phone-status"><span>9:41</span><span>{{SCREEN_3_ID}}</span></div>
+          <div class="phone-body">
+            <div class="mini-title">{{SCREEN_3_TITLE}}</div>
+            <div class="tile"><div class="mini">{{SCREEN_3_BLOCK_1}}</div></div>
+            <div class="tile"><div class="mini">{{SCREEN_3_BLOCK_2}}</div></div>
+            <div class="phone-nav">
+              <div class="nav">
+                <div class="nav-item"><div class="dot"></div>{{NAV_1}}</div>
+                <div class="nav-item"><div class="dot"></div>{{NAV_2}}</div>
+                <div class="nav-item is-active"><div class="dot"></div>{{NAV_3}}</div>
+                <div class="nav-item"><div class="dot"></div>{{NAV_4}}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">{{SCREEN_3_CAPTION}}</div>
+        <div class="states">drawn: {{SCREEN_3_STATES_COVERED}}<br><b>not drawn: {{SCREEN_3_STATES_MISSING}}</b></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ VALUE PROPS ============ -->
+  <section class="card valueprops">
+    <p class="label">What this product promises</p>
+    <div class="grid grid-4">
+      <div class="prop"><div class="name">{{PROP_1_NAME}}</div><div class="text">{{PROP_1_TEXT}}</div></div>
+      <div class="prop"><div class="name">{{PROP_2_NAME}}</div><div class="text">{{PROP_2_TEXT}}</div></div>
+      <div class="prop"><div class="name">{{PROP_3_NAME}}</div><div class="text">{{PROP_3_TEXT}}</div></div>
+      <div class="prop"><div class="name">{{PROP_4_NAME}}</div><div class="text">{{PROP_4_TEXT}}</div></div>
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

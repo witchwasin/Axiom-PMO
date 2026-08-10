@@ -47,7 +47,16 @@ $cases = @(
   @{ Name = "github-task-source-waives-delivery"; Path = "tests/fixtures/valid-github-task-source-no-delivery"; Mode = "Standard"; Gate = "Release"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
   @{ Name = "github-no-repo-still-needs-delivery"; Path = "tests/fixtures/invalid-github-no-repo-needs-delivery"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "STRUCT-001"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "strict-scope-no-rtm-required"; Path = "examples/STRICT-HIGH-RISK"; Mode = "Strict"; Gate = "Scope"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
+  @{ Name = "example-design-system-demo-design"; Path = "examples/DESIGN-SYSTEM-DEMO"; Mode = "Standard"; Gate = "Design"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
+  # Covers the three ways the token comparison could produce a false positive:
+  # a lowercase hex, a token composed with var(), and a typography table that
+  # has no Value column and must therefore be skipped rather than guessed at.
+  @{ Name = "design-system-tokens-agree"; Path = "tests/fixtures/valid-design-system-tokens"; Mode = "Standard"; Gate = "Release"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
 
+  # Empty AllowedSecondaryRules on purpose: this fixture must fire DESIGN-001
+  # and nothing else, so a future change that makes token drift collateral
+  # damage of some other rule shows up here.
+  @{ Name = "invalid-design-token-drift"; Path = "tests/fixtures/invalid-design-token-drift"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "DESIGN-001"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
   @{ Name = "invalid-no-project"; Path = "tests/fixtures/invalid-no-project"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "STRUCT-001"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "invalid-missing-delivery"; Path = "tests/fixtures/invalid-missing-delivery"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "STRUCT-001"; ExpectedLevel = "FAIL"; Type = "negative" },
   @{ Name = "invalid-missing-release"; Path = "tests/fixtures/invalid-missing-release"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = "STRUCT-001"; ExpectedLevel = "FAIL"; Type = "negative" },

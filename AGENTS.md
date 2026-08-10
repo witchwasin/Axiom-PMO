@@ -30,6 +30,9 @@ projects/P01-CODE/
 |   +-- FLOW.puml
 |   +-- WIREFRAME.md or WIREFRAME.html
 |   +-- BUILD-SPEC.md           <- technical spec, required at Handoff (Standard/Strict)
+|   +-- DESIGN-SYSTEM.md        <- optional; token/component contract a developer builds from
+|   +-- DESIGN-SYSTEM.html      <- optional; the same contract as one visual page
+|   +-- BRAND/                  <- optional; BRAND.md plus logo and icon SVG assets
 +-- DELIVERY.md
 +-- HANDOFF.md                  <- required at the Handoff gate
 +-- HANDOFF-REVIEW.json         <- semantic review evidence (Standard/Strict)
@@ -185,6 +188,12 @@ Active skill groups are defined in `pmo-config/skill-manifest.json`:
 `handoff_review`. The review intent reads `HANDOFF.md` and
 `DESIGN/BUILD-SPEC.md` in addition to the normal delivery set, and walks the
 twelve lenses configured in `pmo-config/handoff-policy.json`.
+
+`pmo-design` carries two intents: `flow` (default) and `design_system`. The design
+system intent additionally reads `DESIGN/WIREFRAME.md`, `DESIGN/BRAND/**`, and
+`decision-log.md`, and produces the optional design artifacts described in
+`docs/concepts/design-system.md`. It is candidate evidence for `Design Ready`,
+never the approval itself.
 
 Only active skills under `.claude/skills/` are shipped and loaded by default.
 

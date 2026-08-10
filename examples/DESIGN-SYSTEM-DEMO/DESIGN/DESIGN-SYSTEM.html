@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RoomBook - Design System</title>
+
+<!--
+  Synthetic example. Generated from templates/DESIGN-SYSTEM.html.
+
+  What this is
+  A visual overview. It shows the agreed look of the product on a single page so a
+  human can react to it before anyone builds a prototype or accepts a handoff.
+  This sheet was input to DEC-003, the Design Ready decision. It is not that decision.
+
+  What this is not
+  A component workshop. It does not run and it does not replace a live component
+  library. The contract lives in DESIGN-SYSTEM.md, which this page mirrors, and
+  DESIGN-001 fails the build if the two drift apart.
+
+  Authority
+  Canonical: this file, DESIGN-SYSTEM.md, and the SVG files in BRAND/.
+  Derived: any screenshot, exported PDF, or printed copy taken from this page.
+-->
+
+<style>
+:root{
+  /* Colour tokens. Mirror of the Design Tokens - Color table. */
+  --color-ink-900:      #1A1B2E;
+  --color-ink-700:      #41456B;
+  --color-ink-500:      #666A94;
+  --color-brand-600:    #4338CA;
+  --color-brand-100:    #E6E4FB;
+  --color-accent-600:   #B45309;
+  --color-accent-100:   #FDF0E3;
+  --color-surface-50:   #F7F7FB;
+  --color-line:         #E4E4ED;
+
+  /* Working colours the contract has no opinion about. */
+  --color-surface-0:    #FFFFFF;
+  --color-success-700:  #15803D;
+  --color-success-50:   #ECFDF3;
+  --color-info-700:     #1D4ED8;
+  --color-info-50:      #EFF6FF;
+
+  /* Type tokens. Mirror of the Design Tokens - Typography table. */
+  --font-primary: Inter, "IBM Plex Sans Thai", "Noto Sans Thai",
+                  -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --type-display: 700 32px/40px var(--font-primary);
+  --type-title:   700 19px/28px var(--font-primary);
+  --type-body:    400 15px/24px var(--font-primary);
+  --type-caption: 400 12px/16px var(--font-primary);
+
+  /* Spacing and radius tokens. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+
+  /* Border and elevation tokens. */
+  --border-hairline: 1px solid var(--color-line);
+  --border-focus: 2px solid var(--color-brand-600);
+  --elevation-0: none;
+  --elevation-1: 0 1px 2px rgba(26,27,46,.06);
+  --elevation-2: 0 8px 24px rgba(26,27,46,.12);
+}
+
+*{ box-sizing: border-box; }
+html{ -webkit-text-size-adjust: 100%; }
+body{
+  margin: 0; padding: var(--space-6);
+  background: var(--color-surface-50); color: var(--color-ink-900);
+  font: var(--type-body);
+}
+.sheet{ max-width: 1060px; margin: 0 auto; display: grid; gap: var(--space-4); }
+
+.provenance{
+  display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4);
+  align-items: center; justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-0); border: var(--border-hairline);
+  border-radius: var(--radius-md); font: var(--type-caption); color: var(--color-ink-500);
+}
+.provenance strong{ color: var(--color-ink-900); font-weight: 700; }
+.provenance .notice{
+  padding: 2px var(--space-2); border-radius: 999px;
+  background: var(--color-accent-100); color: var(--color-accent-600); font-weight: 700;
+}
+
+.card{
+  background: var(--color-surface-0); border: var(--border-hairline);
+  border-radius: var(--radius-lg); padding: var(--space-6);
+  box-shadow: var(--elevation-1);
+}
+.label{
+  font: 700 11px/16px var(--font-primary); letter-spacing: .09em;
+  text-transform: uppercase; color: var(--color-brand-600); margin: 0 0 var(--space-3);
+}
+.label.muted{ color: var(--color-ink-500); }
+h1,h2,h3{ margin: 0; }
+p{ margin: 0 0 var(--space-2); }
+.small{ font: var(--type-caption); color: var(--color-ink-500); }
+
+.grid{ display: grid; gap: var(--space-4); }
+.grid-3{ grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.grid-4{ grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); }
+.stack{ display: grid; gap: var(--space-2); align-content: start; }
+
+/* ---- Identity ---- */
+.identity{ display: grid; grid-template-columns: minmax(260px, 1fr) minmax(280px, 1.1fr); gap: var(--space-6); }
+.lockup{ display: flex; align-items: center; gap: var(--space-4); }
+.lockup .wordmark{ font: var(--type-display); letter-spacing: -.01em; }
+.lockup .wordmark span{ display: block; }
+.lockup .wordmark .b{ color: var(--color-brand-600); }
+.tagline{ margin-top: var(--space-4); font: var(--type-body); color: var(--color-ink-700); }
+.symbols{ display: flex; gap: var(--space-6); margin-top: var(--space-4); }
+.symbol{ text-align: center; max-width: 108px; }
+.symbol .glyph{ height: 44px; display: flex; align-items: center; justify-content: center; }
+.symbol .name{ font: 700 11px/16px var(--font-primary); letter-spacing: .06em; text-transform: uppercase; }
+.symbol .meaning{ font: var(--type-caption); color: var(--color-ink-500); }
+
+/* ---- Palette ---- */
+.swatches{ display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.swatch{ width: 60px; }
+.swatch .chip{ height: 52px; border-radius: var(--radius-sm); border: var(--border-hairline); }
+.swatch .hex{ font: 400 9px/14px var(--font-primary); color: var(--color-ink-500); margin-top: var(--space-1); }
+
+.specimen .sample{ font: var(--type-display); }
+.specimen .glyphset{ font: var(--type-caption); color: var(--color-ink-500); word-break: break-all; }
+
+.icons{ display: flex; align-items: flex-end; gap: var(--space-3); }
+.appicon{ width: 88px; height: 88px; border-radius: 20px; overflow: hidden; }
+.appicon.sm{ width: 44px; height: 44px; border-radius: 10px; }
+.appicon svg{ display: block; width: 100%; height: 100%; }
+
+.elevation-demo{ display: grid; gap: var(--space-3); }
+.elevation-demo > div{ padding: var(--space-3); border-radius: var(--radius-sm); background: var(--color-surface-0); font: var(--type-caption); }
+.el-0{ border: var(--border-hairline); box-shadow: var(--elevation-0); }
+.el-1{ border: var(--border-hairline); box-shadow: var(--elevation-1); }
+.el-2{ border: var(--border-hairline); box-shadow: var(--elevation-2); }
+.el-focus{ border: var(--border-focus); }
+
+/* ---- Components ---- */
+.btn{
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  width: 100%; padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm);
+  font: 700 14px/20px var(--font-primary); border: 1px solid transparent; cursor: default;
+}
+.btn-primary{ background: var(--color-brand-600); color: #fff; }
+.btn-primary.is-hover{ filter: brightness(.92); }
+.btn-primary.is-pressed{ filter: brightness(.82); }
+.btn-primary.is-focus{ outline: var(--border-focus); outline-offset: 2px; }
+.btn-secondary{ background: var(--color-surface-0); color: var(--color-brand-600); border-color: var(--color-brand-600); }
+.btn-tertiary{ background: var(--color-surface-0); color: var(--color-ink-700); border-color: var(--color-line); }
+.btn-disabled{ background: #EEEEF4; color: #A3A6BF; }
+.state-note{ font: 400 10px/14px var(--font-primary); color: var(--color-ink-500); text-align: center; }
+
+.pill{
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  padding: 3px var(--space-2); border-radius: 999px; font: 700 11px/16px var(--font-primary);
+}
+.pill-free{ background: var(--color-success-50); color: var(--color-success-700); }
+.pill-busy{ background: #EEEEF4; color: var(--color-ink-700); }
+.pill-soon{ background: var(--color-info-50); color: var(--color-info-700); }
+
+.slots{ display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.slot{
+  padding: var(--space-2) var(--space-3); border: var(--border-hairline);
+  border-radius: var(--radius-sm); font: 700 12px/16px var(--font-primary);
+  color: var(--color-ink-700); background: var(--color-surface-0);
+}
+.slot.is-selected{ background: var(--color-brand-100); border-color: var(--color-brand-600); color: var(--color-brand-600); }
+.slot.is-focus{ outline: var(--border-focus); outline-offset: 2px; }
+.slot.is-unavailable{ background: #F1F1F6; color: var(--color-ink-500); text-decoration: line-through; }
+
+.room{
+  border: var(--border-hairline); border-radius: var(--radius-md);
+  padding: var(--space-3); box-shadow: var(--elevation-1);
+  background: var(--color-surface-0); display: grid; gap: var(--space-2);
+}
+.room .n{ font: 700 13px/18px var(--font-primary); color: var(--color-ink-700); }
+.room .meta{ display: flex; align-items: center; justify-content: space-between; }
+.room .cap{ font: var(--type-caption); color: var(--color-ink-500); }
+.room.is-selected{ box-shadow: var(--elevation-2); border-color: var(--color-brand-600); }
+
+.alert{
+  display: block; padding: var(--space-3); border-radius: var(--radius-sm);
+  font: 400 13px/20px var(--font-primary); border: 1px solid transparent;
+}
+.alert-success{ background: var(--color-success-50); border-color: #BBF7D0; color: var(--color-success-700); }
+.alert-danger{ background: var(--color-accent-100); border-color: #F5C9A3; color: var(--color-accent-600); }
+.alert-info{ background: var(--color-info-50); border-color: #BFDBFE; color: var(--color-info-700); }
+
+/* ---- Screen frames, drawn as browser windows ---- */
+.screens{ display: flex; flex-wrap: wrap; gap: var(--space-4); }
+.screen{ flex: 1 1 300px; min-width: 280px; }
+.window{ border: var(--border-hairline); border-radius: var(--radius-md); overflow: hidden; background: var(--color-surface-0); box-shadow: var(--elevation-1); }
+.window-bar{ display: flex; align-items: center; gap: 5px; padding: 7px 10px; background: #EDEDF4; border-bottom: var(--border-hairline); }
+.window-bar i{ width: 8px; height: 8px; border-radius: 999px; background: #C9C9D8; display: block; }
+.window-bar span{ margin-left: auto; font: 400 9px/12px var(--font-primary); color: var(--color-ink-500); }
+.window-body{ padding: var(--space-3); background: var(--color-surface-50); min-height: 250px; }
+.wb-head{ display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-2); }
+.wb-head .h{ font: 700 13px/18px var(--font-primary); }
+.mini-room{ background: var(--color-surface-0); border: var(--border-hairline); border-radius: 6px; padding: 6px; margin-bottom: 5px; font: 400 9px/13px var(--font-primary); color: var(--color-ink-700); }
+.mini-room .top{ display: flex; align-items: center; justify-content: space-between; }
+.mini-room b{ font: 700 10px/14px var(--font-primary); }
+.mini-pill{ padding: 1px 5px; border-radius: 999px; font: 700 7px/11px var(--font-primary); }
+.empty-note{ font: 400 9px/13px var(--font-primary); color: var(--color-ink-500); text-align: center; padding: var(--space-6) 4px; }
+
+.screen .caption{ text-align: center; font: 700 12px/16px var(--font-primary); color: var(--color-ink-900); margin-top: var(--space-2); }
+.screen .states{ text-align: center; font: 400 10px/14px var(--font-primary); color: var(--color-ink-500); }
+.screen .states b{ color: var(--color-accent-600); font-weight: 700; }
+
+.valueprops{ background: var(--color-ink-900); color: #fff; border-color: var(--color-ink-900); }
+.valueprops .label{ color: #A79FF5; }
+.prop .name{ font: 700 14px/20px var(--font-primary); color: #A79FF5; }
+.prop .text{ font: var(--type-caption); color: #C6C8DA; }
+
+@media (max-width: 760px){
+  body{ padding: var(--space-3); }
+  .identity{ grid-template-columns: 1fr; }
+}
+
+@media print{
+  @page{ size: A3 portrait; margin: 10mm; }
+  body{ padding: 0; background: #fff; }
+  .card{ break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<main class="sheet">
+
+  <div class="provenance">
+    <span><strong>DESIGN-SYSTEM-DEMO</strong> &middot; Design System &middot; stage design-ready &middot; 2026-08-07</span>
+    <span>Visual overview &middot; canonical source DESIGN-SYSTEM.md</span>
+    <span class="notice">Sample data, illustrative only</span>
+  </div>
+
+  <!-- ============ IDENTITY ============ -->
+  <section class="card identity">
+    <div>
+      <div class="lockup">
+        <svg width="76" height="76" viewBox="0 0 64 64" role="img" aria-label="RoomBook mark">
+          <rect x="6.5" y="13.5" width="51" height="37" rx="6" fill="none" stroke="#666A94" stroke-width="3"/>
+          <rect x="25" y="18" width="14" height="28" rx="2" fill="#4338CA"/>
+        </svg>
+        <div class="wordmark"><span>Room</span><span class="b">Book</span></div>
+      </div>
+      <p class="tagline">Find a room. Book it. Go.</p>
+      <p class="small">Product name is provisional. DEC-002 accepted it pending Q-001.</p>
+    </div>
+    <div>
+      <p class="label">Logo concept</p>
+      <p>The product is not a calendar. It is a picture of the floor right now: one room taken, the rest free. Taken versus free is carried by fill against outline, not by hue, so the mark survives 24px, a monochrome print, and colour blindness.</p>
+      <div class="symbols">
+        <div class="symbol">
+          <div class="glyph">
+            <svg width="40" height="40" viewBox="0 0 64 64" role="img" aria-label="Floor plan outline">
+              <rect x="6.5" y="15.5" width="51" height="33" rx="6" fill="none" stroke="#666A94" stroke-width="4"/>
+            </svg>
+          </div>
+          <div class="name">Floor</div>
+          <div class="meaning">The rooms you can walk to</div>
+        </div>
+        <div class="symbol">
+          <div class="glyph">
+            <svg width="40" height="40" viewBox="0 0 64 64" role="img" aria-label="Booked room, solid">
+              <rect x="25" y="15" width="14" height="34" rx="2" fill="#4338CA"/>
+            </svg>
+          </div>
+          <div class="name">Solid</div>
+          <div class="meaning">Taken, and only that</div>
+        </div>
+        <div class="symbol">
+          <div class="glyph">
+            <svg width="40" height="40" viewBox="0 0 64 64" role="img" aria-label="Free space, unfilled">
+              <rect x="10" y="15.5" width="14" height="33" rx="2" fill="none" stroke="#666A94" stroke-width="3" stroke-dasharray="4 3"/>
+              <rect x="40" y="15.5" width="14" height="33" rx="2" fill="none" stroke="#666A94" stroke-width="3" stroke-dasharray="4 3"/>
+            </svg>
+          </div>
+          <div class="name">Unfilled</div>
+          <div class="meaning">Free, what you came for</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PALETTE / TYPE / ICON / ELEVATION ============ -->
+  <div class="grid grid-3">
+    <section class="card">
+      <p class="label">Colour palette</p>
+      <div class="swatches">
+        <div class="swatch"><div class="chip" style="background:var(--color-ink-900)"></div><div class="hex">#1A1B2E</div></div>
+        <div class="swatch"><div class="chip" style="background:var(--color-ink-700)"></div><div class="hex">#41456B</div></div>
+        <div class="swatch"><div class="chip" style="background:var(--color-ink-500)"></div><div class="hex">#666A94</div></div>
+        <div class="swatch"><div class="chip" style="background:var(--color-brand-600)"></div><div class="hex">#4338CA</div></div>
+        <div class="swatch"><div class="chip" style="background:var(--color-accent-600)"></div><div class="hex">#B45309</div></div>
+        <div class="swatch"><div class="chip" style="background:var(--color-surface-50)"></div><div class="hex">#F7F7FB</div></div>
+      </div>
+      <p class="small" style="margin-top:12px">Every ratio in DESIGN-SYSTEM.md is computed, not estimated. color-line measures 1.26 to 1 and is decorative only, so it is never the sole indicator of a control boundary.</p>
+    </section>
+
+    <section class="card specimen">
+      <p class="label">Typography</p>
+      <p class="small">Primary family</p>
+      <div class="sample">Inter</div>
+      <p style="margin-top:8px">Find a room. Book it. Go.</p>
+      <p class="glyphset">ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789</p>
+    </section>
+
+    <section class="card">
+      <p class="label">App icon and variants</p>
+      <div class="icons">
+        <div class="appicon">
+          <svg viewBox="0 0 64 64" role="img" aria-label="App icon">
+            <rect x="0" y="0" width="64" height="64" rx="14" fill="#1A1B2E"/>
+            <rect x="12.5" y="17.5" width="39" height="29" rx="5" fill="none" stroke="#9FA3C7" stroke-width="3"/>
+            <rect x="26" y="21" width="12" height="22" rx="2" fill="#8F86F0"/>
+          </svg>
+        </div>
+        <div class="appicon sm">
+          <svg viewBox="0 0 64 64" role="img" aria-label="App icon at 44px">
+            <rect x="0" y="0" width="64" height="64" rx="14" fill="#1A1B2E"/>
+            <rect x="12.5" y="17.5" width="39" height="29" rx="5" fill="none" stroke="#9FA3C7" stroke-width="3"/>
+            <rect x="26" y="21" width="12" height="22" rx="2" fill="#8F86F0"/>
+          </svg>
+        </div>
+        <div class="appicon sm" style="width:24px;height:24px;border-radius:6px">
+          <svg viewBox="0 0 64 64" role="img" aria-label="Mark at its 24px minimum">
+            <rect x="6.5" y="13.5" width="51" height="37" rx="6" fill="none" stroke="#666A94" stroke-width="4"/>
+            <rect x="25" y="18" width="14" height="28" rx="2" fill="#4338CA"/>
+          </svg>
+        </div>
+      </div>
+      <p class="small" style="margin-top:12px">The third mark is drawn at its 24px minimum. Below this the outline stroke and the solid block start to merge, which is the point at which the mark stops saying anything.</p>
+    </section>
+
+    <section class="card">
+      <p class="label">Border and elevation</p>
+      <div class="elevation-demo">
+        <div class="el-0">elevation-0 &middot; page and room list</div>
+        <div class="el-1">elevation-1 &middot; room card at rest</div>
+        <div class="el-2">elevation-2 &middot; selected room, only</div>
+        <div class="el-focus">border-focus &middot; the one border that means something</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ COMPONENT LIBRARY ============ -->
+  <section class="card">
+    <p class="label">Component library</p>
+    <div class="grid grid-4">
+
+      <div class="stack">
+        <p class="label muted">C-001 Button</p>
+        <div class="state-note">variants</div>
+        <div class="btn btn-primary">Book this slot</div>
+        <div class="btn btn-secondary">Cancel booking</div>
+        <div class="btn btn-tertiary">Close</div>
+        <div class="state-note" style="margin-top:8px">states of the primary variant</div>
+        <div class="btn btn-primary is-hover">Book this slot</div>
+        <div class="state-note">hover</div>
+        <div class="btn btn-primary is-pressed">Book this slot</div>
+        <div class="state-note">pressed</div>
+        <div class="btn btn-primary is-focus">Book this slot</div>
+        <div class="state-note">focus</div>
+        <div class="btn btn-disabled">Book this slot</div>
+        <div class="state-note">disabled</div>
+      </div>
+
+      <div class="stack">
+        <p class="label muted">C-002 Room status pill</p>
+        <div>
+          <span class="pill pill-free">Free</span>
+          <span class="pill pill-busy">Busy</span>
+          <span class="pill pill-soon">Free soon</span>
+        </div>
+        <div class="state-note">the label carries the meaning, not the fill</div>
+
+        <p class="label muted" style="margin-top:14px">C-003 Room card</p>
+        <div class="room">
+          <div class="n">Room A</div>
+          <div class="meta"><span class="pill pill-free">Free</span><span class="cap">4 people</span></div>
+        </div>
+        <div class="room is-selected">
+          <div class="n">Room B</div>
+          <div class="meta"><span class="pill pill-busy">Busy</span><span class="cap">8 people</span></div>
+        </div>
+        <div class="state-note">selected, the only use of elevation-2</div>
+      </div>
+
+      <div class="stack">
+        <p class="label muted">C-004 Time slot picker</p>
+        <div class="slots">
+          <span class="slot">13:00</span>
+          <span class="slot is-selected">13:30</span>
+        </div>
+        <div class="state-note">default and selected</div>
+        <div class="slots">
+          <span class="slot is-focus">14:00</span>
+          <span class="slot is-unavailable">14:30</span>
+        </div>
+        <div class="state-note">focus, and unavailable because it overlaps</div>
+        <p class="small" style="margin-top:8px">An unavailable slot stays visible and says why on focus. Hiding it reads as a bug to someone who knows the room exists.</p>
+      </div>
+
+      <div class="stack">
+        <p class="label muted">C-005 Inline alert</p>
+        <div class="alert alert-success">Room A is booked for you, 13:30 to 14:00.</div>
+        <div class="alert alert-danger">Room B is already booked from 14:00 to 15:00.</div>
+        <div class="alert alert-info">Showing today only.</div>
+        <div class="state-note">the refusal is the only place the accent colour appears</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ SCREEN EXAMPLES ============ -->
+  <section class="card">
+    <p class="label">Screen examples</p>
+    <div class="screens">
+
+      <div class="screen">
+        <div class="window">
+          <div class="window-bar"><i></i><i></i><i></i><span>WF-001</span></div>
+          <div class="window-body">
+            <div class="wb-head"><span class="h">Today</span><span class="small" style="font-size:9px">3 rooms</span></div>
+            <div class="mini-room">
+              <div class="top"><b>Room A</b><span class="mini-pill pill-free">Free</span></div>
+              4 people
+            </div>
+            <div class="mini-room">
+              <div class="top"><b>Room B</b><span class="mini-pill pill-busy">Busy</span></div>
+              8 people &middot; free at 14:30
+            </div>
+            <div class="mini-room">
+              <div class="top"><b>Room C</b><span class="mini-pill pill-soon">Free soon</span></div>
+              12 people &middot; free at 14:30
+            </div>
+          </div>
+        </div>
+        <div class="caption">WF-001 Today availability, populated</div>
+        <div class="states">drawn: populated<br><b>not drawn: loading, offline, unavailable all day</b></div>
+      </div>
+
+      <div class="screen">
+        <div class="window">
+          <div class="window-bar"><i></i><i></i><i></i><span>WF-001</span></div>
+          <div class="window-body">
+            <div class="wb-head"><span class="h">Today</span><span class="small" style="font-size:9px">0 rooms</span></div>
+            <div class="empty-note">No rooms configured yet</div>
+          </div>
+        </div>
+        <div class="caption">WF-001 Today availability, empty</div>
+        <div class="states">drawn: empty<br><b>copy is a first draft, open as Q-002</b></div>
+      </div>
+
+      <div class="screen">
+        <div class="window">
+          <div class="window-bar"><i></i><i></i><i></i><span>WF-002</span></div>
+          <div class="window-body">
+            <div class="wb-head"><span class="h">Book Room B</span><span class="small" style="font-size:9px">Staff A</span></div>
+            <div class="alert alert-danger" style="font-size:9px;line-height:13px;padding:6px;margin-bottom:8px">Room B is already booked from 14:00 to 15:00.</div>
+            <div class="slots" style="gap:4px">
+              <span class="slot" style="font-size:9px;padding:4px 7px">13:00</span>
+              <span class="slot is-selected" style="font-size:9px;padding:4px 7px">13:30</span>
+              <span class="slot is-unavailable" style="font-size:9px;padding:4px 7px">14:00</span>
+              <span class="slot is-unavailable" style="font-size:9px;padding:4px 7px">14:30</span>
+            </div>
+            <div class="btn btn-primary" style="font-size:11px;padding:7px;margin-top:10px">Book this slot</div>
+          </div>
+        </div>
+        <div class="caption">WF-002 Booking form, overlap refused</div>
+        <div class="states">drawn: overlap refusal<br><b>not drawn: confirmation, cancel, past day disabled</b></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ VALUE PROPS ============ -->
+  <section class="card valueprops">
+    <p class="label">What this product promises</p>
+    <div class="grid grid-4">
+      <div class="prop"><div class="name">Answer in one glance</div><div class="text">Whether a room is free is readable without opening anything or asking anyone.</div></div>
+      <div class="prop"><div class="name">Book it yourself</div><div class="text">No reception, no paper sheet, no waiting for someone to update a list.</div></div>
+      <div class="prop"><div class="name">Never double booked</div><div class="text">An overlapping booking is refused, and the refusal names the booking in the way.</div></div>
+      <div class="prop"><div class="name">Colour means one thing</div><div class="text">The accent colour appears only when a booking did not happen, so it never cries wolf.</div></div>
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

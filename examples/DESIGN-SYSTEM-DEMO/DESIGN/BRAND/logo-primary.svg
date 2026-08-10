@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 244 64" width="244" height="64" role="img" aria-labelledby="logo-title">
+  <title id="logo-title">RoomBook</title>
+  <rect x="6.5" y="13.5" width="51" height="37" rx="6" fill="none" stroke="#666A94" stroke-width="3"/>
+  <rect x="25" y="18" width="14" height="28" rx="2" fill="#4338CA"/>
+  <text x="74" y="30" font-family="Inter, 'IBM Plex Sans Thai', 'Noto Sans Thai', -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1A1B2E">Room</text>
+  <text x="74" y="53" font-family="Inter, 'IBM Plex Sans Thai', 'Noto Sans Thai', -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#4338CA">Book</text>
+</svg>

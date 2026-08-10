@@ -18,6 +18,13 @@ Intake & Scope -> Flow & UX -> Plan & Handoff -> Build & Verify -> Release & Clo
 - `RAID-log.md` for meaningful risks/issues
 - `RELEASE.md` for release/UAT
 
+## Optional Artifacts
+
+- `DESIGN/DESIGN-SYSTEM.md` plus `DESIGN/DESIGN-SYSTEM.html` and `DESIGN/BRAND/` when the
+  team needs to see the product before a prototype or a handoff. No gate requires it and no
+  rule blocks on it. It is candidate evidence for `Design Ready`, never the approval itself.
+  See [design system](../concepts/design-system.md).
+
 ## Approval Gates
 
 1. Scope Approved

@@ -1,0 +1,27 @@
+@startuml
+title RoomBook - see availability and book a room
+
+|Staff|
+start
+:Open RoomBook;
+|System|
+:Show today's rooms with current status;
+|Staff|
+if (A free room is wanted?) then (yes)
+  :Pick a room and a time slot;
+  |System|
+  if (Slot overlaps an existing booking?) then (yes)
+    :Refuse and name the conflicting booking;
+    |Staff|
+    :Pick a different slot;
+    detach
+  else (no)
+    :Create the booking;
+    :Confirm and show it on today's view;
+  endif
+else (no)
+  |System|
+  :Stay on today's view;
+endif
+stop
+@enduml

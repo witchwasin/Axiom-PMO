@@ -374,6 +374,12 @@
       "suggestion": "Cite a real, resolvable DEC-### that predates the commit range under verification, or record the decision first.",
       "documentation": "docs/rules/AREV-006.md"
     },
+    "DESIGN-001": {
+      "severity": "fail",
+      "description": "The design system's markdown contract and its visual sheet declare different token values.",
+      "suggestion": "Make DESIGN/DESIGN-SYSTEM.html agree with the Design Tokens tables in DESIGN/DESIGN-SYSTEM.md. The markdown is the contract, so change the sheet unless the markdown is the file that is wrong.",
+      "documentation": "docs/rules/DESIGN-001.md"
+    },
     "HANDOFF-001": {
       "severity": "fail",
       "description": "A required handoff artifact is missing or its metadata contract is incomplete.",

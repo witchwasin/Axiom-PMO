@@ -61,6 +61,20 @@
           "optional_context": [],
           "max_initial_files": 4
         },
+        "design_system": {
+          "required_context": [
+            "PROJECT.md"
+          ],
+          "conditional_context": [
+            "DESIGN/WIREFRAME.md",
+            "DESIGN/BRAND/**",
+            "decision-log.md"
+          ],
+          "optional_context": [
+            "source/**"
+          ],
+          "max_initial_files": 4
+        },
         "handoff": {
           "required_context": [
             "PROJECT.md"
@@ -146,6 +160,20 @@
             "source/**"
           ],
           "optional_context": [],
+          "max_initial_files": 8
+        },
+        "design_system": {
+          "required_context": [
+            "PROJECT.md"
+          ],
+          "conditional_context": [
+            "DESIGN/WIREFRAME.md",
+            "DESIGN/BRAND/**",
+            "decision-log.md"
+          ],
+          "optional_context": [
+            "source/**"
+          ],
           "max_initial_files": 8
         },
         "handoff": {
@@ -235,6 +263,20 @@
             "RAID-log.md"
           ],
           "max_initial_files": 12
+        },
+        "design_system": {
+          "required_context": [
+            "PROJECT.md"
+          ],
+          "conditional_context": [
+            "DESIGN/WIREFRAME.md",
+            "DESIGN/BRAND/**",
+            "decision-log.md"
+          ],
+          "optional_context": [
+            "source/**"
+          ],
+          "max_initial_files": 10
         },
         "handoff": {
           "required_context": [
