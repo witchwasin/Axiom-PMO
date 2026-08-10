@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Added
+
+- Added the optional `pmo-design` `visual_direction` intent, a source-aware creative brief,
+  human-owned direction selection, and a project-specific presentation layer for design-system
+  sheets (`DEC-018`, clarified and authorized for implementation by `DEC-019`).
+- Added `VISUAL-DIRECTION.md` guidance and template, connected selected directions to the
+  canonical design-system contract, and upgraded the RoomBook Design-gate example.
+
+### Changed
+
+- Split the design-system HTML template into a stable semantic contract and a project-specific
+  presentation layer without adding a gate, validator, required artifact, or rule.
+- Classified the human-tested Creative MVP as completed Part 1; Path 2 visual-proof enforcement
+  remains deferred and requires a future Human Owner decision (`DEC-020`).
+
 ## 1.4.0 - 2026-08-04
 
 **Milestones 7, 8.0, 8.1, and 9 — CLOSED and MERGED to `main`, 2026-08-03**

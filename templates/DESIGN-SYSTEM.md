@@ -3,6 +3,7 @@
 > Optional. Create when the team needs to see the product before prototype or handoff.
 > This file is the contract a developer builds against. `DESIGN/DESIGN-SYSTEM.html` is
 > the same contract rendered as one page a human can look at.
+> `DESIGN/VISUAL-DIRECTION.md`, when present, is the upstream reason for its presentation.
 > A design system is candidate evidence, never an approval. `Design Ready` stays human-owned.
 > Concept and boundaries: `docs/concepts/design-system.md`.
 
@@ -20,11 +21,32 @@
 ## Status
 
 - Stage: draft / reviewed / design-ready
+- visual_direction_reference: `DESIGN/VISUAL-DIRECTION.md`
+- direction_status: pending / selected / conformance
+- direction_decision_ref: DEC-<NNN> / pending / not applicable
 - Brand reference: `DESIGN/BRAND/BRAND.md`
 - Visual sheet: `DESIGN/DESIGN-SYSTEM.html`
 - Wireframe reference: `DESIGN/WIREFRAME.md`
 - Brand decision ref: DEC-<NNN>
 - Sample data: every value rendered on the visual sheet is registered under `Sample Data Register`.
+
+For a new design system, do not begin the presentation layer while direction status is
+`pending`. A selected direction requires a human decision reference; `conformance` requires
+a human-confirmed existing brand. Existing design systems are not retroactively blocked.
+
+## Presentation Rationale
+
+The presentation layer is project-specific. Trace each major choice to the selected direction
+or a supported brief field; if no honest rationale exists, it is an unexamined default.
+
+| Dimension | Presentation Choice | Visual Direction Ref | Rationale | Evidence Status |
+|---|---|---|---|---|
+| Geometry | <shape and edge language> | <field or selected principle> | <why this choice fits the brief> | <status> |
+| Typography | <type voice and pairing> | <field or selected principle> | <why this choice fits the brief> | <status> |
+| Composition and density | <layout rhythm and information density> | <field or selected principle> | <why this choice fits the brief> | <status> |
+| Colour role | <what colour does in the interface> | <field or selected principle> | <why this choice fits the brief> | <status> |
+| Imagery and icons | <visual grammar> | <field or selected principle> | <why this choice fits the brief> | <status> |
+| Surface, depth, and motion | <surface model and motion character> | <field or selected principle> | <why this choice fits the brief> | <status> |
 
 ## Design Tokens - Color
 
@@ -36,6 +58,8 @@ Keep both files in step: one value, two readers.
 | color-ink-900 | #111827 | <darkest surface and heading text> | <measured ratio against the light surface> |
 | color-brand-500 | #2563EB | <primary action and brand accent> | <measured ratio against white> |
 | color-surface-50 | #F9FAFB | <page background> | <not used for text> |
+| color-surface-0 | #FFFFFF | <raised or contrasting surface> | <not used for text> |
+| color-line | #E5E7EB | <separator and control border> | <measured where it conveys state> |
 
 ## Design Tokens - Typography
 

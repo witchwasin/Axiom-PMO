@@ -1,76 +1,87 @@
 ---
 name: pmo-design
-description: Use for flow, UX, wireframe, brand direction, design system, and design-ready acceptance criteria tied to scoped requirements.
+description: Use for product flows, UX and wireframes, creative direction, visual direction, art direction, brand conformance, distinctive or non-generic frontend direction, design systems, visual sheets, and design-ready acceptance criteria tied to scoped requirements.
 ---
 
 # pmo-design
 
 ## Purpose
-Turn scoped requirements into flow, wireframe, visual design direction, and design-ready decisions.
 
-## Trigger
-Use when UI, workflow, user journey, integration flow, acceptance wording, or the visual identity of the product needs design clarification.
+Turn scoped requirements into flows, a source-backed visual direction, and a buildable design contract without inventing scope or approval.
 
 ## Intents
 
 | Intent | Use when | Read set |
 |---|---|---|
-| `flow` (default) | Mapping requirements to flow, wireframe, or acceptance wording | `PROJECT.md`, `DESIGN/**` |
-| `design_system` | The team needs to see the product before a prototype or a handoff | see Required Inputs |
+| `flow` (default) | Map requirements to flow, wireframe, or acceptance wording | `PROJECT.md`, relevant `DESIGN/**` |
+| `visual_direction` | Establish creative/art direction, avoid generic defaults, or choose how the product should feel | see Required Inputs |
+| `design_system` | Turn a selected direction or existing brand into a developer contract and visual sheet | see Required Inputs |
 
-Concept, boundaries, and the reasoning behind the design system rules:
-`docs/concepts/design-system.md`. Do not restate them here.
+Read `docs/concepts/visual-direction.md` for creative-direction rules and `docs/concepts/design-system.md` for the artifact contract. Do not restate them here.
+
+## Routing and Fallback
+
+1. Route requests for creative, distinctive, premium, unconventional, art direction, visual direction, or "not generic" work to `visual_direction`, even when the user also says "design system".
+2. For a new design system, consume `DESIGN/VISUAL-DIRECTION.md` when its `direction_status` is `selected` or `conformance`.
+3. If no usable direction exists, use `visual_direction` first. An existing design system may be maintained without retroactively creating this artifact unless the direction is being reopened.
+4. Never reopen a selected direction inside `design_system`; record a proposed change as an open question and return to `visual_direction`.
 
 ## Required Inputs
-`PROJECT.md`, applicable `DESIGN/**`, requirements with source references, and the context/artifact contract in `pmo-config/context-map.json` and `pmo-config/artifact-policy.json`.
 
-For `design_system`, additionally: `DESIGN/WIREFRAME.md`, `DESIGN/BRAND/**` if present, and `decision-log.md`. Read only these.
+Always read `PROJECT.md`, relevant requirements and design files, and the configured context/artifact contracts.
 
-## Allowed Context
-Read only requirement rows and design files relevant to the requested flow. Avoid loading delivery or release docs unless checking impact.
+- `visual_direction`: read `DESIGN/VISUAL-DIRECTION.md` if present, `DESIGN/WIREFRAME.md`, `DESIGN/BRAND/**`, `decision-log.md`, and only the configured source files needed for the brief.
+- `design_system`: additionally read `DESIGN/VISUAL-DIRECTION.md`, `DESIGN/WIREFRAME.md`, `DESIGN/BRAND/**`, and `decision-log.md` if present. Read only the scoped set.
 
-## Mode Behavior
-Use `pmo-config/policy.json` for mode, sentinel, evidence, and approval values, and `pmo-config/artifact-policy.json` for when design artifacts are required. Lite design is conditional and can use `not_required` only where the configured sentinel policy allows it. Standard and Strict design expectations follow the configured artifact and reference contracts.
+Avoid delivery and release documents unless checking impact. The design system and visual direction remain optional in every mode; no gate requires either artifact.
 
-The design system is optional in every mode. No gate requires it.
+## Evidence and Authority
 
-## Execution Steps - flow
+Use the repository evidence ladder exactly: `verified` = direct source plus human approval; `supported` = direct source without final approval; `inferred` = reasoned from partial source; `missing` = not found; `conflict` = sources disagree. Never use evidence status to describe tool availability or whether a render ran.
+
+Only a human may declare `brand_starting_point: undecided | existing`, select an art direction, or approve Design Ready. Use `direction_status: pending | selected | conformance`; `selected` requires explicit human choice and a decision reference, while `conformance` requires a human-confirmed existing brand.
+
+## Execution - flow
+
 1. Map requirement IDs to user and system flow steps.
-2. Create or update `DESIGN/FLOW.puml` and `DESIGN/WIREFRAME.md` only when the configured artifact contract or confirmed design impact requires them.
-3. Record design assumptions and open questions.
-4. Confirm design references are usable by delivery work items.
+2. Create or update flow and wireframe artifacts only when the configured contract or confirmed impact requires them.
+3. Record assumptions, open questions, and usable delivery references.
 
-## Execution Steps - design_system
-1. List the screens already in scope from `PROJECT.md` and `DESIGN/WIREFRAME.md`. Only those may be drawn.
-2. Read what has already been decided before asking anything: `decision-log.md`, `DESIGN/BRAND/BRAND.md` if present, and any brand direction in `PROJECT.md`. Carry those forward and do not reopen them.
-3. Ask a human only for what step 2 did not answer: name, tagline, personality, audience, forbidden colours, and who owns the mark. Anything a human has not confirmed stays `inferred`.
-4. Write `DESIGN/BRAND/BRAND.md` from `templates/BRAND.md`, plus hand-authored SVG assets with no editor metadata.
-5. Write `DESIGN/DESIGN-SYSTEM.md` from `templates/DESIGN-SYSTEM.md`: colour, typography, spacing and radius, border and elevation tokens; components with variants and states; screens with states drawn and states not yet drawn.
-6. Write `DESIGN/DESIGN-SYSTEM.html` from `templates/DESIGN-SYSTEM.html` using the same token values, and replace every `{{PLACEHOLDER}}`.
-7. Fill the Sample Data Register. Every value rendered on the sheet gets a row.
-8. Measure every contrast ratio you state. Do not estimate one and do not assert a threshold you have not computed.
-9. Render the sheet, show it to the human, and report assumptions and open questions with it.
-10. Record meaningful brand decisions in `decision-log.md`. Check first whether that file is a semantic-review input for this project; if it is, editing it invalidates an existing `HANDOFF-REVIEW.json`.
+## Execution - visual_direction
+
+1. Read confirmed scope, decisions, wireframes, brand assets, and relevant sources before asking questions.
+2. Fill `DESIGN/VISUAL-DIRECTION.md` from the template. Keep source facts and design judgements at their truthful evidence statuses.
+3. Ask a human for `brand_starting_point` if it is not already human-confirmed. Do not infer or default it.
+4. For `existing`, assess conformance and use `direction_status: conformance`; do not perform a theatrical multi-direction exercise.
+5. For `undecided`, propose two or three directions that differ in geometry, typography, composition, density, colour role, imagery, surface/depth, or motion—not merely hex values. Set `direction_status: pending`, then stop for human selection.
+6. After an explicit human choice, set `direction_status: selected`, record the decision reference, and carry the selected direction into `design_system`. Never select on the human's behalf.
+7. If editing `decision-log.md`, first check whether it is semantic-review input; editing it can stale `HANDOFF-REVIEW.json`.
+
+## Execution - design_system
+
+1. List only screens already scoped in `PROJECT.md` and `DESIGN/WIREFRAME.md`.
+2. Consume the selected/conformance direction and explain every presentation choice by pointing to a brief field. If that sentence cannot be written, the choice is an unexamined default.
+3. Write brand assets when needed, then `DESIGN/DESIGN-SYSTEM.md` and the self-contained HTML sheet from their templates. Keep the first token block and required semantic anchors intact; rewrite the presentation layer to fit the direction.
+4. Keep Markdown and HTML token values identical. Fill the Sample Data Register and measure every contrast ratio stated.
+5. Render and show the sheet when tools permit. Report `tool_availability` and `render_status` separately; never claim a render or review that did not happen.
+6. Report assumptions, open questions, scoped screens drawn, undrawn states, and meaningful decisions. Editing a semantic-review input can stale `HANDOFF-REVIEW.json`.
 
 ## Output Contract
-Return design files changed, requirement coverage, assumptions, and unresolved design questions.
 
-For `design_system`, additionally: which scoped screens were drawn and which were not, which screen states are still undrawn, which brand fields remain `inferred`, and the path to the rendered sheet.
-
-## Approval Rules
-Design Ready is human-owned and follows the configured artifact and approval contracts for the active mode and gate. A design system is candidate evidence for it, never the approval itself.
-
-## Validation Command
-`powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project> -Mode <mode> -Gate Design`
-
-`DESIGN-001` fails when `DESIGN-SYSTEM.md` and `DESIGN-SYSTEM.html` declare different token values.
+Return changed design files, requirement coverage, evidence status, assumptions, unresolved questions, and any human decision still required. For visual work, also report selected/conformance direction, screens and states drawn or missing, `tool_availability`, `render_status`, and the rendered path when one exists.
 
 ## Prohibited Actions
-Do not expand scope, remove source references, hardcode artifact matrices, or mark design approval without human evidence.
 
-For `design_system`: do not draw a screen that is not in the wireframe, present an `inferred` brand field as confirmed, invent an approval or a decision id, place real customer or personal data in a mockup, or publish the sheet to any external service without an explicit instruction in the current session.
+Do not expand scope, remove source references, invent requirements or decision IDs, infer `brand_starting_point`, select a direction, mark approval, draw an unscoped screen, present an inference as confirmed, use real customer or personal data, claim an unavailable tool ran, or publish externally without explicit current-session instruction.
 
 ## Completion Criteria
-Each design-affecting work item has a design reference or an intentional `not_required` sentinel where allowed.
 
-For `design_system`: `DESIGN-001` passes, no `{{PLACEHOLDER}}` remains, every rendered value appears in the Sample Data Register, every drawn screen traces to a wireframe screen, and every brand field's evidence status reflects whether a human actually confirmed it.
+- `flow`: every design-affecting item has a design reference or an allowed `not_required` sentinel.
+- `visual_direction`: brief evidence is truthful; status is `pending`, `selected`, or `conformance` consistently; any selection has human evidence and a decision reference.
+- `design_system`: the direction is traceable, `DESIGN-001` passes, no HTML placeholder remains, sample data is registered, every screen traces to a wireframe, and render/tool claims are honest.
+
+## Validation
+
+`powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project> -Mode <mode> -Gate Design`
+
+The artifact pair is candidate evidence only. Design Ready remains human-owned.

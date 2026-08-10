@@ -25,23 +25,29 @@
   How to fill this in
   This file is a blank form and will not render meaningfully until it is filled,
   because the colour and type tokens are still placeholders. To see what a finished
-  sheet looks like, open examples/STANDARD-FEATURE/DESIGN/DESIGN-SYSTEM.html.
+  sheet looks like, open examples/DESIGN-SYSTEM-DEMO/DESIGN/DESIGN-SYSTEM.html.
 
   1. Replace every {{PLACEHOLDER}}. The project validator treats a leftover
      {{...}} in a project file as an unfilled placeholder and will report it.
-  2. The :root block below is the single source of colour and type values.
+  2. The first token block below is the single source of colour and type values.
      The same token names appear in DESIGN/DESIGN-SYSTEM.md. Keep them in step.
   3. Replace the inline SVG marks with the real contents of DESIGN/BRAND/*.svg.
-  4. Duplicate a .phone block for each screen. Only screens that already exist
-     in DESIGN/WIREFRAME.md may appear here.
+  4. Preserve the provenance/sample-data notice and the semantic section IDs named
+     below. Recompose their contents for the selected direction. Only screens that
+     already exist in DESIGN/WIREFRAME.md may appear here.
 
   Deliberate constraints
   - Self-contained. No external stylesheet, script, font, or image request.
-  - Light canvas only. The palette is the subject, so the page never inverts it.
+  - The canvas, composition, and surface model follow DESIGN/VISUAL-DIRECTION.md;
+    light is a possible choice, not a template requirement.
   - Print sets A3 portrait so this renders as one clean sheet.
 -->
 
 <style>
+/* ============ CONTRACT ZONE: TOKEN VALUES ============
+   This must remain the first root selector in the file. DESIGN-001 reads this block.
+   Keep token names and values identical to DESIGN-SYSTEM.md. Do not place a theme or
+   example root selector before it. Additional theme overrides belong later. */
 :root{
   /* Colour tokens. Mirror of the Design Tokens - Color table. */
   --color-ink-900:      {{COLOR_INK_900}};
@@ -51,8 +57,8 @@
   --color-brand-100:    {{COLOR_BRAND_100}};
   --color-accent-500:   {{COLOR_ACCENT_500}};
   --color-surface-50:   {{COLOR_SURFACE_50}};
-  --color-surface-0:    #FFFFFF;
-  --color-line:         #E5E7EB;
+  --color-surface-0:    {{COLOR_SURFACE_0}};
+  --color-line:         {{COLOR_LINE}};
   --color-success-500:  #16A34A;
   --color-warning-500:  #D97706;
   --color-danger-500:   #DC2626;
@@ -85,6 +91,14 @@
   --elevation-2: 0 8px 24px rgba(13,27,42,.12);
 }
 
+/* ============ PRESENTATION ZONE: REWRITE FOR THE SELECTED DIRECTION ============
+   The rules and composition below demonstrate the required semantic content; they are
+   not a visual theme to preserve. Replace geometry, hierarchy, density, surface/depth,
+   imagery, typography treatment, and motion according to VISUAL-DIRECTION.md.
+
+   Preserve: self-containment, readable focus/state treatment, responsive behaviour,
+   A3 print behaviour, the provenance/sample-data notice, and the body section IDs
+   identity, tokens, components, and screen-examples. */
 *{ box-sizing: border-box; }
 html{ -webkit-text-size-adjust: 100%; }
 body{
@@ -271,22 +285,30 @@ p{ margin: 0 0 var(--space-2); }
 
 @media print{
   @page{ size: A3 portrait; margin: 10mm; }
-  body{ padding: 0; background: #fff; }
+  body{ padding: 0; background: var(--color-surface-50); color: var(--color-ink-900); }
   .card{ break-inside: avoid; }
 }
+/* ============ END PRESENTATION ZONE ============ */
 </style>
 </head>
 <body>
-<main class="sheet">
+<!-- ============ CONTRACT ANCHORS ============
+  Preserve #provenance and its visible sample-data notice, plus #identity, #tokens,
+  #components, and #screen-examples. DESIGN-SYSTEM.md may refer to these IDs. Their
+  descendants and order are presentation-layer decisions and should express the selected
+  visual direction. Keep responsive and print behaviour when recomposing the page.
+-->
+<!-- ============ PRESENTATION ZONE ============ -->
+<main class="sheet" id="design-system-sheet">
 
-  <div class="provenance">
+  <div class="provenance" id="provenance">
     <span><strong>{{PROJECT_CODE}}</strong> &middot; Design System &middot; stage {{STAGE}} &middot; {{DATE}}</span>
-    <span>Visual overview &middot; canonical source DESIGN/DESIGN-SYSTEM.md</span>
-    <span class="notice">Sample data, illustrative only</span>
+    <span>Direction: {{DIRECTION_NAME}} &middot; canonical source DESIGN/DESIGN-SYSTEM.md</span>
+    <span class="notice" data-sample-notice>Sample data, illustrative only</span>
   </div>
 
   <!-- ============ IDENTITY ============ -->
-  <section class="card identity">
+  <section class="card identity" id="identity">
     <div>
       <div class="lockup">
         <!-- Replace with the contents of DESIGN/BRAND/logo-primary.svg -->
@@ -322,8 +344,8 @@ p{ margin: 0 0 var(--space-2); }
   </section>
 
   <!-- ============ PALETTE / TYPE / ICON ============ -->
-  <div class="grid grid-3">
-    <section class="card">
+  <div class="grid grid-3" id="tokens">
+    <section class="card" id="color-tokens">
       <p class="label">Colour palette</p>
       <div class="swatches">
         <div class="swatch"><div class="chip" style="background:var(--color-ink-900)"></div><div class="hex">{{COLOR_INK_900}}</div></div>
@@ -335,7 +357,7 @@ p{ margin: 0 0 var(--space-2); }
       <p class="small" style="margin-top:12px">Token names and contrast ratios are recorded in DESIGN-SYSTEM.md.</p>
     </section>
 
-    <section class="card specimen">
+    <section class="card specimen" id="typography-tokens">
       <p class="label">Typography</p>
       <p class="small">Primary family</p>
       <div class="sample">{{FONT_PRIMARY}}</div>
@@ -343,7 +365,7 @@ p{ margin: 0 0 var(--space-2); }
       <p class="glyphset">ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789</p>
     </section>
 
-    <section class="card">
+    <section class="card" id="app-icon">
       <p class="label">App icon and variants</p>
       <div class="icons">
         <div class="appicon">
@@ -365,7 +387,7 @@ p{ margin: 0 0 var(--space-2); }
       <p class="small" style="margin-top:12px">Minimum sizes and clear space are recorded in DESIGN/BRAND/BRAND.md.</p>
     </section>
 
-    <section class="card">
+    <section class="card" id="border-elevation-tokens">
       <p class="label">Border and elevation</p>
       <div class="elevation-demo">
         <div class="el-0">elevation-0 &middot; flat on the page</div>
@@ -377,7 +399,7 @@ p{ margin: 0 0 var(--space-2); }
   </div>
 
   <!-- ============ COMPONENT LIBRARY ============ -->
-  <section class="card">
+  <section class="card" id="components">
     <p class="label">Component library</p>
     <div class="grid grid-4">
 
@@ -456,7 +478,7 @@ p{ margin: 0 0 var(--space-2); }
   </section>
 
   <!-- ============ SCREEN EXAMPLES ============ -->
-  <section class="card">
+  <section class="card" id="screen-examples">
     <p class="label">Screen examples</p>
     <div class="screens">
 
@@ -529,7 +551,7 @@ p{ margin: 0 0 var(--space-2); }
   </section>
 
   <!-- ============ VALUE PROPS ============ -->
-  <section class="card valueprops">
+  <section class="card valueprops" id="product-promise">
     <p class="label">What this product promises</p>
     <div class="grid grid-4">
       <div class="prop"><div class="name">{{PROP_1_NAME}}</div><div class="text">{{PROP_1_TEXT}}</div></div>
@@ -540,5 +562,6 @@ p{ margin: 0 0 var(--space-2); }
   </section>
 
 </main>
+<!-- ============ END PRESENTATION ZONE ============ -->
 </body>
 </html>

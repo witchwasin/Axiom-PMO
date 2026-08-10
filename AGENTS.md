@@ -30,6 +30,7 @@ projects/P01-CODE/
 |   +-- FLOW.puml
 |   +-- WIREFRAME.md or WIREFRAME.html
 |   +-- BUILD-SPEC.md           <- technical spec, required at Handoff (Standard/Strict)
+|   +-- VISUAL-DIRECTION.md     <- optional; creative brief, explored directions, human selection
 |   +-- DESIGN-SYSTEM.md        <- optional; token/component contract a developer builds from
 |   +-- DESIGN-SYSTEM.html      <- optional; the same contract as one visual page
 |   +-- BRAND/                  <- optional; BRAND.md plus logo and icon SVG assets
@@ -189,11 +190,13 @@ Active skill groups are defined in `pmo-config/skill-manifest.json`:
 `DESIGN/BUILD-SPEC.md` in addition to the normal delivery set, and walks the
 twelve lenses configured in `pmo-config/handoff-policy.json`.
 
-`pmo-design` carries two intents: `flow` (default) and `design_system`. The design
-system intent additionally reads `DESIGN/WIREFRAME.md`, `DESIGN/BRAND/**`, and
-`decision-log.md`, and produces the optional design artifacts described in
-`docs/concepts/design-system.md`. It is candidate evidence for `Design Ready`,
-never the approval itself.
+`pmo-design` carries three intents: `flow` (default), `visual_direction`, and
+`design_system`. Visual direction turns a source-backed creative brief into a
+human-selected direction; design system carries that selection forward and
+additionally reads `DESIGN/WIREFRAME.md`, `DESIGN/BRAND/**`, and `decision-log.md`.
+Both are optional and are described in `docs/concepts/visual-direction.md` and
+`docs/concepts/design-system.md`. Their outputs are candidate evidence for
+`Design Ready`, never the approval itself.
 
 Only active skills under `.claude/skills/` are shipped and loaded by default.
 

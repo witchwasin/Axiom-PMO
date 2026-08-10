@@ -1,8 +1,9 @@
 # BRAND - <PROJECT-CODE>
 
 > Optional. Lives at `DESIGN/BRAND/BRAND.md` next to the asset files it describes.
-> Brand is a business decision, not something derivable from source material.
-> An AI may draft this file, but every row starts at `inferred` until a human confirms it.
+> Brand facts may be supported by source material; adopting or changing a direction is a
+> human-owned decision. An AI may draft this file, but each row keeps its truthful evidence
+> status: `verified`, `supported`, `inferred`, `missing`, or `conflict` as defined in `AGENTS.md`.
 > The SVG files in this folder are canonical. A PNG, a screenshot, or a copy pasted into
 > a deck is derived, and never the artifact anyone edits or argues with.
 
@@ -10,11 +11,11 @@
 
 | Field | Value | Evidence Status | Source Ref |
 |---|---|---:|---|
-| Product name | <name as it appears to users> | inferred | <who confirmed it> |
-| Tagline | <one short line> | inferred | <who confirmed it> |
-| Personality | <three adjectives> | inferred | <who confirmed it> |
-| Primary audience | <who actually uses this> | inferred | <who confirmed it> |
-| Tone of voice | <how the product speaks> | inferred | <who confirmed it> |
+| Product name | <name as it appears to users> | <status> | <source or decision reference> |
+| Tagline | <one short line> | <status> | <source or decision reference> |
+| Personality | <three adjectives> | <status> | <source or decision reference> |
+| Primary audience | <who actually uses this> | <status> | <source or decision reference> |
+| Tone of voice | <how the product speaks> | <status> | <source or decision reference> |
 
 ## Logo Concept
 

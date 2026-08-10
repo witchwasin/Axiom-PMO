@@ -20,14 +20,19 @@
 ## Status
 
 - Stage: design-ready
+- Visual direction reference: `DESIGN/VISUAL-DIRECTION.md`
+- Selected direction: VD-01 - Live Room Field
+- Direction decision ref: DEC-002
 - Brand reference: `DESIGN/BRAND/BRAND.md`
 - Visual sheet: `DESIGN/DESIGN-SYSTEM.html`
 - Wireframe reference: `DESIGN/WIREFRAME.md`
 - Brand decision ref: DEC-002
-- Design Ready: DEC-003, which reviewed flow, wireframe, and this sheet in one round
+- Design Ready: DEC-003, which reviewed visual direction, brand, flow, wireframe,
+  and this sheet in one round
 - Sample data: every value rendered on the visual sheet is registered under `Sample Data Register`.
-- Serving model: desktop and tablet browser on the office network. The mockups are drawn as
-  browser windows for that reason.
+- Presentation-target assumption: browser layouts at desktop and tablet widths. Browser use
+  is source-backed; form factor, viewing distance, and network model remain inferred and must
+  not become implementation requirements without a human decision.
 
 ## Design Tokens - Color
 
@@ -171,13 +176,19 @@ real account identifiers do not appear, in any mode.
 | Location | Value Shown | Origin | Note |
 |---|---|---|---|
 | Frames 1 and 3, room names | Room A, Room B, Room C | illustrative | Deliberately not building specific, so no reader mistakes them for the real office |
+| Hero and frame 3, state prefixes | STATUS / FREE, STATUS / BUSY, STATUS / FREE SOON, STATUS / SELECTED | illustrative | Presentation copy restating already scoped status/component states; it adds no room-location field |
 | Frames 1 and 3, capacities | 4, 8, 12 | illustrative | Chosen to span the range a small office actually has |
+| Frame 1, room count | 03 | illustrative | Count derived from the three illustrative rooms shown in the same frame |
 | Frame 1, status pills | Free, Busy, Free soon | source-derived | The three states REQ-001 requires a person to distinguish |
 | Frame 1, next free time | 14:30 | illustrative | No time source exists in scope |
 | Frame 2, empty list body | No rooms configured yet | illustrative | Copy is a first draft, open as Q-002 |
 | Frame 3, booking owner | Staff A | illustrative | Deliberately not person shaped |
 | Frame 3, refusal message | Room B is already booked from 14:00 to 15:00 | source-derived | The BR-001 refusal, with an illustrative time |
 | Component library, slot times | 13:00, 13:30, 14:00, 14:30 | illustrative | Chosen so one slot is unavailable and adjacent to a selected one |
+| Component library, success message | Room A is booked for you, 13:30 to 14:00 | illustrative | Demonstrates the successful booking state with registered room and time values |
+| Component library, informational message | Showing today only | source-derived | REQ-002 limits the booking slice to the current day |
+| Component and screen actions | Book this slot, Cancel booking, Close | source-derived | Booking and self-cancellation trace to REQ-002 and REQ-003; Close is illustrative control copy |
+| Product promise rail | Read the status. Keep moving.; Answer in one glance; Book it yourself; Never double booked; Colour means one thing | source-derived | Summarises REQ-001, REQ-002, BR-001, and DEC-002 without adding behaviour |
 
 ## Assumptions
 

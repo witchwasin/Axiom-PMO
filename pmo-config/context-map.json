@@ -61,11 +61,27 @@
           "optional_context": [],
           "max_initial_files": 4
         },
+        "visual_direction": {
+          "required_context": [
+            "PROJECT.md"
+          ],
+          "conditional_context": [
+            "DESIGN/VISUAL-DIRECTION.md",
+            "DESIGN/WIREFRAME.md",
+            "DESIGN/BRAND/**",
+            "decision-log.md"
+          ],
+          "optional_context": [
+            "source/**"
+          ],
+          "max_initial_files": 4
+        },
         "design_system": {
           "required_context": [
             "PROJECT.md"
           ],
           "conditional_context": [
+            "DESIGN/VISUAL-DIRECTION.md",
             "DESIGN/WIREFRAME.md",
             "DESIGN/BRAND/**",
             "decision-log.md"
@@ -162,11 +178,27 @@
           "optional_context": [],
           "max_initial_files": 8
         },
+        "visual_direction": {
+          "required_context": [
+            "PROJECT.md"
+          ],
+          "conditional_context": [
+            "DESIGN/VISUAL-DIRECTION.md",
+            "DESIGN/WIREFRAME.md",
+            "DESIGN/BRAND/**",
+            "decision-log.md"
+          ],
+          "optional_context": [
+            "source/**"
+          ],
+          "max_initial_files": 8
+        },
         "design_system": {
           "required_context": [
             "PROJECT.md"
           ],
           "conditional_context": [
+            "DESIGN/VISUAL-DIRECTION.md",
             "DESIGN/WIREFRAME.md",
             "DESIGN/BRAND/**",
             "decision-log.md"
@@ -264,11 +296,27 @@
           ],
           "max_initial_files": 12
         },
+        "visual_direction": {
+          "required_context": [
+            "PROJECT.md"
+          ],
+          "conditional_context": [
+            "DESIGN/VISUAL-DIRECTION.md",
+            "DESIGN/WIREFRAME.md",
+            "DESIGN/BRAND/**",
+            "decision-log.md"
+          ],
+          "optional_context": [
+            "source/**"
+          ],
+          "max_initial_files": 10
+        },
         "design_system": {
           "required_context": [
             "PROJECT.md"
           ],
           "conditional_context": [
+            "DESIGN/VISUAL-DIRECTION.md",
             "DESIGN/WIREFRAME.md",
             "DESIGN/BRAND/**",
             "decision-log.md"

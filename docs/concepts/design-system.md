@@ -4,13 +4,15 @@
 
 Axiom-PMO could not answer that question. It could answer the structural version well — which screens exist, which requirement each one serves, which flow branch leads where — because `DESIGN/FLOW.puml` and `DESIGN/WIREFRAME.md` say so. But a wireframe is a list of boxes. Five people read the same list and picture five different products, and nobody discovers the gap until a developer has built one of the five.
 
-The design system closes that gap by making the picture explicit, early, and arguable.
+Visual direction first explains why the product should have a particular visual voice. The
+design system then turns that selected direction into an explicit, early, and arguable contract.
 
 ```text
-Draft → Scope → Design → Handoff → Release
-                  ↑
-          the design system lives here
+Draft → Scope → [Visual Direction] → Design System → Design Ready → Handoff → Release
 ```
+
+Visual direction is optional: a human-confirmed existing brand may use conformance instead of
+multi-direction exploration. See [`visual-direction.md`](visual-direction.md).
 
 ---
 
@@ -26,15 +28,18 @@ A design system that only produces the picture causes the second failure. One th
 
 ---
 
-## Two files, one contract
+## One direction, two contract views
 
 | Artifact | Audience | Question it answers |
 |---|---|---|
+| `DESIGN/VISUAL-DIRECTION.md` | human owner, designer, reviewer | Why should it look this way rather than like a default? |
 | `DESIGN/DESIGN-SYSTEM.md` | developer, reviewer | What exactly do I build, in what states? |
 | `DESIGN/DESIGN-SYSTEM.html` | anyone with an opinion | Is this what we meant? |
 | `DESIGN/BRAND/` | brand owner, developer | What is the mark, who owns it, how is it used? |
 
-The token names in the markdown table are the CSS custom property names in the HTML. One value, two readers. If they drift, the markdown wins, and the drift is a defect.
+The selected or conformance direction is upstream input. The token names in the markdown table
+are the CSS custom property names in the HTML. One value, two readers. If they drift, the
+markdown wins, and the drift is a defect.
 
 The split matters because the two audiences need opposite things. A stakeholder cannot review a table of hex codes. A developer cannot build from a screenshot. Producing only one of them means someone is guessing.
 
@@ -124,7 +129,12 @@ Same for out-of-scope screens and for whether a brand field marked `supported` r
 powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project> -Mode <mode> -Gate Design
 ```
 
-Load `pmo-design` and ask for a design system. The skill reads what has already been decided before it asks anything, drafts brand direction as `inferred` until a human confirms it, and fills both files from one set of token values.
+Load `pmo-design` and ask for a design system. For new work, the skill first consumes a visual
+direction with status `selected` or `conformance`; when none exists, it routes through
+`visual_direction` before drawing the presentation. It reads decided facts before asking,
+uses the repository evidence ladder (`verified`, `supported`, `inferred`, `missing`, `conflict`),
+and fills both contract views from one set of token values. It reports tool and render status
+separately from evidence status.
 
 A worked example is in [`examples/DESIGN-SYSTEM-DEMO/`](../../examples/DESIGN-SYSTEM-DEMO/). Open `DESIGN/DESIGN-SYSTEM.html` in a browser.
 

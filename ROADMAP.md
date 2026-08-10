@@ -1,8 +1,9 @@
 # Axiom-PMO Productization Roadmap
 
 Status: roadmap of record
-Current tagged release: 1.3.0 (`VERSION` file, git tag `v1.3.0`). Milestone 6
-merged to `main` 2026-08-01; Milestone 5.5 merged to `main` 2026-08-02;
+Current tagged release: 1.3.0 (git tag `v1.3.0`). Current framework version:
+1.4.0 (`VERSION` file). Milestone 6 merged to `main` 2026-08-01; Milestone
+5.5 merged to `main` 2026-08-02;
 Milestones 7, 8.0, 8.1, and 9 merged to `main` 2026-08-03 (commit `1235034`).
 None of Milestones 7-9 is part of the `v1.3.0` tag. The `v1.3.0` tag was
 authorized separately by the Human Owner on 2026-08-02. GitHub Release notes,
@@ -18,7 +19,7 @@ so `1309cb6` itself was never confirmed green on all hosts by real CI
 (full errata in `CHANGELOG.md`). A release candidate must therefore be
 built from `f10b608` or later, never from `1235034`, `4ae5f35`, or
 `1309cb6`, none of which are publishable across the supported hosts.
-Last updated: 2026-08-03
+Last updated: 2026-08-11
 
 Axiom-PMO is moving from an open-source governance framework into a developer
 workflow tool for AI-assisted software delivery.
@@ -1465,6 +1466,25 @@ Do not spend near-term effort on:
 - publishing benchmarks without methodology;
 - using "first in the world" positioning;
 - adding documentation that is not tied to user need.
+
+## Creative Direction Capability
+
+### Part 1 — Creative MVP (completed)
+
+The optional `pmo-design` `visual_direction` intent, creative brief, human-owned
+direction selection, and concept-led design-system presentation layer are complete.
+The Human Owner used the capability on a real task and confirmed that it materially
+improves the creative result and is sufficient for current use (`DEC-020`). It stays
+an optional capability: the framework does not claim that an AI has approved visual
+quality, and a user may request a direction or presentation adjustment at any time.
+
+### Path 2 — Visual Proof Enforcement (deferred)
+
+No Milestone 10 is open or authorized. A future decision may consider a
+`visual_proof` handoff gate, `VISUAL-REVIEW.json`, new validation rules, or committed
+renders only if real-world use shows that optional human review is insufficient.
+Those ideas remain deferred; they are not incomplete Part 1 work and must not be
+added by configuration or default.
 
 ## Priority Backlog
 

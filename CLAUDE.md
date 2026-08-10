@@ -46,7 +46,8 @@ Legacy folders are supported. Map them this way:
 | "ทำ flow", "system flow", "activity diagram" | Standard | `PROJECT.md`, `DESIGN/` | `pmo-design` |
 | "ทำ use case" | Standard | `PROJECT.md`, `DESIGN/` | `pmo-design` |
 | "ทำ wireframe" | Standard | `PROJECT.md`, `DESIGN/FLOW.puml` | `pmo-design` |
-| "ทำ design system", "อยากเห็นหน้าตาก่อน", "brand", "logo", "UI kit" | Standard | `PROJECT.md`, `DESIGN/WIREFRAME.md`, `decision-log.md` | `pmo-design` (intent `design_system`) |
+| "visual direction", "creative direction", "art direction", "งานไม่เหมือนทั่วไป", "เลือกแนวทางก่อนทำ UI" | Standard | `PROJECT.md`, existing `DESIGN/VISUAL-DIRECTION.md`, `DESIGN/WIREFRAME.md`, `DESIGN/BRAND/`, `decision-log.md` | `pmo-design` (intent `visual_direction`) |
+| "ทำ design system", "อยากเห็นหน้าตาก่อน", "visual sheet", "brand", "logo", "UI kit" | Standard | `PROJECT.md`, `DESIGN/VISUAL-DIRECTION.md`, `DESIGN/WIREFRAME.md`, `decision-log.md` | `pmo-design` (intent `design_system`) |
 | "แตกงาน", "handoff dev" | Standard | `PROJECT.md`, `DESIGN/`, `DELIVERY.md` | `pmo-delivery` |
 | "พร้อมส่ง dev ยัง", "handoff review", "พร้อม demo ไหม" | Standard | `PROJECT.md`, `DELIVERY.md`, `HANDOFF.md`, `DESIGN/BUILD-SPEC.md` | `pmo-delivery` |
 | "Dev เสร็จแล้ว", "review dev" | Standard | `DELIVERY.md`, relevant design | `pmo-build-review` |
@@ -168,7 +169,7 @@ Update this when a reusable project/example is added.
 | HANDOFF-DEMO | Standard Demo Handoff | `examples/HANDOFF-DEMO` | Ready | Handoff gate, build order, demo milestone, semantic review |
 | LITE-BUGFIX | Lite Bug Fix Example | `examples/LITE-BUGFIX` | Ready | Minimal docs for low-risk change |
 | STANDARD-FEATURE | Standard Feature Example | `examples/STANDARD-FEATURE` | Ready | Normal flow, delivery, QA, release |
-| DESIGN-SYSTEM-DEMO | Design System at the Design Gate | `examples/DESIGN-SYSTEM-DEMO` | Ready | Brand, tokens, components, mockups; stops at Design on purpose |
+| DESIGN-SYSTEM-DEMO | Visual Direction and Design System at the Design Gate | `examples/DESIGN-SYSTEM-DEMO` | Ready | Brief, selected direction, brand, tokens, components, mockups; stops at Design on purpose |
 | STRICT-HIGH-RISK | Strict High-Risk Example | `examples/STRICT-HIGH-RISK` | Ready | Permission/audit example with RTM |
 | DEMO-BROKEN / DEMO-FIXED | Three-minute proof | `demo/` | Ready | Synthetic; drives `make demo` |
 

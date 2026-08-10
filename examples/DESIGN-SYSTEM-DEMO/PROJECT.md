@@ -4,7 +4,7 @@
 > Default mode: Standard
 > Task source: file
 > Owner: Demo PM
-> Last updated: 2026-08-05
+> Last updated: 2026-08-07
 
 ## Task Management
 
@@ -28,10 +28,11 @@ task_management:
 Let staff see which meeting rooms are free and book one themselves, replacing a
 paper sheet at reception that is never current.
 
-This example exists to show the design system in its natural place: produced
-during design, as input to the Design Ready decision, before anything is handed
-to a developer. It stops at that gate on purpose. There is no `HANDOFF.md` and
-no `RELEASE.md`, because this project has not reached either.
+This example exists to show visual direction followed by the design system in
+their natural place: direction selected before the visual sheet is composed, then
+both reviewed as input to the Design Ready decision before anything is handed to
+a developer. It stops at that gate on purpose. There is no `HANDOFF.md` and no
+`RELEASE.md`, because this project has not reached either.
 
 ## Scope
 

@@ -7,21 +7,22 @@
 ## Brand Direction
 
 The audience row is derivable from source. The rest are business decisions, and they
-became `supported` only when a human took them in DEC-002 after looking at the sheet.
-The product name is still open, because DEC-002 accepted it as provisional.
+became `verified` when a human selected VD-01 "Live Room Field" in DEC-002
+after comparing the directions in `DESIGN/VISUAL-DIRECTION.md` and before the sheet
+was composed. The product name is still open, because DEC-002 accepted it as provisional.
 
 | Field | Value | Evidence Status | Source Ref |
 |---|---|---:|---|
 | Primary audience | Any member of office staff, with no training | supported | PROJECT.md REQ-001 |
 | Product name | RoomBook | inferred | Provisional in DEC-002, still open as Q-001 |
-| Tagline | Find a room. Book it. Go. | supported | DEC-002 |
-| Personality | Fast, plain, unceremonious | supported | DEC-002 |
-| Tone of voice | Short statements. No congratulation for booking a room | supported | DEC-002 |
+| Tagline | Find a room. Book it. Go. | verified | DEC-002 |
+| Personality | Fast, plain, unceremonious | verified | DEC-002 |
+| Tone of voice | Short statements. No congratulation for booking a room | verified | DEC-002 |
 
 ## Logo Concept
 
-- Symbol: an outlined floor plan with one room filled solid.
-- Meaning: the product is not a calendar, it is a picture of the floor right now. One room is taken, the rest are not, and that is the entire idea.
+- Symbol: an outlined room field with one room filled solid.
+- Meaning: the product is not a calendar; it is a picture of room status right now. One room is taken, the rest are not, and that is the live-state idea selected in VD-01. The mark does not promise floor location or navigation.
 - Reads as: taken versus free is carried by **fill against outline**, not by hue. That was a deliberate correction. The first draft drew the free rooms as white shapes on a light floor, which measured 1.26 to 1 and disappeared, leaving a mark that read as one blue bar. Filled against unfilled survives 24px, a monochrome print, and colour blindness, which is the same principle the status pill follows.
 - Approved down to 24px on that basis.
 
@@ -45,12 +46,12 @@ The product name is still open, because DEC-002 accepted it as provisional.
 
 - Primary family: Inter
 - Why: designed for user interface text at small sizes, open licence, and a large enough x-height that a room name and a time stay legible inside a narrow card.
-- Script coverage: Latin. This tool is English only today. The fallback stack carries Thai families so the same design system can be reused on a Thai-facing product without changing any token value.
+- Script coverage: the current demo artifacts use English sample copy, but no product-language requirement was found in source. The fallback stack carries Thai families so a later human language decision does not require changing token names.
 - Fallback stack: Inter, IBM Plex Sans Thai, Noto Sans Thai, then the platform user interface family.
 
 ## Usage Rules - Do
 
-- Keep the taken room solid and the floor outlined. The fill against the outline is what carries the meaning, and it must survive if the mark is printed in one colour.
+- Keep the taken room solid and the surrounding room field outlined. The fill against the outline is what carries the meaning, and it must survive if the mark is printed in one colour.
 - Use `color-accent-600` only for the overlap refusal. Reusing it anywhere else destroys its meaning at a glance.
 - Place the lockup on white or on `color-surface-50`.
 

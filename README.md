@@ -438,7 +438,9 @@ A project built with this template looks like:
 ```
 PROJECT.md          Scope, requirements, approvals — the "what" and "why"
 source/             Client-owned inputs (MOM, REQ, Transcript, Others) — never edited by the AI
-DESIGN/             Flow diagrams, wireframes (Standard/Strict, when there's a UI or flow)
+DESIGN/             Flow, wireframes, and optional visual-direction/design-system artifacts
+DESIGN/VISUAL-DIRECTION.md  Creative brief, explored directions, and the human-selected direction (optional)
+DESIGN/DESIGN-SYSTEM.md     Token/component contract paired with the visual HTML sheet (optional)
 DELIVERY.md         Work items — the "who's building what", unless GitHub Issues is the declared source
 DESIGN/BUILD-SPEC.md  Technical specification — stack, data model, concurrency, acceptance cases (Handoff)
 HANDOFF.md          Developer entry point — build order, owners, constraints, blocking points (Handoff)
@@ -458,7 +460,7 @@ skill and mode.
 | Skill | Stage |
 |---|---|
 | `pmo-intake` | Turning source material into scoped, referenced requirements |
-| `pmo-design` | Flow, UX, wireframes, design-ready acceptance criteria |
+| `pmo-design` | Flow, UX, wireframes, visual direction, brand, design systems, design-ready acceptance criteria |
 | `pmo-delivery` | Delivery planning, handoff, task-source-of-truth, sequencing |
 | `pmo-build-review` | Build completion evidence, code-review readiness |
 | `pmo-quality-release` | QA evidence, release readiness, rollback review |
