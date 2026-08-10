@@ -31,8 +31,7 @@ Ask, in the user's own words if useful, but cover both:
 1. **Who builds this work** — a developer or vendor after a verified
    handoff (`development_handoff`), or an AI execution agent under a
    governed contract, verified afterward against git ground truth
-   (`governed_ai_execution`)? See
-   [`docs/concepts/execution-paths.md`](../../../docs/concepts/execution-paths.md).
+   (`governed_ai_execution`)? See `docs/concepts/execution-paths.md`.
 2. **How strictly should this be governed** — Lite, Standard, or Strict?
    If the user is unsure, walk through `pmo-config/policy.json`
    `enums.strict_triggers` (payment, financial calculation, PII, sensitive
