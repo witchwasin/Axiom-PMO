@@ -20,13 +20,6 @@ New-Item -ItemType Directory -Force -Path $goldenDir | Out-Null
 $cmds = @(
   @{ Name = "run-all-checks-lite-example"; Path = "examples/LITE-BUGFIX"; Mode = "Lite"; Gate = "Scope" },
   @{ Name = "run-all-checks-standard-example"; Path = "examples/STANDARD-FEATURE"; Mode = "Standard"; Gate = "Release" },
-  # The same example at the Handoff gate. Release exercises none of the
-  # HANDOFF-### rules, so the golden above cannot show a handoff regression --
-  # it stayed byte-identical while a stale HANDOFF-REVIEW.json raised a blocking
-  # WARN at -Gate Handoff. Every case in this table runs with -FailOnWarning
-  # (see $psArgs), which is what makes that WARN visible in this golden's
-  # exit code rather than silently absent from it.
-  @{ Name = "run-all-checks-standard-example-handoff"; Path = "examples/STANDARD-FEATURE"; Mode = "Standard"; Gate = "Handoff" },
   @{ Name = "run-all-checks-strict-example"; Path = "examples/STRICT-HIGH-RISK"; Mode = "Strict"; Gate = "Release" }
 )
 

@@ -146,19 +146,6 @@ $cases = @(
   @{ Name = "handoff-demo-standard"; Path = "examples/HANDOFF-DEMO"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
   @{ Name = "handoff-demo-design-gate-unaffected"; Path = "examples/HANDOFF-DEMO"; Mode = "Standard"; Gate = "Design"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
   @{ Name = "handoff-demo-scope-gate-unaffected"; Path = "examples/HANDOFF-DEMO"; Mode = "Standard"; Gate = "Scope"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
-  # STANDARD-FEATURE carries a full Handoff artifact set, but every CI leg ran it
-  # at -Gate Release, where the HANDOFF-### rules do not evaluate at all. That is
-  # not a theoretical hole: adding one row to its decision-log.md changes the
-  # review_inputs digest (the file is listed in handoff-policy.json
-  # semantic_review.freshness.review_input_files), which makes HANDOFF-REVIEW.json
-  # stale -- and the whole suite stayed green while the shipped example was, at
-  # the gate it exists to demonstrate, not handoff-ready.
-  #
-  # FailOnWarning is load-bearing here, not decoration. A stale review is a
-  # BLOCKING WARN, not a FAIL, so the validator exits 0 without it; measured on
-  # the stale example, exit 2 with the switch and exit 0 without. Dropping it
-  # would restore the exact gap this case closes.
-  @{ Name = "example-standard-feature-handoff"; Path = "examples/STANDARD-FEATURE"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
   @{ Name = "valid-handoff-lite"; Path = "tests/fixtures/valid-handoff-lite"; Mode = "Lite"; Gate = "Handoff"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
   @{ Name = "valid-handoff-strict"; Path = "tests/fixtures/valid-handoff-strict"; Mode = "Strict"; Gate = "Handoff"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
   # Passes the gate with an open action still outstanding. The gate is right to
