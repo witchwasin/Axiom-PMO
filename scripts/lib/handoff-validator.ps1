@@ -136,7 +136,13 @@ function Get-ReviewInputDigest {
       $parts.Add("$relative`n<absent>") | Out-Null
       continue
     }
-    $content = Get-Content -LiteralPath $path -Raw
+    # -Encoding UTF8 is load-bearing, not tidiness. Windows PowerShell 5.1
+    # decodes a BOM-less file with the machine's ANSI code page, so a UTF-8 em
+    # dash (E2 80 94) arrives as three Windows-1252 characters instead of one
+    # -- a different string, and therefore a different SHA-256, than pwsh 7
+    # computes from the identical bytes. A review recorded on one host then
+    # reads as stale on the other. See powershell-portability.md section 7.
+    $content = Get-Content -LiteralPath $path -Raw -Encoding UTF8
     if ($null -eq $content) { $content = "" }
     $normalized = ($content -replace "`r`n", "`n") -replace "[ \t]+(?=\n)", ""
     $parts.Add("$relative`n" + $normalized.TrimEnd()) | Out-Null

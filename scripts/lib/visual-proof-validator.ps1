@@ -52,7 +52,13 @@ function Get-VisualProofTextSha256 {
 function Get-VisualProofNormalizedTextHash {
   param([string]$Path)
 
-  $content = Get-Content -LiteralPath $Path -Raw
+  # Explicit UTF-8: same hazard as the handoff review digest. A BOM-less file
+  # with any non-ASCII character (an em dash is enough) decodes as ANSI on
+  # Windows PowerShell 5.1 and as UTF-8 on pwsh 7, so the same bytes would
+  # produce two different digests and a current review would read as stale.
+  # Get-VisualProofFileHash below is already safe -- it hashes stored bytes.
+  # See powershell-portability.md section 7.
+  $content = Get-Content -LiteralPath $Path -Raw -Encoding UTF8
   if ($null -eq $content) { $content = "" }
   $normalized = ($content -replace "`r`n", "`n") -replace "[ \t]+(?=\n)", ""
   return (Get-VisualProofTextSha256 -Text $normalized.TrimEnd())

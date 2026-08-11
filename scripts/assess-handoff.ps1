@@ -88,7 +88,10 @@ if ($reviewPresent) {
 $projectText = ""
 $projectFile = Join-Path $project "PROJECT.md"
 if (Test-Path -LiteralPath $projectFile -PathType Leaf) {
-  $projectText = Get-Content -LiteralPath $projectFile -Raw
+  # Explicit UTF-8 so this digest matches the one the validator and
+  # handoff-digest.ps1 compute; 5.1 would decode a BOM-less file as ANSI.
+  # See powershell-portability.md section 7.
+  $projectText = Get-Content -LiteralPath $projectFile -Raw -Encoding UTF8
 }
 $currentSourceDigest = Get-SourceSnapshotDigest -ProjectText $projectText
 $currentInputDigest = Get-ReviewInputDigest -Project $project -HandoffPolicy $handoffPolicy

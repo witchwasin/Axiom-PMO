@@ -216,3 +216,57 @@ then reports a pass for a read-only scenario it never created.
 **Use `Test-WindowsHost`** from `scripts/lib/pwsh-host.ps1`, which checks
 `$PSVersionTable.PSEdition` first. Enforced by
 [`DOCTOR-011`](../rules/DOCTOR-011.md) across both `scripts/` and `tests/`.
+
+## 7. `Get-Content` without `-Encoding` decodes differently per host
+
+**Shipped, and it reached a user-visible verdict.** Found by CI, diagnosed
+only after adding a diagnostic that printed the real output — the original
+symptom was a golden-master mismatch with no detail (issue #20).
+
+Windows PowerShell 5.1 decodes a file with **no BOM** using the machine's ANSI
+code page (Windows-1252 on the GitHub runner). PowerShell 7 defaults to UTF-8.
+The same bytes therefore become different strings:
+
+| Bytes in the file | 5.1 reads | pwsh 7 reads |
+|---|---|---|
+| `E2 80 94` (UTF-8 `—`) | `â€"` — three chars | `—` — one char |
+
+Pure-ASCII files are identical on both hosts, which is exactly what makes this
+hard to see: it stays invisible until someone types an em dash.
+
+**What it broke:** `Get-ReviewInputDigest` hashes the text of the governed
+artifacts a semantic review read. `examples/STANDARD-FEATURE` contains three
+em dashes across `HANDOFF.md`, `DESIGN/BUILD-SPEC.md`, and `decision-log.md`.
+Its digest recorded on pwsh 7 did not match the digest recomputed on 5.1, so
+`HANDOFF-010` reported a perfectly current review as **stale**, raising a
+blocking WARN and exit 2. `examples/HANDOFF-DEMO` and
+`tests/fixtures/valid-handoff-strict` pass on 5.1 for one reason only: their
+review inputs happen to be pure ASCII.
+
+This is not a test-only defect. A team that records a handoff digest on macOS
+and validates it in Windows CI gets a false "stale review" that blocks the
+gate, with no way to make it pass.
+
+**Do this:**
+
+- Pass `-Encoding UTF8` on **every** `Get-Content` whose result feeds a
+  digest, a hash, or a cross-host comparison. `UTF8` is spelled the same and
+  means UTF-8 for reading on both hosts.
+- Better still, where you only need the file's identity rather than its text,
+  hash the **stored bytes** with `Get-FileHash` and skip decoding entirely —
+  this is what `Get-VisualProofFileHash` does, and why it never had the bug.
+- Do not assume a normalization step upstream saves you. This digest already
+  normalized line endings and trailing whitespace, and the mismatch was
+  introduced *before* any of it, while the bytes were being turned into
+  characters.
+
+Fixed at all five digest-feeding reads: `Get-ReviewInputDigest`,
+`Get-ProjectText`, `assess-handoff.ps1`, `handoff-digest.ps1` (the recording
+side), and `Get-VisualProofNormalizedTextHash`.
+
+**The standing regression guard** is the `example-standard-feature-handoff`
+fixture case running on the Windows PowerShell 5.1 CI leg. It is not an
+incidental example: it is the one project in the suite whose review inputs
+contain non-ASCII text, so it is the only case that fails if this regresses.
+Keep it that way — if those em dashes are ever edited out, the coverage goes
+with them.

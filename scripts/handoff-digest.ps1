@@ -38,7 +38,11 @@ if (-not (Test-Path -LiteralPath $projectFile -PathType Leaf)) {
 $cfg = Import-PmoConfig -RepoRoot $repoRoot
 $handoffPolicy = $cfg.HandoffPolicy
 
-$sourceDigest = Get-SourceSnapshotDigest -ProjectText (Get-Content -LiteralPath $projectFile -Raw)
+# Explicit UTF-8 on the recording side too. This script prints the digest a
+# review must record; if it decoded differently from the validator that later
+# checks it, every review recorded on one host would read as stale on another.
+# See powershell-portability.md section 7.
+$sourceDigest = Get-SourceSnapshotDigest -ProjectText (Get-Content -LiteralPath $projectFile -Raw -Encoding UTF8)
 if (-not $sourceDigest) {
   Write-Error "PROJECT.md has no Source Snapshot or Source Inventory table to digest."
   exit 1

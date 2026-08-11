@@ -53,7 +53,11 @@ function Test-Dir {
 function Get-ProjectText {
   $path = Join-Path $script:project "PROJECT.md"
   if (Test-Path -LiteralPath $path) {
-    return Get-Content -LiteralPath $path -Raw
+    # Explicit UTF-8: this text feeds Get-SourceSnapshotDigest, and Windows
+    # PowerShell 5.1 would otherwise decode a BOM-less file as ANSI and produce
+    # a different digest than pwsh 7 does from the same bytes.
+    # See powershell-portability.md section 7.
+    return Get-Content -LiteralPath $path -Raw -Encoding UTF8
   }
   return ""
 }
