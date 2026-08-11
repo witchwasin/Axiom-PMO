@@ -83,3 +83,62 @@ function Test-GoldenMatch {
 
   return (Get-CanonicalGoldenText -Text $Expected) -eq (Get-CanonicalGoldenText -Text $Actual)
 }
+
+# Line-level report of the first differences behind a Test-GoldenMatch failure.
+#
+# Why this exists: `-VerifyGolden` reported only "output differs from golden
+# master" -- exactly enough to know something broke, and nowhere near enough to
+# know what. That is tolerable when the mismatch reproduces locally. It is not
+# tolerable for a mismatch that reproduces only on a host the maintainer cannot
+# run: Windows PowerShell 5.1 is the standing case here, the `pmo-checks` job
+# uploads no artifact, and the real output is therefore unrecoverable from a
+# finished run. Printing the differing lines turns a blind CI round-trip into
+# an answer, which is what `docs/architecture/powershell-portability.md` asks
+# for under "push a diagnostic that prints the real state first."
+#
+# Comparison is canonical and uses the same operator as Test-GoldenMatch, so
+# every line reported is a line that actually contributed to the failure --
+# never indentation, BOM, line-ending, or path-separator noise.
+function Get-GoldenDiffReport {
+  param(
+    [Parameter(Mandatory = $true)]
+    [AllowEmptyString()]
+    [string]$Expected,
+
+    [Parameter(Mandatory = $true)]
+    [AllowEmptyString()]
+    [string]$Actual,
+
+    # Enough to characterize a failure without burying the log when a whole
+    # golden shifts by one line.
+    [int]$MaxDifferences = 12
+  )
+
+  $expectedLines = @((Get-CanonicalGoldenText -Text $Expected) -split "`n")
+  $actualLines = @((Get-CanonicalGoldenText -Text $Actual) -split "`n")
+
+  $report = New-Object System.Collections.Generic.List[string]
+  $shown = 0
+  $lineCount = [Math]::Max($expectedLines.Count, $actualLines.Count)
+  for ($i = 0; $i -lt $lineCount; $i++) {
+    $expectedLine = if ($i -lt $expectedLines.Count) { $expectedLines[$i] } else { "<no such line>" }
+    $actualLine = if ($i -lt $actualLines.Count) { $actualLines[$i] } else { "<no such line>" }
+    if ($expectedLine -eq $actualLine) { continue }
+    if ($shown -ge $MaxDifferences) {
+      $report.Add("      ... further differences not shown") | Out-Null
+      break
+    }
+    $report.Add("      line $($i + 1):") | Out-Null
+    $report.Add("        expected: $expectedLine") | Out-Null
+    $report.Add("        actual:   $actualLine") | Out-Null
+    $shown++
+  }
+
+  # Equal line-by-line but unequal overall means the difference is in the line
+  # count alone, which the loop above cannot surface.
+  if ($report.Count -eq 0) {
+    $report.Add("      no differing line found; expected $($expectedLines.Count) line(s), actual $($actualLines.Count)") | Out-Null
+  }
+
+  return $report.ToArray()
+}

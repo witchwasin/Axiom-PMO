@@ -240,6 +240,10 @@ if ($CaptureGolden -or $VerifyGolden) {
   New-Item -ItemType Directory -Force -Path $GoldenMasterDir | Out-Null
 }
 $goldenMismatches = @()
+# Parallel to $goldenMismatches: the differing lines behind each one, printed
+# with the summary. See Get-GoldenDiffReport for why a bare "output differs"
+# is not enough on a host the maintainer cannot run locally.
+$goldenDiffReports = @()
 
 foreach ($case in $cases) {
   $projectPath = Join-Path $repo $case.Path
@@ -278,9 +282,17 @@ foreach ($case in $cases) {
       # pretty-printer differs between Windows PowerShell 5.1 and pwsh 7. Rule
       # ids, levels, blocking flags, messages, counters, and the exit code are
       # all still compared exactly.
-      $expected = Get-Content -LiteralPath $goldenFile -Raw
+      # A zero-byte golden makes Get-Content -Raw return $null, not "" (see
+      # docs/architecture/powershell-portability.md section 3); an explicit
+      # null check, never a [string] cast, is the fix that actually works.
+      $expectedRaw = Get-Content -LiteralPath $goldenFile -Raw
+      $expected = if ($null -eq $expectedRaw) { "" } else { $expectedRaw }
       if (-not (Test-GoldenMatch -Expected $expected -Actual $rawOutput)) {
         $goldenMismatches += "$($case.Name): output differs from golden master"
+        $goldenDiffReports += ,@{
+          Name = $case.Name
+          Lines = @(Get-GoldenDiffReport -Expected $expected -Actual $rawOutput)
+        }
       }
     }
   }
@@ -371,6 +383,17 @@ if ($VerifyGolden) {
     Write-Host ""
     Write-Host "Golden master verification FAILED ($($goldenMismatches.Count) mismatch(es)):"
     foreach ($m in $goldenMismatches) { Write-Host "  - $m" }
+    # The differing lines themselves. Without these the log says only that a
+    # golden moved, which is undiagnosable when the mismatch reproduces on a
+    # host the maintainer cannot run and the job uploads no artifact.
+    if ($goldenDiffReports.Count -gt 0) {
+      Write-Host ""
+      Write-Host "Differing lines (canonical form, the same comparison Test-GoldenMatch makes):"
+      foreach ($report in $goldenDiffReports) {
+        Write-Host "    $($report.Name):"
+        foreach ($line in $report.Lines) { Write-Host $line }
+      }
+    }
   } else {
     Write-Host "Golden master verification: all $($cases.Count) case(s) match (canonical comparison)"
   }
