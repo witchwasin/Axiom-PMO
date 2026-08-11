@@ -29,6 +29,9 @@
 - Brand decision ref: DEC-002
 - Design Ready: DEC-003, which reviewed visual direction, brand, flow, wireframe,
   and this sheet in one round
+- Visual Proof: `DESIGN/VISUAL-REVIEW.json`, with the two committed derived captures under
+  `DESIGN/VISUAL-PROOF/`. DEC-004 is synthetic example evidence for the conditional Handoff
+  contract; it is not another approval or a real stakeholder attestation.
 - Sample data: every value rendered on the visual sheet is registered under `Sample Data Register`.
 - Presentation-target assumption: browser layouts at desktop and tablet widths. Browser use
   is source-backed; form factor, viewing distance, and network model remain inferred and must

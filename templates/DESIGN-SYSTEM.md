@@ -29,6 +29,9 @@
 - Wireframe reference: `DESIGN/WIREFRAME.md`
 - Brand decision ref: DEC-<NNN>
 - Sample data: every value rendered on the visual sheet is registered under `Sample Data Register`.
+- Visual Proof at Handoff: conditional only when this file, the visual sheet, and
+  `DESIGN/VISUAL-DIRECTION.md` all exist. Then record committed desktop/mobile captures and a
+  named human review in `DESIGN/VISUAL-REVIEW.json`; it is candidate evidence, never approval.
 
 For a new design system, do not begin the presentation layer while direction status is
 `pending`. A selected direction requires a human decision reference; `conformance` requires

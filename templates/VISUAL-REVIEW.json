@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "project_code": "<PROJECT-CODE>",
+  "reviewed_at": "<YYYY-MM-DD>",
+  "reviewer_kind": "human",
+  "reviewer": "<human reviewer name and role>",
+  "decision_ref": "<DEC-NNN that records this human review declaration>",
+  "visual_direction": {
+    "selected_direction": "<VD-NN and concept name, or conformance name>",
+    "decision_ref": "<DEC-NNN for selected or conformance direction>"
+  },
+  "review_inputs": {
+    "digest": "<digest of final visual direction, design-system files, brand assets, and committed captures; run scripts/visual-proof-digest.ps1>"
+  },
+  "captures": [
+    {
+      "id": "desktop",
+      "path": "DESIGN/VISUAL-PROOF/desktop.png",
+      "sha256": "<64-character SHA-256>",
+      "viewport": { "width": "<integer>", "height": "<integer>" },
+      "captured_at": "<YYYY-MM-DDTHH:MM:SSZ>",
+      "capture_method": "<local_browser_screenshot or human_captured>"
+    },
+    {
+      "id": "mobile",
+      "path": "DESIGN/VISUAL-PROOF/mobile.png",
+      "sha256": "<64-character SHA-256>",
+      "viewport": { "width": "<integer>", "height": "<integer>" },
+      "captured_at": "<YYYY-MM-DDTHH:MM:SSZ>",
+      "capture_method": "<local_browser_screenshot or human_captured>"
+    }
+  ],
+  "rubric": [
+    { "id": "concept_fit", "status": "reviewed", "notes": "<brief-linked observation or open follow-up>" },
+    { "id": "distinctiveness", "status": "reviewed", "notes": "<observation or open follow-up>" },
+    { "id": "typography_quality", "status": "reviewed", "notes": "<observation or open follow-up>" },
+    { "id": "hierarchy", "status": "reviewed", "notes": "<observation or open follow-up>" },
+    { "id": "composition", "status": "reviewed", "notes": "<observation or open follow-up>" },
+    { "id": "component_coherence", "status": "reviewed", "notes": "<observation or open follow-up>" },
+    { "id": "cross_screen_consistency", "status": "reviewed", "notes": "<observation or open follow-up>" },
+    { "id": "state_completeness", "status": "reviewed", "notes": "<observation or open follow-up>" },
+    { "id": "responsive_fit", "status": "reviewed", "notes": "<observation or open follow-up>" },
+    { "id": "accessibility", "status": "reviewed", "notes": "<observation or open follow-up>" },
+    { "id": "content_realism", "status": "reviewed", "notes": "<observation or open follow-up>" },
+    { "id": "buildability", "status": "reviewed", "notes": "<observation or open follow-up>" },
+    { "id": "scope_alignment", "status": "reviewed", "notes": "<observation or open follow-up>" }
+  ],
+  "findings": [],
+  "recommendation": {
+    "status": "accepted",
+    "notes": "I reviewed the committed desktop and mobile captures against the selected or conformance visual direction. This is candidate evidence for Handoff, not a Design Ready or release approval. <Record open follow-up or none.>"
+  }
+}

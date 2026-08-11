@@ -124,12 +124,16 @@ defaults for RoomBook; any exception needs a brief-linked reason and human revie
 
 ## Capability and Review Honesty
 
-- `render_status: not_performed` at the point this direction was selected.
+- `render_status: performed` after the self-contained sheet was served locally and captured at
+  desktop 1280x900 and mobile 375x812 viewports. The committed derived captures are
+  `DESIGN/VISUAL-PROOF/desktop.png` and `DESIGN/VISUAL-PROOF/mobile.png`.
 - `browser_comparison_status: not_performed`.
 - `image_generation_status: not_performed`.
 - The HTML sheet is self-contained and uses no external font, script, or image request.
 - DEC-002 records human direction selection. DEC-003 separately records Design Ready
   after the canonical artifacts were reviewed together.
+- DEC-004 is a clearly labelled **synthetic-example** Visual Proof declaration. It demonstrates
+  the M10 evidence shape; it is not an approval by a real project stakeholder.
 
 ## Open Questions
 

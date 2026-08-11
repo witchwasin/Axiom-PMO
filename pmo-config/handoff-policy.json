@@ -100,6 +100,76 @@
     ]
   },
 
+  "visual_proof": {
+    "$comment": "Milestone 10. This is a conditional evidence check within Handoff, not a new approval or a requirement to create design artifacts. It activates only when a project already has the full creative-direction/design-system trio declared below.",
+    "activation": {
+      "required_artifacts": [
+        "DESIGN/VISUAL-DIRECTION.md",
+        "DESIGN/DESIGN-SYSTEM.md",
+        "DESIGN/DESIGN-SYSTEM.html"
+      ]
+    },
+    "artifact": "DESIGN/VISUAL-REVIEW.json",
+    "schema_version": "1.0",
+    "severity_by_mode": { "Lite": "warn", "Standard": "fail", "Strict": "fail" },
+    "reviewer_kinds": ["human"],
+    "capture_methods": ["local_browser_screenshot", "human_captured"],
+    "captures": [
+      {
+        "id": "desktop",
+        "path": "DESIGN/VISUAL-PROOF/desktop.png",
+        "min_width": 1280,
+        "min_height": 720,
+        "min_viewport_width": 1024,
+        "min_viewport_height": 640
+      },
+      {
+        "id": "mobile",
+        "path": "DESIGN/VISUAL-PROOF/mobile.png",
+        "min_width": 360,
+        "min_height": 640,
+        "min_viewport_width": 360,
+        "min_viewport_height": 640
+      }
+    ],
+    "rubric_statuses": ["reviewed", "needs_revision", "not_reviewed"],
+    "rubric": [
+      { "id": "concept_fit", "title": "The visible choices fit the selected direction and brief." },
+      { "id": "distinctiveness", "title": "The result avoids an unexamined generic default." },
+      { "id": "typography_quality", "title": "Typography has an intentional, legible hierarchy." },
+      { "id": "hierarchy", "title": "The first read and action priority are clear." },
+      { "id": "composition", "title": "Composition and density serve the product task." },
+      { "id": "component_coherence", "title": "Components share a coherent visual grammar." },
+      { "id": "cross_screen_consistency", "title": "The scoped screens stay coherent together." },
+      { "id": "state_completeness", "title": "Visible states and recorded gaps are honest." },
+      { "id": "responsive_fit", "title": "Desktop and mobile captures fit their declared viewports." },
+      { "id": "accessibility", "title": "Legibility, contrast, and state communication were considered." },
+      { "id": "content_realism", "title": "Sample content supports the intended review without misrepresenting source data." },
+      { "id": "buildability", "title": "A developer can trace the sheet to the documented contract." },
+      { "id": "scope_alignment", "title": "No unscoped screen or capability is implied by the presentation." }
+    ],
+    "recommendation_statuses": ["accepted", "revision_required"],
+    "freshness": {
+      "mode": "input_and_capture_digest",
+      "normalized_text_extensions": [".md", ".html", ".svg"],
+      "review_input_files": [
+        "PROJECT.md",
+        "DESIGN/VISUAL-DIRECTION.md",
+        "DESIGN/DESIGN-SYSTEM.md",
+        "DESIGN/DESIGN-SYSTEM.html",
+        "DESIGN/VISUAL-PROOF/desktop.png",
+        "DESIGN/VISUAL-PROOF/mobile.png"
+      ],
+      "review_input_directories": ["DESIGN/BRAND"],
+      "note": "The proof file does not hash itself. Every source-facing creative artifact, brand asset, and committed desktop/mobile capture participates, so an edit after review makes the evidence stale. This proves current file identity, not pixel provenance or visual quality."
+    },
+    "authority": {
+      "introduces_new_approval": false,
+      "decision_ref_required": true,
+      "note": "An AI may draft a candidate record, but the completed review needs a named human reviewer and a resolvable project DEC-### with a named decision owner. reviewer_kind is an attestation, not proof of identity."
+    }
+  },
+
   "owner_policy": {
     "generic_tokens": [
       "TBD",

@@ -64,11 +64,12 @@ Only a human may declare `brand_starting_point: undecided | existing`, select an
 3. Write brand assets when needed, then `DESIGN/DESIGN-SYSTEM.md` and the self-contained HTML sheet from their templates. Keep the first token block and required semantic anchors intact; rewrite the presentation layer to fit the direction.
 4. Keep Markdown and HTML token values identical. Fill the Sample Data Register and measure every contrast ratio stated.
 5. Render and show the sheet when tools permit. Report `tool_availability` and `render_status` separately; never claim a render or review that did not happen.
-6. Report assumptions, open questions, scoped screens drawn, undrawn states, and meaningful decisions. Editing a semantic-review input can stale `HANDOFF-REVIEW.json`.
+6. At Handoff, when `VISUAL-DIRECTION.md`, `DESIGN-SYSTEM.md`, and `DESIGN-SYSTEM.html` all exist, prepare honest desktop and mobile captures when rendering tools permit. A named human must review them and record `DESIGN/VISUAL-REVIEW.json`; an AI may draft notes but may not fabricate the reviewer, decision reference, or aesthetic outcome.
+7. Report assumptions, open questions, scoped screens drawn, undrawn states, and meaningful decisions. Editing a semantic-review or Visual Proof input can stale its candidate evidence.
 
 ## Output Contract
 
-Return changed design files, requirement coverage, evidence status, assumptions, unresolved questions, and any human decision still required. For visual work, also report selected/conformance direction, screens and states drawn or missing, `tool_availability`, `render_status`, and the rendered path when one exists.
+Return changed design files, requirement coverage, evidence status, assumptions, unresolved questions, and any human decision still required. For visual work, also report selected/conformance direction, screens and states drawn or missing, `tool_availability`, `render_status`, and the rendered path when one exists. When Visual Proof applies at Handoff, report whether its capture and named-human review evidence are missing or stale; do not turn that report into approval.
 
 ## Prohibited Actions
 
@@ -78,10 +79,14 @@ Do not expand scope, remove source references, invent requirements or decision I
 
 - `flow`: every design-affecting item has a design reference or an allowed `not_required` sentinel.
 - `visual_direction`: brief evidence is truthful; status is `pending`, `selected`, or `conformance` consistently; any selection has human evidence and a decision reference.
-- `design_system`: the direction is traceable, `DESIGN-001` passes, no HTML placeholder remains, sample data is registered, every screen traces to a wireframe, and render/tool claims are honest.
+- `design_system`: the direction is traceable, `DESIGN-001` passes, no HTML placeholder remains, sample data is registered, every screen traces to a wireframe, and render/tool claims are honest. At Handoff, the conditional Visual Proof contract is complete only after a named human has recorded both committed captures and the review manifest.
 
 ## Validation
 
 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project> -Mode <mode> -Gate Design`
 
 The artifact pair is candidate evidence only. Design Ready remains human-owned.
+
+Visual Proof stays in the repository workflow: active instructions are under `.claude/skills/`, and
+the generated `skills/` package is refreshed by its build command. Do not create or maintain a
+separate `.agents/skills` mirror for this capability.

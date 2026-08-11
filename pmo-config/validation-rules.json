@@ -380,6 +380,20 @@
       "suggestion": "Make DESIGN/DESIGN-SYSTEM.html agree with the Design Tokens tables in DESIGN/DESIGN-SYSTEM.md. The markdown is the contract, so change the sheet unless the markdown is the file that is wrong.",
       "documentation": "docs/rules/DESIGN-001.md"
     },
+    "VPROOF-001": {
+      "severity": "fail",
+      "lifecycle": "enforced",
+      "description": "A project that entered the creative-direction/design-system path has no complete Visual Proof record: a required review field, human decision reference, committed desktop/mobile capture, capture hash, selected-direction binding, rubric item, or accepted recommendation is missing or invalid.",
+      "suggestion": "Create DESIGN/VISUAL-REVIEW.json from templates/VISUAL-REVIEW.json, capture the configured local desktop and mobile PNGs, record their exact SHA-256 values and the current visual-proof digest, then have the human review decision recorded as a resolvable DEC-###. Do not use this evidence as an approval or an automated quality score.",
+      "documentation": "docs/rules/VPROOF-001.md"
+    },
+    "VPROOF-002": {
+      "severity": "fail",
+      "lifecycle": "enforced",
+      "description": "The Visual Proof review is stale because a selected direction, design-system artifact, brand asset, or committed capture changed after the review input digest was recorded.",
+      "suggestion": "Re-capture or re-review the current artifacts as needed, run scripts/visual-proof-digest.ps1, and replace review_inputs.digest with the resulting value before handoff.",
+      "documentation": "docs/rules/VPROOF-002.md"
+    },
     "HANDOFF-001": {
       "severity": "fail",
       "description": "A required handoff artifact is missing or its metadata contract is incomplete.",

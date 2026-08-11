@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "project_code": "DESIGN-SYSTEM-DEMO",
+  "reviewed_at": "2026-08-11",
+  "reviewer_kind": "human",
+  "reviewer": "Demo Tech Lead (synthetic example)",
+  "decision_ref": "DEC-004",
+  "visual_direction": {
+    "selected_direction": "VD-01 - Live Room Field",
+    "decision_ref": "DEC-002"
+  },
+  "review_inputs": {
+    "digest": "d3ea51ca3c72ed1e16f4cba361309120c9c4fe14245746fb36b41c2b6708df77"
+  },
+  "captures": [
+    {
+      "id": "desktop",
+      "path": "DESIGN/VISUAL-PROOF/desktop.png",
+      "sha256": "5f085b2a164faf5604678b1211648baea46087fc0c2c45dfa8dba060f798fb6b",
+      "viewport": { "width": 1280, "height": 900 },
+      "captured_at": "2026-08-11",
+      "capture_method": "local_browser_screenshot"
+    },
+    {
+      "id": "mobile",
+      "path": "DESIGN/VISUAL-PROOF/mobile.png",
+      "sha256": "786b47f1266d125780479fbcee1136c04b9a9932ae74f81ad533b9ebb540051f",
+      "viewport": { "width": 375, "height": 812 },
+      "captured_at": "2026-08-11",
+      "capture_method": "local_browser_screenshot"
+    }
+  ],
+  "rubric": [
+    { "id": "concept_fit", "status": "reviewed", "notes": "Synthetic fixture review: the room-status field makes live availability the first read." },
+    { "id": "distinctiveness", "status": "reviewed", "notes": "The connected field, signal rail, and fill/outline model avoid an unexamined card-dashboard default." },
+    { "id": "typography_quality", "status": "reviewed", "notes": "Large room/time signals remain separate from compact operational labels." },
+    { "id": "hierarchy", "status": "reviewed", "notes": "The page answers availability before supporting detail or booking controls." },
+    { "id": "composition", "status": "reviewed", "notes": "The asymmetric status field keeps density at overview level and quiets the decision surface." },
+    { "id": "component_coherence", "status": "reviewed", "notes": "Lines, grid, labels, and status blocks use the same operational language." },
+    { "id": "cross_screen_consistency", "status": "reviewed", "notes": "The scoped WF-001 and WF-002 examples remain part of the same live-field direction." },
+    { "id": "state_completeness", "status": "reviewed", "notes": "Free, busy, free-soon, selected, and refusal language are visible; documented undrawn states remain explicit." },
+    { "id": "responsive_fit", "status": "reviewed", "notes": "Committed desktop and mobile captures show the same hierarchy at their declared viewports." },
+    { "id": "accessibility", "status": "reviewed", "notes": "Status is carried by text plus fill, outline, or pattern rather than hue alone." },
+    { "id": "content_realism", "status": "reviewed", "notes": "The sheet labels its illustrative sample data and does not imply customer evidence." },
+    { "id": "buildability", "status": "reviewed", "notes": "Tokens, components, screens, and source references remain in the canonical Markdown contract." },
+    { "id": "scope_alignment", "status": "reviewed", "notes": "The visual metaphor does not imply coordinates, routes, navigation, or unscoped booking capability." }
+  ],
+  "findings": [],
+  "recommendation": {
+    "status": "accepted",
+    "notes": "Synthetic fixture declaration: the record demonstrates candidate Visual Proof evidence for Handoff. It is not a Design Ready or release approval, and it does not attest that a real stakeholder reviewed this example."
+  }
+}

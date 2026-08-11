@@ -33,6 +33,7 @@ projects/P01-CODE/
 |   +-- VISUAL-DIRECTION.md     <- optional; creative brief, explored directions, human selection
 |   +-- DESIGN-SYSTEM.md        <- optional; token/component contract a developer builds from
 |   +-- DESIGN-SYSTEM.html      <- optional; the same contract as one visual page
+|   +-- VISUAL-REVIEW.json      <- conditional Handoff evidence when all visual artifacts exist
 |   +-- BRAND/                  <- optional; BRAND.md plus logo and icon SVG assets
 +-- DELIVERY.md
 +-- HANDOFF.md                  <- required at the Handoff gate
@@ -116,7 +117,7 @@ Use labels for detail: `blocked`, `needs-client`, `bug`, `high-risk`, `ready-to-
 8. Log only meaningful changes: requirement change, scope change, business decision, design approval, release approval, high-risk issue.
 9. Treat `source/`, `MOM/`, `REQ/`, `Transcript/`, and `Others/` as user-owned inputs. Do not edit, create, or delete source files unless the user explicitly asks.
 10. AI must not push, deploy, approve production, or approve business scope by itself. Commit requires explicit user instruction; push and production release require human confirmation.
-11. A semantic handoff review is candidate evidence, never an approval. An AI may record findings and may close one when the artifacts show it was fixed. It must not close a finding that needs a business, legal, security, or human decision, must not move an approval row from pending to approved, and must not present a readiness score as a decision.
+11. Candidate handoff evidence is never an approval. An AI may record semantic findings and may close one when the artifacts show it was fixed. It must not close a finding that needs a business, legal, security, or human decision, must not move an approval row from pending to approved, and must not present a readiness score or Visual Proof manifest as a decision or automated aesthetic judgement.
 
 ---
 
@@ -188,7 +189,9 @@ Active skill groups are defined in `pmo-config/skill-manifest.json`:
 `pmo-delivery` carries two intents: `delivery_planning` (default) and
 `handoff_review`. The review intent reads `HANDOFF.md` and
 `DESIGN/BUILD-SPEC.md` in addition to the normal delivery set, and walks the
-twelve lenses configured in `pmo-config/handoff-policy.json`.
+twelve lenses configured in `pmo-config/handoff-policy.json`. If the visual-direction
+and design-system artifact triple exists, it also checks the conditional Visual Proof
+evidence: named-human review, committed desktop/mobile captures, and freshness inputs.
 
 `pmo-design` carries three intents: `flow` (default), `visual_direction`, and
 `design_system`. Visual direction turns a source-backed creative brief into a
@@ -196,9 +199,12 @@ human-selected direction; design system carries that selection forward and
 additionally reads `DESIGN/WIREFRAME.md`, `DESIGN/BRAND/**`, and `decision-log.md`.
 Both are optional and are described in `docs/concepts/visual-direction.md` and
 `docs/concepts/design-system.md`. Their outputs are candidate evidence for
-`Design Ready`, never the approval itself.
+`Design Ready`, never the approval itself. Conditional Visual Proof at Handoff is described
+in `docs/architecture/visual-proof.md`; it verifies evidence shape and freshness, not taste.
 
 Only active skills under `.claude/skills/` are shipped and loaded by default.
+Do not create a separate `.agents/skills` mirror for Visual Proof; generated `skills/` remains
+the only package mirror and is refreshed through the repository build command.
 
 ---
 
@@ -219,7 +225,7 @@ powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPa
 powershell -ExecutionPolicy Bypass -File scripts/assess-handoff.ps1 -ProjectPath <project> -Mode <mode>
 ```
 
-Validation checks structure, placeholders, source references, approval authenticity, task source consistency, blockers, sensitive file pre-checks, basic local links, negative fixtures, and -- at the Handoff gate -- scope contract, build order, ownership, build-spec completeness, acceptance testability, declared data classification, declared runtime capabilities, and semantic review freshness.
+Validation checks structure, placeholders, source references, approval authenticity, task source consistency, blockers, sensitive file pre-checks, basic local links, negative fixtures, and -- at the Handoff gate -- scope contract, build order, ownership, build-spec completeness, acceptance testability, declared data classification, declared runtime capabilities, semantic review freshness, and conditional Visual Proof evidence when all visual artifacts exist.
 
 ### Before changing PowerShell under `scripts/`
 

@@ -23,6 +23,13 @@ These pages are linked automatically. A rule's `documentation` path in `pmo-conf
 | [HANDOFF-013](HANDOFF-013.md) | Table header does not match the declared columns |
 | [HANDOFF-014](HANDOFF-014.md) | Handoff artifact names a different project |
 
+## Visual Proof sub-check
+
+| Rule | Summary |
+|---|---|
+| [VPROOF-001](VPROOF-001.md) | Conditional Visual Proof record or capture evidence is incomplete |
+| [VPROOF-002](VPROOF-002.md) | Conditional Visual Proof evidence is stale |
+
 ## Other rules
 
 Rules outside the Handoff gate carry a `suggestion` in the catalog but do not yet have a dedicated page. The catalog entry in `pmo-config/validation-rules.json` is the reference for those.

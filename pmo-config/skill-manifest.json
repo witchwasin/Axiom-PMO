@@ -15,7 +15,7 @@
     {
       "id": "pmo-delivery",
       "path": ".claude/skills/pmo-delivery",
-      "purpose": "Delivery planning, handoff, task source of truth, and engineering sequencing."
+      "purpose": "Delivery planning, handoff, task source of truth, engineering sequencing, and conditional Visual Proof evidence review."
     },
     {
       "id": "pmo-build-review",

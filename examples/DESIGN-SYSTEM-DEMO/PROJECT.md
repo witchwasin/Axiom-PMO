@@ -4,7 +4,7 @@
 > Default mode: Standard
 > Task source: file
 > Owner: Demo PM
-> Last updated: 2026-08-07
+> Last updated: 2026-08-11
 
 ## Task Management
 
@@ -31,8 +31,9 @@ paper sheet at reception that is never current.
 This example exists to show visual direction followed by the design system in
 their natural place: direction selected before the visual sheet is composed, then
 both reviewed as input to the Design Ready decision before anything is handed to
-a developer. It stops at that gate on purpose. There is no `HANDOFF.md` and no
-`RELEASE.md`, because this project has not reached either.
+a developer. It stops at that gate on purpose. The committed captures and
+`VISUAL-REVIEW.json` below are synthetic M10 evidence-shape examples, not a claim that this
+project has reached Handoff. There is no `HANDOFF.md` and no `RELEASE.md`.
 
 ## Scope
 

@@ -49,7 +49,7 @@ Legacy folders are supported. Map them this way:
 | "visual direction", "creative direction", "art direction", "งานไม่เหมือนทั่วไป", "เลือกแนวทางก่อนทำ UI" | Standard | `PROJECT.md`, existing `DESIGN/VISUAL-DIRECTION.md`, `DESIGN/WIREFRAME.md`, `DESIGN/BRAND/`, `decision-log.md` | `pmo-design` (intent `visual_direction`) |
 | "ทำ design system", "อยากเห็นหน้าตาก่อน", "visual sheet", "brand", "logo", "UI kit" | Standard | `PROJECT.md`, `DESIGN/VISUAL-DIRECTION.md`, `DESIGN/WIREFRAME.md`, `decision-log.md` | `pmo-design` (intent `design_system`) |
 | "แตกงาน", "handoff dev" | Standard | `PROJECT.md`, `DESIGN/`, `DELIVERY.md` | `pmo-delivery` |
-| "พร้อมส่ง dev ยัง", "handoff review", "พร้อม demo ไหม" | Standard | `PROJECT.md`, `DELIVERY.md`, `HANDOFF.md`, `DESIGN/BUILD-SPEC.md` | `pmo-delivery` |
+| "พร้อมส่ง dev ยัง", "handoff review", "พร้อม demo ไหม", "review visual proof" | Standard | `PROJECT.md`, `DELIVERY.md`, `HANDOFF.md`, `DESIGN/BUILD-SPEC.md`, conditional visual-review artifacts | `pmo-delivery` |
 | "Dev เสร็จแล้ว", "review dev" | Standard | `DELIVERY.md`, relevant design | `pmo-build-review` |
 | "QA", "test", "bug" | Standard | `DELIVERY.md`, `RAID-log.md`, `RELEASE.md` | `pmo-quality-release` |
 | "release", "deploy", "close" | Strict if production | `RELEASE.md`, `RAID-log.md`, `decision-log.md` | `pmo-quality-release`, `pmo-governance` |
@@ -137,6 +137,10 @@ Two layers, deliberately separate:
 2. **Semantic review** (`pmo-delivery`, intent `handoff_review`) supplies
    judgement and records it in `HANDOFF-REVIEW.json`. That file is **candidate
    evidence, not an approval.**
+3. **Visual Proof** applies only when `DESIGN/VISUAL-DIRECTION.md`,
+   `DESIGN/DESIGN-SYSTEM.md`, and `DESIGN/DESIGN-SYSTEM.html` all exist. It records a
+   named human's review of committed desktop/mobile captures in `DESIGN/VISUAL-REVIEW.json`.
+   The check verifies evidence shape and freshness, never aesthetic quality or a new approval.
 
 Readiness is reported per stage, not as one boolean:
 
@@ -145,7 +149,7 @@ powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPa
 powershell -ExecutionPolicy Bypass -File scripts/assess-handoff.ps1 -ProjectPath <project> -Mode <mode>
 ```
 
-Details: `docs/concepts/handoff-readiness.md`, `docs/rules/`.
+Details: `docs/concepts/handoff-readiness.md`, `docs/architecture/visual-proof.md`, `docs/rules/`.
 
 ---
 
@@ -186,6 +190,8 @@ The active runtime is limited to the 7 skills in `pmo-config/skill-manifest.json
 - `pmo-git-safety`
 
 Only active skills under `.claude/skills/` are shipped and loaded by default.
+Visual Proof has no `.agents/skills` mirror; refresh the generated `skills/` package only through
+the repository build command.
 
 ---
 

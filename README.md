@@ -260,6 +260,7 @@ than aspiration.
 | Human-only approval and release-authority boundaries | **Shipped** |
 | Deterministic Scope, Design, Handoff, and Release validation | **Shipped** |
 | Handoff readiness assessment and semantic-review evidence checks | **Shipped** |
+| Conditional Visual Proof evidence at Handoff for visual-direction/design-system projects | **Shipped** |
 | Structured JSON diagnostics for CI and dashboard consumers | **Shipped** |
 | `DELIVERY.md` or GitHub Issues as the declared task source | **Shipped** |
 | GitHub Action: report-only by default, PR-native Job Summary/annotations/report artifact | **Shipped** |
@@ -378,7 +379,11 @@ Draft → Scope → Design → Handoff → Build/QA → Release
 
 `Handoff` is new in 1.1 and introduces no new human approval — it reuses the
 existing `Design Ready` sign-off and checks whether the contract is complete
-enough to act on. See [handoff readiness](docs/concepts/handoff-readiness.md).
+enough to act on. When a project already has a visual direction plus both design-system
+contract views, it also conditionally checks committed desktop/mobile capture evidence and a
+named human Visual Proof review. It never automates a judgement of visual quality. See
+[handoff readiness](docs/concepts/handoff-readiness.md) and
+[Visual Proof](docs/architecture/visual-proof.md).
 
 Or start from a worked example: [`examples/LITE-BUGFIX`](examples/LITE-BUGFIX),
 [`examples/STANDARD-FEATURE`](examples/STANDARD-FEATURE),
@@ -441,6 +446,7 @@ source/             Client-owned inputs (MOM, REQ, Transcript, Others) — never
 DESIGN/             Flow, wireframes, and optional visual-direction/design-system artifacts
 DESIGN/VISUAL-DIRECTION.md  Creative brief, explored directions, and the human-selected direction (optional)
 DESIGN/DESIGN-SYSTEM.md     Token/component contract paired with the visual HTML sheet (optional)
+DESIGN/VISUAL-REVIEW.json   Conditional named-human capture review when all visual artifacts exist (Handoff)
 DELIVERY.md         Work items — the "who's building what", unless GitHub Issues is the declared source
 DESIGN/BUILD-SPEC.md  Technical specification — stack, data model, concurrency, acceptance cases (Handoff)
 HANDOFF.md          Developer entry point — build order, owners, constraints, blocking points (Handoff)
@@ -514,10 +520,10 @@ Typography: Tahoma / Arial (sans-serif) for voice; Consolas / Courier New
 
 | | |
 |---|---|
-| **Concepts** | [handoff readiness](docs/concepts/handoff-readiness.md) · [anti-hallucination](docs/concepts/anti-hallucination.md) · [evidence-based execution](docs/concepts/evidence-based-execution.md) · [risk modes](docs/concepts/risk-modes.md) · [human authority](docs/concepts/human-authority.md) |
+| **Concepts** | [handoff readiness](docs/concepts/handoff-readiness.md) · [visual direction](docs/concepts/visual-direction.md) · [design system](docs/concepts/design-system.md) · [anti-hallucination](docs/concepts/anti-hallucination.md) · [evidence-based execution](docs/concepts/evidence-based-execution.md) · [risk modes](docs/concepts/risk-modes.md) · [human authority](docs/concepts/human-authority.md) |
 | **Guides** | [Claude Code integration](docs/guides/claude-code-integration.md) · [Claude Code walkthrough](docs/guides/claude-code-walkthrough.md) · [artifact map](docs/guides/artifact-map.md) · [GitHub Action](docs/guides/github-action.md) · [M1 walkthrough and recording evidence](docs/guides/m1-walkthrough-and-recording.md) · [PowerShell runtime setup](docs/guides/powershell-runtime.md) · [three-day demo handoff](docs/guides/three-day-demo-handoff.md) |
 | **Reference** | [diagnostics contract](docs/reference/diagnostics-contract.md) · [scope declaration (SCOPE-DIFF)](docs/reference/scope-declaration.md) · [execution contract](docs/reference/execution-contract.md) · [rule reference](docs/rules/) |
-| **Architecture** | [control plane](docs/architecture/control-plane.md) · [M6 threat model](docs/architecture/m6-threat-model.md) · [plugin packaging spike](docs/architecture/plugin-packaging-spike.md) · [validation engine](docs/architecture/validation-engine.md) · [execution contract verification](docs/architecture/execution-contract-verification.md) |
+| **Architecture** | [control plane](docs/architecture/control-plane.md) · [Visual Proof](docs/architecture/visual-proof.md) · [M6 threat model](docs/architecture/m6-threat-model.md) · [plugin packaging spike](docs/architecture/plugin-packaging-spike.md) · [validation engine](docs/architecture/validation-engine.md) · [execution contract verification](docs/architecture/execution-contract-verification.md) |
 | **Governance** | [release readiness](docs/governance/release-readiness.md) · [source ownership](docs/governance/source-ownership.md) |
 | **Process** | [Lite](docs/process/lite.md) · [Standard](docs/process/standard.md) · [Strict](docs/process/strict.md) |
 | **Tutorials** | [your first project](docs/tutorials/first-project.md) · [using it with an AI agent](docs/tutorials/using-with-an-ai-agent.md) |

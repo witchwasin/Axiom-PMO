@@ -9,13 +9,16 @@
   sheets (`DEC-018`, clarified and authorized for implementation by `DEC-019`).
 - Added `VISUAL-DIRECTION.md` guidance and template, connected selected directions to the
   canonical design-system contract, and upgraded the RoomBook Design-gate example.
+- Added Milestone 10's conditional Visual Proof evidence contract at the existing Handoff
+  gate: `VISUAL-REVIEW.json`, committed desktop/mobile capture hashes, freshness digest,
+  `VPROOF-001` / `VPROOF-002`, and human-review traceability (`DEC-021`).
 
 ### Changed
 
 - Split the design-system HTML template into a stable semantic contract and a project-specific
   presentation layer without adding a gate, validator, required artifact, or rule.
-- Classified the human-tested Creative MVP as completed Part 1; Path 2 visual-proof enforcement
-  remains deferred and requires a future Human Owner decision (`DEC-020`).
+- Classified the human-tested Creative MVP as completed Part 1 (`DEC-020`), then opened the
+  separately authorized conditional Visual Proof implementation as Milestone 10 (`DEC-021`).
 
 ## 1.4.0 - 2026-08-04
 

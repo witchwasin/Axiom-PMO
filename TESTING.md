@@ -145,6 +145,7 @@ powershell -ExecutionPolicy Bypass -File tests/helpers/doctor-markdown-tests.ps1
 powershell -ExecutionPolicy Bypass -File tests/helpers/diagnostics-contract-tests.ps1
 powershell -ExecutionPolicy Bypass -File tests/helpers/line-ending-tests.ps1
 powershell -ExecutionPolicy Bypass -File tests/helpers/handoff-assessment-tests.ps1
+powershell -ExecutionPolicy Bypass -File tests/helpers/visual-proof-tests.ps1
 powershell -ExecutionPolicy Bypass -File tests/helpers/demo-smoke-tests.ps1
 powershell -ExecutionPolicy Bypass -File tests/helpers/scope-diff-tests.ps1
 ```
@@ -161,6 +162,7 @@ node tests/helpers/github-action-tests.mjs
 | line-endings | Regexes, digests, and golden comparison behave identically on a CRLF (Windows) and an LF checkout |
 | cli | Exit codes propagate unchanged, `handoff --json` is one parseable document, and no validation logic has leaked into JavaScript |
 | handoff-assessment | Stage verdicts stay separate, and every score cap actually binds |
+| visual-proof | Visual Proof stays conditional for legacy handoffs and, when activated, requires current human-review evidence, correct capture paths/hashes, and a named decision owner |
 | demo-smoke | The demo's narration matches its real output, and it finishes well inside three minutes |
 | github-action | The Action wrapper's annotation escaping, path-outside-workspace fallback, exit-code-to-outcome mapping, and report-only-vs-enforce behavior all hold, including against a missing-PowerShell host and malformed validator output. Also covers SCOPE-DIFF's Action-layer behavior: ref resolution precedence (explicit input > pull_request event > unresolved), infra-class SCOPE-DIFF-003/004 always propagating regardless of enforce, and output plumbing |
 | scope-diff | SCOPE-DIFF's core matching logic against small disposable git fixtures: include/exclude precedence, added/modified/deleted/renamed files, path normalization, missing/invalid scope declarations, unresolvable git refs, empty diffs, and repo-wide exemptions -- run through `scripts/validate-project.ps1` exactly as a real caller would, not by calling internals directly |

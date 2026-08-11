@@ -140,6 +140,24 @@ Use the rubric as review guidance, not an automated score or approval:
 
 Record findings and open questions. Do not convert a rubric result into Design Ready.
 
+## Visual Proof at Handoff
+
+When a project has all three visual artifacts — `DESIGN/VISUAL-DIRECTION.md`,
+`DESIGN/DESIGN-SYSTEM.md`, and `DESIGN/DESIGN-SYSTEM.html` — the Handoff gate conditionally
+requires a `DESIGN/VISUAL-REVIEW.json` manifest and committed desktop and mobile captures.
+This is **candidate evidence that a named human reviewed the visible direction**, not a fourth
+approval, an aesthetic score, or a claim that an AI judged the result.
+
+The review records every rubric lens above, the selected/conformance direction decision, hashes
+for the committed captures, and a digest of the final visual inputs. A capture is evidence of
+what was looked at, not a new design source; the Markdown/HTML/brand contract remains canonical.
+If any governed visual input changes, the captures and review manifest are stale until refreshed.
+
+Visual Proof is conditional so projects that do not use the optional visual-direction and
+design-system pair do not acquire new Handoff paperwork. It also cannot attest to taste or
+reviewer identity: deterministic checks can confirm only field shape, paths, hashes, and input
+freshness. See [`../architecture/visual-proof.md`](../architecture/visual-proof.md).
+
 ---
 
 ## Relationship to the design system
@@ -148,4 +166,6 @@ Record findings and open questions. Do not convert a rubric result into Design R
 
 The design-system contract keeps its token agreement, provenance, sample-data notice, semantic section anchors, scoped screens, responsive behaviour, and print behaviour. Its presentation layer is deliberately replaceable and must be rewritten to express the selected direction rather than treated as a visual starter theme.
 
-`DESIGN-001` remains deliberately narrow: it compares token values between Markdown and HTML. It does not judge creativity, concept fit, or review quality. Those remain visible human decisions.
+`DESIGN-001` remains deliberately narrow: it compares token values between Markdown and HTML. It
+does not judge creativity, concept fit, or review quality. The conditional Handoff Visual Proof
+check confirms review evidence exists and is current; it does not automate those judgements.

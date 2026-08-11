@@ -19,7 +19,7 @@
     "approval_policy": "AI may draft approval evidence rows but must not approve scope, design, release, push, deploy, or production actions for humans.",
     "logging_policy": "Log only meaningful decisions, risks, issues, dependencies, release approvals, or scope changes.",
     "handoff_policy": "Handoff artifacts, review lenses, blocking points, owner tokens, build-spec sections, and readiness scoring are governed by pmo-config/handoff-policy.json.",
-    "review_policy": "A semantic handoff review recorded in HANDOFF-REVIEW.json is candidate evidence. It is never an approval, and it never substitutes for the Design Ready row in PROJECT.md."
+    "review_policy": "Semantic handoff review and conditional Visual Proof are candidate evidence. Neither is an approval or substitutes for the Design Ready row in PROJECT.md; Visual Proof reads its review and declared captures only when the visual-direction/design-system artifact triple exists."
   },
   "modes": {
     "Lite": {
@@ -111,6 +111,8 @@
             "HANDOFF.md"
           ],
           "conditional_context": [
+            "DESIGN/VISUAL-REVIEW.json",
+            "DESIGN/VISUAL-PROOF/**",
             "DESIGN/**"
           ],
           "optional_context": [
@@ -229,6 +231,8 @@
             "DESIGN/BUILD-SPEC.md"
           ],
           "conditional_context": [
+            "DESIGN/VISUAL-REVIEW.json",
+            "DESIGN/VISUAL-PROOF/**",
             "DESIGN/**",
             "HANDOFF-REVIEW.json"
           ],
@@ -349,6 +353,8 @@
             "HANDOFF-REVIEW.json"
           ],
           "conditional_context": [
+            "DESIGN/VISUAL-REVIEW.json",
+            "DESIGN/VISUAL-PROOF/**",
             "DESIGN/**",
             "RTM.json"
           ],

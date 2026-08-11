@@ -69,6 +69,7 @@ $repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
 . (Join-Path $PSScriptRoot "lib/release-validator.ps1")
 . (Join-Path $PSScriptRoot "lib/handoff-validator.ps1")
 . (Join-Path $PSScriptRoot "lib/design-system-validator.ps1")
+. (Join-Path $PSScriptRoot "lib/visual-proof-validator.ps1")
 . (Join-Path $PSScriptRoot "lib/scope-diff-matcher.ps1")
 . (Join-Path $PSScriptRoot "lib/scope-diff-git-adapter.ps1")
 . (Join-Path $PSScriptRoot "lib/scope-diff-validator.ps1")
@@ -146,6 +147,7 @@ Test-StrictReleaseGuardrails -Project $project -Mode $Mode -Gate $Gate -ProjectR
 # handoff requirements to Draft/Scope/Design/Release runs.
 if ($Gate -eq "Handoff") {
   Test-HandoffReadiness -Project $project -Mode $Mode -Gate $Gate -HandoffPolicy $handoffPolicy -PolicyEnums $policyEnums -WorkItems $workItems -DeliveryIds $deliveryIds -ProjectReqIds $projectReqIds -DecisionIds $decisionIds -ProjectText $projectText
+  Test-VisualProofReview -Project $project -Mode $Mode -HandoffPolicy $handoffPolicy -ProjectText $projectText -DecisionIds $decisionIds
 }
 
 # The design system is optional at every gate, so this stays silent unless a

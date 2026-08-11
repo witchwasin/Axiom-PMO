@@ -21,7 +21,7 @@ Use when creating or reviewing `DELIVERY.md`, sequencing work, assigning owners,
 ## Required Inputs
 `PROJECT.md`, task source of truth, relevant design context, and the context/artifact contract in `pmo-config/context-map.json` and `pmo-config/artifact-policy.json`.
 
-For `handoff_review`, additionally: `HANDOFF.md`, `DESIGN/BUILD-SPEC.md`, `RAID-log.md` and `decision-log.md` if present, and `pmo-config/handoff-policy.json`. Read only these. Do not read release artifacts, and do not read `source/**` beyond the rows already cited in `PROJECT.md` unless a specific finding requires it.
+For `handoff_review`, additionally: `HANDOFF.md`, `DESIGN/BUILD-SPEC.md`, `RAID-log.md` and `decision-log.md` if present, and `pmo-config/handoff-policy.json`. When `DESIGN/VISUAL-DIRECTION.md`, `DESIGN/DESIGN-SYSTEM.md`, and `DESIGN/DESIGN-SYSTEM.html` all exist, also read `DESIGN/VISUAL-REVIEW.json` and the declared capture paths. Read only these. Do not read release artifacts, and do not read `source/**` beyond the rows already cited in `PROJECT.md` unless a specific finding requires it.
 
 ## Allowed Context
 Use the context router handoff set. Do not read release artifacts unless the user asks for release readiness.
@@ -50,7 +50,8 @@ The deterministic validator proves the contract is **complete**. It cannot prove
 
    A review that records only the first keeps reporting as current after
    someone rewrites the build sequence or waives a build-spec section.
-6. Re-run the gate, then `scripts/assess-handoff.ps1` for stage verdicts.
+6. If the visual-artifact triple exists, treat Visual Proof as separate conditional candidate evidence: confirm the manifest has two committed captures, an input digest, complete rubric, named human reviewer, and direction decision references. Do not judge aesthetics yourself, replace the human declaration, or describe this check as a new approval.
+7. Re-run the gate, then `scripts/assess-handoff.ps1` for stage verdicts.
 
 ### The twelve lenses
 
@@ -96,7 +97,7 @@ Set `status: open` and name the human in `owner`.
 
 For `delivery_planning`: work-item changes, dependency notes, owner gaps, and validation result.
 
-For `handoff_review`: a `HANDOFF-REVIEW.json` conforming to `templates/HANDOFF-REVIEW.json`, plus a short summary naming what blocks build, what blocks demo, and what needs a human decision.
+For `handoff_review`: a `HANDOFF-REVIEW.json` conforming to `templates/HANDOFF-REVIEW.json`, plus a short summary naming what blocks build, what blocks demo, and what needs a human decision. When Visual Proof applies, also identify missing or stale `VISUAL-REVIEW.json` evidence without making an aesthetic verdict.
 
 ## Approval Rules
 
@@ -120,4 +121,7 @@ Do not create hidden task systems, duplicate source of truth, hardcode mode/gate
 
 Every work item references an existing requirement/business rule and has valid mode, status, and review stage.
 
-For `handoff_review`: every lens is recorded, every finding has evidence, a suggestion, an owner, and a blocking point, the digest is current, and every finding that needs a human decision is still `open` with that human named.
+For `handoff_review`: every lens is recorded, every finding has evidence, a suggestion, an owner, and a blocking point, the digest is current, and every finding that needs a human decision is still `open` with that human named. If the visual-artifact triple exists, conditional Visual Proof evidence must also be present and current, while `Design Ready` remains human-owned.
+
+Visual Proof has no `.agents/skills` mirror. Follow the active `.claude/skills/` workflow and use
+the generated `skills/` package only through its repository build command.

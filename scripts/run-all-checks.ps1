@@ -69,6 +69,7 @@ Invoke-Check "config-mutation" { & $ps -NoProfile -ExecutionPolicy Bypass -File 
 Invoke-Check "diagnostics-contract" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/diagnostics-contract-tests.ps1") -RepoPath $repo }
 Invoke-Check "line-endings" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/line-ending-tests.ps1") -RepoPath $repo }
 Invoke-Check "handoff-assessment" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/handoff-assessment-tests.ps1") -RepoPath $repo }
+Invoke-Check "visual-proof" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/visual-proof-tests.ps1") -RepoPath $repo }
 Invoke-Check "scope-diff" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/scope-diff-tests.ps1") -RepoPath $repo }
 Invoke-Check "execution-contract" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/execution-contract-tests.ps1") -RepoPath $repo }
 Invoke-Check "adversarial-review" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/adversarial-review-tests.ps1") -RepoPath $repo }

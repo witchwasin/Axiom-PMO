@@ -66,6 +66,12 @@ A derived copy is a snapshot for conversation. It is never the source of a value
 
 This distinction is not pedantry. Screenshots are how design decisions actually travel through a team, and a screenshot has no version, no history, and no way to be wrong out loud. Naming it derived is what keeps a stale image from quietly becoming the specification.
 
+When Visual Proof applies at Handoff, one committed desktop capture and one committed mobile
+capture are still derived copies, but they become traceable **candidate evidence** of what a
+named human reviewed. Their paths, hashes, viewports, and review-input digest live in
+`DESIGN/VISUAL-REVIEW.json`. They do not become canonical sources and do not create a new
+approval. See [`../architecture/visual-proof.md`](../architecture/visual-proof.md).
+
 ---
 
 ## The Sample Data Register
@@ -117,6 +123,12 @@ The duplication is the point of the artifact pair and also its weak spot. A deve
 
 **Nothing requires the design system to exist.** The artifact contract in `pmo-config/artifact-policy.json` does not mention it and no gate blocks on its absence. A rule that failed a build for a missing design system would produce sheets written to satisfy the rule, which is the documentation overhead this framework exists to avoid.
 
+**Visual Proof is conditional, not a reason to create a sheet.** At the Handoff gate, the
+framework checks Visual Proof only when this Markdown contract, the HTML sheet, and
+`DESIGN/VISUAL-DIRECTION.md` already exist together. In that situation, a missing or stale
+`DESIGN/VISUAL-REVIEW.json` says the human-visible presentation has not been evidenced for
+handoff. The check verifies the evidence contract, not whether the UI is aesthetically good.
+
 **The Sample Data Register is not enforced, and you should know that.** It is the mechanism that makes a mockup safe to show, and it lives in skill prose, which is advisory. An AI can produce a sheet with twenty invented numbers and an empty register, and every gate stays green. Checking it would mean extracting rendered text from HTML and matching it against table rows — doable, but a guess-heavy comparison of a kind this framework has been careful to avoid. So it is honest to say plainly: this is the weakest joint in the artifact, and the discipline depends on the skill and on review, not on the validator.
 
 Same for out-of-scope screens and for whether a brand field marked `supported` really was confirmed by a human. Those are review questions today.
@@ -134,7 +146,10 @@ direction with status `selected` or `conformance`; when none exists, it routes t
 `visual_direction` before drawing the presentation. It reads decided facts before asking,
 uses the repository evidence ladder (`verified`, `supported`, `inferred`, `missing`, `conflict`),
 and fills both contract views from one set of token values. It reports tool and render status
-separately from evidence status.
+separately from evidence status. At Handoff, when Visual Proof applies, a named human reviews
+committed desktop and mobile captures and records candidate evidence using
+[`templates/VISUAL-REVIEW.json`](../../templates/VISUAL-REVIEW.json). The review does not move
+the `Design Ready` approval row.
 
 A worked example is in [`examples/DESIGN-SYSTEM-DEMO/`](../../examples/DESIGN-SYSTEM-DEMO/). Open `DESIGN/DESIGN-SYSTEM.html` in a browser.
 

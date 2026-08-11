@@ -17,7 +17,7 @@ This file is guidance. The machine-readable map is `pmo-config/context-map.json`
 | Visual direction | `PROJECT.md`, `DESIGN/VISUAL-DIRECTION.md` when present, `DESIGN/WIREFRAME.md`, `DESIGN/BRAND/`, `decision-log.md` | Only for creative-brief fields not resolved by the summary | delivery/release docs |
 | Design system | `PROJECT.md`, `DESIGN/VISUAL-DIRECTION.md`, `DESIGN/WIREFRAME.md`, `DESIGN/BRAND/` | Only for unresolved source-backed UI rules | delivery/release docs |
 | Handoff / task breakdown | `PROJECT.md`, `DESIGN/`, `DELIVERY.md` | Only for missing requirement detail | release docs |
-| Handoff readiness review | `PROJECT.md`, `DELIVERY.md`, `HANDOFF.md`, `DESIGN/BUILD-SPEC.md`, `RAID-log.md`, `decision-log.md` | Only rows already cited in `PROJECT.md` | release docs, unrelated design |
+| Handoff readiness review | `PROJECT.md`, `DELIVERY.md`, `HANDOFF.md`, `DESIGN/BUILD-SPEC.md`, `RAID-log.md`, `decision-log.md`; also `DESIGN/VISUAL-REVIEW.json` and declared captures only when the visual-artifact triple exists | Only rows already cited in `PROJECT.md` | release docs, unrelated design |
 | Dev report / review | `DELIVERY.md`, relevant design, user-provided dev note | No unless scope is disputed | all source docs |
 | QA / bug | `DELIVERY.md`, `RAID-log.md`, `RELEASE.md` | Only if expected behavior is unclear | unrelated design docs |
 | Release | `RELEASE.md`, `RAID-log.md`, `decision-log.md`, `DELIVERY.md` | Only for unresolved acceptance disputes | all skills |

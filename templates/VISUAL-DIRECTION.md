@@ -120,6 +120,11 @@ Tool and render status are operational facts, not evidence statuses.
 - human_review_status: <not requested, pending, or reviewed>
 - review_notes: <findings or not yet reviewed>
 
+When this artifact and both design-system contract views exist, Visual Proof is conditional at
+Handoff. Record the selected/conformance direction and source-backed brief here first; then use
+`DESIGN/VISUAL-REVIEW.json` to record committed desktop/mobile captures and a named human review.
+That manifest is candidate evidence, not a Design Ready or release approval.
+
 ## Open Questions
 
 | ID | Question | Impact | Owner | Status |
