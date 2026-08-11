@@ -1589,13 +1589,30 @@ quietly dropped.
 Milestones 7, 8.0, 8.1, and 9 are closed and merged (see Milestone Status
 above and `DEC-016`) -- nothing further required to consider that work done.
 
-Everything below still requires a Human Owner decision to start, none
-currently authorized:
+**Decided, 2026-08-11 -- not doing these.** The Human Owner ruled both out
+directly, so they are closed questions rather than pending ones and should not
+resurface as open items:
 
-- Creating GitHub Release notes for `v1.3.0`. The git tag exists; a GitHub
-  Release entry is optional and separate.
-- Publishing the plugin to a public marketplace. Not implied by tagging a
-  release, and not implied by the merge to `main`.
+- **Publishing the plugin to a public marketplace: no.** The plugin manifests
+  stay in the repository and anyone with the URL can still install from it; what
+  is declined is being listed for discovery. Two behaviours recorded under the
+  Milestone 6 debt table were never exercised -- whether an update replaces an
+  already-loaded plugin mid-session, and whether a GitHub-hosted marketplace
+  source behaves like the local-directory source that was tested.
+- **Publishing to npm (Milestone 3 Phase B): no.** There is no `package.json`
+  in the repository, so this was never one command away; and npm allows
+  unpublishing only within 72 hours, after which a package can be deprecated
+  but not withdrawn, and the name cannot be released. Nothing may describe
+  Axiom-PMO as having an npm distribution.
+
+Reversible if the Human Owner later decides otherwise. Neither is a technical
+blocker on anything else.
+
+Still requiring a Human Owner decision to start, none currently authorized:
+
+- Creating GitHub Release notes for `v1.3.0` and `v1.4.0`. Both git tags exist
+  for `v1.3.0`; a GitHub Release entry is optional and separate. `v1.5.0` has
+  both a tag and a Release; `v1.4.0` was never tagged, superseded by `v1.5.0`.
 - The deferred trust evidence above, if the Human Owner chooses to pick it up.
 
 Real-world use and problem reports are **deliberately not tracked here.** The
