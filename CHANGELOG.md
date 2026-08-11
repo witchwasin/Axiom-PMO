@@ -21,6 +21,19 @@
   separately authorized conditional Visual Proof implementation as Milestone 10 (`DEC-021`) and
   closed it after the committed implementation and full framework verification (`DEC-022`).
 
+### Fixed
+
+- **CI-infrastructure defect: the `dogfood-scope-diff` job had been red on every `main` run
+  since 2026-08-10.** The job pinned three fixture SHAs (`c9576a7`, `3974d20`, `9735304`)
+  authored on milestone branches that were never pushed to `origin` and are not ancestors of
+  `main`. Once `origin` held only `main` and the release tags, those commits were unreachable
+  there, and every run failed `SCOPE-DIFF-004` "base commit could not be resolved" — a case
+  `fetch-depth: 0` cannot fix, because it fetches all refs but not a commit no ref points at.
+  The job now builds both delta commits in its own checkout at run time and asserts each delta
+  touches exactly the one file its fixture documents. SCOPE-DIFF still evaluates a real
+  `git diff` over real commits; only the dependency on repository history is gone. No validator,
+  rule, or policy behaviour changed. `fetch-depth: 0` is no longer needed and was removed.
+
 ## 1.4.0 - 2026-08-04
 
 **Milestones 7, 8.0, 8.1, and 9 — CLOSED and MERGED to `main`, 2026-08-03**

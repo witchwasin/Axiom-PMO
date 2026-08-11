@@ -253,12 +253,21 @@ jobs:
           artifact-name: axiom-pmo-report-dogfood-enforced-clean
 
   # M4.5 dogfooding: exercises action.yml's SCOPE-DIFF inputs via `uses: ./`
-  # against real commits in this repository's own history (see
-  # demo/scope-diff-dogfood-{pass,fail}/), not a mock. Needs full git
-  # history -- fetch-depth: 0 -- because scope-diff-base references commits
-  # a shallow checkout (the default everywhere else in this file) would not
-  # have; this is also, deliberately, the same condition SCOPE-DIFF-004
-  # exists to catch when a consumer's own checkout forgets it.
+  # against real, committed git objects (see demo/scope-diff-dogfood-{pass,fail}/),
+  # not a mock.
+  #
+  # The two deltas are built by the job itself rather than referenced as
+  # fixed SHAs from this repository's history. The original design pinned
+  # three SHAs authored on a milestone branch; once those branches stopped
+  # existing on `origin`, the commits became unreachable there and every run
+  # failed with SCOPE-DIFF-004 "base commit could not be resolved" -- even
+  # under fetch-depth: 0, which fetches all refs but cannot fetch a commit no
+  # ref points at. Building the deltas in-job removes that dependency on
+  # repository history entirely, and keeps the property the fixtures exist
+  # for: the diff SCOPE-DIFF evaluates is a real `git diff` over real commits.
+  #
+  # A shallow checkout (the default everywhere else in this file) is now
+  # enough, because both refs are created locally.
   dogfood-scope-diff:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -267,7 +276,53 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          fetch-depth: 0
+
+      # Commits are local only -- nothing is pushed, and the checkout has no
+      # credentials to push with. The two assertions are not decoration: if a
+      # future edit to these fixtures widened or emptied a delta, the pass
+      # case could silently become a no-op diff (which also verdicts pass) or
+      # the fail case could flag a file other than the one it claims to test.
+      - name: Build the dogfood delta commits
+        id: fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "axiom-pmo-dogfood"
+          git config user.email "axiom-pmo-dogfood@users.noreply.github.com"
+
+          base="$(git rev-parse HEAD)"
+
+          printf '// pass-case delta, committed by the dogfood-scope-diff job\n' \
+            >> demo/scope-diff-dogfood-pass/src/app.ts
+          git add demo/scope-diff-dogfood-pass/src/app.ts
+          git commit --quiet -m "chore(dogfood): SCOPE-DIFF pass-case delta"
+          pass_head="$(git rev-parse HEAD)"
+
+          printf '\nFail-case delta, committed by the dogfood-scope-diff job.\n' \
+            >> demo/scope-diff-dogfood-fail/README.md
+          git add demo/scope-diff-dogfood-fail/README.md
+          git commit --quiet -m "chore(dogfood): SCOPE-DIFF fail-case delta"
+          fail_head="$(git rev-parse HEAD)"
+
+          pass_changed="$(git diff --name-only "$base" "$pass_head")"
+          if [ "$pass_changed" != "demo/scope-diff-dogfood-pass/src/app.ts" ]; then
+            echo "::error::The pass-case delta must touch exactly demo/scope-diff-dogfood-pass/src/app.ts; it touched: ${pass_changed}"
+            exit 1
+          fi
+
+          fail_changed="$(git diff --name-only "$pass_head" "$fail_head")"
+          if [ "$fail_changed" != "demo/scope-diff-dogfood-fail/README.md" ]; then
+            echo "::error::The fail-case delta must touch exactly demo/scope-diff-dogfood-fail/README.md; it touched: ${fail_changed}"
+            exit 1
+          fi
+
+          {
+            echo "base=$base"
+            echo "pass-head=$pass_head"
+            echo "fail-head=$fail_head"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "base=$base pass-head=$pass_head fail-head=$fail_head"
 
       # demo/scope-diff-dogfood-pass/SCOPE.json approves its own whole
       # directory; the diff between these two commits touches only a file
@@ -282,8 +337,8 @@ jobs:
           mode: Standard
           gate: Draft
           enable-scope-diff: "true"
-          scope-diff-base: c9576a7ef0df9e406ad29783be2f1c2990c61c36
-          scope-diff-head: 3974d20a9067e6e41c60f6a09d69cc7f680d5bb4
+          scope-diff-base: ${{ steps.fixtures.outputs.base }}
+          scope-diff-head: ${{ steps.fixtures.outputs.pass-head }}
           artifact-name: axiom-pmo-report-dogfood-scope-diff-pass-report-only
 
       - name: Verify the in-scope case actually verdicts pass
@@ -302,8 +357,8 @@ jobs:
           mode: Standard
           gate: Draft
           enable-scope-diff: "true"
-          scope-diff-base: c9576a7ef0df9e406ad29783be2f1c2990c61c36
-          scope-diff-head: 3974d20a9067e6e41c60f6a09d69cc7f680d5bb4
+          scope-diff-base: ${{ steps.fixtures.outputs.base }}
+          scope-diff-head: ${{ steps.fixtures.outputs.pass-head }}
           enforce: "true"
           artifact-name: axiom-pmo-report-dogfood-scope-diff-pass-enforced
 
@@ -319,8 +374,8 @@ jobs:
           mode: Standard
           gate: Draft
           enable-scope-diff: "true"
-          scope-diff-base: 3974d20a9067e6e41c60f6a09d69cc7f680d5bb4
-          scope-diff-head: 973530466146d0da2ce474ab112481305383cc60
+          scope-diff-base: ${{ steps.fixtures.outputs.pass-head }}
+          scope-diff-head: ${{ steps.fixtures.outputs.fail-head }}
           artifact-name: axiom-pmo-report-dogfood-scope-diff-fail-report-only
 
       - name: Verify report-only recorded the violation without failing the step
@@ -344,8 +399,8 @@ jobs:
           mode: Standard
           gate: Draft
           enable-scope-diff: "true"
-          scope-diff-base: 3974d20a9067e6e41c60f6a09d69cc7f680d5bb4
-          scope-diff-head: 973530466146d0da2ce474ab112481305383cc60
+          scope-diff-base: ${{ steps.fixtures.outputs.pass-head }}
+          scope-diff-head: ${{ steps.fixtures.outputs.fail-head }}
           enforce: "true"
           artifact-name: axiom-pmo-report-dogfood-scope-diff-fail-enforced
 
