@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## 1.5.0 - 2026-08-11
+
+Milestone 10 (conditional Visual Proof) and the optional visual-direction and
+design-system capabilities, plus two CI/portability defects found and fixed on
+`main`. Backward compatible: every existing project, fixture, and invocation is
+unaffected unless it opts into the new capabilities.
 
 ### Added
 
@@ -12,6 +17,12 @@
 - Added Milestone 10's conditional Visual Proof evidence contract at the existing Handoff
   gate: `VISUAL-REVIEW.json`, committed desktop/mobile capture hashes, freshness digest,
   `VPROOF-001` / `VPROOF-002`, and human-review traceability (`DEC-021`).
+- Added `Get-GoldenDiffReport`: `-VerifyGolden` now prints the differing lines, with line
+  numbers, when a golden master mismatches, instead of only "output differs from golden
+  master". It is what made issue #20 diagnosable — the mismatch reproduced only on a host the
+  maintainer cannot run, and the job uploads no artifact.
+- Added `docs/architecture/lessons-learned.md`: the diagnostic method behind the fixes above,
+  the wrong turns taken, and a symptom-to-first-move table.
 
 ### Changed
 
@@ -33,6 +44,22 @@
   touches exactly the one file its fixture documents. SCOPE-DIFF still evaluates a real
   `git diff` over real commits; only the dependency on repository history is gone. No validator,
   rule, or policy behaviour changed. `fetch-depth: 0` is no longer needed and was removed.
+- **Portability defect: a handoff review could be reported stale purely because of the host
+  that validated it.** Every read feeding a digest used `Get-Content -Raw` with no `-Encoding`.
+  Windows PowerShell 5.1 decodes a BOM-less file with the machine's ANSI code page while
+  PowerShell 7 uses UTF-8, so a UTF-8 em dash produced a different string and a different
+  SHA-256 on the two hosts. `HANDOFF-010` then reported a current `HANDOFF-REVIEW.json` as
+  stale — a blocking WARN with no way to make it pass. A team recording a digest on macOS and
+  validating in Windows CI hit this in normal use. Fixed at all five digest-feeding reads,
+  recording side included, so the two sides cannot disagree: `Get-ReviewInputDigest`,
+  `Get-ProjectText`, `assess-handoff.ps1`, `handoff-digest.ps1`, and
+  `Get-VisualProofNormalizedTextHash` (Milestone 10 carried the same latent bug).
+  Verified a no-op on PowerShell 7: no recorded review is invalidated. Recorded as section 7
+  of `docs/architecture/powershell-portability.md`. Closes issue #20.
+- Re-landed Handoff-gate coverage for `examples/STANDARD-FEATURE`, reverted earlier to keep
+  `main` green. It runs at `-Gate Handoff` on every CI leg again, and is also the standing
+  regression guard for the encoding defect above — it is the only project in the suite whose
+  review inputs contain non-ASCII text.
 
 ## 1.4.0 - 2026-08-04
 

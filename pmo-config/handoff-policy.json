@@ -1,5 +1,5 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "schema_version": "1.0",
   "gate": "Handoff",
   "description": "Engineering handoff readiness policy. The Handoff gate answers 'is this contract complete enough for a developer to start, integrate, and demo?'. It introduces no new human approval: it reuses the existing Design Ready approval and checks only what the artifacts themselves declare.",

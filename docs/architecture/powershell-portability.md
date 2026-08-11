@@ -188,6 +188,7 @@ green locally and red in CI.
 ## Related
 
 - [`validation-engine.md`](validation-engine.md) — how the engine defends itself
+- [`lessons-learned.md`](lessons-learned.md) — the *method* side: how these were found, and the wrong turns taken on the way
 - [`docs/guides/powershell-runtime.md`](../guides/powershell-runtime.md) — installing a host
 - `DOCTOR-010` — the automated check that enforces §1
 

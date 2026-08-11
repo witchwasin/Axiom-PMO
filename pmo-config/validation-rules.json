@@ -1,5 +1,5 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "schema_version": "1.0",
   "documentation_base_url": "https://github.com/witchwasin/Axiom-PMO/blob/main",
   "documentation_note": "A rule's `documentation` value is a repo-relative path. pmo-doctor DOCTOR-009 fails when the file does not exist, so a rule can never advertise a dead link. Rules without a `documentation` entry emit documentation_url: null.",

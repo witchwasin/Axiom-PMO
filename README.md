@@ -11,9 +11,9 @@ developers or execution frameworks.**
 
 [![Axiom-PMO Checks](https://github.com/witchwasin/Axiom-PMO/actions/workflows/pmo-checks.yml/badge.svg)](https://github.com/witchwasin/Axiom-PMO/actions/workflows/pmo-checks.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](CHANGELOG.md)
 
-Version `1.4.0` · MIT License · PowerShell reference implementation (Windows
+Version `1.5.0` · MIT License · PowerShell reference implementation (Windows
 PowerShell 5.1 and PowerShell 7; Linux/macOS via `pwsh`)
 
 ---
@@ -523,12 +523,12 @@ Typography: Tahoma / Arial (sans-serif) for voice; Consolas / Courier New
 | **Concepts** | [handoff readiness](docs/concepts/handoff-readiness.md) · [visual direction](docs/concepts/visual-direction.md) · [design system](docs/concepts/design-system.md) · [anti-hallucination](docs/concepts/anti-hallucination.md) · [evidence-based execution](docs/concepts/evidence-based-execution.md) · [risk modes](docs/concepts/risk-modes.md) · [human authority](docs/concepts/human-authority.md) |
 | **Guides** | [Claude Code integration](docs/guides/claude-code-integration.md) · [Claude Code walkthrough](docs/guides/claude-code-walkthrough.md) · [artifact map](docs/guides/artifact-map.md) · [GitHub Action](docs/guides/github-action.md) · [M1 walkthrough and recording evidence](docs/guides/m1-walkthrough-and-recording.md) · [PowerShell runtime setup](docs/guides/powershell-runtime.md) · [three-day demo handoff](docs/guides/three-day-demo-handoff.md) |
 | **Reference** | [diagnostics contract](docs/reference/diagnostics-contract.md) · [scope declaration (SCOPE-DIFF)](docs/reference/scope-declaration.md) · [execution contract](docs/reference/execution-contract.md) · [rule reference](docs/rules/) |
-| **Architecture** | [control plane](docs/architecture/control-plane.md) · [Visual Proof](docs/architecture/visual-proof.md) · [M6 threat model](docs/architecture/m6-threat-model.md) · [plugin packaging spike](docs/architecture/plugin-packaging-spike.md) · [validation engine](docs/architecture/validation-engine.md) · [execution contract verification](docs/architecture/execution-contract-verification.md) |
+| **Architecture** | [control plane](docs/architecture/control-plane.md) · [Visual Proof](docs/architecture/visual-proof.md) · [M6 threat model](docs/architecture/m6-threat-model.md) · [plugin packaging spike](docs/architecture/plugin-packaging-spike.md) · [validation engine](docs/architecture/validation-engine.md) · [execution contract verification](docs/architecture/execution-contract-verification.md) · [PowerShell portability](docs/architecture/powershell-portability.md) · [lessons learned](docs/architecture/lessons-learned.md) |
 | **Governance** | [release readiness](docs/governance/release-readiness.md) · [source ownership](docs/governance/source-ownership.md) |
 | **Process** | [Lite](docs/process/lite.md) · [Standard](docs/process/standard.md) · [Strict](docs/process/strict.md) |
 | **Tutorials** | [your first project](docs/tutorials/first-project.md) · [using it with an AI agent](docs/tutorials/using-with-an-ai-agent.md) |
 | **Integrations** | [overview](docs/integrations/overview.md) · [Superpowers](docs/integrations/superpowers.md) · [BMAD](docs/integrations/bmad.md) · [spec-kit](docs/integrations/spec-kit.md) · [OpenSpec](docs/integrations/openspec.md) |
-| **Releases** | [1.4.0](docs/releases/v1.4.0.md) · [1.3.0](docs/releases/v1.3.0.md) · [1.2.0](docs/releases/v1.2.0.md) · [1.1.1](docs/releases/v1.1.1.md) · [1.1.0](docs/releases/v1.1.0.md) · [1.0.0](docs/releases/v1.0.0.md) · [changelog](CHANGELOG.md) |
+| **Releases** | [1.5.0](docs/releases/v1.5.0.md) · [1.4.0](docs/releases/v1.4.0.md) · [1.3.0](docs/releases/v1.3.0.md) · [1.2.0](docs/releases/v1.2.0.md) · [1.1.1](docs/releases/v1.1.1.md) · [1.1.0](docs/releases/v1.1.0.md) · [1.0.0](docs/releases/v1.0.0.md) · [changelog](CHANGELOG.md) |
 
 If you are an AI agent working in this repository, start with
 [`AGENTS.md`](AGENTS.md), [`CLAUDE.md`](CLAUDE.md), and
@@ -606,28 +606,35 @@ strengthen the product direction without weakening governance.
 
 ## Project status
 
-Version `1.4.0`. The validation engine, governance model, and diagnostic
+Version `1.5.0`. The validation engine, governance model, and diagnostic
 contract are stable. 1.1 added the `Handoff` gate between `Design` and
 `Release`; 1.2 added a reusable GitHub Action and SCOPE-DIFF changed-file
 scope enforcement, so a pull request can be checked — and, optionally,
 blocked — directly in CI. 1.3 added the optional Claude Code integration
 (Milestone 6) and hardened `ci-check` execution evidence (Milestone 5.5). 1.4
-adds onboarding and the two execution paths (Milestone 7, now part of the
+added onboarding and the two execution paths (Milestone 7, now part of the
 core product per `DEC-017`), plus two optional governance capabilities:
 adversarial review evidence (Milestones 8.0/8.1) and a local, opt-in
-failure-pattern registry (Milestone 9). See
-[`docs/releases/v1.4.0.md`](docs/releases/v1.4.0.md) for upgrade notes.
+failure-pattern registry (Milestone 9). 1.5 adds conditional Visual Proof
+(Milestone 10) with the optional visual-direction and design-system
+capabilities, and fixes a portability defect that could report a current
+handoff review as stale depending on which host validated it. See
+[`docs/releases/v1.5.0.md`](docs/releases/v1.5.0.md) for upgrade notes.
 
-**Milestones 1–9 are complete.** Milestones 1–7 are the core governance and
+**Milestones 1–10 are complete.** Milestones 1–7 are the core governance and
 development-handoff framework (`DEC-006`, amended by `DEC-017`); Milestones
-6, 8.0, 8.1, and 9 are optional and nothing in the core requires them. There
-is no npm package: Milestone 3 Phase B is deferred, and the plugin is not
-published to any public marketplace.
+6, 8.0, 8.1, 9, and 10 are optional and nothing in the core requires them.
+There is no npm package: Milestone 3 Phase B is deferred, and the plugin is
+not published to any public marketplace.
 
-Upgrading from 1.3 requires no migration: Milestone 7's `execution_path`
-declaration defaults to `development_handoff` so every existing project and
-fixture is unaffected, and Milestones 8.0/8.1/9 are opt-in capabilities that
-change nothing for a project that never invokes them. See
-[`docs/releases/v1.4.0.md`](docs/releases/v1.4.0.md) for details. Migrating
+Upgrading from 1.4 requires no migration: Visual Proof activates only for a
+project that already carries the full visual-direction and design-system
+artifact set, and the encoding fix is a no-op on PowerShell 7, so no recorded
+handoff review is invalidated. Upgrading from 1.3 requires no migration
+either: Milestone 7's `execution_path` declaration defaults to
+`development_handoff` so every existing project and fixture is unaffected,
+and Milestones 8.0/8.1/9 are opt-in capabilities that change nothing for a
+project that never invokes them. See
+[`docs/releases/v1.5.0.md`](docs/releases/v1.5.0.md) for details. Migrating
 from the previous private layout? See
 [`docs/migration/from-pmo-template-personal.md`](docs/migration/from-pmo-template-personal.md).
