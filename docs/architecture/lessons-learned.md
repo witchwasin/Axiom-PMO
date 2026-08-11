@@ -138,6 +138,38 @@ still diffs real commits; the dependency on repository history is gone.
   says "commonly a shallow checkout" and was read as "you have a shallow
   checkout." Confirm the stated cause actually applies before acting on it.
 
+### The wider problem it exposed, and the `archive/*` refs
+
+Chasing the fixture commits turned up something larger: this repository's
+history was **rebuilt** at some point before 1.5.0. The current `main` shares
+no common ancestor with the pre-rebuild line — every commit was replayed onto
+a new root with a different SHA. The content survived; the object ids did not.
+
+That left the closure evidence in `ROADMAP.md`, `CHANGELOG.md`,
+`decision-log.md`, and `docs/architecture/adversarial-review.md` citing commit
+SHAs that existed on one laptop and nowhere else — including `f10b608`, the
+declared *minimum publishable baseline*, and `1235034`, the M7/8.0/8.1/9 merge.
+For a repository whose whole claim is traceable evidence, a citation nobody
+else can resolve is not a small thing.
+
+The pre-rebuild history is therefore published under an `archive/` namespace:
+
+| Ref | What it holds |
+|---|---|
+| `archive/pre-rebuild-main` (tag) | Tip of the old `main` line. Covers every cited SHA, including the four reachable from no branch at all: `1235034`, `4ae5f35`, `1309cb6`, `f10b608`. |
+| `archive/m5.0-…`, `archive/m5.5-…`, `archive/m6.0-…`, `archive/m6.1-…`, `archive/v1.3.0-prep` | The milestone lines, kept under their own names so it stays clear which work was which. |
+
+**These refs are archive, not build targets.** Nothing in CI may reference a
+commit under `archive/*` — doing so re-creates Incident 3 exactly, and this
+time the commits *are* on the remote, so it would fail later and less
+obviously. Build fixtures at run time. The `archive/pre-rebuild-main` tag
+message says the same thing, so it travels with the ref.
+
+**The general rule:** if a document cites a commit as evidence, that commit
+must be reachable from a pushed ref. Verify it the way a reader would —
+`git merge-base --is-ancestor <sha> origin/main`, from a fresh clone, not from
+the working copy that happens to still have the object.
+
 ---
 
 ## Working rules that came out of this
