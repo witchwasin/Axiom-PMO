@@ -144,7 +144,7 @@ Recommended effort allocation:
 | Milestone 8.0 - Adversarial Review Evidence: research | **CLOSED and MERGED to `main`** -- GO WITH REFRAME recommended; Human Owner closed alongside 8.1/9, 2026-08-03 (`DEC-016`) | Optional, adjacent to the core product (confirmed by `DEC-017`, 2026-08-04) -- research only. [`docs/architecture/adversarial-review.md`](docs/architecture/adversarial-review.md). Primary question resolved: a `check_run_id` alone proves a CI job ran, not that a review produced the artifact; a concrete four-part binding (artifact digest, workflow digest, scope protection, contract identity) closes the gap using mechanisms already in production (`Test-CiCheckEvidence`, `REF-002`, `EXEC-004`). Decisions `DEC-012`, `DEC-016`, `DEC-017`; merge commit `1235034` |
 | Milestone 8.1 - Adversarial Review Evidence: implementation | **CLOSED and MERGED to `main`** -- three independent Independent AI Reviewer review rounds (R1: 1 FATAL + 2 MAJOR; R2: 1 compatibility finding; R3: ACCEPT), all findings resolved; Human Owner closed and merged 2026-08-03 (`DEC-016`) | Optional, adjacent to the core product (confirmed by `DEC-017`, 2026-08-04). `AREV-001`..`AREV-006`, `pmo-config/adversarial-review-policy.json`, `templates/EXECUTION-REVIEW.json`, `axiom verify --preflight`. Known limitations recorded, not closed: non-closure transitions inside a reviewer-authored review file are not fully actor-attributed at the per-finding level; a `workflow_id` binding is optional future hardening (`docs/architecture/adversarial-review.md` §11). Decisions `DEC-014`, `DEC-016`, `DEC-017`; merge commit `1235034` |
 | Milestone 9 - Failure Pattern Registry and Governed Improvement Proposals | **CLOSED and MERGED to `main`** -- Independent AI Reviewer round 1: 1 MAJOR, fixed; round 3 final: ACCEPT; Human Owner closed and merged 2026-08-03 (`DEC-016`) | Optional, adjacent to the core product (confirmed by `DEC-017`, 2026-08-04). `scripts/aggregate-diagnostics.ps1`, `pmo-config/learning-policy.json`, `DOCTOR-014`. Local, opt-in aggregation over existing diagnostics, plus human-reviewed improvement candidates. Decisions `DEC-013`, `DEC-015`, `DEC-016`, `DEC-017`; merge commit `1235034` |
-| Milestone 10 - Visual Proof Enforcement | **Active / authorized** -- conditional Handoff evidence control (`DEC-021`) | Optional creative capability. It will validate current local render evidence and a traceable human visual-review decision only when a project has entered the visual-direction/design-system path; it does not make design systems universal, add a new approval, or claim automated visual-quality judgement. |
+| Milestone 10 - Visual Proof Enforcement | **CLOSED on `main`** -- Human Owner accepted and closed 2026-08-11 (`DEC-022`); implementation commit `b7d6a64` | Optional creative capability. It validates current local render evidence and a traceable human visual-review decision only when a project has entered the visual-direction/design-system path; it does not make design systems universal, add a new approval, or claim automated visual-quality judgement. |
 
 ## Roadmap Governance
 
@@ -1479,16 +1479,17 @@ improves the creative result and is sufficient for current use (`DEC-020`). It s
 an optional capability: the framework does not claim that an AI has approved visual
 quality, and a user may request a direction or presentation adjustment at any time.
 
-### Milestone 10 — Visual Proof Enforcement (active)
+### Milestone 10 — Visual Proof Enforcement (closed)
 
-The Human Owner authorized Path 2 on 2026-08-11 (`DEC-021`) without scheduling a
-further project trial. M10 adds a conditional sub-check to the existing `Handoff`
-gate, not a sixth gate or another approval row. It is active only when all three
+The Human Owner authorized Path 2 on 2026-08-11 (`DEC-021`), accepted the resulting
+policy and closed M10 after full framework verification (`DEC-022`). No additional
+real-project trial was scheduled. M10 adds a conditional sub-check to the existing
+`Handoff` gate, not a sixth gate or another approval row. It is active only when all three
 creative artifacts exist: `DESIGN/VISUAL-DIRECTION.md`,
 `DESIGN/DESIGN-SYSTEM.md`, and `DESIGN/DESIGN-SYSTEM.html`. A project without that
 deliberate creative path remains unchanged.
 
-M10 will require current, committed local desktop/mobile visual captures and a
+M10 requires current, committed local desktop/mobile visual captures and a
 `DESIGN/VISUAL-REVIEW.json` with hashes, review inputs, required rubric coverage,
 and a resolvable human decision reference. The deterministic validator can verify
 that evidence is complete and current; it cannot prove a raster came from the HTML,

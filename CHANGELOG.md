@@ -18,7 +18,8 @@
 - Split the design-system HTML template into a stable semantic contract and a project-specific
   presentation layer without adding a gate, validator, required artifact, or rule.
 - Classified the human-tested Creative MVP as completed Part 1 (`DEC-020`), then opened the
-  separately authorized conditional Visual Proof implementation as Milestone 10 (`DEC-021`).
+  separately authorized conditional Visual Proof implementation as Milestone 10 (`DEC-021`) and
+  closed it after the committed implementation and full framework verification (`DEC-022`).
 
 ## 1.4.0 - 2026-08-04
 
