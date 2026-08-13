@@ -98,6 +98,11 @@ id_ed25519
 .playwright-mcp/
 
 # ==========================
+# FreeBuff AI (local app state — SQLite session database)
+# ==========================
+.freebuff/
+
+# ==========================
 # Local-only, never committed (real private-hygiene denylist, per-machine
 # scratch files). See pmo-config/private-hygiene-patterns.example.json.
 # ==========================
