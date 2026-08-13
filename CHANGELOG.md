@@ -1,5 +1,44 @@
 # Changelog
 
+## 2.0.0 - 2026-08-13
+
+MasterPlan v.2.0 closes the two remaining "claimed vs. actual" gaps with
+enforceable rules -- test evidence must match git ground truth, and every
+AI-written semantic review finding must be auditable back to a requirement, a
+claim, and a named human owner -- and records the M0 spike's evidence-based
+decline of L4 formal verification. Backward compatible: every new check is
+opt-in or anchored to an already-executed review artifact, so no existing
+project, fixture, or invocation changes behavior.
+
+### Added
+
+- Ran the M0 spike against AxiomGuard 0.7.2 (read-only throughout) and
+  recorded its FAIL verdict as `DEC-024`, declining L4 (M1/M2) with evidence
+  instead of assumption; the two config gaps it surfaced were fixed in the
+  same change.
+- Added the L3 semantic output contract on AI-executed adversarial reviews
+  (`AREV-007`, `DEC-025`): every finding in `EXECUTION-REVIEW.json` must carry
+  `requirement_ref` resolving against PROJECT.md's In Scope REQ-### ids,
+  `implementation_claim` and `test_claim` (non-empty or the declared "N/A"
+  marker), `severity`, and a named human `owner` -- auditable back to what it
+  claims, not just readable prose.
+- Added the release-path git ground-truth reconciliation (`TEST-EVIDENCE-003`):
+  opt-in `-ReleaseDiffBase` / `-ReleaseDiffHead` on `validate-project.ps1`
+  check a passed Test Summary row's `FILE:` evidence against
+  `git diff --name-only`; stale evidence is WARN-blocking at Standard and FAIL
+  at Strict, and untracked/gitignored evidence stays out of scope by design.
+
+### Changed
+
+- Sharpened `EXEC-005`'s reason for a required test backed only by
+  artifact-tier evidence: an artifact never part of the verified base..head
+  range now reports "a report that predates the work cannot prove the changed
+  code passes" instead of only the generic provenance complaint.
+- Corrected `RELEASE-001`'s suggestion text and `templates/RELEASE.md`, which
+  still said the rollback waiver was valid for Lite only after the M0 commit
+  widened it to Lite and Standard (14 golden files updated, each a single
+  wording-only line).
+
 ## 1.5.0 - 2026-08-11
 
 Milestone 10 (conditional Visual Proof) and the optional visual-direction and
