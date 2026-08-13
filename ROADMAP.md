@@ -1615,6 +1615,26 @@ Still requiring a Human Owner decision to start, none currently authorized:
   both a tag and a Release; `v1.4.0` was never tagged, superseded by `v1.5.0`.
 - The deferred trust evidence above, if the Human Owner chooses to pick it up.
 
+**v2.1 candidate track -- recorded 2026-08-13, not authorized.** `DEC-025` closed
+the v.2.0 core scope with two M4 items deferred, and the MasterPlan already
+carried M5 forward to v2.1. The following are candidate items only -- a list,
+not an authorization to start any of them:
+
+- **M5 Formal Studio (dashboard).** Deferred to v2.1 by the MasterPlan itself
+  (`Fixed plan/MasterPlan_Axiom-PMO v.2.0.md` §6): a whole new web application,
+  unrelated to the v.2.0 core thesis.
+- **GitHub Action exposure of `-ReleaseDiffBase` / `-ReleaseDiffHead`.**
+  Deferred from M4 (`DEC-025`): the validator flags exist, the Action inputs do
+  not.
+- **`TEST-RESULT-001` skipped-row git reconciliation.** Deferred from M4
+  (`DEC-025`).
+- **npm manifest.** Evaluating a `package.json`/manifest for distribution
+  remains a candidate; the 2026-08-11 decline of npm publication is unchanged
+  until a separate decision.
+
+Each item still requires its own Human Owner decision, independent review, and
+roadmap record before implementation begins.
+
 Real-world use and problem reports are **deliberately not tracked here.** The
 Human Owner uses the framework directly and raises anything he finds as it
 arises; turning that into a roadmap item would invent a schedule for something
