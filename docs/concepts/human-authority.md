@@ -17,6 +17,15 @@ what an agent may *do* and what only a human may *authorize*.
 
 An agent **may** recommend the next gate. It **may not** approve its own work.
 
+## Design Ready authority
+
+`pmo-config/policy.json` is the runtime source of truth for approval roles. A
+named human acting as a `Product Owner`, `Project Manager`, `Tech Lead`, or
+`Solution Architect` may approve `Design Ready`. This is an authority matrix for
+that one approval row; it does not let an AI approve the row, alter the Scope
+Approved or Release Approved matrices, or replace a required QA, security, or
+privacy review.
+
 ## Recommendation is not approval
 
 1.1 gives an agent a larger role: it can perform a semantic handoff review, raise

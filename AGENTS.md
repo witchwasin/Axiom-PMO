@@ -83,6 +83,11 @@ Approval gates:
 2. Design Ready
 3. Release Approved
 
+For `Design Ready`, a named human recorded as `Product Owner`, `Project Manager`,
+`Tech Lead`, or `Solution Architect` may approve. This changes neither the
+other approval matrices nor the rule that an AI cannot approve its own work.
+`pmo-config/policy.json` is the runtime source of truth.
+
 Validation gates run in this order:
 
 ```text

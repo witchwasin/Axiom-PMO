@@ -70,6 +70,10 @@ unaffected unless it opts into the new capabilities.
 - Classified the human-tested Creative MVP as completed Part 1 (`DEC-020`), then opened the
   separately authorized conditional Visual Proof implementation as Milestone 10 (`DEC-021`) and
   closed it after the committed implementation and full framework verification (`DEC-022`).
+- Extended the `Design Ready` approval-role matrix to a named `Product Owner` or `Project
+  Manager`, in addition to `Tech Lead` and `Solution Architect` (`DEC-023`). This preserves the
+  human-only approval boundary and does not change Scope Approved, Release Approved, QA, or
+  security-review authority.
 
 ### Fixed
 

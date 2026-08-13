@@ -31,6 +31,11 @@ Intake & Scope -> Flow & UX -> Plan & Handoff -> Build & Verify -> Release & Clo
 2. Design Ready
 3. Release Approved
 
+A named `Product Owner`, `Project Manager`, `Tech Lead`, or `Solution Architect`
+may approve `Design Ready`. The exact runtime matrix is in
+[`pmo-config/policy.json`](../../pmo-config/policy.json); this does not turn a
+candidate design artifact or an AI recommendation into approval.
+
 ## Validation Gates
 
 ```text

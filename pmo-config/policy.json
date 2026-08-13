@@ -14,7 +14,7 @@
   },
   "approval_roles": {
     "Scope Approved": ["Product Owner", "Project Manager"],
-    "Design Ready": ["Tech Lead", "Solution Architect"],
+    "Design Ready": ["Product Owner", "Project Manager", "Tech Lead", "Solution Architect"],
     "Release Approved": ["Product Owner", "Release Manager"],
     "QA Approved": ["QA Lead"],
     "Security Approved": ["Security Reviewer", "Tech Lead"]

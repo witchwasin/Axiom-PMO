@@ -55,4 +55,4 @@ A tablet page for the workshop floor: look up a part by scanning its label, and 
 | Gate | Approval Status | Approver | Role | Date | Evidence |
 |---|---|---|---|---|---|
 | Scope Approved | approved | Demo PO | Product Owner | 2026-07-14 | DEC-001 |
-| Design Ready | approved | Demo Tech Lead | Tech Lead | 2026-07-15 | DEC-002 |
+| Design Ready | approved | Demo PM | Project Manager | 2026-07-15 | DEC-002 |

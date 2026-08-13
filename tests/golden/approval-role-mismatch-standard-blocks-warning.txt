@@ -196,7 +196,7 @@
 "schema_version": "1.1",
 "level": "WARN",
 "rule_id": "APPROVAL-003",
-"message": "Design Ready approver role 'Marketing Manager' is not in the allowed role matrix (Tech Lead, Solution Architect)",
+"message": "Design Ready approver role 'Marketing Manager' is not in the allowed role matrix (Product Owner, Project Manager, Tech Lead, Solution Architect)",
 "blocking": true,
 "artifact": null,
 "item_id": null,

@@ -30,6 +30,57 @@ you theorise about it.**
 
 ---
 
+## Current session — product-handoff lessons (2026-08-11)
+
+This section records mistakes made while applying Axiom-PMO to the separate
+**Axiom Web** product handoff. They are not product defects and they do not
+change a human decision retroactively. They are here because they are easy to
+repeat when an agent is moving quickly from an idea to a polished document set.
+
+### Resolved in this session
+
+| ID | What went wrong | Why it mattered | Correction / rule for next time | Status |
+|---|---|---|---|---|
+| LL-20260811-01 | The canonical Axiom-PMO checkout was initially ambiguous because a second local path was mentioned. | Work, validation, or deletion against the wrong copy can make a correct repository look inconsistent. | Start every repository task with `git rev-parse --show-toplevel`, record the canonical path, and treat an untracked sibling folder as separate until the Human Owner explicitly resolves it. | resolved: canonical repository path recorded via `git rev-parse --show-toplevel` |
+| LL-20260811-02 | We began with a broad PRD/technical handoff for a UI-heavy product before showing the project-native visual artifact the Human Owner expected. | The user reasonably expected to inspect an HTML design sheet/components before approving a developer handoff, and had to ask where `DESIGN-SYSTEM.html` was. | For a product with a material UI, do: **minimum scope → visual directions in `examples/` → human selection → canonical `DESIGN/VISUAL-DIRECTION.md` + `DESIGN-SYSTEM.md/.html` → detailed handoff**. A text-only PRD is not a substitute for the visual checkpoint. | corrected with the Atlas candidate/selection and canonical Axiom Web design contract |
+| LL-20260811-03 | The initial implementation handoff described a broad v1 before the smallest useful Pilot had an explicit human scope choice. | RBAC, audit, uploads, HTML isolation, Visual Proof, and GitHub write can look like one feature list while actually forming a large product slice. | Create a human-readable `PILOT-SCOPE-REVIEW.md` before treating a broad PRD as implementation scope. State both what is in and what is deliberately deferred. | corrected: Axiom Web Private Team Pilot is `DEC-009` |
+| LL-20260811-04 | Artifact completion was sometimes communicated as if the whole handoff were complete. | A visual page can be complete while Scope, Design, Handoff, or Release is still pending; the user then cannot tell what “done” means. | Always report a four-layer outcome: **artifact**, **human approval**, **validation gate**, and **release/deployment**. Never say “complete” without the layer. | process correction recorded here |
+| LL-20260811-05 | The Design Ready role matrix did not initially match the small-team operating model: PO/PM acceptance could not satisfy the Strict role check. | A real human approval became an unexpected framework blocker late in the flow. | Ask who owns Scope/Design/Release authority during onboarding, before creating approval rows. If framework policy must change, record a framework decision and test the actual allowed roles. | resolved by Axiom-PMO `DEC-023`: Product Owner and Project Manager may approve Design Ready |
+| LL-20260811-06 | We surfaced a raw count of many Handoff failures before grouping them into the few decisions that caused them. | A list such as “29 failures” sounds like 29 independent user choices and obscures the next action. | Report root-cause groups first: authority, owner/horizon, provider/auth, real-data policy, import contract, GitHub binding, framework pin, review evidence. Link individual rules only as supporting detail. | process correction recorded here |
+| LL-20260811-07 | After new decisions, several downstream documents still carried earlier claims (single owner, vendor, synthetic-only data, an old stage model, unselected design). | Strict artifacts are a contract graph: one stale document is enough to mislead a developer or make a review digest stale. | After every meaningful decision, run a **decision-impact sweep** over `PROJECT.md`, `HANDOFF.md`, `BUILD-SPEC.md`, `DELIVERY.md`, `RAID-log.md`, `RTM.json`, architecture docs, visual artifacts, and review evidence. Refresh a digest only after that sweep. | corrected for the current Axiom Web handoff; use this checklist again on the next decision |
+| LL-20260811-08 | We initially treated “use real data” and “the data policy is unresolved” as if one cancelled the other. | The safe default became a scope assumption instead of a transparent condition for the product the user actually wants. | Record both truths: real data can be an approved use case, while classification, retention, backup/restore, deletion, access review, export, and incident policy are hard blockers **before intake**, not vague release notes. | corrected by Axiom Web `DEC-013` |
+| LL-20260811-09 | The creative artifact triple activates conditional Visual Proof at the Axiom-PMO Handoff gate, which is easy to discover only late if not surfaced first. | A project may be Design Ready yet still need current captures, hashes, and named human review evidence at Handoff. | When adding `VISUAL-DIRECTION.md`, `DESIGN-SYSTEM.md`, and `DESIGN-SYSTEM.html`, tell the user immediately that Handoff will require `VISUAL-REVIEW.json` and declared desktop/mobile captures. Do not imply an aesthetic validator exists. | framework behavior is intentional; early disclosure is the correction |
+| LL-20260811-10 | We briefly conflated the **product-access persona** with the **handoff recipient**: “no vendor account” was read too broadly as “no developer/vendor may receive the handoff.” | It can put the wrong security boundary into the product and makes the actual implementation contract ambiguous. | Model three distinct identities in every web handoff: product user/account, implementation recipient, and Git publisher. An external developer/vendor may receive a package without receiving an Axiom Web account or publish authority. | corrected in the Axiom Web handoff and architecture documents |
+
+### Active follow-up queue — do not silently close these
+
+| Area | What remains | Who must decide or do it | Blocking point |
+|---|---|---|---|
+| Axiom-PMO framework | Review/commit the current PO/PM Design Ready policy correction and this lessons entry when the Human Owner wants the shared repository baseline changed. The local policy/test work is verified; no new commit is implied by this note. | Human Owner | before another repository/user relies on the changed policy |
+| Axiom Web implementation | Name the internal implementation lead/team and a delivery horizon. | Human Owner | before implementation commitment |
+| Axiom Web private boundary | Choose private URL hosting, authentication, database/object storage, region, and account bootstrap after the implementation team proposes options. | Human Owner + implementation lead | before private deployment/team-account enablement |
+| Axiom Web real data | Record the data operating policy: classification, retention, backup/restore, deletion, access review, export, and incident expectations. | Human Owner | before real-data intake or real-user Pilot |
+| Axiom Web artifact intake | Approve the controlled import manifest/allowlist, size/type limits, scanning, and recovery behavior for Markdown, self-contained HTML, files, and Axiom-PMO folders. | Human Owner + implementation lead | before controlled import enablement |
+| Axiom Web GitHub Publish | Configure the least-privilege GitHub App, private repository/branch allowlist, rotation/revocation, and Owner-only publish behavior. | Human Owner + implementation lead | before GitHub Publish integration |
+| Axiom Web compatibility | Pin the exact **committed** Axiom-PMO version/commit and choose how the Web product validates/exports the compatible pack. `v1.5.0` / `71fb1a7` is only the current reference baseline. | Framework owner + implementation lead | before claiming compatibility / production handoff |
+| Axiom Web Handoff | Refresh semantic handoff review after its artifacts stabilize, then provide the conditional Visual Proof captures/review required by the Handoff gate. | Product Owner + implementation lead | before Axiom-PMO Handoff validation |
+
+### Re-entry checklist
+
+When resuming either repository, first read the table above, then run these
+checks before declaring a milestone or handoff complete:
+
+1. Confirm the repository root and the intended product path.
+2. Read the latest decision log entries and list their impacted artifacts.
+3. State the intended completion layer: artifact, approval, Handoff validation,
+   or release.
+4. Run the smallest relevant validator and group failures by human decision,
+   not by raw rule count.
+5. For any web/product handoff with a visual contract, open the canonical HTML
+   sheet before asking for Design Ready.
+
+---
+
 ## Incident 1 — a golden mismatch with no detail (issue #20)
 
 **Symptom.** `example-standard-feature-handoff` passed on macOS pwsh 7, Linux

@@ -76,10 +76,12 @@ One-sentence project outcome:
 
 > These three are the only human approvals in the framework. The `Handoff`
 > validation gate adds none of its own -- it reuses `Design Ready`. Only a human
-> may move a row from `pending` to `approved`.
+> may move a row from `pending` to `approved`. For `Design Ready`, record one
+> named human with an allowed role: `Product Owner`, `Project Manager`, `Tech
+> Lead`, or `Solution Architect`.
 
 | Gate | Approval Status | Approver | Role | Date | Evidence |
 |---|---|---|---|---|---|
 | Scope Approved | pending | <approver name> | Product Owner | YYYY-MM-DD | DEC-001 |
-| Design Ready | pending | <approver name> | Tech Lead | YYYY-MM-DD | DEC-002 |
+| Design Ready | pending | <approver name> | <Product Owner / Project Manager / Tech Lead / Solution Architect> | YYYY-MM-DD | DEC-002 |
 | Release Approved | pending | <approver name> | Product Owner | YYYY-MM-DD | DEC-003 |

@@ -35,5 +35,5 @@ task_management:
 | Gate | Approval Status | Approver | Role | Date | Evidence |
 |---|---|---|---|---|---|
 | Scope Approved | approved | Fixture PO | Product Owner | 2026-07-10 | DEC-001 |
-| Design Ready | approved | Fixture Lead | Tech Lead | 2026-07-10 | DEC-002 |
+| Design Ready | approved | Fixture PO | Product Owner | 2026-07-10 | DEC-002 |
 | Release Approved | approved | Fixture PO | Product Owner | 2026-07-10 | DEC-003 |
