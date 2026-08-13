@@ -740,3 +740,167 @@ an explicit decision's scope, and independent re-verification of every claim
 rather than trusting the transcript — is the reason this can close on the
 first pass instead of needing a cleanup round. Worth carrying into whatever
 comes after v.2.0.
+
+---
+
+## 2026-08-13 — Round 7.5 (self-correction, recorded for the trail): commit history rewritten before push
+
+A second independent review pass (by the same reviewing agent, prompted by the
+Human Owner asking for one more check before merge) found that `DEC-025`'s
+table row had been staged into the **first** commit
+(`docs(decision): decline L4...`) while the **last** commit's message claimed
+`(DEC-025)` in its title — a real mismatch between a commit's message and its
+actual diff, though nothing was lost or hidden (the row existed, just in the
+"wrong" commit). Verified independently before touching anything:
+`git log --all -S "DEC-025" --oneline` pointed at the first commit;
+`git show <last commit> -- decision-log.md` showed no `DEC-025` content.
+
+Confirmed nothing had been pushed (no upstream configured on this branch), so
+the four commits were safe to rewrite: `git reset --soft` back to the
+pre-work commit, then restaged and recommitted in the same four groups with
+one fix — the first commit now stages `decision-log.md` as `DEC-024` only,
+and the last commit stages the `DEC-025` row alongside the review-trail docs
+its message already describes. `DEC-023` (the other session's pending row)
+was re-verified byte-identical in the working tree before and after the
+rewrite. Full verification re-run on the corrected history: `pmo-doctor`
+59/0/0, hygiene 1/0, `run-validation-tests` 158/0.
+
+New commit hashes (the old ones — `5e6535e`/`c83c467`/`d6bc185`/`d891a15` —
+no longer exist):
+
+```
+7a37b49 docs(decision): decline L4 formal verification after the M0 spike; fix the two config gaps it surfaced
+4366807 feat(validation): M4 -- reconcile passed test evidence against git ground truth (EXEC-005, TEST-EVIDENCE-003)
+bd0f408 feat(validation): M3 -- semantic output contract on adversarial review findings (AREV-007)
+aa5bcba docs(plan): close out MasterPlan v.2.0 core scope -- review trail and DEC-025
+```
+
+Recorded here, not silently: this is the standard this loop holds implementers
+to, applied to the reviewer's own output. History rewrites are safe exactly
+because they happened before anything left the local repository — the same
+"local commit only, no push without confirmation" discipline is what made this
+possible to fix cleanly instead of needing a public correction commit.
+
+---
+
+## 2026-08-13 — Round 8: merge to `main` (no PR, fast-forward), open a v2.1 tracking doc, bring CHANGELOG.md current
+
+The Human Owner wants this merged straight to `main` — no PR, no further wait
+— and wants the deferred items opened as a visible v2.1 track, with
+documentation (starting with `CHANGELOG.md`) brought current. This is new
+work, not a review of a submission, so it is written as direct instructions.
+**Read every constraint below before running any git command** — the merge
+step is irreversible once pushed, unlike everything before it in this loop.
+
+### Verified by the reviewer before writing this (do not re-derive, do not re-check unless something looks different)
+
+- `git merge-base --is-ancestor main Axiom-PMO-v.2.0` → true. `git log
+  --oneline Axiom-PMO-v.2.0..main` → 0. **`main` has not moved since this
+  branch was cut** (`7d2393b`) — this is a clean fast-forward with zero
+  conflict risk, not a real merge.
+- `git fetch origin` shows local `main` and `origin/main` identical — no
+  surprise upstream commits.
+- No upstream is configured for `Axiom-PMO-v.2.0` (nothing has ever been
+  pushed on this branch).
+- The working tree still carries `DEC-023` — another session's pending,
+  uncommitted change, present since before this whole plan started, spread
+  across `AGENTS.md`, `CHANGELOG.md`, `decision-log.md`,
+  `docs/architecture/lessons-learned.md`, `docs/concepts/human-authority.md`,
+  `docs/process/standard.md`, `pmo-config/policy.json`, `templates/PROJECT.md`,
+  three `tests/fixtures/` files, and one `tests/golden/` file. **None of this
+  is yours to commit, stage, discard, or stash-and-drop.** It is not part of
+  v.2.0.
+
+### Task 1 — Final check, then fast-forward `main` directly (no checkout, no PR)
+
+1. Run the **full** `scripts/run-all-checks.ps1` (mutation + e2e included —
+   this has only ever been run in component pieces this whole plan, for
+   session-timeout reasons; run it in the background if your session has the
+   same limit, or split it, but get a complete result). Report the real
+   summary line, not "all green."
+2. Re-verify the fast-forward is still true right before pushing (someone
+   could have pushed to `main` in the meantime): `git fetch origin && git
+   merge-base --is-ancestor origin/main Axiom-PMO-v.2.0`. If this is false,
+   **stop and report — do not rebase, do not force, do not merge with
+   conflict resolution.** That would mean something landed on `main` outside
+   this plan and needs a human decision, not an automatic resolution.
+3. Push directly, branch to branch, updating `main` on the remote as a
+   fast-forward: `git push origin Axiom-PMO-v.2.0:main`. Do **not** run `git
+   checkout main` at any point — the working tree's `DEC-023` files are not
+   safe to carry through a branch switch, and there is no need to switch:
+   pushing `<local-branch>:<remote-branch>` never touches your working tree.
+4. If the push is rejected (branch protection requiring a PR, a required
+   status check, anything) — **stop and report the exact error.** Do not
+   bypass, do not force-push. That is a repository setting only the Human
+   Owner can change, and it may mean they want the PR after all.
+5. After a successful push, sync the local `main` ref without checking it out:
+   `git fetch origin main:main`. This is safe with a dirty working tree
+   because it only moves a ref, never touches tracked files.
+6. Report the resulting `main` SHA and confirm it matches
+   `Axiom-PMO-v.2.0`'s tip.
+
+### Task 2 — Open a v2.1 tracking entry (planning only, no implementation)
+
+Add a "v2.1 candidates" section to `ROADMAP.md` (existing convention — this is
+where the npm/marketplace declines are already recorded) listing, each with
+its evidence citation:
+
+- **M5 — Formal Studio (read-only dashboard).** Deferred in the MasterPlan
+  itself (`Fixed plan/MasterPlan_Axiom-PMO v.2.0.md` §6), never started.
+- **`action.yml` exposure of `-ReleaseDiffBase`/`-ReleaseDiffHead`.** Deferred
+  at `Fixed plan/feeback.md` Round 4/6 — plumbing only, no new capability.
+- **`TEST-RESULT-001` skipped-row git reconciliation.** Deferred at
+  `Fixed plan/feeback.md` Round 6 — a real, symmetry-shaped gap (a `skipped`
+  row's `FILE:` evidence at Strict is not git-checked the way `AREV-007`'s and
+  `TEST-EVIDENCE-003`'s are), not required by any done-when criterion.
+- **npm package manifest (no publish).** Discussed earlier in this same
+  Human Owner conversation, never executed — `package.json` + `bin` only,
+  `npx github:witchwasin/Axiom-PMO` reachable, no `npm publish`. Still
+  reversible; still requires its own decision before any publish step.
+
+State plainly that this section is a **candidate list, not an authorization**
+— nothing here is scheduled or approved to start. Do not create a new
+`Fixed plan`-style working-protocol document for v2.1 yet; that is worth doing
+only once the Human Owner picks something from this list to actually start.
+
+### Task 3 — Bring `CHANGELOG.md` current
+
+Add a v.2.0 entry (M0 declined-with-evidence, M3 done, M4 done — mirror the
+tone of the existing `DEC-024`/`DEC-025` prose, do not just list rule ids).
+
+**`CHANGELOG.md` is entangled with `DEC-023`** — it already carries that
+session's uncommitted paragraph under `### Changed`. Use the exact technique
+the reviewer used for `pmo-config/policy.json` and `decision-log.md` in this
+plan's own commits: reconstruct the file from `git show
+<last-v.2.0-commit>:CHANGELOG.md` (i.e., the last common ancestor for this
+file, since v.2.0 never touched it — confirm with `git log --oneline --
+CHANGELOG.md` that no v.2.0 commit appears), add only the new v.2.0 paragraph
+to that reconstruction, then stage it with `git hash-object -w` +
+`git update-index --cacheinfo` so the index gets only the new paragraph and
+the working tree — with `DEC-023`'s paragraph still sitting in it — is never
+touched. Verify afterward exactly the way the reviewer did: `git diff
+<staged-blob-file> CHANGELOG.md` should show only `DEC-023`'s paragraph as the
+remaining difference. If this feels error-prone, it is meant to — go slowly,
+verify each step with a diff before moving to the next, and report exactly
+what you did.
+
+Do not touch `README.md`'s version badge or any `VERSION` file — a version
+bump/tag is its own decision, not implied by "bring docs current," and is not
+authorized here.
+
+### What NOT to do this round
+
+- Do not touch `DEC-023`'s content anywhere, in any file, under any
+  circumstance — not to move it, not to "help," not to resolve the
+  entanglement for that session.
+- Do not create a git tag, GitHub Release, or version bump.
+- Do not open a v2.1 implementation — Task 2 is a list, not a start.
+- Do not touch `AxiomGuard`. Still read-only, still binding.
+
+### Report back
+
+`update_fixed.md`, same standard as every round: real command output for the
+full check suite, the exact push result and new `main` SHA, the `ROADMAP.md`
+diff, and the `CHANGELOG.md` diff (both the staged blob and confirmation of
+what remains dirty). The reviewer will verify Task 1's push result
+independently against the remote before treating `main` as settled.
