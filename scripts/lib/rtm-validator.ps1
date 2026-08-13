@@ -71,6 +71,141 @@ function Test-TestSummary {
   }
 }
 
+function Test-TestEvidenceGitGroundTruth {
+  # M4 second increment (L2 completion): when the caller supplies
+  # -ReleaseDiffBase/-ReleaseDiffHead to validate-project.ps1, a passed Test
+  # Summary row whose FILE: evidence is tracked but was NOT changed within the
+  # verified base..head range is stale -- it cannot be the output of a test run
+  # of this release's work. This is the EXEC-005 stale-evidence reconciliation
+  # applied to the release-path Test Summary check, per feeback.md Round 3:
+  # severity mirrors APPROVAL-003 (WARN-blocking at Standard, FAIL at Strict),
+  # no human-vouch escape hatch on this path, tracked files only. Opt-in: with
+  # no refs supplied this function is never called and every existing caller is
+  # byte-identical.
+  param(
+    $ReleaseRegistry,
+    [string]$Project,
+    [string]$Mode,
+    [string]$BaseRef,
+    [string]$HeadRef
+  )
+
+  $rows = @($ReleaseRegistry.TestRows)
+  if ($rows.Count -eq 0) { return }
+  # Lite is exempt from the release-path Test Summary rules entirely (the whole
+  # TEST-SUMMARY-001 / TEST-RESULT-001 / TEST-EVIDENCE-002 block only runs at
+  # Standard/Strict), so this git check does not apply there either -- mirrors
+  # APPROVAL-003, which emits no row at Lite.
+  if ($Mode -eq "Lite") { return }
+
+  # Collect the passed rows that cite resolvable, in-project FILE: evidence.
+  # Only those name a file git can say something about. A TEST-### id, a
+  # DEC-###, an ISSUE:n, or a CI: reference names no repository file, and a
+  # FILE: reference that is missing or escapes the project is already FAILed
+  # by TEST-EVIDENCE-002 / REF-002 -- this check adds nothing there.
+  $candidates = New-Object System.Collections.Generic.List[object]
+  foreach ($row in $rows) {
+    $result = "$($row.Result)".Trim().ToLowerInvariant()
+    if ($result -ne "passed") { continue }
+    if (Test-PlaceholderValue $row.Evidence) { continue }
+    $ref = Resolve-Reference -Value $row.Evidence -ReferenceTypesConfig $script:referenceTypesConfig -ProjectRoot $Project -TestIds $ReleaseRegistry.TestIds
+    if ($ref.Type -ne "file" -or -not $ref.Resolved -or $ref.PathEscaped) { continue }
+    $candidates.Add($row) | Out-Null
+  }
+  if ($candidates.Count -eq 0) { return }
+
+  # The project's own repository is the git ground truth: the evidence files
+  # and the release's commit range live there. Git answers the project's
+  # relationship to its repo root itself (handles symlinks and path casing the
+  # way the diff will), so this check needs no separate git-root parameter the
+  # way SCOPE-DIFF does -- the project IS in the repository whose history is
+  # being compared.
+  $gitRoot = (& git -C $Project rev-parse --show-toplevel 2>$null | Out-String).Trim()
+  if ([string]::IsNullOrWhiteSpace($gitRoot)) {
+    Add-Result FAIL "Cannot reconcile release test evidence against git ground truth: the project is not inside a git repository, so no commit range can be verified. Supply -ReleaseDiffBase/-ReleaseDiffHead only when the project lives in a git checkout." "TEST-EVIDENCE-003"
+    return
+  }
+
+  # Both refs must resolve before anything is compared. Same infra-failure
+  # class as SCOPE-DIFF-004: the caller asked for a range, so an unresolvable
+  # one is a configuration error (and always FAIL, regardless of mode), not a
+  # pass.
+  $baseSha = (& git -C $gitRoot rev-parse --verify --quiet "$BaseRef^{commit}" 2>$null | Out-String).Trim()
+  if ([string]::IsNullOrWhiteSpace($baseSha)) {
+    Add-Result FAIL "Cannot reconcile release test evidence against git ground truth: the base commit ($BaseRef) could not be resolved in this checkout. This is commonly a shallow checkout: actions/checkout defaults to fetch-depth 1, which does not include the base commit. Increase fetch-depth (or use fetch-depth: 0)." "TEST-EVIDENCE-003"
+    return
+  }
+  $headSha = (& git -C $gitRoot rev-parse --verify --quiet "$HeadRef^{commit}" 2>$null | Out-String).Trim()
+  if ([string]::IsNullOrWhiteSpace($headSha)) {
+    Add-Result FAIL "Cannot reconcile release test evidence against git ground truth: the head commit ($HeadRef) could not be resolved in this checkout." "TEST-EVIDENCE-003"
+    return
+  }
+
+  # The set of paths changed within the verified range. NUL-separated output
+  # so a path containing spaces (or any other character) compares exactly --
+  # the same -z discipline as scope-diff-git-adapter.ps1. Raw git stderr goes
+  # only to this process's own stderr (the run log), never into a result row.
+  $stderrFile = [System.IO.Path]::GetTempFileName()
+  $raw = $null
+  try {
+    $raw = & git -C $gitRoot --no-pager diff --no-color --name-only -z "$baseSha" "$headSha" 2>$stderrFile
+    if ($LASTEXITCODE -ne 0) {
+      $stderrText = Get-Content -LiteralPath $stderrFile -Raw -ErrorAction SilentlyContinue
+      if ($stderrText) { [Console]::Error.WriteLine($stderrText) }
+      Add-Result FAIL "Cannot reconcile release test evidence against git ground truth: git diff exited $($LASTEXITCODE) comparing $baseSha to $headSha. See the run log for the underlying git error." "TEST-EVIDENCE-003"
+      return
+    }
+  } finally {
+    Remove-Item -LiteralPath $stderrFile -ErrorAction SilentlyContinue
+  }
+  $changedPaths = New-Object System.Collections.Generic.HashSet[string] ([System.StringComparer]::Ordinal)
+  $rawJoined = if ($raw -is [array]) { $raw -join "`0" } else { [string]$raw }
+  foreach ($token in ($rawJoined -split "`0")) {
+    if (-not [string]::IsNullOrEmpty($token)) { [void]$changedPaths.Add($token) }
+  }
+
+  foreach ($row in $candidates) {
+    $evidenceValue = "$($row.Evidence)".Trim()
+    # reference-types.json matches the file type with ^FILE:.+$ -- the path is
+    # exactly the 5-character prefix stripped, same as Resolve-Reference does.
+    $filePath = $evidenceValue.Substring(5).Replace('\', '/')
+
+    # Round 3 decision 3: tracked files only. An untracked/gitignored FILE:
+    # reference is invisible to git diff regardless of how fresh it is, so
+    # flagging it as stale would be a false positive against a legitimate
+    # pattern (e.g. a deliberately gitignored CI report directory). Out of
+    # scope entirely -- neither passed nor failed by this check.
+    #
+    # ls-files --error-unmatch also canonicalizes the path: run from the
+    # project directory with --full-name, git itself normalizes . / ..
+    # segments and path casing and answers the repo-root-relative path that
+    # git diff will name -- no manual prefix joining that could drift from
+    # what the diff reports.
+    $gitRelPath = (& git -C $Project ls-files --full-name --error-unmatch -- $filePath 2>$null | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($gitRelPath)) { continue }
+
+    if ($changedPaths.Contains($gitRelPath)) {
+      Add-Result PASS "$($row.ID) evidence '$gitRelPath' is part of the release's verified commit range" "TEST-EVIDENCE-003"
+      continue
+    }
+
+    # Not in the range. Distinguish the working-tree states so the reason
+    # names the actual defect: a clean file predates the release; a modified
+    # or staged file has content that was never part of any commit in it.
+    $status = (& git -C $gitRoot status --porcelain -- $gitRelPath 2>$null | Out-String).Trim()
+    $uncommittedNote = ""
+    if ($status) {
+      $uncommittedNote = " The file also has uncommitted changes, so its current content is not part of the verified range."
+    }
+    $message = "$($row.ID) is passed but cites FILE:evidence '$gitRelPath', which was not changed within the release's verified commit range $BaseRef..$HeadRef — a report that predates this release's work cannot prove the released code passes.$uncommittedNote"
+    if ($Mode -eq "Strict") {
+      Add-Result FAIL $message "TEST-EVIDENCE-003" -Artifact $gitRelPath
+    } else {
+      Add-Result WARN $message "TEST-EVIDENCE-003" -Artifact $gitRelPath -Blocking $true
+    }
+  }
+}
+
 function Test-RtmTraceability {
   param(
     [string]$Project,

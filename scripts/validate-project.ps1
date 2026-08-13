@@ -26,6 +26,18 @@ param(
   [string]$ScopeDiffBase = $null,
   [string]$ScopeDiffHead = $null,
 
+  # M4 (L2 completion), same opt-in discipline as -ScopeDiffBase/-ScopeDiffHead:
+  # when BOTH refs are supplied, the release-path Test Summary check reconciles
+  # passed FILE: evidence against git ground truth -- tracked evidence that was
+  # not changed within base..head cannot be the output of a test run of this
+  # release's work (TEST-EVIDENCE-003). Every existing caller passes neither,
+  # so behavior is byte-identical for them. The project's own repository is the
+  # git ground truth (evidence files and commit range live there), so no
+  # separate repo-root parameter is needed the way SCOPE-DIFF needs
+  # -ScopeDiffRepoRoot.
+  [string]$ReleaseDiffBase = $null,
+  [string]$ReleaseDiffHead = $null,
+
   # Deliberately separate from the $repoRoot this script already computes
   # below (Join-Path $PSScriptRoot ".."), which is always the Axiom-PMO
   # framework's own checkout -- correct for loading pmo-config/*.json, but
@@ -137,6 +149,13 @@ Test-RaidBlocker -Project $project -Gate $Gate
 $releaseResult = Test-ReleaseArtifact -Project $project -Mode $Mode -Gate $Gate -DeliveryIds $deliveryIds -DecisionIds $decisionIds
 $releaseText = $releaseResult.ReleaseText
 $releaseRegistry = $releaseResult.ReleaseRegistry
+
+# M4 second increment (opt-in): git ground truth for release-path test
+# evidence. Runs only when the caller supplies both refs; with neither
+# supplied it is never invoked and the output is byte-identical to v1.x.
+if ($ReleaseDiffBase -and $ReleaseDiffHead) {
+  Test-TestEvidenceGitGroundTruth -ReleaseRegistry $releaseRegistry -Project $project -Mode $Mode -BaseRef $ReleaseDiffBase -HeadRef $ReleaseDiffHead
+}
 
 Test-ReleaseScopeCompletion -WorkItems $workItems -ReleaseText $releaseText -Mode $Mode -Gate $Gate -DecisionIds $decisionIds -ReleaseRegistry $releaseRegistry
 

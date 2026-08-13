@@ -519,7 +519,36 @@ function Invoke-ExecutionContractVerification {
 
       if ($vouchProblem) {
         $unverified.Add($requiredName) | Out-Null
-        Add-Result FAIL "A test the contract requires is backed only by '$($match.Type)' evidence, which is $($match.Provenance): the artifact is well-formed and matches its declared digest, but it lives where the actor being verified can write it, so nothing here establishes who produced it. No human acceptance applies to it either -- $vouchProblem. Satisfy this with evidence from a source the actor cannot impersonate (a ci-check), or have a human accept this specific artifact: a '$humanVouchType' claim naming test_name and evidence_sha256, citing a decision record whose row names that same digest." "EXEC-005" -Artifact "EXECUTION-RESULT.json" -ItemId $requiredName -Field "test_evidence"
+        # M4 (L2 completion): reconcile the evidence file itself against the
+        # observed git diff. A junit-artifact is the output of a test run, so
+        # a file that was NOT changed within the verified base..head range
+        # cannot be the output of a run of the code under verification -- it
+        # predates the work. This is a git-ground-truth statement the
+        # validator can make on its own (no semantic reading of the XML's
+        # contents), so the diagnostic says so instead of only the generic
+        # provenance complaint. A valid human vouch above already returned
+        # $null, so reaching this branch means nobody accepted the artifact:
+        # the stale-evidence note sharpens WHY the evidence cannot be trusted,
+        # not a second gate. (The vouch remains the documented escape hatch
+        # for evidence that legitimately lives outside the diff -- a
+        # gitignored CI artifact -- so a vouched stale file is unchanged.)
+        $staleEvidenceNote = ""
+        if ($match.Type -eq "junit-artifact" -and $match.Raw.PSObject.Properties["path"] -and $match.Raw.path) {
+          $evidencePath = [string]$match.Raw.path
+          $evidenceFull = [System.IO.Path]::GetFullPath((Join-Path $ProjectPath $evidencePath))
+          if ($evidenceFull.StartsWith($normalizedGitRoot, [System.StringComparison]::Ordinal)) {
+            $evidenceRel = $evidenceFull.Substring($normalizedGitRoot.Length).TrimStart('/', '\') -replace '\\', '/'
+            # -cnotcontains, never -notcontains: same case-sensitivity
+            # discipline as EXEC-004/EXEC-008 -- git reports the on-disk path
+            # byte-for-byte, so a case-variant is a different file, and a
+            # case-insensitive comparison would wrongly count it as "in the
+            # diff".
+            if ($observedPaths -cnotcontains $evidenceRel) {
+              $staleEvidenceNote = "The evidence file '$evidencePath' was not changed within the verified commit range, so it cannot be the output of a test run of the code under verification -- a report that predates the work cannot prove the changed code passes. "
+            }
+          }
+        }
+        Add-Result FAIL "A test the contract requires is backed only by '$($match.Type)' evidence, which is $($match.Provenance): the artifact is well-formed and matches its declared digest, but it lives where the actor being verified can write it, so nothing here establishes who produced it. $staleEvidenceNote`No human acceptance applies to it either -- $vouchProblem. Satisfy this with evidence from a source the actor cannot impersonate (a ci-check), or have a human accept this specific artifact: a '$humanVouchType' claim naming test_name and evidence_sha256, citing a decision record whose row names that same digest." "EXEC-005" -Artifact "EXECUTION-RESULT.json" -ItemId $requiredName -Field "test_evidence"
       }
     }
   }
@@ -665,11 +694,25 @@ function Invoke-ExecutionContractVerification {
   # rule identical between EXEC-007 and AREV-006 instead of two implementations
   # that could quietly drift apart.
   if (-not $Preflight) {
+    # M3 (AREV-007): resolve each finding's requirement_ref against PROJECT.md
+    # In Scope, the same source RTM-002 reads. Get-TableRowsAfterHeading and
+    # Get-IdsFromRows come from markdown-table-parser.ps1, dot-sourced by
+    # verify-execution-result.ps1 -- the only entry point that reaches this
+    # function -- so they are in scope here by the same mechanism every other
+    # shared helper in this file relies on. When PROJECT.md is missing or has
+    # no In Scope table, the id set is empty and any requirement_ref fails
+    # closed rather than being guessed at.
+    $projectReqIds = @()
+    $projectText = Get-Content -LiteralPath (Join-Path $ProjectPath "PROJECT.md") -Raw -ErrorAction SilentlyContinue
+    if ($projectText) {
+      $reqRows = Get-TableRowsAfterHeading $projectText '^###\s+In Scope'
+      $projectReqIds = @(Get-IdsFromRows $reqRows)
+    }
     $effectiveMode = Get-EffectiveModeForVerification -ProjectPath $ProjectPath
     Test-AdversarialReviewEvidence -ProjectPath $ProjectPath -ContractPath $ContractPath -Contract $contract `
       -EffectiveMode $effectiveMode -ResultDocument $doc -VerdictBaseSha $verdict.base_sha -VerdictHeadSha $verdict.head_sha `
       -WorkItemId $verdict.work_item_id -FrameworkRoot $FrameworkRoot -GitRepoRoot $GitRepoRoot `
-      -ObservedPaths $observedPaths -DecisionLogRelPath $decisionLogRelPath
+      -ObservedPaths $observedPaths -DecisionLogRelPath $decisionLogRelPath -ProjectReqIds $projectReqIds
   }
 
   # --- verdict --------------------------------------------------------------

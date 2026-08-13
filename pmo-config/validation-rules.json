@@ -153,7 +153,7 @@
     "RELEASE-001": {
       "severity": "fail_release",
       "description": "Release rollback plan is missing, unstructured, or has an invalid Lite waiver.",
-      "suggestion": "Add a structured Rollback Plan table with trigger, steps, and owner. A waiver is only valid for Lite content-only changes."
+      "suggestion": "Add a structured Rollback Plan table with trigger, steps, and owner. A waiver is only valid for Lite or Standard content-only changes."
     },
     "RELEASE-STATUS-001": {
       "severity": "fail",
@@ -189,6 +189,12 @@
       "severity": "fail",
       "description": "A passed Test Summary row has missing or unresolvable evidence.",
       "suggestion": "Attach resolvable evidence to every passed test row, or mark the row skipped with a reason."
+    },
+    "TEST-EVIDENCE-003": {
+      "severity": "warn",
+      "description": "A passed Test Summary row cites FILE: evidence that git ground truth contradicts: the file is tracked but was not changed within the release's verified commit range (base..head), so it cannot be the output of a test run of this release's work (WARN-blocking at Standard, FAIL at Strict); or the release's commit range could not be resolved (always FAIL). Opt-in: only evaluated when the caller supplies -ReleaseDiffBase/-ReleaseDiffHead. Untracked/gitignored FILE: evidence is out of scope by design.",
+      "suggestion": "Point the passed row's Evidence at a test report the release's own commits produced -- a file changed within the verified commit range. A report that predates the work cannot prove the released code passes; re-run the tests so the report is part of this release's change, or make the release's commit range cover it.",
+      "documentation": "docs/rules/TEST-EVIDENCE-003.md"
     },
     "QA-REVIEW-001": {
       "severity": "fail",

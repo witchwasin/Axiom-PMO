@@ -273,7 +273,7 @@
 "artifact": null,
 "item_id": null,
 "field": null,
-"suggestion": "Add a structured Rollback Plan table with trigger, steps, and owner. A waiver is only valid for Lite content-only changes.",
+"suggestion": "Add a structured Rollback Plan table with trigger, steps, and owner. A waiver is only valid for Lite or Standard content-only changes.",
 "documentation_url": null
 },
 {

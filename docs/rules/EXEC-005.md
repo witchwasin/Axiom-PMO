@@ -174,6 +174,33 @@ intends to forge later. That requires the earlier execution to have passed
 review carrying an unexplained digest — narrower and more visible, but not
 closed.
 
+## Git reconciliation: stale evidence (M4 / L2 completion)
+
+A `junit-artifact` is the *output of a test run*. Git ground truth can
+therefore say one necessary thing about it that no amount of hashing or XML
+parsing can: **if the artifact file was not changed within the verified
+`base..head` commit range, it predates the work — it cannot be the output of
+a run of the code under verification.** The diagnostic says so explicitly
+when the artifact is verified but out-of-range and no human vouch applies:
+
+> The evidence file `<path>` was not changed within the verified commit
+> range, so it cannot be the output of a test run of the code under
+> verification — a report that predates the work cannot prove the changed
+> code passes.
+
+This is the same both-directions discipline as `EXEC-008`'s `changed_files`
+reconciliation, applied to the evidence file itself: the claim "this test
+passed" is checked against what the repository shows actually happened.
+
+**A valid human vouch still wins.** The vouch is the documented escape hatch
+for evidence that legitimately lives outside the diff — a gitignored CI
+artifact, for example — so a vouched, out-of-range artifact is unchanged.
+The stale-evidence note sharpens *why* unpromoted evidence cannot be
+trusted; it does not add a second gate on top of the vouch. (Whether a vouch
+*should* be able to override staleness is an open question for a future
+round — closing it would move the remaining "stale report accepted by
+vouch" case from accountability to enforcement.)
+
 ## How to fix
 
 - Attach a `ci-check` for the required test, **or**

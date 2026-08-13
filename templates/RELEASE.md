@@ -42,7 +42,7 @@
 
 ## Structured Rollback Plan
 
-> Lite may replace this table with a waiver when the change type is on the
+> Lite or Standard may replace this table with a waiver when the change type is on the
 > config allowlist (`pmo-config/policy.json` `rollback_waiver`):
 > ```
 > rollback_required: false

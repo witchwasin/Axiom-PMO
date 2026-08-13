@@ -951,6 +951,69 @@ function Write-ResultDoc {
   } finally { Remove-ExecFixture $dir }
 }.Invoke()
 
+# ---- M4 (L2 completion): junit evidence must be reconcilable with the diff --
+
+# ---- Case: valid junit artifact that predates the verified work -> EXEC-005 ---
+# The junit file is committed in the BASE (before export), so it is never
+# inside the verified base..head range. The artifact is well-formed, its hash
+# is real, and it has zero failures -- every artifact-level check passes --
+# but git ground truth says it was not produced by this work: a report that
+# predates the range cannot be evidence that the changed code passes. No
+# human vouch is present, so EXEC-005 fails and the reason must name the
+# git-ground-truth defect, not only the generic provenance complaint.
+{
+  $dir = New-ExecFixture
+  try {
+    Write-ExecFile $dir "reports/junit.xml" '<testsuite name="s" tests="1" failures="0" errors="0"><testcase name="a"/></testsuite>'
+    & git -C $dir add -A 2>$null | Out-Null; & git -C $dir commit -q -m junit 2>$null | Out-Null
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $f = Get-BaseResultFields -Dir $dir
+    $realHash = (Get-FileHash -LiteralPath (Join-Path $dir "reports/junit.xml") -Algorithm SHA256).Hash.ToLowerInvariant()
+    $doc = [ordered]@{
+      contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      base_sha = [string]$f.Contract.base_sha; head_sha = $f.Head; execution_status = "completed"
+      changed_files = @()
+      test_evidence = @([ordered]@{ type = "junit-artifact"; name = "unit tests"; path = "reports/junit.xml"; sha256 = $realHash })
+    }
+    Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "M4 stale junit: EXEC-005 raised" ((Get-Rules $r.Json) -contains "EXEC-005")
+    Assert-True "M4 stale junit: reason names the git-ground-truth defect" `
+      ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-005" })[0]).message -match "was not changed within the verified commit range")
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
+# ---- Case: junit evidence generated IN the verified range, no vouch -> EXEC-005 ----
+# Positive control for the stale check: the artifact IS in the diff, so the
+# git-ground-truth reconciliation is satisfied -- the failure is then only
+# the generic provenance gap (no human accepted it), with no stale-evidence
+# claim in the reason.
+{
+  $dir = New-ExecFixture
+  try {
+    Invoke-Export -Dir $dir -Grant "commit" | Out-Null
+    $f = Get-BaseResultFields -Dir $dir
+    # tests/payments/** is inside the contract's allowed_paths, so a junit
+    # file committed AFTER export is both fresh (in the base..head diff) and
+    # in scope -- the positive control isolates the stale-evidence question.
+    Write-ExecFile $dir "tests/payments/junit.xml" '<testsuite name="s" tests="1" failures="0" errors="0"><testcase name="a"/></testsuite>'
+    & git -C $dir add -A 2>$null | Out-Null; & git -C $dir commit -q -m "run output" 2>$null | Out-Null
+    $realHash = (Get-FileHash -LiteralPath (Join-Path $dir "tests/payments/junit.xml") -Algorithm SHA256).Hash.ToLowerInvariant()
+    $head = (Get-FixtureGit $dir rev-parse HEAD).Trim()
+    $doc = [ordered]@{
+      contract_version = "1.0"; work_item_id = "D-001"; contract_sha256 = $f.Digest
+      base_sha = [string]$f.Contract.base_sha; head_sha = $head; execution_status = "completed"
+      changed_files = @("tests/payments/junit.xml")
+      test_evidence = @([ordered]@{ type = "junit-artifact"; name = "unit tests"; path = "tests/payments/junit.xml"; sha256 = $realHash })
+    }
+    Write-ResultDoc -Dir $dir -Doc $doc | Out-Null
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "M4 fresh junit, no vouch: EXEC-005 raised (provenance, not stale)" ((Get-Rules $r.Json) -contains "EXEC-005")
+    Assert-True "M4 fresh junit, no vouch: reason does NOT claim staleness" `
+      (-not ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-005" })[0]).message -match "was not changed within the verified commit range"))
+  } finally { Remove-ExecFixture $dir }
+}.Invoke()
+
 # ---- FATAL fix: runner-exit-record must be a real sealed record -----------
 
 # ---- Case: hand-typed runner-exit-record with no sidecar -> EXEC-005 ------
