@@ -13,7 +13,7 @@
     "Release Approved": { "gates": ["Release"], "exempt_modes": [] }
   },
   "approval_roles": {
-    "Scope Approved": ["Product Owner", "Project Owner"],
+    "Scope Approved": ["Product Owner", "Project Manager"],
     "Design Ready": ["Tech Lead", "Solution Architect"],
     "Release Approved": ["Product Owner", "Release Manager"],
     "QA Approved": ["QA Lead"],
@@ -38,6 +38,7 @@
     "evidence_statuses": ["verified", "supported", "inferred", "missing", "conflict"],
     "approval_statuses": ["pending", "approved", "rejected"],
     "approval_gates": ["Scope Approved", "Design Ready", "Release Approved"],
+    "roles": ["Product Owner", "Project Manager", "Tech Lead", "Solution Architect", "Release Manager", "QA Lead", "Security Reviewer"],
     "task_sources": ["file", "github"],
     "execution_paths": ["development_handoff", "governed_ai_execution"],
     "strict_triggers": [
@@ -67,11 +68,11 @@
     ]
   },
   "rollback_waiver": {
-    "allowed_modes": ["Lite"],
+    "allowed_modes": ["Lite", "Standard"],
     "allowed_change_types": ["content-only", "documentation-only", "config-only"]
   },
   "test_waiver": {
-    "allowed_modes": ["Standard"],
+    "allowed_modes": ["Lite", "Standard"],
     "allowed_change_types": ["content-only", "documentation-only", "config-only"]
   },
   "table_schemas": {

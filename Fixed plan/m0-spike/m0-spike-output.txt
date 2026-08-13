@@ -1,0 +1,156 @@
+Loaded m0-policy.axiom.yml: 25 rules, 56 Z3 constraints
+
+--- config facts read from pmo-config/policy.json (utf-8-sig) ---
+approval_checkpoints: {"Design Ready": {"exempt_modes": ["Lite"], "gates": ["Design", "Handoff", "Release"]}, "Release Approved": {"exempt_modes": [], "gates": ["Release"]}, "Scope Approved": {"exempt_modes": [], "gates": ["Scope", "Design", "Handoff", "Release"]}}
+approval_roles: {"Design Ready": ["Product Owner", "Project Manager", "Tech Lead", "Solution Architect"], "QA Approved": ["QA Lead"], "Release Approved": ["Product Owner", "Release Manager"], "Scope Approved": ["Product Owner", "Project Owner"], "Security Approved": ["Security Reviewer", "Tech Lead"]}
+test_waiver: {"allowed_change_types": ["content-only", "documentation-only", "config-only"], "allowed_modes": ["Standard"]}
+rollback_waiver: {"allowed_change_types": ["content-only", "documentation-only", "config-only"], "allowed_modes": ["Lite"]}
+
+=== A. Consistency of current config facts (expect SAT) ===
+[A1 legit Lite release (rollback waiver)] SAT
+[A2 legit Standard release (test waiver)] SAT
+[A3 legit Strict release (strict trigger)] SAT
+
+=== B. Negative controls — deliberately contradictory (expect UNSAT) ===
+[B1 Release without Release Approved] UNSAT
+    violated: scope_approval_required_at_release_gate — Release gate requires Scope Approved in every mode
+    violated: design_approval_required_at_design_gate — Design gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: design_approval_required_at_handoff_gate — Handoff gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: design_approval_required_at_release_gate — Release gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: release_approval_required_at_release_gate — Release gate requires Release Approved in every mode
+    violated: lite_release_requires_delivery — Lite Release requires DELIVERY.md
+    violated: standard_release_requires_delivery — Standard Release requires DELIVERY.md
+    violated: standard_release_requires_release_artifact — Standard Release requires RELEASE.md
+    violated: standard_release_requires_design — Standard Release requires DESIGN/
+    violated: strict_release_requires_delivery — Strict Release requires DELIVERY.md
+    violated: strict_release_requires_release_artifact — Strict Release requires RELEASE.md
+    violated: strict_release_requires_design — Strict Release requires DESIGN/
+    violated: strict_release_requires_raid — Strict Release requires RAID-log.md
+    violated: strict_release_requires_decision_log — Strict Release requires decision-log.md
+    contradicted_claims=[1, 4]
+[B2 Release without Scope Approved (Scope has NO Lite exemption)] UNSAT
+    violated: scope_approval_required_at_release_gate — Release gate requires Scope Approved in every mode
+    violated: design_approval_required_at_design_gate — Design gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: design_approval_required_at_handoff_gate — Handoff gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: design_approval_required_at_release_gate — Release gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: release_approval_required_at_release_gate — Release gate requires Release Approved in every mode
+    violated: lite_release_requires_delivery — Lite Release requires DELIVERY.md
+    violated: standard_release_requires_delivery — Standard Release requires DELIVERY.md
+    violated: standard_release_requires_release_artifact — Standard Release requires RELEASE.md
+    violated: standard_release_requires_design — Standard Release requires DESIGN/
+    violated: strict_release_requires_delivery — Strict Release requires DELIVERY.md
+    violated: strict_release_requires_release_artifact — Strict Release requires RELEASE.md
+    violated: strict_release_requires_design — Strict Release requires DESIGN/
+    violated: strict_release_requires_raid — Strict Release requires RAID-log.md
+    violated: strict_release_requires_decision_log — Strict Release requires decision-log.md
+    contradicted_claims=[1, 2]
+[B3 Design gate without Design Ready (Standard)] UNSAT
+    violated: design_approval_required_at_design_gate — Design gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: design_approval_required_at_handoff_gate — Handoff gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: design_approval_required_at_release_gate — Release gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: lite_release_requires_delivery — Lite Release requires DELIVERY.md
+    violated: standard_release_requires_delivery — Standard Release requires DELIVERY.md
+    violated: standard_release_requires_release_artifact — Standard Release requires RELEASE.md
+    violated: standard_release_requires_design — Standard Release requires DESIGN/
+    violated: strict_release_requires_delivery — Strict Release requires DELIVERY.md
+    violated: strict_release_requires_release_artifact — Strict Release requires RELEASE.md
+    violated: strict_release_requires_design — Strict Release requires DESIGN/
+    violated: strict_release_requires_raid — Strict Release requires RAID-log.md
+    violated: strict_release_requires_decision_log — Strict Release requires decision-log.md
+    violated: scope_approval_required_at_design_gate — Design gate requires Scope Approved in every mode
+    contradicted_claims=[0, 1, 3]
+[B4 test_waiver granted in Lite (waiver-mode mismatch)] UNSAT
+    violated: design_approval_required_at_design_gate — Design gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: design_approval_required_at_handoff_gate — Handoff gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: design_approval_required_at_release_gate — Release gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: lite_release_requires_delivery — Lite Release requires DELIVERY.md
+    violated: standard_release_requires_delivery — Standard Release requires DELIVERY.md
+    violated: standard_release_requires_release_artifact — Standard Release requires RELEASE.md
+    violated: standard_release_requires_design — Standard Release requires DESIGN/
+    violated: strict_release_requires_delivery — Strict Release requires DELIVERY.md
+    violated: strict_release_requires_release_artifact — Strict Release requires RELEASE.md
+    violated: strict_release_requires_design — Strict Release requires DESIGN/
+    violated: strict_release_requires_raid — Strict Release requires RAID-log.md
+    violated: strict_release_requires_decision_log — Strict Release requires decision-log.md
+    violated: test_waiver_only_in_standard — test_waiver is only allowed in Standard mode
+    contradicted_claims=[0, 4]
+[B5 rollback_waiver granted in Strict] UNSAT
+    violated: design_approval_required_at_design_gate — Design gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: design_approval_required_at_handoff_gate — Handoff gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: design_approval_required_at_release_gate — Release gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: lite_release_requires_delivery — Lite Release requires DELIVERY.md
+    violated: standard_release_requires_delivery — Standard Release requires DELIVERY.md
+    violated: standard_release_requires_release_artifact — Standard Release requires RELEASE.md
+    violated: standard_release_requires_design — Standard Release requires DESIGN/
+    violated: strict_release_requires_delivery — Strict Release requires DELIVERY.md
+    violated: strict_release_requires_release_artifact — Strict Release requires RELEASE.md
+    violated: strict_release_requires_design — Strict Release requires DESIGN/
+    violated: strict_release_requires_raid — Strict Release requires RAID-log.md
+    violated: strict_release_requires_decision_log — Strict Release requires decision-log.md
+    violated: rollback_waiver_only_in_lite — rollback_waiver is only allowed in Lite mode
+    contradicted_claims=[0, 5]
+[B6 strict trigger in Lite] UNSAT
+    violated: design_approval_required_at_design_gate — Design gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: design_approval_required_at_handoff_gate — Handoff gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: design_approval_required_at_release_gate — Release gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: lite_release_requires_delivery — Lite Release requires DELIVERY.md
+    violated: standard_release_requires_delivery — Standard Release requires DELIVERY.md
+    violated: standard_release_requires_release_artifact — Standard Release requires RELEASE.md
+    violated: standard_release_requires_design — Standard Release requires DESIGN/
+    violated: strict_release_requires_delivery — Strict Release requires DELIVERY.md
+    violated: strict_release_requires_release_artifact — Strict Release requires RELEASE.md
+    violated: strict_release_requires_design — Strict Release requires DESIGN/
+    violated: strict_release_requires_raid — Strict Release requires RAID-log.md
+    violated: strict_release_requires_decision_log — Strict Release requires decision-log.md
+    violated: strict_trigger_forces_strict_mode — a strict trigger forces mode=Strict
+    contradicted_claims=[0, 4]
+[B7 Standard Release with RELEASE.md explicitly missing] UNSAT
+    violated: design_approval_required_at_design_gate — Design gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: design_approval_required_at_handoff_gate — Handoff gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: design_approval_required_at_release_gate — Release gate requires Design Ready in Standard/Strict (Lite exempt)
+    violated: lite_release_requires_delivery — Lite Release requires DELIVERY.md
+    violated: standard_release_requires_delivery — Standard Release requires DELIVERY.md
+    violated: standard_release_requires_release_artifact — Standard Release requires RELEASE.md
+    violated: standard_release_requires_design — Standard Release requires DESIGN/
+    violated: strict_release_requires_delivery — Strict Release requires DELIVERY.md
+    violated: strict_release_requires_release_artifact — Strict Release requires RELEASE.md
+    violated: strict_release_requires_design — Strict Release requires DESIGN/
+    violated: strict_release_requires_raid — Strict Release requires RAID-log.md
+    violated: strict_release_requires_decision_log — Strict Release requires decision-log.md
+    violated: scope_approval_required_at_release_gate — Release gate requires Scope Approved in every mode
+    violated: release_approval_required_at_release_gate — Release gate requires Release Approved in every mode
+    contradicted_claims=[0, 1, 5]
+
+=== C. Role-matrix expressiveness probe ===
+[C1 scope approver role 'Project Owner' (orphan string, not in closed set)] SAT
+C2 whitelist attempt: an allowed-role whitelist for the scope gate cannot be expressed —
+    negation needs the COMPLEMENT of the whitelist enumerated (unbounded string domain),
+    exclusion forbids two values at once (wrong semantics),
+    dependency require pins exactly ONE value (cannot say 'one of').
+    => role-matrix membership is outside the expressiveness of the 9 rule types.
+
+=== D. Reachability enumeration over Release scenarios ===
+scenarios checked: 160   SAT (policy-permitted): 6   UNSAT (policy-blocked): 154
+SAT scenarios that reach Release with a required approval missing: 0
+
+--- all SAT scenarios (mode, scope_ap, design_ap, release_ap, test_w, rollback_w, strict) ---
+    ('Lite', 'approved', None, 'approved', False, False, False)
+    ('Lite', 'approved', None, 'approved', False, True, False)
+    ('Standard', 'approved', 'approved', 'approved', False, False, False)
+    ('Standard', 'approved', 'approved', 'approved', True, False, False)
+    ('Strict', 'approved', 'approved', 'approved', False, False, False)
+    ('Strict', 'approved', 'approved', 'approved', False, False, True)
+
+--- UNSAT scenarios grouped by blocking reason ---
+   release approval missing: 80
+   scope approval missing: 40
+   design approval missing (non-Lite): 16
+   test_waiver outside Standard: 8
+   rollback_waiver outside Lite: 6
+   strict trigger outside Strict: 4
+
+--- summary ---
+Q1: contradictions surfaced by Z3 that the 114 rules miss: NONE
+Q2: reachability expressible through verify_structured: NO — verify_structured is assumption-based: it checks one ground scenario per call. The combination space must be enumerated by the caller, and each scenario check restates what the rules already say.
+
+M0 recommendation: FAIL — the encoding restates what the config already declares and what the 114 rules already enforce; the two §4.1 findings are missing invariants (not contradictions) and are not expressible in the pinned engine's rule types.

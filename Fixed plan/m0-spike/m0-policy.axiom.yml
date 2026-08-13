@@ -1,0 +1,421 @@
+# =============================================================================
+# M0 SPIKE — throwaway, hand-written encoding (NOT production code).
+# Sources (read on 2026-08-13):
+#   pmo-config/policy.json          -> approval_checkpoints, exempt_modes,
+#                                      waivers, enums
+#   pmo-config/artifact-policy.json -> artifact_matrix
+#
+# Purpose: feed this to axiomguard==0.7.2 verify_structured() and answer the
+# M0 question — does any contradiction surface that the 114 existing rules
+# do not already catch? And can the §4.1 reachability question be expressed?
+#
+# Deliberately NOT encoded as rules (they are the findings under test, not
+# config to restate): the "Project Owner" orphan role and the waiver-mode
+# asymmetry. Those are asserted as claims / probed in the spike script.
+# =============================================================================
+
+axiomguard: "0.3"
+domain: axiom_pmo_policy_internal_consistency
+
+entities:
+  - name: project
+    aliases: []
+
+relations:
+  - name: mode
+    category: contingent
+  - name: gate
+    category: contingent
+  - name: scope_approval
+    category: contingent
+  - name: design_approval
+    category: contingent
+  - name: release_approval
+    category: contingent
+  - name: test_waiver
+    category: contingent
+  - name: rollback_waiver
+    category: contingent
+  - name: strict_trigger
+    category: contingent
+  - name: artifact_delivery
+    category: contingent
+  - name: artifact_release
+    category: contingent
+  - name: artifact_design
+    category: contingent
+  - name: artifact_raid
+    category: contingent
+  - name: artifact_decision_log
+    category: contingent
+  - name: scope_role
+    category: contingent
+
+rules:
+  # -------------------------------------------------------------------------
+  # Closed enums (policy.json enums.modes / enums.gates) — exclusion = at
+  # most one value per entity per relation.
+  # -------------------------------------------------------------------------
+  - name: mode_is_exclusive
+    type: exclusion
+    entity: project
+    relation: mode
+    values: [Lite, Standard, Strict]
+    severity: error
+    message: "project.mode must be exactly one of Lite/Standard/Strict"
+
+  - name: gate_is_exclusive
+    type: exclusion
+    entity: project
+    relation: gate
+    values: [Draft, Scope, Design, Handoff, Release]
+    severity: error
+    message: "project.gate must be exactly one of Draft/Scope/Design/Handoff/Release"
+
+  - name: scope_approval_state_exclusive
+    type: exclusion
+    entity: project
+    relation: scope_approval
+    values: [approved, missing]
+    severity: error
+    message: "scope_approval must be exactly one of approved/missing"
+
+  - name: design_approval_state_exclusive
+    type: exclusion
+    entity: project
+    relation: design_approval
+    values: [approved, missing]
+    severity: error
+    message: "design_approval must be exactly one of approved/missing"
+
+  - name: release_approval_state_exclusive
+    type: exclusion
+    entity: project
+    relation: release_approval
+    values: [approved, missing]
+    severity: error
+    message: "release_approval must be exactly one of approved/missing"
+
+  # -------------------------------------------------------------------------
+  # approval_checkpoints.Scope Approved: gates [Scope, Design, Handoff,
+  # Release], exempt_modes [] -> required in EVERY mode at those gates.
+  # -------------------------------------------------------------------------
+  - name: scope_approval_required_at_scope_gate
+    type: dependency
+    when:
+      entity: project
+      relation: gate
+      value: Scope
+    then:
+      require:
+        relation: scope_approval
+        value: approved
+    severity: error
+    message: "Scope gate requires Scope Approved in every mode"
+
+  - name: scope_approval_required_at_design_gate
+    type: dependency
+    when:
+      entity: project
+      relation: gate
+      value: Design
+    then:
+      require:
+        relation: scope_approval
+        value: approved
+    severity: error
+    message: "Design gate requires Scope Approved in every mode"
+
+  - name: scope_approval_required_at_handoff_gate
+    type: dependency
+    when:
+      entity: project
+      relation: gate
+      value: Handoff
+    then:
+      require:
+        relation: scope_approval
+        value: approved
+    severity: error
+    message: "Handoff gate requires Scope Approved in every mode"
+
+  - name: scope_approval_required_at_release_gate
+    type: dependency
+    when:
+      entity: project
+      relation: gate
+      value: Release
+    then:
+      require:
+        relation: scope_approval
+        value: approved
+    severity: error
+    message: "Release gate requires Scope Approved in every mode"
+
+  # -------------------------------------------------------------------------
+  # approval_checkpoints.Design Ready: gates [Design, Handoff, Release],
+  # exempt_modes [Lite] -> required in Standard/Strict only.
+  # -------------------------------------------------------------------------
+  - name: design_approval_required_at_design_gate
+    type: composition
+    all_of:
+      - entity: project
+        relation: gate
+        value: Design
+    none_of:
+      - entity: project
+        relation: mode
+        value: Lite
+    then:
+      require:
+        relation: design_approval
+        value: approved
+    severity: error
+    message: "Design gate requires Design Ready in Standard/Strict (Lite exempt)"
+
+  - name: design_approval_required_at_handoff_gate
+    type: composition
+    all_of:
+      - entity: project
+        relation: gate
+        value: Handoff
+    none_of:
+      - entity: project
+        relation: mode
+        value: Lite
+    then:
+      require:
+        relation: design_approval
+        value: approved
+    severity: error
+    message: "Handoff gate requires Design Ready in Standard/Strict (Lite exempt)"
+
+  - name: design_approval_required_at_release_gate
+    type: composition
+    all_of:
+      - entity: project
+        relation: gate
+        value: Release
+    none_of:
+      - entity: project
+        relation: mode
+        value: Lite
+    then:
+      require:
+        relation: design_approval
+        value: approved
+    severity: error
+    message: "Release gate requires Design Ready in Standard/Strict (Lite exempt)"
+
+  # -------------------------------------------------------------------------
+  # approval_checkpoints.Release Approved: gates [Release], exempt_modes []
+  # -> required in EVERY mode at Release.
+  # -------------------------------------------------------------------------
+  - name: release_approval_required_at_release_gate
+    type: dependency
+    when:
+      entity: project
+      relation: gate
+      value: Release
+    then:
+      require:
+        relation: release_approval
+        value: approved
+    severity: error
+    message: "Release gate requires Release Approved in every mode"
+
+  # -------------------------------------------------------------------------
+  # Waivers (policy.json test_waiver / rollback_waiver allowed_modes).
+  # -------------------------------------------------------------------------
+  - name: test_waiver_only_in_standard
+    type: dependency
+    when:
+      entity: project
+      relation: test_waiver
+      value: granted
+    then:
+      require:
+        relation: mode
+        value: Standard
+    severity: error
+    message: "test_waiver is only allowed in Standard mode"
+
+  - name: rollback_waiver_only_in_lite
+    type: dependency
+    when:
+      entity: project
+      relation: rollback_waiver
+      value: granted
+    then:
+      require:
+        relation: mode
+        value: Lite
+    severity: error
+    message: "rollback_waiver is only allowed in Lite mode"
+
+  # -------------------------------------------------------------------------
+  # STRICT-001 semantics: a strict trigger forces Strict mode.
+  # -------------------------------------------------------------------------
+  - name: strict_trigger_forces_strict_mode
+    type: dependency
+    when:
+      entity: project
+      relation: strict_trigger
+      value: present
+    then:
+      require:
+        relation: mode
+        value: Strict
+    severity: error
+    message: "a strict trigger forces mode=Strict"
+
+  # -------------------------------------------------------------------------
+  # artifact-policy.json artifact_matrix, Release gate only (the gate that
+  # matters for the reachability question).
+  #   Lite    Release: [DELIVERY.md]
+  #   Standard Release: [DELIVERY.md, RELEASE.md, DESIGN]
+  #   Strict  Release: [DELIVERY.md, RELEASE.md, DESIGN, RAID-log.md, decision-log.md]
+  # -------------------------------------------------------------------------
+  - name: lite_release_requires_delivery
+    type: composition
+    all_of:
+      - entity: project
+        relation: gate
+        value: Release
+      - entity: project
+        relation: mode
+        value: Lite
+    then:
+      require:
+        relation: artifact_delivery
+        value: present
+    severity: error
+    message: "Lite Release requires DELIVERY.md"
+
+  - name: standard_release_requires_delivery
+    type: composition
+    all_of:
+      - entity: project
+        relation: gate
+        value: Release
+      - entity: project
+        relation: mode
+        value: Standard
+    then:
+      require:
+        relation: artifact_delivery
+        value: present
+    severity: error
+    message: "Standard Release requires DELIVERY.md"
+
+  - name: standard_release_requires_release_artifact
+    type: composition
+    all_of:
+      - entity: project
+        relation: gate
+        value: Release
+      - entity: project
+        relation: mode
+        value: Standard
+    then:
+      require:
+        relation: artifact_release
+        value: present
+    severity: error
+    message: "Standard Release requires RELEASE.md"
+
+  - name: standard_release_requires_design
+    type: composition
+    all_of:
+      - entity: project
+        relation: gate
+        value: Release
+      - entity: project
+        relation: mode
+        value: Standard
+    then:
+      require:
+        relation: artifact_design
+        value: present
+    severity: error
+    message: "Standard Release requires DESIGN/"
+
+  - name: strict_release_requires_delivery
+    type: composition
+    all_of:
+      - entity: project
+        relation: gate
+        value: Release
+      - entity: project
+        relation: mode
+        value: Strict
+    then:
+      require:
+        relation: artifact_delivery
+        value: present
+    severity: error
+    message: "Strict Release requires DELIVERY.md"
+
+  - name: strict_release_requires_release_artifact
+    type: composition
+    all_of:
+      - entity: project
+        relation: gate
+        value: Release
+      - entity: project
+        relation: mode
+        value: Strict
+    then:
+      require:
+        relation: artifact_release
+        value: present
+    severity: error
+    message: "Strict Release requires RELEASE.md"
+
+  - name: strict_release_requires_design
+    type: composition
+    all_of:
+      - entity: project
+        relation: gate
+        value: Release
+      - entity: project
+        relation: mode
+        value: Strict
+    then:
+      require:
+        relation: artifact_design
+        value: present
+    severity: error
+    message: "Strict Release requires DESIGN/"
+
+  - name: strict_release_requires_raid
+    type: composition
+    all_of:
+      - entity: project
+        relation: gate
+        value: Release
+      - entity: project
+        relation: mode
+        value: Strict
+    then:
+      require:
+        relation: artifact_raid
+        value: present
+    severity: error
+    message: "Strict Release requires RAID-log.md"
+
+  - name: strict_release_requires_decision_log
+    type: composition
+    all_of:
+      - entity: project
+        relation: gate
+        value: Release
+      - entity: project
+        relation: mode
+        value: Strict
+    then:
+      require:
+        relation: artifact_decision_log
+        value: present
+    severity: error
+    message: "Strict Release requires decision-log.md"
