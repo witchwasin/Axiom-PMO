@@ -60,6 +60,34 @@
     "other"
   ],
   "finding_statuses": ["open", "disputed", "resolved", "false_positive", "accepted_risk", "deferred"],
+  "output_contract": {
+    "_note": "M3 (Semantic Audit Contract), enforced by AREV-007. Every semantic finding of an adversarial review must say which requirement it speaks about, what it claims about the implementation and its tests, and which named human is accountable for it. requirement_ref is mandatory and must resolve against PROJECT.md In Scope (REQ-###), parsed the same way RTM does. implementation_claim/test_claim are conditional: a finding with no natural claim (e.g. a build-order or acceptance-seed-reachability observation) must state the explicit marker below rather than leave the field blank, so 'not applicable' is distinguishable from 'forgot to fill in'. owner is mandatory and never conditional: a group name or placeholder is not a person accountable for a finding, and the same owner_policy that governs handoff owners (pmo-config/handoff-policy.json owner_policy) applies here. This is a shape check only -- it never judges whether the review's content is thorough, correct, or intelligent, and it never reads recommendation.",
+    "n_a_marker": "N/A",
+    "fields": {
+      "requirement_ref": {
+        "required": true,
+        "resolves_against": "PROJECT.md In Scope (REQ-###) ids"
+      },
+      "implementation_claim": {
+        "required": true,
+        "conditional": true,
+        "n_a_allowed": true,
+        "description": "One sentence stating what this finding claims about the implementation, or the N/A marker."
+      },
+      "test_claim": {
+        "required": true,
+        "conditional": true,
+        "n_a_allowed": true,
+        "description": "One sentence stating what this finding claims about the tests, or the N/A marker."
+      },
+      "owner": {
+        "required": true,
+        "conditional": false,
+        "n_a_allowed": false,
+        "description": "The named human accountable for this finding. Must be a named person, never a generic group token (Dev Team, Engineering) or a placeholder -- checked with the same owner_policy (pmo-config/handoff-policy.json owner_policy.generic_tokens) that governs handoff owners."
+      }
+    }
+  },
   "closure_policy": {
     "$comment": "Authority attaches to ROLE (reviewer / executor / human), never to KIND (ai / human) -- an AI serving as a human-attested reviewer's assistant still cannot self-close, and a human executor is still an executor. Enforced by AREV-006, not by prompt.",
     "open_statuses": ["open"],

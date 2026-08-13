@@ -380,6 +380,12 @@
       "suggestion": "Cite a real, resolvable DEC-### that predates the commit range under verification, or record the decision first.",
       "documentation": "docs/rules/AREV-006.md"
     },
+    "AREV-007": {
+      "severity": "fail",
+      "description": "A finding violates the semantic output contract: it is missing requirement_ref, cites a requirement_ref that does not resolve against PROJECT.md In Scope, or is missing implementation_claim/test_claim without the explicit N/A marker declared in pmo-config/adversarial-review-policy.json output_contract.n_a_marker.",
+      "suggestion": "Fill requirement_ref with a REQ-### declared in PROJECT.md In Scope, and give every finding an implementation_claim and test_claim -- or the explicit N/A marker when the finding has no natural claim to make. A blank claim field is 'forgot to fill in', not 'not applicable'.",
+      "documentation": "docs/rules/AREV-007.md"
+    },
     "DESIGN-001": {
       "severity": "fail",
       "description": "The design system's markdown contract and its visual sheet declare different token values.",

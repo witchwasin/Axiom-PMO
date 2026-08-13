@@ -63,7 +63,19 @@ function New-ReviewFixture {
   New-Item -ItemType Directory -Path $dir -Force | Out-Null
   New-Item -ItemType Directory -Path (Join-Path $dir "src") -Force | Out-Null
 
-  Set-Content -LiteralPath (Join-Path $dir "PROJECT.md") -Value "# P99-AREV`n`n> Default mode: $Mode`n" -NoNewline
+  # The In Scope table exists because AREV-007 resolves each finding's
+  # requirement_ref against PROJECT.md In Scope (same source RTM-002 reads).
+  # REQ-001 is the one id every finding in this suite that cites a
+  # requirement is allowed to cite.
+  $projectMd = @(
+    "# P99-AREV", "",
+    "> Default mode: $Mode", "",
+    "### In Scope", "",
+    "| ID | Requirement | Source Ref | Evidence Status |",
+    "|---|---|---|---|",
+    "| REQ-001 | Checkout flow | MOM-001 | verified |"
+  ) -join "`n"
+  Set-Content -LiteralPath (Join-Path $dir "PROJECT.md") -Value $projectMd -NoNewline
   Set-Content -LiteralPath (Join-Path $dir "SCOPE.json") -Value '{"schema_version":"1.0","project":"P99-AREV","implementation_scope":{"include":["src/**"],"exclude":[]}}' -NoNewline
   $delivery = @(
     "# DELIVERY - P99-AREV", "",
@@ -298,7 +310,7 @@ Write-Host ""
   try {
     Invoke-Export -Dir $dir
     $id = New-BaseResult -Dir $dir
-    New-Review -Dir $dir -Identity $id -Findings @([ordered]@{ finding_id = "AF-001"; category = "not-a-real-category"; severity = "major"; status = "open"; description = ""; suggestion = "" })
+    New-Review -Dir $dir -Identity $id -Findings @([ordered]@{ finding_id = "AF-001"; category = "not-a-real-category"; severity = "major"; status = "open"; description = ""; suggestion = ""; requirement_ref = "REQ-001"; implementation_claim = "x"; test_claim = "x"; owner = "Alice Chen" })
     $r = Invoke-Verify -Dir $dir
     Assert-True "malformed finding: AREV-004 raised" ((Get-Rules $r.Json) -contains "AREV-004")
   } finally { Remove-ReviewFixture $dir }
@@ -310,7 +322,7 @@ Write-Host ""
   try {
     Invoke-Export -Dir $dir
     $id = New-BaseResult -Dir $dir -Overrides @{ review_finding_dispositions = @([ordered]@{ finding_id = "AF-001"; status = "accepted_risk" }) }
-    New-Review -Dir $dir -Identity $id -Findings @([ordered]@{ finding_id = "AF-001"; category = "other"; severity = "minor"; status = "open"; description = "d"; suggestion = "s" })
+    New-Review -Dir $dir -Identity $id -Findings @([ordered]@{ finding_id = "AF-001"; category = "other"; severity = "minor"; status = "open"; description = "d"; suggestion = "s"; requirement_ref = "REQ-001"; implementation_claim = "x"; test_claim = "x"; owner = "Alice Chen" })
     $r = Invoke-Verify -Dir $dir
     Assert-True "executor self-closure attempt: AREV-005 raised" ((Get-Rules $r.Json) -contains "AREV-005")
     Assert-True "executor self-closure attempt: names EXECUTION-RESULT.json as the artifact" `
@@ -324,7 +336,7 @@ Write-Host ""
   try {
     Invoke-Export -Dir $dir
     $id = New-BaseResult -Dir $dir
-    New-Review -Dir $dir -Identity $id -Findings @([ordered]@{ finding_id = "AF-001"; category = "security"; severity = "critical"; status = "resolved"; description = "d"; suggestion = "s" })
+    New-Review -Dir $dir -Identity $id -Findings @([ordered]@{ finding_id = "AF-001"; category = "security"; severity = "critical"; status = "resolved"; description = "d"; suggestion = "s"; requirement_ref = "REQ-001"; implementation_claim = "x"; test_claim = "x"; owner = "Alice Chen" })
     $r = Invoke-Verify -Dir $dir
     Assert-True "AI closes human-only category: AREV-005 raised" ((Get-Rules $r.Json) -contains "AREV-005")
   } finally { Remove-ReviewFixture $dir }
@@ -336,7 +348,7 @@ Write-Host ""
   try {
     Invoke-Export -Dir $dir
     $id = New-BaseResult -Dir $dir
-    New-Review -Dir $dir -Identity $id -Findings @([ordered]@{ finding_id = "AF-001"; category = "other"; severity = "minor"; status = "disputed"; description = "d"; suggestion = "s" })
+    New-Review -Dir $dir -Identity $id -Findings @([ordered]@{ finding_id = "AF-001"; category = "other"; severity = "minor"; status = "disputed"; description = "d"; suggestion = "s"; requirement_ref = "REQ-001"; implementation_claim = "x"; test_claim = "x"; owner = "Alice Chen" })
     $r = Invoke-Verify -Dir $dir
     # $null -ne $r.Json is the anti-vacuous anchor: Get-Rules returns @() when
     # the verify run produced nothing parseable, and @() -notcontains anything
@@ -367,7 +379,7 @@ Write-Host ""
     $log = (Get-Content -LiteralPath $logPath -Raw).TrimEnd("`n") + "`n| 2026-07-31 | DEC-300 | Accept the risk for AF-001 | accept | accept | axiom-authority: type=review-finding-disposition; work_item=AF-001; contract=$($id.Digest) | none | risk accepted |"
     Set-Content -LiteralPath $logPath -Value $log -NoNewline
     New-Review -Dir $dir -Identity $id -Overrides @{ reviewer_kind = "ai" } `
-      -Findings @([ordered]@{ finding_id = "AF-001"; category = "other"; severity = "minor"; status = "accepted_risk"; description = "d"; suggestion = "s"; decision_ref = "DEC-300" })
+      -Findings @([ordered]@{ finding_id = "AF-001"; category = "other"; severity = "minor"; status = "accepted_risk"; description = "d"; suggestion = "s"; decision_ref = "DEC-300"; requirement_ref = "REQ-001"; implementation_claim = "x"; test_claim = "x"; owner = "Alice Chen" })
     $r = Invoke-Verify -Dir $dir
     Assert-True "ai reviewer setting accepted_risk on a non-human-only-category finding: AREV-005 raised" `
       ((Get-Rules $r.Json) -contains "AREV-005")
@@ -380,7 +392,7 @@ Write-Host ""
   try {
     Invoke-Export -Dir $dir
     $id = New-BaseResult -Dir $dir
-    New-Review -Dir $dir -Identity $id -Findings @([ordered]@{ finding_id = "AF-001"; category = "other"; severity = "minor"; status = "accepted_risk"; description = "d"; suggestion = "s"; decision_ref = "DEC-999" })
+    New-Review -Dir $dir -Identity $id -Findings @([ordered]@{ finding_id = "AF-001"; category = "other"; severity = "minor"; status = "accepted_risk"; description = "d"; suggestion = "s"; decision_ref = "DEC-999"; requirement_ref = "REQ-001"; implementation_claim = "x"; test_claim = "x"; owner = "Alice Chen" })
     $r = Invoke-Verify -Dir $dir
     Assert-True "unresolvable decision_ref: AREV-006 raised" ((Get-Rules $r.Json) -contains "AREV-006")
   } finally { Remove-ReviewFixture $dir }
@@ -417,12 +429,150 @@ Write-Host ""
     }
     Set-Content -LiteralPath (Join-Path $dir ".execution/D-001/EXECUTION-RESULT.json") -Value ($doc | ConvertTo-Json -Depth 12) -NoNewline
     $identity = [pscustomobject]@{ Digest = $digest; Head = $head; BaseSha = [string]$contract.base_sha }
-    New-Review -Dir $dir -Identity $identity -Findings @([ordered]@{ finding_id = "AF-001"; category = "other"; severity = "minor"; status = "accepted_risk"; description = "d"; suggestion = "s"; decision_ref = "DEC-200" })
+    New-Review -Dir $dir -Identity $identity -Findings @([ordered]@{ finding_id = "AF-001"; category = "other"; severity = "minor"; status = "accepted_risk"; description = "d"; suggestion = "s"; decision_ref = "DEC-200"; requirement_ref = "REQ-001"; implementation_claim = "x"; test_claim = "x"; owner = "Alice Chen" })
 
     $r = Invoke-Verify -Dir $dir
     Assert-True "decision added within verified range: AREV-006 raised even though DEC-200 resolves" ((Get-Rules $r.Json) -contains "AREV-006")
     Assert-True "decision added within verified range: reason names decision-log.md" `
       ((@($r.Json.results | Where-Object { $_.rule_id -eq "AREV-006" -and $_.artifact -eq "decision-log.md" }).Count) -gt 0)
+  } finally { Remove-ReviewFixture $dir }
+}.Invoke()
+
+# ---- AREV-007: semantic output contract (M3) -----------------------------
+#
+# The M3 positive control, named explicitly rather than incidental: a review
+# whose recommendation.verdict is request_changes must still pass every AREV
+# check unchanged and leave the execution verdict untouched -- an AI's
+# semantic verdict is a recommendation to a human, never an input to a
+# validator's pass/fail (pmo-config/adversarial-review-policy.json
+# core_principle, and the same closure-authority rule HANDOFF-010 enforces).
+{
+  $dir = New-ReviewFixture -Mode "Standard"
+  try {
+    Invoke-Export -Dir $dir
+    $id = New-BaseResult -Dir $dir
+    New-Review -Dir $dir -Identity $id -Overrides @{ recommendation = [ordered]@{ verdict = "request_changes"; notes = "the review disagrees with this execution" } } `
+      -Findings @([ordered]@{ finding_id = "AF-001"; category = "acceptance-criteria-gap"; severity = "major"; status = "open"; description = "d"; suggestion = "s"; requirement_ref = "REQ-001"; implementation_claim = "the implementation misses the acceptance case"; test_claim = "no test covers the acceptance case"; owner = "Alice Chen" })
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "request_changes verdict, contract-valid finding: AREV-007 not raised" `
+      (($null -ne $r.Json) -and ((Get-Rules $r.Json) -notcontains "AREV-007"))
+    Assert-True "request_changes verdict, contract-valid finding: execution verdict unaffected (still pass)" `
+      ($r.Json.execution_verification.verdict -eq "pass")
+  } finally { Remove-ReviewFixture $dir }
+}.Invoke()
+
+# ---- Case: finding missing requirement_ref ---------------------------------
+{
+  $dir = New-ReviewFixture -Mode "Standard"
+  try {
+    Invoke-Export -Dir $dir
+    $id = New-BaseResult -Dir $dir
+    New-Review -Dir $dir -Identity $id -Findings @([ordered]@{ finding_id = "AF-001"; category = "acceptance-criteria-gap"; severity = "major"; status = "open"; description = "d"; suggestion = "s"; implementation_claim = "x"; test_claim = "x"; owner = "Alice Chen" })
+    $r = Invoke-Verify -Dir $dir
+    $rows = @($r.Json.results | Where-Object { $_.rule_id -eq "AREV-007" })
+    Assert-True "missing requirement_ref: AREV-007 raised" ((Get-Rules $r.Json) -contains "AREV-007")
+    Assert-True "missing requirement_ref: reason names the finding id" ($rows[0].item_id -eq "AF-001")
+    Assert-True "missing requirement_ref: reason names the field" ($rows[0].field -eq "requirement_ref")
+    Assert-True "missing requirement_ref: blocks the verdict on its own" ($r.Json.execution_verification.verdict -ne "pass")
+  } finally { Remove-ReviewFixture $dir }
+}.Invoke()
+
+# ---- Case: requirement_ref does not resolve --------------------------------
+{
+  $dir = New-ReviewFixture -Mode "Standard"
+  try {
+    Invoke-Export -Dir $dir
+    $id = New-BaseResult -Dir $dir
+    New-Review -Dir $dir -Identity $id -Findings @([ordered]@{ finding_id = "AF-001"; category = "acceptance-criteria-gap"; severity = "major"; status = "open"; description = "d"; suggestion = "s"; requirement_ref = "REQ-999"; implementation_claim = "x"; test_claim = "x"; owner = "Alice Chen" })
+    $r = Invoke-Verify -Dir $dir
+    $rows = @($r.Json.results | Where-Object { $_.rule_id -eq "AREV-007" })
+    Assert-True "unresolvable requirement_ref: AREV-007 raised" ((Get-Rules $r.Json) -contains "AREV-007")
+    Assert-True "unresolvable requirement_ref: reason names the bogus id" ($rows[0].message -match "REQ-999")
+  } finally { Remove-ReviewFixture $dir }
+}.Invoke()
+
+# ---- Case: claim fields missing without the N/A marker ---------------------
+{
+  $dir = New-ReviewFixture -Mode "Standard"
+  try {
+    Invoke-Export -Dir $dir
+    $id = New-BaseResult -Dir $dir
+    New-Review -Dir $dir -Identity $id -Findings @([ordered]@{ finding_id = "AF-001"; category = "acceptance-criteria-gap"; severity = "major"; status = "open"; description = "d"; suggestion = "s"; requirement_ref = "REQ-001"; test_claim = "x"; owner = "Alice Chen" })
+    $r = Invoke-Verify -Dir $dir
+    $rows = @($r.Json.results | Where-Object { $_.rule_id -eq "AREV-007" -and $_.field -eq "implementation_claim" })
+    Assert-True "missing implementation_claim without N/A: AREV-007 raised with the field" ($rows.Count -gt 0)
+    Assert-True "missing implementation_claim without N/A: reason names the finding id" ($rows[0].item_id -eq "AF-001")
+  } finally { Remove-ReviewFixture $dir }
+}.Invoke()
+
+{
+  $dir = New-ReviewFixture -Mode "Standard"
+  try {
+    Invoke-Export -Dir $dir
+    $id = New-BaseResult -Dir $dir
+    New-Review -Dir $dir -Identity $id -Findings @([ordered]@{ finding_id = "AF-001"; category = "acceptance-criteria-gap"; severity = "major"; status = "open"; description = "d"; suggestion = "s"; requirement_ref = "REQ-001"; implementation_claim = "x"; owner = "Alice Chen" })
+    $r = Invoke-Verify -Dir $dir
+    $rows = @($r.Json.results | Where-Object { $_.rule_id -eq "AREV-007" -and $_.field -eq "test_claim" })
+    Assert-True "missing test_claim without N/A: AREV-007 raised with the field" ($rows.Count -gt 0)
+    Assert-True "missing test_claim without N/A: reason names the finding id" ($rows[0].item_id -eq "AF-001")
+  } finally { Remove-ReviewFixture $dir }
+}.Invoke()
+
+# ---- Case: the explicit N/A marker is accepted -----------------------------
+{
+  $dir = New-ReviewFixture -Mode "Standard"
+  try {
+    Invoke-Export -Dir $dir
+    $id = New-BaseResult -Dir $dir
+    New-Review -Dir $dir -Identity $id -Findings @([ordered]@{ finding_id = "AF-001"; category = "acceptance-criteria-gap"; severity = "major"; status = "open"; description = "d"; suggestion = "s"; requirement_ref = "REQ-001"; implementation_claim = "N/A"; test_claim = "N/A"; owner = "Alice Chen" })
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "explicit N/A marker on both claims: AREV-007 not raised" `
+      (($null -ne $r.Json) -and ((Get-Rules $r.Json) -notcontains "AREV-007"))
+    Assert-True "explicit N/A marker on both claims: verdict pass" ($r.Json.execution_verification.verdict -eq "pass")
+  } finally { Remove-ReviewFixture $dir }
+}.Invoke()
+
+# ---- Case: finding missing owner -------------------------------------------
+{
+  $dir = New-ReviewFixture -Mode "Standard"
+  try {
+    Invoke-Export -Dir $dir
+    $id = New-BaseResult -Dir $dir
+    New-Review -Dir $dir -Identity $id -Findings @([ordered]@{ finding_id = "AF-001"; category = "acceptance-criteria-gap"; severity = "major"; status = "open"; description = "d"; suggestion = "s"; requirement_ref = "REQ-001"; implementation_claim = "x"; test_claim = "x" })
+    $r = Invoke-Verify -Dir $dir
+    $rows = @($r.Json.results | Where-Object { $_.rule_id -eq "AREV-007" -and $_.field -eq "owner" })
+    Assert-True "missing owner: AREV-007 raised with the field" ($rows.Count -gt 0)
+    Assert-True "missing owner: reason names the finding id" ($rows[0].item_id -eq "AF-001")
+    Assert-True "missing owner: blocks the verdict on its own" ($r.Json.execution_verification.verdict -ne "pass")
+  } finally { Remove-ReviewFixture $dir }
+}.Invoke()
+
+# ---- Case: generic group token as owner ------------------------------------
+{
+  $dir = New-ReviewFixture -Mode "Standard"
+  try {
+    Invoke-Export -Dir $dir
+    $id = New-BaseResult -Dir $dir
+    New-Review -Dir $dir -Identity $id -Findings @([ordered]@{ finding_id = "AF-001"; category = "acceptance-criteria-gap"; severity = "major"; status = "open"; description = "d"; suggestion = "s"; requirement_ref = "REQ-001"; implementation_claim = "x"; test_claim = "x"; owner = "Dev Team" })
+    $r = Invoke-Verify -Dir $dir
+    $rows = @($r.Json.results | Where-Object { $_.rule_id -eq "AREV-007" -and $_.field -eq "owner" })
+    Assert-True "generic group owner: AREV-007 raised with the field" ($rows.Count -gt 0)
+    Assert-True "generic group owner: reason names the token" ($rows[0].message -match "Dev Team")
+    Assert-True "generic group owner: blocks the verdict" ($r.Json.execution_verification.verdict -ne "pass")
+  } finally { Remove-ReviewFixture $dir }
+}.Invoke()
+
+# ---- Case: valid named owner passes ----------------------------------------
+{
+  $dir = New-ReviewFixture -Mode "Standard"
+  try {
+    Invoke-Export -Dir $dir
+    $id = New-BaseResult -Dir $dir
+    New-Review -Dir $dir -Identity $id -Findings @([ordered]@{ finding_id = "AF-001"; category = "acceptance-criteria-gap"; severity = "major"; status = "open"; description = "d"; suggestion = "s"; requirement_ref = "REQ-001"; implementation_claim = "x"; test_claim = "x"; owner = "Alicia Wu" })
+    $r = Invoke-Verify -Dir $dir
+    Assert-True "valid named owner: AREV-007 not raised" `
+      (($null -ne $r.Json) -and ((Get-Rules $r.Json) -notcontains "AREV-007"))
+    Assert-True "valid named owner: verdict pass" ($r.Json.execution_verification.verdict -eq "pass")
   } finally { Remove-ReviewFixture $dir }
 }.Invoke()
 

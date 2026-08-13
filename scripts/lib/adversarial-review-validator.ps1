@@ -14,6 +14,13 @@
 # are all dot-sourced by the same callers that dot-source this file and are
 # used here unchanged.
 
+# M3 (AREV-007) reuses Test-GenericOwner, the same generic-token check the
+# handoff family applies to its owner fields (HANDOFF-003) and APPROVAL-005
+# reuses from it -- the shared helper, not a copy. Dot-sourced here so every
+# caller of this file gets it, exactly how handoff-validator.ps1 itself
+# dot-sources ordinal-sort.ps1.
+. (Join-Path $PSScriptRoot "handoff-validator.ps1")
+
 function Read-AdversarialReviewPolicy {
   param([Parameter(Mandatory = $true)][string]$FrameworkRoot)
 
@@ -285,7 +292,13 @@ function Test-AdversarialReviewEvidence {
     [Parameter(Mandatory = $true)][string]$FrameworkRoot,
     [Parameter(Mandatory = $true)][string]$GitRepoRoot,
     [string[]]$ObservedPaths = @(),
-    [string]$DecisionLogRelPath = $null
+    [string]$DecisionLogRelPath = $null,
+    # M3 (AREV-007): the REQ-### ids declared in PROJECT.md In Scope, parsed
+    # the same way RTM does. Supplied by the caller
+    # (execution-contract-validator.ps1). Empty when PROJECT.md is missing or
+    # has no In Scope table -- a requirement_ref then fails closed rather
+    # than being guessed at.
+    [string[]]$ProjectReqIds = @()
   )
 
   $policy = Read-AdversarialReviewPolicy -FrameworkRoot $FrameworkRoot
@@ -399,6 +412,82 @@ function Test-AdversarialReviewEvidence {
     Add-Result PASS "Every finding carries a valid finding_id, severity, category, status, description, and suggestion." "AREV-004" -Artifact "EXECUTION-REVIEW.json" -ItemId $WorkItemId
   } else {
     Add-Result FAIL ("Finding schema problems: " + ($findingProblems -join "; ")) "AREV-004" -Artifact "EXECUTION-REVIEW.json" -ItemId $WorkItemId -Field "findings"
+  }
+
+  # --- AREV-007: semantic finding contract (M3) -----------------------------
+  #
+  # MasterPlan §6 M3 formalizes the L3 output contract on every semantic
+  # finding of an adversarial review: requirement_ref (which REQ-### this
+  # finding speaks about, resolving against PROJECT.md In Scope), plus -- when
+  # the finding has a claim to make -- implementation_claim and test_claim,
+  # and owner (the named human accountable for the finding). The claims are
+  # conditional by design (a build-order finding has no natural test claim),
+  # so the policy defines an explicit N/A marker
+  # (output_contract.n_a_marker): the field must be non-empty, or equal to
+  # that marker -- "not applicable" is a decision the author states, never an
+  # absence. owner is never conditional: a group name or placeholder is not a
+  # person, and it is checked with the same owner_policy that governs handoff
+  # owners. This checks shape only, never the quality of the review's
+  # judgment (the same line AREV-004/005/006 draw), and it never reads
+  # recommendation: an AI's semantic verdict changes nothing here, exactly as
+  # pmo-config/adversarial-review-policy.json core_principle requires.
+  $outputContract = $policy.output_contract
+  $nAMarker = "N/A"
+  if ($outputContract -and -not [string]::IsNullOrWhiteSpace([string]$outputContract.n_a_marker)) {
+    $nAMarker = [string]$outputContract.n_a_marker
+  }
+  # The owner check reuses handoff-policy.json's owner_policy, the same
+  # source HANDOFF-003/APPROVAL-005 read. Missing config is a hard error, the
+  # same "no silent fallback" rule Read-AdversarialReviewPolicy applies to
+  # the adversarial policy itself.
+  $ownerPolicyPath = Join-Path $FrameworkRoot "pmo-config/handoff-policy.json"
+  if (-not (Test-Path -LiteralPath $ownerPolicyPath -PathType Leaf)) {
+    throw "Missing runtime handoff policy config: $ownerPolicyPath"
+  }
+  $ownerPolicy = (Get-Content -LiteralPath $ownerPolicyPath -Raw | ConvertFrom-Json).owner_policy
+  $contractClean = $true
+  foreach ($finding in @($doc.findings)) {
+    $findingId = [string]$finding.finding_id
+    if ([string]::IsNullOrWhiteSpace($findingId)) { continue } # AREV-004 reports the missing id
+
+    $reqRef = ""
+    if ($finding.PSObject.Properties["requirement_ref"]) { $reqRef = [string]$finding.requirement_ref }
+    if ([string]::IsNullOrWhiteSpace($reqRef)) {
+      $contractClean = $false
+      Add-Result FAIL "Finding $findingId is missing requirement_ref -- every semantic finding must name the REQ-### it speaks about." "AREV-007" -Artifact "EXECUTION-REVIEW.json" -ItemId $findingId -Field "requirement_ref"
+    } elseif (@($ProjectReqIds) -notcontains $reqRef) {
+      $contractClean = $false
+      Add-Result FAIL "Finding $findingId cites requirement_ref '$reqRef', which is not declared in PROJECT.md In Scope." "AREV-007" -Artifact "EXECUTION-REVIEW.json" -ItemId $findingId -Field "requirement_ref"
+    }
+
+    foreach ($claimField in @("implementation_claim", "test_claim")) {
+      $claim = ""
+      if ($finding.PSObject.Properties[$claimField]) { $claim = [string]$finding.PSObject.Properties[$claimField].Value }
+      if ([string]::IsNullOrWhiteSpace($claim)) {
+        $contractClean = $false
+        Add-Result FAIL "Finding $findingId is missing $claimField -- provide the claim, or the explicit N/A marker '$nAMarker' when the finding has no natural claim to make." "AREV-007" -Artifact "EXECUTION-REVIEW.json" -ItemId $findingId -Field $claimField
+      }
+    }
+
+    # owner: the fourth M3 field, and never conditional -- someone must be
+    # accountable for the finding. Blank and "a generic group name" are two
+    # distinct diagnostics, the same missing-vs-invalid split the
+    # requirement_ref check uses, so an author can tell "forgot to fill it
+    # in" from "wrote a team name instead of a person". Test-GenericOwner
+    # already treats blank as generic, so the blank branch is checked first
+    # to keep the two messages distinguishable.
+    $owner = ""
+    if ($finding.PSObject.Properties["owner"]) { $owner = [string]$finding.owner }
+    if ([string]::IsNullOrWhiteSpace($owner)) {
+      $contractClean = $false
+      Add-Result FAIL "Finding $findingId is missing owner -- every semantic finding must name the human accountable for it." "AREV-007" -Artifact "EXECUTION-REVIEW.json" -ItemId $findingId -Field "owner"
+    } elseif (Test-GenericOwner -Value $owner -OwnerPolicy $ownerPolicy) {
+      $contractClean = $false
+      Add-Result FAIL "Finding $findingId owner '$owner' is a generic group or placeholder, not a named person." "AREV-007" -Artifact "EXECUTION-REVIEW.json" -ItemId $findingId -Field "owner"
+    }
+  }
+  if ($contractClean) {
+    Add-Result PASS "Every finding carries a resolvable requirement_ref, an implementation_claim/test_claim (or the explicit N/A marker), and a named owner." "AREV-007" -Artifact "EXECUTION-REVIEW.json" -ItemId $WorkItemId
   }
 
   # --- AREV-005/006: finding lifecycle authority -----------------------------
