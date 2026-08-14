@@ -511,7 +511,10 @@ None.
 
   # LF -> CRLF must not change a text artifact digest.
   $projectMd = Join-Path $active "PROJECT.md"
-  $lfText = (Get-Content -LiteralPath $projectMd -Raw) -replace "`r`n", "`n"
+  # Explicit UTF-8 is load-bearing on Windows PowerShell 5.1: UTF-8 source
+  # without a BOM otherwise decodes through the active ANSI code page, so the
+  # mutation changes text content as well as line endings.
+  $lfText = (Get-Content -LiteralPath $projectMd -Raw -Encoding UTF8) -replace "`r`n", "`n"
   [System.IO.File]::WriteAllText($projectMd, ($lfText -replace "`n", "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
   $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
   Assert-Clean $result "LF to CRLF does not change provider digests"
