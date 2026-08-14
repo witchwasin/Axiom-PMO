@@ -1,0 +1,53 @@
+{
+  "version": "2.0.0",
+  "schema_version": "1.0",
+  "compatibility_defaults": {
+    "research_mode": "off",
+    "research_depth": "standard",
+    "research_provider": "none",
+    "ui_delivery": "legacy"
+  },
+  "research": {
+    "modes": ["off", "guided", "auto"],
+    "depths": ["quick", "standard", "deep"],
+    "providers": ["none", "feyman", "web", "auto"],
+    "artifact_root": "RESEARCH",
+    "fallback_order": ["project_provider", "session_feyman", "configured_feyman", "approved_web", "stop"]
+  },
+  "ui_delivery": {
+    "values": ["not_applicable", "dev_guided", "claude_design"],
+    "provider_root": "DESIGN/CLAUDE-DESIGN",
+    "input_manifest": "DESIGN/CLAUDE-DESIGN/INPUT-MANIFEST.json",
+    "output_root": "DESIGN/CLAUDE-DESIGN/OUTPUT",
+    "review_manifest": "DESIGN/CLAUDE-DESIGN/REVIEW.json"
+  },
+  "externalization": {
+    "classifications": ["Public", "Internal", "Confidential", "Restricted"],
+    "human_review_required": ["Confidential", "Restricted"],
+    "registry": "EXTERNALIZATION.json",
+    "secret_patterns": [
+      { "id": "github_token", "pattern": "ghp_[A-Za-z0-9_]{20,}" },
+      { "id": "openai_key", "pattern": "sk-[A-Za-z0-9]{20,}" },
+      { "id": "aws_access_key", "pattern": "AKIA[0-9A-Z]{16}" },
+      { "id": "private_key", "pattern": "BEGIN\\s+PRIVATE\\s+KEY" }
+    ]
+  },
+  "change_control": {
+    "sources": ["implementation", "review", "test", "human"],
+    "classifications": ["patch", "minor", "major", "scope", "emergency"],
+    "statuses": ["proposed", "approved", "rejected", "implemented", "superseded"],
+    "mode_impacts": ["none", "escalate", "reassess"],
+    "blocking_classifications": ["major", "scope", "emergency"],
+    "blocking_by_mode": {
+      "Lite": ["major", "scope", "emergency"],
+      "Standard": ["major", "scope", "emergency"],
+      "Strict": ["minor", "major", "scope", "emergency"]
+    },
+    "registry": "CHANGE-REQUESTS.json"
+  },
+  "testability": {
+    "Lite": "delivery_checklist",
+    "Standard": "strategy_and_scenarios",
+    "Strict": "detailed_requirement_and_risk_cases"
+  }
+}

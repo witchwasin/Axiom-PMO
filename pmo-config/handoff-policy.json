@@ -249,6 +249,7 @@
       { "id": "retention", "heading": "Retention, Backup and Restore", "required_modes": ["Strict"], "allow_not_required": true },
       { "id": "seed_data", "heading": "Seed Data", "required_modes": ["Standard", "Strict"], "allow_not_required": false },
       { "id": "acceptance_cases", "heading": "Acceptance Cases", "required_modes": ["Standard", "Strict"], "allow_not_required": false, "table": true, "columns": ["Case ID", "Requirement Ref", "Given / When / Then", "Execution", "Fixture / Seed", "Reset"], "rule": "HANDOFF-006" },
+      { "id": "test_strategy", "heading": "Test Strategy", "required_modes": ["Standard", "Strict"], "required_declarations": ["Research mode", "UI delivery"], "allow_not_required": false, "table": true, "columns": ["Test Area", "Requirement / Risk Ref", "Level", "Execution", "Environment", "Owner"], "rule": "TEST-DESIGN-001" },
       { "id": "demo_reset", "heading": "Demo Reset Procedure", "required_targets": ["demo", "pilot"], "allow_not_required": true },
       { "id": "known_limitations", "heading": "Known Limitations", "required_modes": ["Standard", "Strict"], "allow_not_required": true }
     ]

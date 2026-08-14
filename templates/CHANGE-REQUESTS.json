@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "changes": [
+    {
+      "id": "CR-001",
+      "detected_at": "<ISO-8601>",
+      "source": "<implementation | review | test | human>",
+      "classification": "<patch | minor | major | scope | emergency>",
+      "summary": "<change summary>",
+      "reason": "<observed reason>",
+      "affected_requirements": ["REQ-001"],
+      "affected_artifacts": ["DESIGN/BUILD-SPEC.md"],
+      "scope_impact": false,
+      "acceptance_impact": false,
+      "mode_impact": "none",
+      "status": "proposed",
+      "owner": "<named owner>",
+      "decision_ref": "<DEC-### when approved/rejected/superseded>",
+      "downstream_validation": {
+        "status": "<pending | current | not_required>",
+        "artifacts": [{ "path": "<repo-relative path>", "sha256": "<sha256>" }],
+        "execution_contracts": [{ "path": ".execution/<work-item>/EXECUTION-CONTRACT.json", "sha256": "<sha256>" }]
+      }
+    }
+  ]
+}

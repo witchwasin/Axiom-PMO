@@ -82,6 +82,7 @@ $repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
 . (Join-Path $PSScriptRoot "lib/handoff-validator.ps1")
 . (Join-Path $PSScriptRoot "lib/design-system-validator.ps1")
 . (Join-Path $PSScriptRoot "lib/visual-proof-validator.ps1")
+. (Join-Path $PSScriptRoot "lib/change-control-validator.ps1")
 . (Join-Path $PSScriptRoot "lib/scope-diff-matcher.ps1")
 . (Join-Path $PSScriptRoot "lib/scope-diff-git-adapter.ps1")
 . (Join-Path $PSScriptRoot "lib/scope-diff-validator.ps1")
@@ -96,6 +97,7 @@ $referenceTypesConfig = $cfg.ReferenceTypesConfig
 # every actionable diagnostic (see lib/result-writer.ps1).
 $ruleCatalog = $cfg.ValidationRules
 $handoffPolicy = $cfg.HandoffPolicy
+$orchestrationPolicy = $cfg.OrchestrationPolicy
 
 $pass = 0
 $warn = 0
@@ -143,6 +145,11 @@ $workItems = $workItemResult.WorkItems
 $deliveryIds = $workItemResult.DeliveryIds
 
 Test-ExecutionPath -Project $project -PolicyEnums $policyEnums -WorkItems $workItems
+$executionPath = Get-ProjectExecutionPath $project
+if (-not $executionPath) { $executionPath = "development_handoff" }
+$orchestrationDeclarations = Test-OrchestrationDeclarations -Project $project -Gate $Gate -OrchestrationPolicy $orchestrationPolicy
+Test-ChangeControlRegistry -Project $project -Gate $Gate -OrchestrationPolicy $orchestrationPolicy -Mode $Mode -ExecutionPath $executionPath -ProjectReqIds $projectReqIds -DecisionIds $decisionIds
+Test-EarlyTestDesign -Project $project -Mode $Mode -Gate $Gate -ProjectReqIds $projectReqIds
 
 Test-RaidBlocker -Project $project -Gate $Gate
 

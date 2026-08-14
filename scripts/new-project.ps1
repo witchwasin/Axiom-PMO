@@ -13,6 +13,18 @@ param(
   [ValidateSet("development_handoff", "governed_ai_execution")]
   [string]$ExecutionPath = "development_handoff",
 
+  [ValidateSet("off", "guided", "auto")]
+  [string]$ResearchMode = "off",
+
+  [ValidateSet("quick", "standard", "deep")]
+  [string]$ResearchDepth = "standard",
+
+  [ValidateSet("none", "feyman", "web", "auto")]
+  [string]$ResearchProvider = "none",
+
+  [ValidateSet("not_applicable", "dev_guided", "claude_design")]
+  [string]$UiDelivery = "not_applicable",
+
   # M7 onboarding: when the interactive wizard's "Help me decide" path finds a
   # strict trigger, it passes it through here so the generated D-001 row
   # already carries the declaration instead of a human having to fill it in
@@ -77,6 +89,10 @@ $projectText = Get-Content -LiteralPath $projectFile -Raw
 $projectText = $projectText.Replace("<PROJECT-CODE>", $ProjectCode)
 $projectText = $projectText.Replace("Lite / Standard / Strict", $Mode)
 $projectText = $projectText.Replace("development_handoff / governed_ai_execution", $ExecutionPath)
+$projectText = $projectText.Replace("off / guided / auto", $ResearchMode)
+$projectText = $projectText.Replace("quick / standard / deep", $ResearchDepth)
+$projectText = $projectText.Replace("none / feyman / web / auto", $ResearchProvider)
+$projectText = $projectText.Replace("not_applicable / dev_guided / claude_design", $UiDelivery)
 $projectText = $projectText.Replace("<YYYY-MM-DD>", $today)
 $projectText = $projectText.Replace("YYYY-MM-DD", $today)
 Set-Content -LiteralPath $projectFile -Value $projectText -Encoding utf8
@@ -89,7 +105,7 @@ $deliveryText = $deliveryText.Replace("Lite / Standard / Strict", $Mode)
 # project (Lite never creates DESIGN/), which silently escalated every new
 # Lite project's effective mode to Standard and failed REF-001 on a design
 # file that was never created. Match the row to the requested mode instead.
-$defaultDesignRef = if ($Mode -eq "Lite") { "not_required" } else { "DESIGN/FLOW.puml" }
+$defaultDesignRef = if ($Mode -eq "Lite") { "not_required" } else { "DESIGN/BUILD-SPEC.md" }
 $deliveryText = $deliveryText -replace '\| D-001 \| Standard \| none \| normal feature \| PM \| <feature> \| REQ-001 \| DESIGN/FLOW\.puml \|', "| D-001 | $Mode | $StrictTrigger | $ModeReason | $ModeApprovedBy | <feature> | REQ-001 | $defaultDesignRef |"
 Set-Content -LiteralPath $deliveryFile -Value $deliveryText -Encoding utf8
 
@@ -102,6 +118,10 @@ function Copy-TemplateWithProjectCode {
 if ($Mode -ne "Lite") {
   New-Item -ItemType Directory -Force -Path (Join-Path $projectDir "DESIGN") | Out-Null
   Copy-TemplateWithProjectCode (Join-Path $repo "templates/RELEASE.md") (Join-Path $projectDir "RELEASE.md")
+  Copy-TemplateWithProjectCode (Join-Path $repo "templates/BUILD-SPEC.md") (Join-Path $projectDir "DESIGN/BUILD-SPEC.md")
+}
+
+if ($Mode -ne "Lite" -and $UiDelivery -ne "not_applicable") {
   Copy-TemplateWithProjectCode (Join-Path $repo "templates/WIREFRAME.md") (Join-Path $projectDir "DESIGN/WIREFRAME.md")
   @"
 @startuml
@@ -111,6 +131,11 @@ stop
 @enduml
 "@ | Set-Content -LiteralPath (Join-Path $projectDir "DESIGN/FLOW.puml") -Encoding utf8
 }
+
+# Research, Externalization, and Claude Design artifacts are materialized by
+# their owning milestones (M4-M6). M1-M3 record declarations and establish
+# the early System Design/testability contract without creating provider files
+# that are not yet governed.
 
 if ($Mode -eq "Strict") {
   Copy-TemplateWithProjectCode (Join-Path $repo "templates/RAID-log.md") (Join-Path $projectDir "RAID-log.md")
@@ -132,10 +157,6 @@ if ($IncludeHandoff) {
     Replace("- Handoff Target: <demo | pilot | production | internal>", "- Handoff Target: $Target").
     Replace("- Horizon: <YYYY-MM-DD>", "- Horizon: $horizon")
   Set-Content -LiteralPath (Join-Path $projectDir "HANDOFF.md") -Value $handoffText -Encoding utf8
-
-  if ($Mode -ne "Lite") {
-    Copy-TemplateWithProjectCode (Join-Path $repo "templates/BUILD-SPEC.md") (Join-Path $projectDir "DESIGN/BUILD-SPEC.md")
-  }
 
   $reviewText = (Get-Content -LiteralPath (Join-Path $repo "templates/HANDOFF-REVIEW.json") -Raw).
     Replace("<PROJECT-CODE>", $ProjectCode).

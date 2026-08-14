@@ -3,6 +3,10 @@
 > Status: draft / scope-approved / design-ready / release-approved
 > Default mode: Lite / Standard / Strict
 > Execution path: development_handoff / governed_ai_execution
+> Research mode: off / guided / auto
+> Research depth: quick / standard / deep
+> Research provider: none / feyman / web / auto
+> UI delivery: not_applicable / dev_guided / claude_design
 > Task source: file / github
 > Owner: <PM/PO>
 > Last updated: <YYYY-MM-DD>

@@ -16,6 +16,7 @@ Turn scoped requirements into flows, a source-backed visual direction, and a bui
 | `flow` (default) | Map requirements to flow, wireframe, or acceptance wording | `PROJECT.md`, relevant `DESIGN/**` |
 | `visual_direction` | Establish creative/art direction, avoid generic defaults, or choose how the product should feel | see Required Inputs |
 | `design_system` | Turn a selected direction or existing brand into a developer contract and visual sheet | see Required Inputs |
+| `system_design` | Define architecture, data/API boundaries, and early Test Strategy in `DESIGN/BUILD-SPEC.md` | `PROJECT.md`, `DESIGN/BUILD-SPEC.md` |
 
 Read `docs/concepts/visual-direction.md` for creative-direction rules and `docs/concepts/design-system.md` for the artifact contract. Do not restate them here.
 
@@ -46,6 +47,12 @@ Only a human may declare `brand_starting_point: undecided | existing`, select an
 1. Map requirement IDs to user and system flow steps.
 2. Create or update flow and wireframe artifacts only when the configured contract or confirmed impact requires them.
 3. Record assumptions, open questions, and usable delivery references.
+
+## Execution - system_design
+
+1. Complete System Design and the mode-aware Test Strategy in BUILD-SPEC before detailed UI work.
+2. Create flow/wireframe artifacts only for an active UI path and actual UI scope.
+3. Record a technical/scope mismatch as a candidate governed Change Request; do not silently widen the approved contract.
 
 ## Execution - visual_direction
 

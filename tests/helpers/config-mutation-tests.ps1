@@ -105,6 +105,28 @@ try {
     & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tempRepo "scripts/validate-project.ps1") -ProjectPath (Join-Path $tempRepo "tests/fixtures/valid-standard") -Mode Standard -Gate Release -Format Json
   }
 
+  # M1: orchestration-policy.json must drive project declarations. A legacy
+  # project remains compatible when the defaults are explicit; removing the
+  # declared default from policy must then fire the declaration rule itself.
+  Copy-Item -LiteralPath (Join-Path $RepoPath "pmo-config/artifact-policy.json") -Destination $artifactPolicyPath -Force
+  $orchestrationPolicyPath = Join-Path $tempRepo "pmo-config/orchestration-policy.json"
+  $orchestrationPolicy = Get-Content -LiteralPath $orchestrationPolicyPath -Raw | ConvertFrom-Json
+  $orchestrationPolicy.research.modes = @($orchestrationPolicy.research.modes | Where-Object { $_ -ne "off" })
+  $orchestrationPolicy | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $orchestrationPolicyPath -Encoding utf8
+
+  $declaredLegacyProject = Join-Path $tempRepo "examples/LITE-BUGFIX"
+  $declaredProjectPath = Join-Path $declaredLegacyProject "PROJECT.md"
+  $declaredProjectText = Get-Content -LiteralPath $declaredProjectPath -Raw
+  $declarations = "> Research mode: off`n> Research depth: standard`n> Research provider: none`n> UI delivery: not_applicable`n"
+  $declaredProjectText = $declaredProjectText -replace '(?m)^(# PROJECT[^\r\n]*\r?\n)', "`$1`n$declarations"
+  Set-Content -LiteralPath $declaredProjectPath -Value $declaredProjectText -Encoding utf8
+
+  Invoke-ExpectJsonRuleFailure "orchestration-policy enum mutation" "RESEARCH-001" {
+    & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tempRepo "scripts/validate-project.ps1") -ProjectPath $declaredLegacyProject -Mode Lite -Gate Scope -Format Json
+  }
+
+  Copy-Item -LiteralPath (Join-Path $RepoPath "pmo-config/orchestration-policy.json") -Destination $orchestrationPolicyPath -Force
+
   # P7.3: schema_version mutation -- proves DOCTOR-006 actually reads the
   # field instead of only checking that it exists once at authoring time.
   # policy.json still carries the artifact-policy-test's mutation to $policyPath

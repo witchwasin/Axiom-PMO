@@ -23,8 +23,10 @@ Use `pmo-config/policy.json` for valid statuses, review stages, evidence statuse
 ## Execution Steps
 1. Map changed work to delivery item IDs.
 2. Check acceptance criteria and test checklist evidence.
-3. Identify missing review stage or unresolved blocker.
-4. Recommend next gate or corrective action without approving any human-owned gate.
+3. Compare implementation reality with approved Scope, BUILD-SPEC, acceptance cases, Mode, and execution-contract boundaries. Record a candidate Change Request when they differ; do not silently edit a contract to absorb the deviation.
+4. Identify possibly omitted affected artifacts as candidate findings; do not claim automated impact discovery is exhaustive.
+5. Identify missing review stage or unresolved blocker.
+6. Recommend the next gate or corrective action without approving any human-owned gate.
 
 ## Output Contract
 Return review findings, missing tests, risk flags, and ready/not-ready status.

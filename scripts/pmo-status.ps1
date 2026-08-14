@@ -24,6 +24,7 @@ $ErrorActionPreference = "Stop"
 
 . (Join-Path $PSScriptRoot "lib/pwsh-host.ps1")
 . (Join-Path $PSScriptRoot "lib/execution-path-validator.ps1")
+. (Join-Path $PSScriptRoot "lib/config-loader.ps1")
 
 $repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
 if (-not (Test-Path -LiteralPath $ProjectPath -PathType Container)) {
@@ -62,6 +63,11 @@ $checkGate = if ($gateInfo.Next) { $gateInfo.Next } else { $gateInfo.Current }
 
 $declaredPath = Get-ProjectExecutionPath $project
 $displayPath = if ($declaredPath) { $declaredPath } else { "development_handoff" }
+$orchestration = Get-ProjectOrchestrationDeclarations $project
+$researchMode = if ($orchestration.ResearchMode) { $orchestration.ResearchMode } else { "off" }
+$researchDepth = if ($orchestration.ResearchDepth) { $orchestration.ResearchDepth } else { "standard" }
+$researchProvider = if ($orchestration.ResearchProvider) { $orchestration.ResearchProvider } else { "none" }
+$uiDelivery = if ($orchestration.UiDelivery) { $orchestration.UiDelivery } else { "legacy" }
 
 # Same Continue/try/finally guard scripts/new-project.ps1 already uses around
 # its own Draft-validation call: this script sets Stop, and Windows
@@ -93,6 +99,10 @@ if ($Format -eq "Json") {
     execution_path = $displayPath
     execution_path_declared = [bool]$declaredPath
     governance_mode = if ($resultJson) { $resultJson.effective_mode } else { $null }
+    research_mode = $researchMode
+    research_depth = $researchDepth
+    research_provider = $researchProvider
+    ui_delivery = $uiDelivery
     current_gate = $currentGate
     checked_gate = $checkGate
     next_required = $nextFinding
@@ -105,6 +115,8 @@ if ($Format -eq "Json") {
   if ($resultJson) {
     Write-Host "Governance Mode: $($resultJson.effective_mode)"
   }
+  Write-Host "Research:        $researchMode ($researchDepth, $researchProvider)"
+  Write-Host "UI Delivery:     $uiDelivery"
   Write-Host "Current Gate:    $currentGate"
   Write-Host ""
   if ($nextFinding) {

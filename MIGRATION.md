@@ -25,6 +25,24 @@ Old skills were archived instead of deleted:
 
 The active runtime now uses only the 7 skills listed in `pmo-config/skill-manifest.json`.
 
+## V2.1 declaration compatibility (M0–M3)
+
+Existing projects do not need a bulk migration. If `PROJECT.md` omits the new
+declarations, validators use these compatibility defaults silently:
+
+| Declaration | Effective default |
+|---|---|
+| `Execution path` | `development_handoff` |
+| `Research mode` | `off` |
+| `Research depth` | `standard` |
+| `Research provider` | `none` |
+| `UI delivery` | `legacy` |
+
+New Standard/Strict projects may declare `UI delivery` and receive the early
+`DESIGN/BUILD-SPEC.md` Test Strategy contract. Research, Externalization, and
+Claude Design provider artifacts are intentionally not created until their
+owning M4–M6 work is implemented.
+
 ## Project Migration Steps
 
 1. Create or update `PROJECT.md`.

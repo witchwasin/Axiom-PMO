@@ -558,6 +558,48 @@
       "suggestion": "Give the newer decision its own unused id and update the references that meant it, semantically rather than by global replacement. Do not change the content, decider, date, or approval state of either row. See docs/rules/DOCTOR-012.md.",
       "documentation": "docs/rules/DOCTOR-012.md"
     },
+    "TEST-DESIGN-001": {
+      "severity": "fail",
+      "description": "Standard or Strict Design lacks a complete mode-aware Test Strategy in BUILD-SPEC.",
+      "suggestion": "Complete the BUILD-SPEC Test Strategy table with test level, execution type, environment, and named owner.",
+      "documentation": "docs/rules/TEST-DESIGN-001.md"
+    },
+    "TEST-DESIGN-002": {
+      "severity": "fail",
+      "description": "The early Test Strategy does not cover every applicable scoped requirement.",
+      "suggestion": "Add each applicable REQ-### to the BUILD-SPEC Test Strategy; refine the same contract into Acceptance Cases at Handoff.",
+      "documentation": "docs/rules/TEST-DESIGN-002.md"
+    },
+    "RESEARCH-001": {
+      "severity": "fail",
+      "description": "An explicit Research declaration is missing, invalid, or inconsistent with the orchestration policy.",
+      "suggestion": "Use the declared research mode, depth, and provider values from pmo-config/orchestration-policy.json; legacy projects may omit them.",
+      "documentation": "docs/rules/RESEARCH-001.md"
+    },
+    "DPROV-001": {
+      "severity": "fail",
+      "description": "An explicit UI delivery declaration is not recognized by the orchestration policy.",
+      "suggestion": "Use not_applicable, dev_guided, or claude_design as declared in pmo-config/orchestration-policy.json.",
+      "documentation": "docs/rules/DPROV-001.md"
+    },
+    "CHANGE-001": {
+      "severity": "fail",
+      "description": "The structured change registry is malformed or cites affected references that do not resolve.",
+      "suggestion": "Use templates/CHANGE-REQUESTS.json, keep affected requirements and project-relative artifact paths resolvable, and use policy-owned classifications/statuses.",
+      "documentation": "docs/rules/CHANGE-001.md"
+    },
+    "CHANGE-002": {
+      "severity": "fail",
+      "description": "A disposed change lacks a named owner or resolvable Human decision.",
+      "suggestion": "Name the responsible person and cite an existing DEC-### with a named Human decider before marking a change approved, implemented, rejected, or superseded.",
+      "documentation": "docs/rules/CHANGE-002.md"
+    },
+    "CHANGE-003": {
+      "severity": "fail",
+      "description": "A blocking or downstream-stale change remains unresolved at Handoff or Release.",
+      "suggestion": "Implement, reject, or supersede the change and record current downstream artifact (and, for governed AI execution, execution-contract) digests before continuing.",
+      "documentation": "docs/rules/CHANGE-003.md"
+    },
     "DOCTOR-013": {
       "severity": "fail",
       "description": "pmo-config/onboarding-questions.json is missing a question for a strict trigger declared in policy.json enums.strict_triggers, or carries a question for a trigger id the enum no longer declares. The interactive `axiom init` wizard's 'Help me decide' path reads its question list from that file keyed by trigger id -- an uncovered trigger would either be unaskable or ask about something that no longer exists.",

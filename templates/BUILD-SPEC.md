@@ -127,6 +127,18 @@ Status: specified
 <The dataset the system starts from. Name it, say where it lives, and say what
 it contains - every acceptance case has to be reachable from it.>
 
+### Test Strategy
+
+Status: specified
+
+> Defined during Design and revisited in the same contract at Handoff. Do not
+> create a second test-plan artifact. `Execution` is `automated`, `manual`, or
+> `exploratory`.
+
+| Test Area | Requirement / Risk Ref | Level | Execution | Environment | Owner |
+|---|---|---|---|---|---|
+| <area> | <REQ-001 or R-001> | <unit / integration / system / security / usability> | <automated> | <environment> | <named owner> |
+
 ### Acceptance Cases
 
 Status: specified

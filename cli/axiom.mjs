@@ -254,6 +254,39 @@ async function runInteractiveInit(rl, existing) {
     }
   }
 
+  if (!answers.uiDelivery) {
+    const hasUi = await promptYesNo(rl, "\nDoes this work have a user-facing UI?");
+    answers.uiDelivery = hasUi
+      ? await promptChoice(rl, "How will the UI be delivered?", [
+          { value: "dev_guided", label: "Developer-guided -- use the governed design and handoff flow" },
+          { value: "claude_design", label: "Claude Design -- use the optional governed provider handoff" },
+        ])
+      : "not_applicable";
+  }
+
+  if (!answers.researchMode) {
+    answers.researchMode = await promptChoice(rl, "Will this project use governed research before Scope approval?", [
+      { value: "off", label: "Off -- no optional research artifacts" },
+      { value: "guided", label: "Guided -- Human confirms focus/provider" },
+      { value: "auto", label: "Auto -- orchestrate configured provider with truthful fallback" },
+    ]);
+  }
+  if (answers.researchMode !== "off") {
+    answers.researchDepth ??= await promptChoice(rl, "Research depth?", [
+      { value: "quick", label: "Quick" },
+      { value: "standard", label: "Standard" },
+      { value: "deep", label: "Deep" },
+    ]);
+    answers.researchProvider ??= await promptChoice(rl, "Research provider?", [
+      { value: "feyman", label: "Feyman (configured local provider)" },
+      { value: "web", label: "Governed web research" },
+      { value: "auto", label: "Auto provider selection" },
+    ]);
+  } else {
+    answers.researchDepth ??= "standard";
+    answers.researchProvider ??= "none";
+  }
+
   const flowSteps =
     answers.executionPath === "governed_ai_execution"
       ? "Source -> Requirements -> Scope -> Design -> Approved Execution Contract -> AI Implementation -> Evidence Verification -> Human Approval"
@@ -262,6 +295,8 @@ async function runInteractiveInit(rl, existing) {
   process.stdout.write("\nYour Axiom-PMO Setup\n\n");
   process.stdout.write(`Execution Path:   ${answers.executionPath}\n`);
   process.stdout.write(`Governance Mode:  ${answers.mode}\n`);
+  process.stdout.write(`Research:         ${answers.researchMode} (${answers.researchDepth}, ${answers.researchProvider})\n`);
+  process.stdout.write(`UI Delivery:      ${answers.uiDelivery}\n`);
   process.stdout.write(`Expected Flow:    ${flowSteps}\n`);
 
   if (!(await promptYesNo(rl, "\nCreate this project?"))) {
@@ -304,7 +339,7 @@ const COMMANDS = {
   init: {
     summary: "Create a new project from the templates (interactive on a TTY)",
     usage:
-      "axiom init [--code <PROJECT-CODE>] [--mode Standard] [--execution-path development_handoff] [--handoff] [--target demo] [--horizon-days 14] [--no-interactive]",
+      "axiom init [--code <PROJECT-CODE>] [--mode Standard] [--execution-path development_handoff] [--research-mode off] [--research-depth standard] [--research-provider none] [--ui-delivery not_applicable] [--handoff] [--target demo] [--horizon-days 14] [--no-interactive]",
     build: (args) => buildInit(args),
   },
 
@@ -581,6 +616,14 @@ async function buildInit(args) {
   rest = mode.rest;
   const executionPath = takeOption(rest, "execution-path");
   rest = executionPath.rest;
+  const researchMode = takeOption(rest, "research-mode");
+  rest = researchMode.rest;
+  const researchDepth = takeOption(rest, "research-depth");
+  rest = researchDepth.rest;
+  const researchProvider = takeOption(rest, "research-provider");
+  rest = researchProvider.rest;
+  const uiDelivery = takeOption(rest, "ui-delivery");
+  rest = uiDelivery.rest;
   const output = takeOption(rest, "output");
   rest = output.rest;
   const target = takeOption(rest, "target");
@@ -595,6 +638,10 @@ async function buildInit(args) {
   let resolvedCode = code.value;
   let resolvedMode = mode.value;
   let resolvedExecutionPath = executionPath.value;
+  let resolvedResearchMode = researchMode.value;
+  let resolvedResearchDepth = researchDepth.value;
+  let resolvedResearchProvider = researchProvider.value;
+  let resolvedUiDelivery = uiDelivery.value;
   let strictTrigger;
   let modeReason;
   let modeApprovedBy;
@@ -603,12 +650,12 @@ async function buildInit(args) {
   // asked only for whatever a flag did not already answer, and only on a
   // TTY -- CI, `make demo`, and every scripted caller pass flags and must
   // never block waiting for input that will never arrive.
-  const shouldPrompt = isInteractive() && !noInteractive.present && (!resolvedCode || !resolvedMode || !resolvedExecutionPath);
+  const shouldPrompt = isInteractive() && !noInteractive.present && (!resolvedCode || !resolvedMode || !resolvedExecutionPath || !resolvedResearchMode || !resolvedUiDelivery);
   if (shouldPrompt) {
     const rl = createInterface({ input: process.stdin, output: process.stdout });
     let answers;
     try {
-      answers = await runInteractiveInit(rl, { code: resolvedCode, mode: resolvedMode, executionPath: resolvedExecutionPath });
+      answers = await runInteractiveInit(rl, { code: resolvedCode, mode: resolvedMode, executionPath: resolvedExecutionPath, researchMode: resolvedResearchMode, researchDepth: resolvedResearchDepth, researchProvider: resolvedResearchProvider, uiDelivery: resolvedUiDelivery });
     } finally {
       rl.close();
     }
@@ -618,6 +665,10 @@ async function buildInit(args) {
     resolvedCode = answers.code;
     resolvedMode = answers.mode;
     resolvedExecutionPath = answers.executionPath;
+    resolvedResearchMode = answers.researchMode;
+    resolvedResearchDepth = answers.researchDepth;
+    resolvedResearchProvider = answers.researchProvider;
+    resolvedUiDelivery = answers.uiDelivery;
     strictTrigger = answers.strictTrigger;
     modeReason = answers.modeReason;
     modeApprovedBy = answers.modeApprovedBy;
@@ -629,6 +680,10 @@ async function buildInit(args) {
 
   const scriptArgs = ["-ProjectCode", resolvedCode, "-Mode", resolvedMode ?? "Standard"];
   if (resolvedExecutionPath) scriptArgs.push("-ExecutionPath", resolvedExecutionPath);
+  if (resolvedResearchMode) scriptArgs.push("-ResearchMode", resolvedResearchMode);
+  if (resolvedResearchDepth) scriptArgs.push("-ResearchDepth", resolvedResearchDepth);
+  if (resolvedResearchProvider) scriptArgs.push("-ResearchProvider", resolvedResearchProvider);
+  if (resolvedUiDelivery) scriptArgs.push("-UiDelivery", resolvedUiDelivery);
   if (strictTrigger) scriptArgs.push("-StrictTrigger", strictTrigger);
   if (modeReason) scriptArgs.push("-ModeReason", modeReason);
   if (modeApprovedBy) scriptArgs.push("-ModeApprovedBy", modeApprovedBy);

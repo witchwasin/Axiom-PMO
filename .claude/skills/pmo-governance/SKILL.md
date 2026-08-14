@@ -9,7 +9,7 @@ description: Use for RAID, decisions, traceability, risk, policy checks, and Str
 Maintain governance consistency without turning Lite projects into heavyweight programs.
 
 ## Trigger
-Use for risk triage, decision logging, RTM checks, approval policy, blocker handling, or Strict-mode escalation.
+Use for risk triage, decision logging, RTM checks, approval policy, blocker handling, Strict-mode escalation, Change Control, or Externalization review.
 
 ## Required Inputs
 `PROJECT.md`, relevant governance artifacts, and runtime config from `pmo-config/context-map.json`, `pmo-config/policy.json`, `pmo-config/artifact-policy.json`, `pmo-config/reference-types.json`, and `pmo-config/validation-rules.json`.
@@ -25,6 +25,7 @@ Use `pmo-config/artifact-policy.json` for required/conditional/optional governan
 2. Check approval gates and evidence.
 3. Verify RTM coverage for Strict.
 4. Confirm config and docs do not drift.
+5. Validate `CHANGE-REQUESTS.json` when a real deviation exists; AI-proposed impact is candidate evidence, not exhaustive discovery or approval.
 
 ## Output Contract
 Return risk status, required artifacts, missing evidence, and policy deviations.

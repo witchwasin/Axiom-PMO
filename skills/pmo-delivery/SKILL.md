@@ -35,6 +35,7 @@ Use `pmo-config/policy.json` for mode, status, review-stage, task-source, strict
 2. Create work items with mode, strict trigger, requirement ref, design ref, status, review stage, evidence, and labels.
 3. Check enum values against runtime policy.
 4. Flag missing blockers or client decisions.
+5. Route implementation deviations through `CHANGE-REQUESTS.json`; do not silently edit the execution contract or acceptance criteria to absorb them.
 
 ## Execution Steps - handoff_review
 

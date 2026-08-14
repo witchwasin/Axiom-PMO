@@ -22,6 +22,7 @@ $validationRulesPath = Join-Path $repo "pmo-config/validation-rules.json"
 $referenceTypesPath = Join-Path $repo "pmo-config/reference-types.json"
 $artifactPolicyPath = Join-Path $repo "pmo-config/artifact-policy.json"
 $handoffPolicyPath = Join-Path $repo "pmo-config/handoff-policy.json"
+$orchestrationPolicyPath = Join-Path $repo "pmo-config/orchestration-policy.json"
 $diagnosticsSchemaPath = Join-Path $repo "pmo-config/diagnostics-schema.json"
 $onboardingQuestionsPath = Join-Path $repo "pmo-config/onboarding-questions.json"
 $policy = $null
@@ -30,6 +31,7 @@ $validationRules = $null
 $referenceTypesConfig = $null
 $artifactPolicy = $null
 $handoffPolicy = $null
+$orchestrationPolicy = $null
 $diagnosticsSchema = $null
 $onboardingQuestions = $null
 if (Test-Path -LiteralPath $policyPath -PathType Leaf) {
@@ -49,6 +51,9 @@ if (Test-Path -LiteralPath $artifactPolicyPath -PathType Leaf) {
 }
 if (Test-Path -LiteralPath $handoffPolicyPath -PathType Leaf) {
   $handoffPolicy = Get-Content -LiteralPath $handoffPolicyPath -Raw | ConvertFrom-Json
+}
+if (Test-Path -LiteralPath $orchestrationPolicyPath -PathType Leaf) {
+  $orchestrationPolicy = Get-Content -LiteralPath $orchestrationPolicyPath -Raw | ConvertFrom-Json
 }
 if (Test-Path -LiteralPath $diagnosticsSchemaPath -PathType Leaf) {
   $diagnosticsSchema = Get-Content -LiteralPath $diagnosticsSchemaPath -Raw | ConvertFrom-Json
@@ -198,6 +203,7 @@ Require-File "pmo-config/skill-manifest.json"
 Require-File "pmo-config/validation-rules.json"
 Require-File "pmo-config/artifact-policy.json"
 Require-File "pmo-config/reference-types.json"
+Require-File "pmo-config/orchestration-policy.json"
 Require-File "scripts/validate-project.ps1"
 Require-File "scripts/pmo-doctor.ps1"
 Require-File "scripts/run-validation-tests.ps1"
@@ -254,7 +260,8 @@ if (Test-Path -LiteralPath $contextMapPath -PathType Leaf) {
 if ($contextMapConfig -and
     $contextMapConfig.config_refs.policy -eq "pmo-config/policy.json" -and
     $contextMapConfig.config_refs.skill_manifest -eq "pmo-config/skill-manifest.json" -and
-    $contextMapConfig.config_refs.validation_rules -eq "pmo-config/validation-rules.json") {
+    $contextMapConfig.config_refs.validation_rules -eq "pmo-config/validation-rules.json" -and
+    $contextMapConfig.config_refs.orchestration_policy -eq "pmo-config/orchestration-policy.json") {
   Add-Result PASS "Context map references central policy and skill manifest" "DOCTOR-003"
 } else {
   Add-Result FAIL "Context map must reference JSON runtime config files" "DOCTOR-003"
@@ -264,6 +271,17 @@ if ($validationRules -and $validationRules.rules.'STRUCT-001' -and $validationRu
 } else {
   Add-Result FAIL "Validation rule catalog is missing required runtime rules" "DOCTOR-003"
 }
+if ($orchestrationPolicy -and
+    @($orchestrationPolicy.research.modes).Count -gt 0 -and
+    @($orchestrationPolicy.research.depths).Count -gt 0 -and
+    @($orchestrationPolicy.research.providers).Count -gt 0 -and
+    @($orchestrationPolicy.ui_delivery.values).Count -gt 0 -and
+    @($orchestrationPolicy.externalization.classifications).Count -gt 0 -and
+    @($orchestrationPolicy.change_control.classifications).Count -gt 0) {
+  Add-Result PASS "Orchestration policy exposes the required optional-workflow enums" "DOCTOR-003"
+} else {
+  Add-Result FAIL "Orchestration policy is missing required optional-workflow enums" "DOCTOR-003"
+}
 
 $versionText = (Get-Content -LiteralPath (Join-Path $repo "VERSION") -Raw).Trim()
 $changelogFirstVersion = ""
@@ -271,7 +289,7 @@ $changelogText = Read-MarkdownText -Path (Join-Path $repo "CHANGELOG.md") -Raw
 if ($changelogText -match '(?m)^##\s+([^\s]+)\s+-') {
   $changelogFirstVersion = $Matches[1]
 }
-$configVersions = @($policy.version, $skillManifest.version, $validationRules.version, $contextMapConfig.version, $handoffPolicy.version, $diagnosticsSchema.version) | Where-Object { $_ }
+$configVersions = @($policy.version, $skillManifest.version, $validationRules.version, $contextMapConfig.version, $handoffPolicy.version, $orchestrationPolicy.version, $diagnosticsSchema.version) | Where-Object { $_ }
 if ($versionText -eq $changelogFirstVersion -and ($configVersions | Where-Object { $_ -ne $versionText }).Count -eq 0) {
   Add-Result PASS "VERSION, CHANGELOG, and JSON config versions match" "DOCTOR-005"
 } else {
@@ -292,6 +310,7 @@ $schemaVersionConfigs = [ordered]@{
   "handoff-policy.json" = $handoffPolicy
   "diagnostics-schema.json" = $diagnosticsSchema
   "onboarding-questions.json" = $onboardingQuestions
+  "orchestration-policy.json" = $orchestrationPolicy
 }
 $schemaVersionProblems = @()
 foreach ($name in $schemaVersionConfigs.Keys) {

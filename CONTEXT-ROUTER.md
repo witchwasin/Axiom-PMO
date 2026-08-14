@@ -11,6 +11,10 @@ This file is guidance. The machine-readable map is `pmo-config/context-map.json`
 | Task Type | Read These Files First | Read Source/MOM/REQ? | Do Not Load By Default |
 |---|---|---|---|
 | Intake / new project | `PROJECT.md`, `source/` inventory | Yes | all skills, old diagrams |
+| Research plan / impact | `PROJECT.md`, `RESEARCH/RESEARCH.md`, `RESEARCH/PROVENANCE.json`, `EXTERNALIZATION.json` | Only for unresolved research questions | unrelated design/release artifacts |
+| Externalization | `PROJECT.md`, `EXTERNALIZATION.json`, exact outgoing artifact paths | No raw source unless explicitly declared outgoing | unrelated source and provider output |
+| Controlled change | `PROJECT.md`, `CHANGE-REQUESTS.json`, affected requirements/artifacts, `decision-log.md` | Only for disputed impact | unrelated project folders |
+| Claude Design handoff/review | `PROJECT.md`, `DESIGN/BUILD-SPEC.md`, `DESIGN/CLAUDE-DESIGN/**`, `EXTERNALIZATION.json`, `decision-log.md` | Only specific governed inputs in the manifest | bulk `source/**`, release docs |
 | Scope question | `PROJECT.md`, `decision-log.md` | Only if summary is missing or disputed | full MOM history |
 | Flow / design | `PROJECT.md`, `DESIGN/` | Only for unclear source-backed logic | delivery/release docs |
 | Wireframe | `PROJECT.md`, `DESIGN/FLOW.puml` | Only for missing UX rules | all MOM/transcripts |

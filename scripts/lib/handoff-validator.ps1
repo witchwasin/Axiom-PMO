@@ -497,7 +497,7 @@ function Test-HandoffReadiness {
   # ------------------------------------------------- HANDOFF-005/006/007/011/012
   if ($buildSpecExists) {
     Test-BuildSpec -Project $Project -Mode $Mode -HandoffTarget $handoffTarget -HandoffPolicy $HandoffPolicy `
-      -ProjectReqIds $ProjectReqIds -DecisionIds $DecisionIds
+      -ProjectReqIds $ProjectReqIds -DecisionIds $DecisionIds -ProjectText $ProjectText
   }
 
   if ($headerOk -and $script:handoffHeaderOk) {
@@ -788,7 +788,8 @@ function Test-BuildSpec {
     [string]$HandoffTarget,
     $HandoffPolicy,
     $ProjectReqIds,
-    $DecisionIds
+    $DecisionIds,
+    [string]$ProjectText = ""
   )
 
   $spec = $HandoffPolicy.build_spec
@@ -803,6 +804,11 @@ function Test-BuildSpec {
     $applies = $false
     if ($section.required_modes -and (@($section.required_modes) -contains $Mode)) { $applies = $true }
     if ($section.required_targets -and (@($section.required_targets) -contains $HandoffTarget)) { $applies = $true }
+    if ($applies -and $section.required_declarations) {
+      foreach ($declaration in @($section.required_declarations)) {
+        if ($ProjectText -notmatch ("(?m)^\s*>?\s*" + [regex]::Escape([string]$declaration) + ":")) { $applies = $false; break }
+      }
+    }
     if (-not $applies) { continue }
 
     $body = Get-SectionBody -Text $text -Heading $heading -Level 3
@@ -1231,5 +1237,47 @@ function Test-HandoffSemanticReview {
       Add-Result WARN ("Semantic review has $($openCritical.Count) open critical finding(s): " + (@($openCritical | ForEach-Object { "$($_.finding_id) [$($_.blocking_point)]" }) -join ', ')) "HANDOFF-010" $true `
         -Artifact ([string]$reviewPolicy.artifact)
     }
+  }
+}
+
+# M3 testability is an extension of the existing Handoff/System Design
+# contract. It intentionally remains in this module instead of creating a
+# fifth new validator domain.
+function Test-EarlyTestDesign {
+  param([string]$Project, [string]$Mode, [string]$Gate, [string[]]$ProjectReqIds)
+  if ($Mode -eq "Lite" -or @("Design", "Handoff") -notcontains $Gate) { return }
+  $projectText = Get-ProjectText
+  if ($projectText -notmatch '(?m)^\s*>?\s*(Research mode|UI delivery):') { return }
+  $path = Join-Path $Project "DESIGN/BUILD-SPEC.md"
+  if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+    Add-Result FAIL "BUILD-SPEC is required during Design for mode-aware testability" "TEST-DESIGN-001" -Artifact "DESIGN/BUILD-SPEC.md"
+    return
+  }
+  $text = Get-Content -LiteralPath $path -Raw
+  $rows = @(Get-TableRowsAfterHeading $text '^###\s+Test Strategy')
+  if ($text -notmatch '(?ms)^###\s+Test Strategy\s*.*?^Status:\s*specified\s*$' -or $rows.Count -eq 0) {
+    Add-Result FAIL "BUILD-SPEC Test Strategy is missing or incomplete" "TEST-DESIGN-001" -Artifact "DESIGN/BUILD-SPEC.md" -Field "Test Strategy"
+    return
+  }
+  $bad = @($rows | Where-Object {
+    (Test-PlaceholderValue ([string]$_.'Test Area')) -or
+    (Test-PlaceholderValue ([string]$_.'Requirement / Risk Ref')) -or
+    (Test-PlaceholderValue ([string]$_.Level)) -or
+    (@("automated", "manual", "exploratory") -notcontains [string]$_.Execution) -or
+    (Test-GenericOwner -Value ([string]$_.Owner) -OwnerPolicy $script:handoffPolicy.owner_policy)
+  })
+  if ($bad.Count) {
+    Add-Result FAIL "BUILD-SPEC Test Strategy contains incomplete cases" "TEST-DESIGN-001" -Artifact "DESIGN/BUILD-SPEC.md" -Field "Test Strategy"
+  } else {
+    Add-Result PASS "BUILD-SPEC carries mode-aware test strategy" "TEST-DESIGN-001"
+  }
+  $covered = @($rows | ForEach-Object {
+    [regex]::Matches([string]$_.'Requirement / Risk Ref', 'REQ-\d{3,}') | ForEach-Object { $_.Value }
+  } | Sort-Object -Unique)
+  $missing = @($ProjectReqIds | Where-Object { $covered -notcontains $_ })
+  if ($missing.Count) {
+    Add-Result FAIL ("Test Strategy does not cover scoped requirements: " + ($missing -join ", ")) "TEST-DESIGN-002" -Artifact "DESIGN/BUILD-SPEC.md" -Field "Test Strategy"
+  } else {
+    Add-Result PASS "Test Strategy covers applicable scoped requirements" "TEST-DESIGN-002"
   }
 }

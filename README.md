@@ -85,6 +85,43 @@ to re-read this file:
 node cli/axiom.mjs status --project P02-ABC
 ```
 
+Projects may also declare two optional branches. In this V2.1 handoff, the
+declarations and early System Design/testability contract are implemented;
+Externalization, Claude Design package enforcement, and Guided Research remain
+pending for the next implementation owner:
+
+```text
+Research:    off | guided | auto
+UI delivery: not_applicable | dev_guided | claude_design
+```
+
+Research and Claude Design values are declarations only until their owning
+milestones land; neither can approve or rewrite Scope. System Design and
+initial Test Strategy live in `DESIGN/BUILD-SPEC.md` before detailed UI work.
+See the
+[end-to-end workflow](docs/concepts/end-to-end-workflow.md).
+
+### Actor legend and compact flow
+
+`[H-IN]` Human input · `[AI-A]` AI-assisted · `[AI-R]` AI-run · `[EXT]`
+external tool · `[SYS]` deterministic validator · `[HG]` Human gate
+
+```text
+[H-IN] Source -> [AI-R] Intake -> choose execution path + Lite/Standard/Strict
+  -> optional declared branches (future owner implements provider contracts)
+  -> [SYS] Scope -> [HG] Scope Approved
+  -> [AI-A] BUILD-SPEC System Design + initial Test Strategy
+  -> conditional UI path -> [AI-R] Acceptance Cases + Handoff
+  -> [SYS] Handoff checks -> [HG] Design Ready
+  -> developer build | governed AI contract
+  -> [AI-A/SYS] Change Control when reality differs
+  -> [SYS] evidence/release checks -> [HG] Release Approved
+```
+
+Humans answer ambiguity and own approvals. AI drafts candidate evidence and
+deterministic validators check what code can prove; `auto` never means automatic
+Scope, Design, risk, or Release approval.
+
 ## Why this matters now
 
 AI coding agents can plan, implement, test, review, and produce their own

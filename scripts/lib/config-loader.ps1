@@ -40,6 +40,12 @@ function Import-PmoConfig {
   }
   $handoffPolicy = Get-Content -LiteralPath $handoffPolicyPath -Raw | ConvertFrom-Json
 
+  $orchestrationPolicyPath = Join-Path $RepoRoot "pmo-config/orchestration-policy.json"
+  if (-not (Test-Path -LiteralPath $orchestrationPolicyPath -PathType Leaf)) {
+    throw "Missing runtime orchestration policy config: $orchestrationPolicyPath"
+  }
+  $orchestrationPolicy = Get-Content -LiteralPath $orchestrationPolicyPath -Raw | ConvertFrom-Json
+
   return [pscustomobject]@{
     Policy = $policy
     PolicyEnums = $policy.enums
@@ -48,6 +54,7 @@ function Import-PmoConfig {
     ReferenceTypesConfig = $referenceTypesConfig
     ValidationRules = $validationRules
     HandoffPolicy = $handoffPolicy
+    OrchestrationPolicy = $orchestrationPolicy
   }
 }
 
@@ -112,4 +119,55 @@ function Get-PolicySourceRefRegex {
     $patterns = @('MOM-\d{8}', 'REQ-\d{8}', 'REQ-V\d+', 'TR-\d{8}', 'DEC-\d{3}', 'ISSUE-\d+', 'PR-\d+', 'source_ref')
   }
   return ($patterns -join "|")
+}
+
+# Optional workflow declarations live here because they are config-backed
+# project metadata, not a fifth domain validator. Keeping the reader beside
+# Import-PmoConfig also preserves the four-module growth budget for the
+# actual optional domains (change, externalization, design provider, research).
+function Get-ProjectOrchestrationDeclarations {
+  param([string]$ProjectRoot)
+  $path = Join-Path $ProjectRoot "PROJECT.md"
+  $text = if (Test-Path -LiteralPath $path -PathType Leaf) { Get-Content -LiteralPath $path -Raw } else { "" }
+
+  $values = @{}
+  foreach ($name in @("Research mode", "Research depth", "Research provider", "UI delivery")) {
+    $match = [regex]::Match($text, ("(?m)^\s*>?\s*" + [regex]::Escape($name) + ":\s*(.+?)\s*$"))
+    $values[$name] = if ($match.Success) { $match.Groups[1].Value.Trim() } else { $null }
+  }
+
+  return [pscustomobject]@{
+    ResearchMode = $values["Research mode"]
+    ResearchDepth = $values["Research depth"]
+    ResearchProvider = $values["Research provider"]
+    UiDelivery = $values["UI delivery"]
+  }
+}
+
+function Test-OrchestrationDeclarations {
+  param([string]$Project, [string]$Gate, $OrchestrationPolicy)
+  $d = Get-ProjectOrchestrationDeclarations $Project
+
+  if ($d.ResearchMode) {
+    $valid = @($OrchestrationPolicy.research.modes)
+    if ($valid -notcontains $d.ResearchMode) {
+      Add-Result FAIL "PROJECT.md Research mode is not recognized" "RESEARCH-001" -Artifact "PROJECT.md" -Field "Research mode"
+    } else {
+      $badDepth = (-not $d.ResearchDepth) -or (@($OrchestrationPolicy.research.depths) -notcontains $d.ResearchDepth)
+      $badProvider = (-not $d.ResearchProvider) -or (@($OrchestrationPolicy.research.providers) -notcontains $d.ResearchProvider)
+      if ($badDepth -or $badProvider) {
+        Add-Result FAIL "PROJECT.md research declarations are incomplete or invalid" "RESEARCH-001" -Artifact "PROJECT.md"
+      } elseif ($d.ResearchMode -eq "off" -and $d.ResearchProvider -ne "none") {
+        Add-Result FAIL "Research mode off requires Research provider none" "RESEARCH-001" -Artifact "PROJECT.md" -Field "Research provider"
+      } elseif ($d.ResearchMode -ne "off" -and $d.ResearchProvider -eq "none") {
+        Add-Result FAIL "Enabled research requires a provider declaration" "RESEARCH-001" -Artifact "PROJECT.md" -Field "Research provider"
+      }
+    }
+  }
+
+  if ($d.UiDelivery -and (@($OrchestrationPolicy.ui_delivery.values) -notcontains $d.UiDelivery)) {
+    Add-Result FAIL "PROJECT.md UI delivery is not recognized" "DPROV-001" -Artifact "PROJECT.md" -Field "UI delivery"
+  }
+
+  return $d
 }
