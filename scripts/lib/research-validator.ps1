@@ -174,7 +174,8 @@ function Test-ResearchWorkflow {
   if ($freshnessModels.Count -eq 0) { $freshnessModels = @("cutoff", "none") }
 
   # CR-013 remainder: the freshness contract is deterministic and declared --
-  # a cutoff date the project owns, or an explicit no-freshness declaration.
+  # a minimum acceptable source date the project owns, or an explicit
+  # no-freshness declaration.
   # Local validation never claims a web source is currently true or available.
   # ISO YYYY-MM-DD strings compare ordinally, so this is culture-free and
   # host-independent (M6: dates/freshness must stay deterministic).
@@ -228,18 +229,23 @@ function Test-ResearchWorkflow {
           [string]::IsNullOrWhiteSpace($issuer) -or (Test-PlaceholderValue $issuer)) {
         $provenanceProblems += "$id source metadata"
       }
-      if ($source.PSObject.Properties["primary"] -and $source.primary -isnot [bool]) {
+      $primaryProp = $source.PSObject.Properties["primary"]
+      if (-not $primaryProp -or $primaryProp.Value -isnot [bool]) {
         $provenanceProblems += "$id primary"
       }
-      if ($source.PSObject.Properties["verification"] -and @($sourceVerifications) -notcontains [string]$source.verification) {
+      $verificationProp = $source.PSObject.Properties["verification"]
+      if (-not $verificationProp -or @($sourceVerifications) -notcontains [string]$source.verification) {
         $provenanceProblems += "$id verification"
       }
-      if ($source.PSObject.Properties["date"]) {
+      $dateProp = $source.PSObject.Properties["date"]
+      if ($null -ne $freshnessCutoff -and (-not $dateProp -or [string]::IsNullOrWhiteSpace([string]$source.date))) {
+        $provenanceProblems += "$id date required for cutoff"
+      } elseif ($dateProp) {
         $dateRaw = ([string]$source.date).Trim()
         if (-not [string]::IsNullOrWhiteSpace($dateRaw) -and $dateRaw -notmatch '^\d{4}-\d{2}-\d{2}$') {
           $provenanceProblems += "$id date"
         } elseif (-not [string]::IsNullOrWhiteSpace($dateRaw) -and $null -ne $freshnessCutoff) {
-          if ([string]::CompareOrdinal($dateRaw, $freshnessCutoff) -gt 0) { $provenanceProblems += "$id stale source" }
+          if ([string]::CompareOrdinal($dateRaw, $freshnessCutoff) -lt 0) { $provenanceProblems += "$id stale source" }
         }
       }
     }
@@ -325,11 +331,18 @@ function Test-ResearchWorkflow {
   # ---------------------------------------------------------------- RESEARCH-006
   $providerProblems = @()
   if ($provenance) {
-    $providerUsed = [string]$provenance.provider_used
+    $providerUsed = ([string]$provenance.provider_used).Trim()
+    $declaredProvider = (Get-ProjectOrchestrationDeclarations $Project).ResearchProvider
     $providerAvailableProp = $provenance.PSObject.Properties["provider_available"]
     $fallbackUsedProp = $provenance.PSObject.Properties["fallback_used"]
     if ([string]::IsNullOrWhiteSpace($providerUsed) -or (Test-PlaceholderValue $providerUsed)) {
       $providerProblems += "provider_used"
+    }
+    $resolvedProviders = @($policy.providers | Where-Object { $_ -ne "none" -and $_ -ne "auto" })
+    if ($declaredProvider -eq "auto") {
+      if ($resolvedProviders -notcontains $providerUsed) { $providerProblems += "provider agreement" }
+    } elseif ($declaredProvider -and $declaredProvider -ne "none" -and $providerUsed -ne $declaredProvider) {
+      $providerProblems += "provider agreement"
     }
     # CR-013: the provider booleans are part of the contract and must be real
     # JSON booleans.
@@ -361,11 +374,20 @@ function Test-ResearchWorkflow {
     if ($fallbackUsed -eq $true -and $providerAvailable -ne $false) {
       $providerProblems += "fallback without unavailable provider"
     }
-    if ($provenance.PSObject.Properties["retrieved_at"]) {
-      $retrievedAt = $provenance.retrieved_at
-      if (-not ($retrievedAt -is [datetime]) -and ([string]$retrievedAt -notmatch '^\d{4}-\d{2}-\d{2}T' -and -not (Test-DateValue ([string]$retrievedAt)))) {
-        $providerProblems += "retrieved_at"
+    $retrievedAtProp = $provenance.PSObject.Properties["retrieved_at"]
+    $retrievedAtOk = $false
+    if ($retrievedAtProp) {
+      if ($retrievedAtProp.Value -is [datetime]) {
+        # ConvertFrom-Json materializes ISO timestamps as DateTime on some
+        # hosts. Kind=Utc preserves the only property the validator needs.
+        $retrievedAtOk = $retrievedAtProp.Value.Kind -eq [System.DateTimeKind]::Utc
+      } else {
+        $retrievedAtText = ([string]$retrievedAtProp.Value).Trim()
+        $retrievedAtOk = $retrievedAtText -match '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$'
       }
+    }
+    if (-not $retrievedAtOk) {
+      $providerProblems += "retrieved_at"
     }
   }
 

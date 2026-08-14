@@ -128,8 +128,8 @@ try {
   Copy-Item -LiteralPath (Join-Path $RepoPath "pmo-config/orchestration-policy.json") -Destination $orchestrationPolicyPath -Force
 
   # CR-005/CR-021: externalization.internal_default_human_review is
-  # load-bearing. With the safe default true, an Internal transfer without
-  # Human evidence fails EXT-002; flipping the key must change that behavior.
+  # load-bearing. The Human Owner selected false, so Internal proceeds under
+  # policy by default; flipping the key to true must require Human evidence.
   $extPath = Join-Path $tempRepo "examples/OPTIONAL-TRACKS/EXTERNALIZATION.json"
   $extDoc = Get-Content -LiteralPath $extPath -Raw | ConvertFrom-Json
   $extDoc.entries[0].classification = "Internal"
@@ -144,15 +144,15 @@ try {
     @($json.results | Where-Object { $_.rule_id -eq "EXT-002" -and $_.level -eq "FAIL" }).Count
   }
   $failsWithDefault = & $expectedExt002
-  if ($failsWithDefault -lt 1) { throw "Internal transfer without evidence must fail EXT-002 with the default policy" }
-  Write-Host "[PASS] internal_default_human_review=true makes Internal require Human evidence"
+  if ($failsWithDefault -ne 0) { throw "Internal transfer should proceed under the Human-selected false default (got $failsWithDefault EXT-002 FAILs)" }
+  Write-Host "[PASS] internal_default_human_review=false allows Internal under policy"
 
   $orchestrationPolicy = Get-Content -LiteralPath $orchestrationPolicyPath -Raw | ConvertFrom-Json
-  $orchestrationPolicy.externalization.internal_default_human_review = $false
+  $orchestrationPolicy.externalization.internal_default_human_review = $true
   $orchestrationPolicy | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $orchestrationPolicyPath -Encoding utf8
   $failsFlipped = & $expectedExt002
-  if ($failsFlipped -ne 0) { throw "Flipping internal_default_human_review to false must allow the transfer (got $failsFlipped EXT-002 FAILs)" }
-  Write-Host "[PASS] internal_default_human_review=false removes the Internal requirement"
+  if ($failsFlipped -lt 1) { throw "Flipping internal_default_human_review to true must require Human evidence" }
+  Write-Host "[PASS] internal_default_human_review=true requires Human evidence"
 
   # CR-006/CR-021: research.research_statuses is load-bearing -- a stopped
   # project must fail when the policy no longer admits the stopped state.

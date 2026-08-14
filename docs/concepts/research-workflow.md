@@ -35,6 +35,8 @@ unresolved accepted-impact proposal blocks Scope, provider
 availability/fallback is recorded consistently, and external providers cite
 approved externalization evidence. It cannot verify that a source exists on
 the web, that a retrieved date is truthful, or that a Human actually made the
-decision — it checks the governed record the Human is accountable for. Dates
-are ISO-8601 and deterministic; the checks never depend on the current date,
-so results are host-independent.
+decision — it checks the governed record the Human is accountable for.
+`freshness.model: cutoff` declares the minimum acceptable source date, while
+`none` explicitly makes no date-freshness claim. Retrieval timestamps use
+ISO-8601 UTC. The checks never depend on the current date, so results are
+host-independent.

@@ -44,7 +44,7 @@
     "provider_types": ["api", "web", "storage", "messaging", "email", "local_process"],
     "scan_results": ["clean", "finding", "not_run"],
     "required_human_decision": ["Confidential", "Restricted"],
-    "internal_default_human_review": true,
+    "internal_default_human_review": false,
     "secret_patterns": [
       { "id": "github_token", "pattern": "ghp_[A-Za-z0-9_]{20,}" },
       { "id": "openai_key", "pattern": "sk-[A-Za-z0-9]{20,}" },

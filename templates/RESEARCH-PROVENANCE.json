@@ -11,7 +11,7 @@
   "retrieved_at": "<ISO-8601>",
   "freshness": {
     "model": "<cutoff | none>",
-    "cutoff": "<YYYY-MM-DD; required when model is cutoff>"
+    "cutoff": "<minimum acceptable source date YYYY-MM-DD; required when model is cutoff>"
   },
   "claims": [
     {

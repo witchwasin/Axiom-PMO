@@ -289,7 +289,7 @@ None.
   $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
   Assert-Rule $result "EXT-001" "missing network_transfer_occurred is a structural defect"
 
-  # --- CR-005: Public proceeds under policy; Internal default forces review ---
+  # --- CR-005: Human Owner chose policy-allowed Internal by default -----------
   $extDoc = Get-Content -LiteralPath $extPath -Raw | ConvertFrom-Json
   $extDoc.entries[0] = [pscustomobject]@{
     id = "EXT-001"; purpose = $extDoc.entries[0].purpose; provider = $extDoc.entries[0].provider
@@ -305,7 +305,17 @@ None.
   $extDoc.entries[0].classification = "Internal"
   $extDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $extPath -Encoding utf8
   $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
-  Assert-Rule $result "EXT-002" "Internal without provider policy forces Human review by default"
+  Assert-NoRule $result "EXT-002" "Internal approved transfer proceeds under the Human-selected default"
+
+  # The policy remains load-bearing: opting into the conservative default must
+  # restore the Human-evidence requirement without changing validator code.
+  $orchestrationPolicyPath = Join-Path $tempRepo "pmo-config/orchestration-policy.json"
+  $orchestrationPolicy = Get-Content -LiteralPath $orchestrationPolicyPath -Raw | ConvertFrom-Json
+  $orchestrationPolicy.externalization.internal_default_human_review = $true
+  $orchestrationPolicy | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $orchestrationPolicyPath -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
+  Assert-Rule $result "EXT-002" "Internal conservative policy requires Human review"
+  Copy-Item -LiteralPath (Join-Path $RepoPath "pmo-config/orchestration-policy.json") -Destination $orchestrationPolicyPath -Force
 
   # --- CR-015: nested sensitive path (.env at depth) is caught by the scan ----
   Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/EXTERNALIZATION.json") -Destination $extPath -Force
@@ -425,6 +435,66 @@ None.
   Set-Content -LiteralPath $researchReport -Value $researchText -Encoding utf8
   $result = Invoke-ValidationJson $tempRepo $active "Standard" "Scope"
   Assert-Rule $result "RESEARCH-004" "rejected proposal without a Human decision is rejected"
+
+  # --- CR-013 final: provenance metadata, provider agreement, and freshness --
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/RESEARCH/PROVENANCE.json") -Destination $provenancePath -Force
+  $provDoc = Get-Content -LiteralPath $provenancePath -Raw | ConvertFrom-Json
+  $provDoc.claims[0].sources[0].PSObject.Properties.Remove("primary")
+  $provDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $provenancePath -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Scope"
+  Assert-Rule $result "RESEARCH-003" "missing primary classification is rejected"
+
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/RESEARCH/PROVENANCE.json") -Destination $provenancePath -Force
+  $provDoc = Get-Content -LiteralPath $provenancePath -Raw | ConvertFrom-Json
+  $provDoc.claims[0].sources[0].verification = "invented"
+  $provDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $provenancePath -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Scope"
+  Assert-Rule $result "RESEARCH-003" "unknown source verification is rejected"
+
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/RESEARCH/PROVENANCE.json") -Destination $provenancePath -Force
+  $provDoc = Get-Content -LiteralPath $provenancePath -Raw | ConvertFrom-Json
+  $provDoc.claims[0].sources[0].date = "2026-06-30"
+  $provDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $provenancePath -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Scope"
+  Assert-Rule $result "RESEARCH-003" "source older than the minimum cutoff is stale"
+
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/RESEARCH/PROVENANCE.json") -Destination $provenancePath -Force
+  $provDoc = Get-Content -LiteralPath $provenancePath -Raw | ConvertFrom-Json
+  $provDoc.claims[0].sources[0].PSObject.Properties.Remove("date")
+  $provDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $provenancePath -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Scope"
+  Assert-Rule $result "RESEARCH-003" "cutoff freshness requires a source date"
+
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/RESEARCH/PROVENANCE.json") -Destination $provenancePath -Force
+  $provDoc = Get-Content -LiteralPath $provenancePath -Raw | ConvertFrom-Json
+  $provDoc.provider_used = "web"
+  $provDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $provenancePath -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Scope"
+  Assert-Rule $result "RESEARCH-006" "provider used must match the concrete project declaration"
+
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/RESEARCH/PROVENANCE.json") -Destination $provenancePath -Force
+  $provDoc = Get-Content -LiteralPath $provenancePath -Raw | ConvertFrom-Json
+  $provDoc.PSObject.Properties.Remove("retrieved_at")
+  $provDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $provenancePath -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Scope"
+  Assert-Rule $result "RESEARCH-006" "retrieved_at is required"
+
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/RESEARCH/PROVENANCE.json") -Destination $provenancePath -Force
+  $provDoc = Get-Content -LiteralPath $provenancePath -Raw | ConvertFrom-Json
+  $provDoc.retrieved_at = "2026-08-14T09:00:00+07:00"
+  $provDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $provenancePath -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Scope"
+  Assert-Rule $result "RESEARCH-006" "retrieved_at must use deterministic UTC Z form"
+
+  # `auto` may resolve to a concrete allowed provider. Keep the example's
+  # provider_used=feyman and change only the declaration for this assertion.
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/RESEARCH/PROVENANCE.json") -Destination $provenancePath -Force
+  $projectPath = Join-Path $active "PROJECT.md"
+  $projectText = (Get-Content -LiteralPath $projectPath -Raw -Encoding UTF8) -replace '(?m)^> Research provider: feyman\s*$', '> Research provider: auto'
+  Set-Content -LiteralPath $projectPath -Value $projectText -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Scope"
+  Assert-NoRule $result "RESEARCH-006" "auto resolves to an allowed concrete provider"
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/PROJECT.md") -Destination $projectPath -Force
 
   # ---------------------------------------------------------------------------
   # CR-018: canonical artifact hashing -- LF/CRLF and UTF-8 BOM stable for text,

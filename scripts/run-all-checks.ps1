@@ -24,12 +24,15 @@ if (-not $ps) {
 Write-Host "Running Axiom-PMO framework checks for $repo"
 Write-Host ""
 
+$executedChecks = New-Object System.Collections.Generic.List[string]
+
 function Invoke-Check {
   param(
     [string]$Name,
     [scriptblock]$Command
   )
 
+  Write-Host "[CHECK] $Name"
   & $Command
   $exitCode = $LASTEXITCODE
   if ($exitCode -ne 0) {
@@ -46,6 +49,8 @@ function Invoke-Check {
     }
     exit $exitCode
   }
+  $executedChecks.Add($Name) | Out-Null
+  Write-Host "[PASS] $Name"
 }
 
 if ($TestChildScript) {
@@ -68,8 +73,9 @@ Invoke-Check "validation-fixtures" { & $ps -NoProfile -ExecutionPolicy Bypass -F
 # HANDOFF-### rule and so cannot see a handoff regression in that example.
 Invoke-Check "example-golden" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/golden/capture-examples.ps1") -RepoPath $repo -Verify }
 Invoke-Check "config-mutation" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/config-mutation-tests.ps1") -RepoPath $repo }
-Invoke-Check "m2-m3-contracts" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/m2-m3-tests.ps1") -RepoPath $repo }  Invoke-Check "m4-m6-contracts" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/m4-m6-tests.ps1") -RepoPath $repo }
-  Invoke-Check "status-lifecycle" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/status-tests.ps1") -RepoPath $repo }
+Invoke-Check "m2-m3-contracts" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/m2-m3-tests.ps1") -RepoPath $repo }
+Invoke-Check "m4-m6-contracts" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/m4-m6-tests.ps1") -RepoPath $repo }
+Invoke-Check "status-lifecycle" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/status-tests.ps1") -RepoPath $repo }
 Invoke-Check "diagnostics-contract" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/diagnostics-contract-tests.ps1") -RepoPath $repo }
 Invoke-Check "line-endings" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/line-ending-tests.ps1") -RepoPath $repo }
 Invoke-Check "handoff-assessment" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/handoff-assessment-tests.ps1") -RepoPath $repo }
@@ -129,6 +135,13 @@ if ($node) {
   Write-Host ""
   Write-Host "SKIPPED: cli and github-action tests -- Node.js was not found on PATH."
   Write-Host "         The CLI is an optional wrapper; the PowerShell scripts above are the reference implementation."
+}
+
+foreach ($requiredCheck in @("m4-m6-contracts", "status-lifecycle")) {
+  if (-not $executedChecks.Contains($requiredCheck)) {
+    Write-Host "Required check was not executed: $requiredCheck"
+    exit 1
+  }
 }
 
 Write-Host ""
