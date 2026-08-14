@@ -223,6 +223,45 @@ the working copy that happens to still have the object.
 
 ---
 
+## Incident 4 — one skipped suite hid four Windows PowerShell 5.1 defects
+
+**Symptom.** The V2.1 handoff reported M4-M6 targeted checks as green, but the
+full-suite runner had two `Invoke-Check` calls accidentally joined on one line.
+The M4-M6 suite therefore existed and passed when run directly, while
+`run-all-checks.ps1` never executed it. Once the runner was fixed and the
+branch workflow was dispatched, Windows PowerShell 5.1 exposed four separate
+host defects in sequence.
+
+| Failure | Root cause | Permanent correction |
+|---|---|---|
+| Every validator exited before producing JSON | A UTF-8 em dash inside a BOM-less `.ps1` string decoded through the Windows ANSI code page; one byte became a smart quote and ended the string during parsing. | PowerShell source under `scripts/` and `tests/` is ASCII-safe; `line-ending-tests.ps1` scans the bytes and fails on non-ASCII source. |
+| The M4-M6 containment test crashed after its assertions passed | Windows PowerShell 5.1 `Remove-Item` threw `NullReferenceException` while removing a junction. | Remove the directory link with `[System.IO.Directory]::Delete(path, $false)`, which deletes the link and never recurses into its external target. |
+| The LF-to-CRLF digest mutation failed only on 5.1 | The test read BOM-less UTF-8 with `Get-Content -Raw` and no encoding, corrupted non-ASCII characters, and then wrote those changed characters back. It was no longer a line-ending-only mutation. | Every text mutation reads with `-Encoding UTF8`; canonical hashing still decodes strictly, strips BOM, and normalizes line endings. |
+| Release-evidence tests died on a harmless Git CRLF notice | Native `git add` ran under `$ErrorActionPreference = "Stop"`; 5.1 promoted stderr to a terminating error despite `2>$null`. | Test-native Git calls use a save/`Continue`/restore wrapper, the same pattern required for product scripts. |
+
+**Cost.** Each defect appeared only after the previous one was fixed, so a
+single required-host run became several CI round-trips. The first run was
+initially undiagnosable because the validation harness discarded child stderr.
+
+**What made the later rounds fast.** The child diagnostic was kept as a
+permanent harness improvement. A completed job inside a still-running workflow
+was downloaded through the Actions job-log API, and each fix followed the
+exact exception and line number rather than a host guess.
+
+### The lessons
+
+- A test file existing is not evidence that the full runner calls it. Print a
+  stable `[CHECK]`/`[PASS]` name and assert that required suites were executed.
+- Portability rules apply to test harnesses too. A host-only crash in tests can
+  prevent the product code from being exercised at all.
+- PowerShell source encoding is different from content-file encoding: a parser
+  failure happens before code can pass `-Encoding UTF8`. Keep executable source
+  ASCII-safe unless the repository deliberately adopts BOM-bearing source.
+- A cross-host matrix is discovery evidence until every required job is green;
+  partial host success is not completion.
+
+---
+
 ## Working rules that came out of this
 
 ### On a host you cannot run locally
@@ -277,6 +316,9 @@ the working copy that happens to still have the object.
 | `SCOPE-DIFF-004` unresolvable ref | `git ls-remote --heads origin`. Confirm the commit is reachable from a pushed ref before believing "shallow checkout". |
 | A hypothesis was "ruled out" but nothing else fits | Re-check the ruling-out with a different tool. Incident 2. |
 | Need a log from a job while the run is still going | `gh api /repos/<owner>/<repo>/actions/jobs/<job_id>/logs` |
+| Every validator exits with no JSON on Windows 5.1 | Preserve child stderr, then inspect source-parser diagnostics; check BOM-less `.ps1` files for non-ASCII bytes. |
+| `Remove-Item` fails while cleaning a Windows junction | Use `Directory.Delete(path, false)` so cleanup deletes the link, not its target. |
+| A line-ending mutation changes a digest only on 5.1 | Verify the test itself reads with `-Encoding UTF8` before rewriting line endings. |
 
 ---
 

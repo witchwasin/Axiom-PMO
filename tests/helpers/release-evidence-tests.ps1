@@ -42,13 +42,29 @@ function Assert-True {
 
 # --- disposable git fixture (same pattern as scope-diff-tests.ps1) -----------
 
+function Invoke-ReleaseEvidenceGit {
+  param([string]$Dir, [string[]]$Arguments)
+  # Windows PowerShell 5.1 promotes any native stderr to an ErrorRecord. Git's
+  # harmless CRLF conversion notice must not terminate a test running under
+  # ErrorActionPreference=Stop.
+  $previous = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try {
+    $output = & git -C $Dir @Arguments 2>$null
+    $exitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previous
+  }
+  return [pscustomobject]@{ Output = @($output); ExitCode = $exitCode }
+}
+
 function New-ReleaseEvidenceGitFixture {
   $dir = Join-Path ([System.IO.Path]::GetTempPath()) ("axiom-release-evidence-" + [System.Guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Path $dir -Force | Out-Null
-  & git -C $dir init -q --initial-branch=main 2>$null
-  if ($LASTEXITCODE -ne 0) { & git -C $dir init -q 2>$null }  # older git: no --initial-branch
-  & git -C $dir config user.email "test@axiom-pmo.local" | Out-Null
-  & git -C $dir config user.name "Axiom Release Evidence Tests" | Out-Null
+  $init = Invoke-ReleaseEvidenceGit -Dir $dir -Arguments @("init", "-q", "--initial-branch=main")
+  if ($init.ExitCode -ne 0) { Invoke-ReleaseEvidenceGit -Dir $dir -Arguments @("init", "-q") | Out-Null }  # older git: no --initial-branch
+  Invoke-ReleaseEvidenceGit -Dir $dir -Arguments @("config", "user.email", "test@axiom-pmo.local") | Out-Null
+  Invoke-ReleaseEvidenceGit -Dir $dir -Arguments @("config", "user.name", "Axiom Release Evidence Tests") | Out-Null
   return $dir
 }
 
@@ -62,9 +78,10 @@ function Write-FixtureFile {
 
 function New-FixtureCommit {
   param([string]$Dir, [string]$Message)
-  & git -C $Dir add -A 2>$null | Out-Null
-  & git -C $Dir commit -q -m $Message 2>$null | Out-Null
-  return (& git -C $Dir rev-parse HEAD 2>$null)
+  Invoke-ReleaseEvidenceGit -Dir $Dir -Arguments @("add", "-A") | Out-Null
+  Invoke-ReleaseEvidenceGit -Dir $Dir -Arguments @("commit", "-q", "-m", $Message) | Out-Null
+  $head = Invoke-ReleaseEvidenceGit -Dir $Dir -Arguments @("rev-parse", "HEAD")
+  return (($head.Output | Out-String).Trim())
 }
 
 function Remove-ReleaseEvidenceGitFixture {
@@ -340,7 +357,7 @@ Write-Host ""
     # Added to the index after the head commit: tracked (visible to
     # ls-files) but not part of base..head.
     Write-FixtureFile $dir "tests/evidence/report.xml" '<testsuite name="happy" tests="1" failures="0"/>'
-    & git -C $dir add tests/evidence/report.xml 2>$null | Out-Null
+    Invoke-ReleaseEvidenceGit -Dir $dir -Arguments @("add", "tests/evidence/report.xml") | Out-Null
 
     $r = Invoke-ReleaseValidate -ProjectPath $dir -Base $base -Head $head
     $warns = Get-TestEvidenceRows -Json $r.Json -Level "WARN"

@@ -271,3 +271,60 @@ incidental example: it is the one project in the suite whose review inputs
 contain non-ASCII text, so it is the only case that fails if this regresses.
 Keep it that way — if those em dashes are ever edited out, the coverage goes
 with them.
+
+## 8. PowerShell source itself is decoded before your code can choose UTF-8
+
+`-Encoding UTF8` protects files read *by* a script. It cannot protect the
+`.ps1` file being parsed. Windows PowerShell 5.1 treats UTF-8 source without a
+BOM as the active ANSI code page. A multi-byte punctuation sequence inside a
+quoted string can decode into a smart quote, terminate the string, and make the
+entire entry point fail before it emits a diagnostic.
+
+**What it broke:** `scripts/lib/rtm-validator.ps1` contained a UTF-8 em dash
+inside a diagnostic string. On the Windows 5.1 runner it decoded into three
+characters, one of which behaved as a closing quote. Every validation fixture
+then exited 1 with no JSON because `validate-project.ps1` could not dot-source
+the module.
+
+**The repository rule:** executable PowerShell source under `scripts/` and
+`tests/` stays ASCII-safe. Documentation and governed artifacts may remain
+UTF-8. `tests/helpers/line-ending-tests.ps1` enforces the source rule at byte
+level so a typographic punctuation edit cannot silently reintroduce it.
+
+## 9. `Remove-Item` is not reliable for Windows junction cleanup on 5.1
+
+Windows PowerShell 5.1 can throw `NullReferenceException` when `Remove-Item`
+deletes a directory junction, even without `-Recurse`. This is especially
+dangerous in containment tests because cleanup happens after the useful
+assertion and turns a passing security test into a failed suite.
+
+Use the .NET directory API for a link that was deliberately created by the
+fixture:
+
+```powershell
+[System.IO.Directory]::Delete($linkPath, $false)
+```
+
+The `false` argument is load-bearing: delete the junction or directory symlink
+itself and never recurse into the external target.
+
+## 10. Test harnesses must obey the same encoding and native-command rules
+
+The existing automated native-command audit is intentionally scoped to product
+scripts, but that is not permission for new test code to ignore section 1 or
+section 7. A harness that crashes before exercising the product gives no
+evidence about the product.
+
+- Read BOM-less repository text with `Get-Content -Encoding UTF8`, including
+  fixture mutations that claim to change only line endings.
+- Wrap native `git`, `gh`, or child-process calls with a temporary
+  `$ErrorActionPreference = "Continue"`, capture `$LASTEXITCODE`, and restore
+  the previous preference in `finally`.
+- Preserve child stderr when a harness needs to diagnose an unexpected crash.
+  Suppressing it turns every host-only parser/runtime failure into the same
+  unhelpful `EXIT_CODE=1`.
+
+V2.1 exercised all three cases: a canonical-hash fixture corrupted text before
+rewriting CRLF, release-evidence Git setup died on a harmless CRLF notice, and
+the validation harness originally discarded the parser error that explained
+the first Windows failure.
