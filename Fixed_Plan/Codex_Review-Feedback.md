@@ -20,11 +20,11 @@
 
 | Field | Value |
 |---|---|
-| Latest FreeBuff iteration reviewed | FB-001 (M4–M8) |
-| Latest commit reviewed | `a6fbca8` (`05f04b5` implementation, `14d86a8` handoff record, and FreeBuff candidate pre-review) |
-| Open findings | 22 — 8 High, 12 Medium, 2 Low (`CR-001`..`CR-022`) |
-| Human Owner decisions needed | 1 — define the default Human-review behavior for Internal externalization when no provider-specific policy exists (`CR-005`) |
-| Overall review state | **Changes required. FB-001 is not ready for Human acceptance or merge.** FreeBuff should complete FB-002 in the repair order recorded in Review CR-002. |
+| Latest FreeBuff iteration reviewed | FB-002 (P0 plus selected P1 repairs) |
+| Latest commit reviewed | `52eb82a` (`95f3a7e` implementation, `52eb82a` update record) |
+| Open findings | 7 — 1 High, 4 Medium, 2 Low (`CR-005` decision pending; CR-006; CR-013 remainder; CR-018; CR-019; CR-021; CR-022) |
+| Human Owner decisions needed | 1 — retain or change the provisional Internal externalization default (`externalization.internal_default_human_review: true`) (`CR-005`) |
+| Overall review state | **Changes still required; P0 is materially repaired. FB-002 is not ready for Human acceptance or merge until CR-018 and the remaining M7–M8 evidence close.** |
 
 ### Review CR-001 — 2026-08-14
 
@@ -167,6 +167,70 @@ All `CR-001`..`CR-022` findings remain open pending FB-002 evidence. Codex will
 close a finding only after the corresponding mutation and applicable full-suite
 evidence pass on the reviewed commit. CR-005 additionally awaits the Human
 Owner's Internal-provider default decision.
+
+### Review CR-003 — 2026-08-15
+
+**Executor:** Codex — independent review of FreeBuff FB-002. This is review
+evidence, not an approval to merge, release, or change Human-owned policy.
+
+**Review scope**
+
+| Field | Value |
+|---|---|
+| FreeBuff iteration | FB-002 (P0 plus selected P1 repairs) |
+| Commit SHA(s) reviewed | `95f3a7e` (implementation) + `52eb82a` (update record) |
+| Evidence inspected | Focused diff against `0328686`; current validators/templates/policy; committed M4–M6 mutations; clean-control and targeted temporary-copy mutations; `pmo-status.ps1`; Doctor and public hygiene |
+
+**Verified closures / disposition**
+
+| Finding ID | Codex disposition | Evidence |
+|---|---|---|
+| CR-001, CR-002, CR-003, CR-004 | Closed | The manifest preflight digest, required boolean, anchored MOM/REQ reference, and unresolved-only Scope behavior are implemented in the relevant validators and covered by the FB-002 negative mutations. |
+| CR-007, CR-008, CR-009, CR-010, CR-011, CR-012, CR-017 | Closed | Handoff/Release now require the provider review and Human acceptance; output inventory is non-empty/current; finding routing is derived; payload binding and Impact/decision checks exist; physical containment is shared and regression-covered. |
+| CR-014, CR-015, CR-016, CR-020 | Closed | Draft is scaffold-tolerant; policy-sensitive paths are load-bearing and nested-safe; affected reads use UTF-8; canonical example identity/digests were repaired. |
+| CR-005 | Pending Human Owner decision; safe provisional implementation verified | `pmo-config/orchestration-policy.json` sets `externalization.internal_default_human_review: true`, and `EXT-002` demonstrably allows Public while requiring Human evidence for Internal. This is a defensible compatibility default, but only the Human Owner can make it the final policy choice. |
+| CR-013 | Partially closed | Required provider booleans, non-placeholder provider, report-heading validation, source metadata, and `retrieved_at` shape are now checked. A deterministic freshness/expiry contract is still absent. |
+
+**Open findings and required next batch**
+
+| ID | Severity | Status | Evidence / required action |
+|---|---|---|---|
+| CR-006 | Low | Open | `scripts/lib/research-validator.ps1` still fails unavailable provider plus no fallback, without a truthful, actionable `stopped` state. Add an explicit research state, stop reason, and next action. A stopped track must not be presented as completed research or silently unblock Scope. |
+| CR-013 (remainder) | Medium | Open | Define a deterministic provenance freshness contract (timestamp/expiry or explicit no-freshness declaration) and validate it. Do not pretend that local validation can verify a web source's truth or current availability. |
+| CR-018 | High | Open / independently reproduced | The new design and externalization artifacts still use raw `Get-FileHash`. In a temporary copy, changing only `PROJECT.md` LF to CRLF produced `EXT-004` and `DPROV-003` failures. Implement one shared canonical text-hash helper, use it consistently for provider input/output and externalization artifacts, regenerate example evidence, and test LF/CRLF, UTF-8 BOM/no-BOM, non-ASCII, and binary preservation. |
+| CR-019 | Medium | Open / independently reproduced | `scripts/pmo-status.ps1` reports the accepted canonical provider review as `preparing` and counts only `proposed` changes, so an approved but unimplemented change becomes `0`. Derive state from current validation diagnostics, count every non-terminal governed change, and expose an explicit next Human/automation action in Text and JSON. |
+| CR-021 | Medium | Open | Add active optional-track generator/E2E, Handoff/Release, status, nested policy-mutation, canonical hash, and cross-host tests. No CI run for `V2.1` is evidence because the workflow's push trigger is `main` only; Windows PowerShell 5.1, Windows pwsh, Linux, and macOS remain Human-directed CI evidence. |
+| CR-022 | Low | Open | Correct `Fixed_Plan/FreeBuff_fixed-update.md` M4 claims (actual classes are `Public/Internal/Confidential/Restricted`; activation is file existence, not mode; no `scope` template field). Mark the example synthetic and make README/Quick Start/status claims match the remaining in-review state. |
+
+**CR-018 implementation design (required before coding)**
+
+1. Add one shared helper for artifact SHA-256, loaded by `scripts/lib/externalization-validator.ps1`, `scripts/lib/design-provider-validator.ps1`, and `scripts/design-provider-digest.ps1`; do not duplicate normalization logic.
+2. For declared text artifacts only, decode explicitly as UTF-8, remove only the UTF-8 BOM, normalize `CRLF`/`CR` to `LF`, encode UTF-8 without BOM, and hash those bytes. Do **not** trim spaces or otherwise alter content.
+3. Hash binary extensions as original bytes. The allowed text-extension list must be policy-owned or a narrowly documented shared constant; unknown extensions fail safe to byte hashing.
+4. Apply the helper to every `INPUT-MANIFEST.json` input digest, `REVIEW.json` output inventory and output-set digest, and `EXTERNALIZATION.json` outgoing-artifact digest. Regenerate the canonical example digests with the same helper.
+5. Add positive and negative mutations proving LF/CRLF and UTF-8 BOM/no-BOM equality for text, non-ASCII cross-host stability, binary-byte sensitivity, and real-content mutation failure. Retain legacy raw-hash behavior only where its schema explicitly defines byte identity.
+
+**Independent evidence in this review**
+
+| Check | Result |
+|---|---|
+| `scripts/pmo-doctor.ps1` | Pass — 61 PASS, 0 WARN, 0 FAIL |
+| `scripts/check-public-hygiene.ps1` | Pass |
+| Committed M4–M6 helper | Its executed assertions passed through the available local execution window; the committed FB-002 mutations cover the repaired P0 paths. |
+| CR-018 temporary LF-to-CRLF mutation | Reproduced — Design gate failed only `EXT-004` and `DPROV-003`, proving raw-byte hashing remains. |
+| CR-019 current status | Reproduced — `examples/OPTIONAL-TRACKS` reports `UI Delivery: claude_design - preparing`, `Open Changes: 0`, and no next Handoff action despite the recorded accepted review / approved change. |
+| Git integrity | `git diff --check 0328686..95f3a7e` clean; reviewed worktree clean at `52eb82a`. |
+
+**Review summary**
+
+- FB-002 is a substantial and credible repair pass: the security/authority P0
+  defects are materially addressed, not merely described.
+- It is **not ready for Human acceptance or merge**. CR-018 is High severity,
+  and the status/testing/documentation work remains necessary for M7–M8.
+- The next implementation order is CR-018 first, then CR-019, then
+  CR-006/CR-013 remainder/CR-021/CR-022. Preserve the Human-authority boundary
+  and wait for the Human Owner to decide whether the Internal default remains
+  `true` or is changed to `false`.
 
 ### Review CX-002 — 2026-08-14
 
