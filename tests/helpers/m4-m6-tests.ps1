@@ -366,7 +366,11 @@ None.
     $manifestDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $manifestPath -Encoding utf8
     $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
     Assert-Rule $result "DPROV-003" "design provider input escaping the boundary is rejected"
-    Remove-Item -LiteralPath $linkPath -Force
+    # Windows PowerShell 5.1's Remove-Item can throw a NullReferenceException
+    # while deleting a junction. Directory.Delete removes the link itself
+    # without recursing into (or deleting) the external target and works on
+    # both junctions and directory symlinks.
+    [System.IO.Directory]::Delete($linkPath, $false)
   }
   Remove-Item -LiteralPath $outsideDir -Recurse -Force -ErrorAction SilentlyContinue
   Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/EXTERNALIZATION.json") -Destination $extPath -Force
