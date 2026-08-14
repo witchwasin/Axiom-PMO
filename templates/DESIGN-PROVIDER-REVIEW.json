@@ -8,6 +8,9 @@
     "manifest_digest": "<combined_digest from INPUT-MANIFEST.json>",
     "outputs_digest": "<sha256 of the OUTPUT/ file set>"
   },
+  "outputs": [
+    { "path": "<path relative to OUTPUT/>", "sha256": "<sha256 of that file>" }
+  ],
   "findings": [
     {
       "id": "DP-001",

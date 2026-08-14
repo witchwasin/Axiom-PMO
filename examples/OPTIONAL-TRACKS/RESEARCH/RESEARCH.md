@@ -51,10 +51,10 @@ stays on the site network, which matches the sponsor's constraint.
 
 ## Impact Assessment
 
-| Finding Ref | Maps To | Proposed Impact | Status |
-|---|---|---|---|
-| RC-001 | Scope (REQ-003 receive) | receive is a first-class operation | accepted |
-| RC-002 | BR-002 (photo network boundary) | photos stay internal-only | accepted |
+| Finding Ref | Maps To | Proposed Impact | Status | Change Proposal |
+|---|---|---|---|---|
+| RC-001 | Scope (REQ-003 receive) | receive is a first-class operation | accepted | CP-001 |
+| RC-002 | BR-002 (photo network boundary) | photos stay internal-only | accepted | CP-002 |
 
 ## Change Proposals
 

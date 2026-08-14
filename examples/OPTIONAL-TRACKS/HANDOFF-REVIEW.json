@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "project_code": "HANDOFF-DEMO",
+  "project_code": "OPTIONAL-TRACKS",
   "reviewed_at": "2026-07-16",
   "reviewer_kind": "human",
   "reviewer": "A. Nakamura (Delivery Lead)",
@@ -13,7 +13,7 @@
     "digest": "fba5dc448206d2e6b8c0c571bf3da2294426e79bef60aa9cc2c5cf8f1f6f39c2"
   },
   "review_inputs": {
-    "digest": "44eda5d02dc5e4065596987aa4c14228973a37a67a930691b51ffce8c51de43a"
+    "digest": "58a91ec5a802675852ae3b7f3db7956c6ebb7f1283fbb4aac1f2b0c8457ad76c"
   },
   "lenses": [
     {

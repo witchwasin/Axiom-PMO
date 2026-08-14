@@ -1,9 +1,9 @@
-# HANDOFF - HANDOFF-DEMO
+# HANDOFF - OPTIONAL-TRACKS
 
 > Developer entry point for the 2026-08-05 demonstration slice.
 > Validated by `scripts/validate-project.ps1 -Gate Handoff`.
 
-- Project: HANDOFF-DEMO
+- Project: OPTIONAL-TRACKS
 - Mode: Standard
 - Handoff Target: demo
 - Horizon: 2026-08-05

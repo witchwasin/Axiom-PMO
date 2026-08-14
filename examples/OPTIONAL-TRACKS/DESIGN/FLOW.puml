@@ -1,5 +1,5 @@
 @startuml
-title HANDOFF-DEMO - Scan and adjust stock
+title OPTIONAL-TRACKS - Scan and adjust stock
 
 |Workshop user|
 start

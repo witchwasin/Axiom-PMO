@@ -18,7 +18,7 @@
       "decision_ref": "DEC-002",
       "downstream_validation": {
         "status": "current",
-        "artifacts": [{ "path": "DESIGN/BUILD-SPEC.md", "sha256": "ae853789be427e172c5b487823b358e6e6c6f75487f642ab11cc598ca22a5e8e" }],
+        "artifacts": [{ "path": "DESIGN/BUILD-SPEC.md", "sha256": "83187198bb9ddc956f6d8fe4a3ace322731ca95a9a723dc9d9fb067103b1c4cd" }],
         "execution_contracts": []
       }
     }

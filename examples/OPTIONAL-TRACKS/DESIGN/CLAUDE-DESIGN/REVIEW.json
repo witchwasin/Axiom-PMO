@@ -5,9 +5,12 @@
   "preflight": {
     "status": "passed",
     "checked_at": "2026-08-14T10:15:00Z",
-    "manifest_digest": "477a5cb59d8ad382b46a96404f8297ff18fcdc8a1ac3cdb459f2ddfc78c1f84c",
+    "manifest_digest": "1836465fff50424e6327a5ce816ff829d5e2f274099033c7484a3b94d864cdce",
     "outputs_digest": "68710242a1030a108434d8472fc50fbe8b0aec0fd3d4de17d50343a14c8f2f83"
   },
+  "outputs": [
+    { "path": "ui-direction.md", "sha256": "8cb1bf22373fee176cc852cc87cbe4ea72c8f7caa276f37659ff43f907d60697" }
+  ],
   "findings": [
     {
       "id": "DP-001",

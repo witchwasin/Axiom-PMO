@@ -22,11 +22,11 @@
 
 | Field | Value |
 |---|---|
-| Overall status | M0–M8 implementation complete — ready for Codex review round |
-| Current implementation iteration | FB-001 |
-| Latest commit on `V2.1` | See FB-001 Git handoff table below (immutable SHA recorded after commit) |
-| Latest push to `origin/V2.1` | Yes — FB-001 pushed (Human Owner authorized push for this plan's work) |
-| Blocking question for Human Owner | None |
+| Overall status | FB-002 in progress — P0 repair batch complete; P1/P2 batches follow |
+| Current implementation iteration | FB-002 |
+| Latest commit on `V2.1` | See FB-002 Git handoff table below |
+| Latest push to `origin/V2.1` | Yes — FB-002 pushed (Human Owner authorized push for this plan's work) |
+| Blocking question for Human Owner | CR-005 — Internal externalization default. Provisional: `internal_default_human_review: true` (force Human review). Flip the single policy key to opt out. |
 
 ## Update template — add one section per implementation pass
 
@@ -118,6 +118,63 @@
 | Feedback ID | Response | Resulting change or reason not changed |
 |---|---|---|
 | Review CX-002 | No open findings for M0–M3; continued with M4–M8 as instructed | M4–M8 implemented above without touching M0–M3 contracts |
+
+### Iteration FB-002 — 2026-08-15
+
+**Executor:** FreeBuff — repair batch per Codex Review CR-002 (P0 authority/security + selected P1), waiting on the CR-005 Human decision.
+
+**Status:** Partial — P0 batch closed; CR-005 provisional; remaining P1/P2 findings open for the next batch.
+
+**Plan items addressed**
+
+| Plan reference | What changed | Affected paths | Evidence status |
+|---|---|---|---|
+| CR-017 (P0) | Physical containment: new shared helper resolves every path component (intermediate symlinks/junctions included) and the root itself before comparing; boundary escapes are rejected, never read or hashed | `scripts/lib/path-containment.ps1` (new), `scripts/validate-project.ps1`, `scripts/lib/externalization-validator.ps1`, `scripts/lib/design-provider-validator.ps1`, `scripts/lib/research-validator.ps1` | verified — symlink escape rejected in EXT-001/DPROV-003 (m4-m6 mutations) |
+| CR-007 (P0) | `claude_design` track at Handoff/Release now requires an existing `REVIEW.json` with a passed, current preflight and a Human `accepted` acceptance | `scripts/lib/design-provider-validator.ps1` | verified — missing review at Handoff fails DPROV-005 |
+| CR-008 (P0) | Declared output inventory in `REVIEW.json`; every declared output must exist under `OUTPUT/**` with a current digest, every actual file must be declared, reviewed output must be non-empty | `scripts/lib/design-provider-validator.ps1`, `templates/DESIGN-PROVIDER-REVIEW.json`, `scripts/design-provider-digest.ps1`, `examples/OPTIONAL-TRACKS/DESIGN/CLAUDE-DESIGN/REVIEW.json` | verified — missing/undeclared/stale output fails DPROV-005 |
+| CR-009 (P0) | Change Control routing is derived from impact/lens (never a self-asserted boolean); findings schema + resolved-decision checks; an accepted baseline cannot coexist with an unresolved technical/scope finding | `scripts/lib/design-provider-validator.ps1` | verified — open technical finding with `routes_to_change_control=false` fails DPROV-007 |
+| CR-010 (P0) | Manifest/registry binding: cited EXT entry must be approved, name the same provider, and carry the exact outgoing path+digest payload; canonical minimum inputs (PROJECT.md, BUILD-SPEC when present); raw `source/**` inputs need a governed justification | `scripts/lib/design-provider-validator.ps1`, `scripts/lib/research-validator.ps1`, `templates/DESIGN-PROVIDER-INPUT.json` | verified — payload/provider mismatch fails DPROV-004; research provider mismatch fails RESEARCH-007 |
+| CR-011 (P0) | Impact Assessment is parsed: finding refs must be real claims, maps-to/impact/status validated, accepted impacts must resolve through a Change Proposal with a Human disposition | `scripts/lib/research-validator.ps1`, `templates/RESEARCH.md`, `examples/OPTIONAL-TRACKS/RESEARCH/RESEARCH.md` | verified — accepted impact without proposal fails RESEARCH-004 |
+| CR-012 (P0) | Accepted AND rejected proposals need a named Human owner + resolvable decision; only `proposed` is unresolved (CR-004) and blocks Scope | `scripts/lib/research-validator.ps1` | verified — rejected without decision fails RESEARCH-004 |
+| CR-001 (P1) | Preflight must speak for the current manifest: `preflight.manifest_digest` compared to the recomputed combined digest | `scripts/lib/design-provider-validator.ps1` | verified — stale manifest digest fails DPROV-005 |
+| CR-002 (P1) | `network_transfer_occurred` is a required JSON boolean | `scripts/lib/externalization-validator.ps1`, `templates/EXTERNALIZATION.json` | verified — omission fails EXT-001 |
+| CR-003 (P1) | Repo-local source refs are anchored: MOM/REQ resolve against the Source Snapshot/`source/**`, DEC against the decision registry, TR/ISSUE/PR against the project record | `scripts/lib/research-validator.ps1` | verified — forged `MOM-99999999` fails RESEARCH-003 |
+| CR-005 (P1, provisional) | Blanket approval trigger removed (Public proceeds under policy); Internal default is data-driven via `externalization.internal_default_human_review: true` pending the Human decision; Confidential/Restricted + non-clean scan + explicit declaration still require Human evidence | `scripts/lib/externalization-validator.ps1`, `pmo-config/orchestration-policy.json` | verified — Public approved passes EXT-002; Internal without evidence fails EXT-002; policy key is load-bearing |
+| CR-013 (P1, partial) | Provider enum/declaration agreement, required provider booleans, `retrieved_at` shape, and report-section existence for claims | `scripts/lib/research-validator.ps1` | verified |
+| CR-015 (P1) | Sensitive-path patterns now read from `policy.permissions.sensitive_paths` and match basenames at any depth (nested `.env` caught), fail closed on malformed patterns | `scripts/lib/externalization-validator.ps1` | verified — nested `source/.env` fails EXT-003 |
+| CR-016 (P1) | Explicit `-Encoding UTF8` on every digest/heading/reference-bearing read in the three validators | `scripts/lib/externalization-validator.ps1`, `scripts/lib/design-provider-validator.ps1`, `scripts/lib/research-validator.ps1` | verified |
+| CR-020 (P1) | Canonical example identity corrected (`HANDOFF-DEMO` → `OPTIONAL-TRACKS` across docs) and handoff digests recomputed; Handoff now passes with `-FailOnWarning` | `examples/OPTIONAL-TRACKS/**` | verified — Handoff 57 PASS / 0 WARN / 0 FAIL |
+| CR-014 (P1) | Draft gate is placeholder-tolerant for the generator's scaffolding manifests | `scripts/lib/design-provider-validator.ps1` | verified (Draft returns before provider checks) |
+
+**Validation performed**
+
+| Check | Command or method | Result | Evidence / notes |
+|---|---|---|---|
+| M4/M5/M6 contract suite (extended) | `tests/helpers/m4-m6-tests.ps1 -RepoPath .` | Pass | 39/39 — 24 original + 15 new regression mutations covering CR-001/002/003/005/007/008/009/010/011/012/015/017 |
+| Canonical example gates | `scripts/validate-project.ps1 -ProjectPath examples/OPTIONAL-TRACKS` | Pass | Design 40, Scope 37, Handoff 57 with `-FailOnWarning` — all 0 FAIL |
+| Doctor | `scripts/pmo-doctor.ps1` | Pass | 61 PASS / 0 WARN / 0 FAIL |
+| Public hygiene | `scripts/check-public-hygiene.ps1` | Pass | 1/1 |
+| Golden validation | `scripts/run-validation-tests.ps1 -VerifyGolden` | Pass | 158/158 |
+| Full verification | `scripts/run-all-checks.ps1` | Pass | All suites green, exit 0 (doctor 61, golden 158, config-mutation 27, setup-integration 229, plugin-package 41, github-action 71, e2e suites, m4-m6-contracts 39) |
+
+**Notes and assumptions**
+
+- CR-005 is implemented provisionally as Option A (force Human review for Internal when no provider-specific policy exists), matching Codex's recommendation and the existing example. It is a one-key policy flip (`internal_default_human_review`); the Human Owner's answer decides the final value. This is a recommendation, not a Human decision.
+- Still open (next batch): CR-006 (research stop marker), CR-013 remainder (freshness model), CR-018 (canonical LF/CRLF-stable hashing), CR-019 (status lifecycle/freshness + tests), CR-021 (optional-track E2E + cross-host CI evidence), CR-022 (README/Quick Start/evidence accuracy).
+
+**Git handoff**
+
+| Field | Value |
+|---|---|
+| Commit SHA(s) | (recorded after commit below) |
+| Pushed to `origin/V2.1` | Yes — Human Owner authorized push for this plan's work |
+| Compare / PR link (if any) | — |
+
+**Response to Codex feedback**
+
+| Feedback ID | Response | Resulting change or reason not changed |
+|---|---|---|
+| Review CR-002 | P0 authority/security batch closed (CR-007..CR-012, CR-017) plus CR-001/002/003/005/013/014/015/016/020; regression mutations added before each rule is declared closed | See plan items above |
 
 ### Iteration CX-001 — 2026-08-14
 

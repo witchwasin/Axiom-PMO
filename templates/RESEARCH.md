@@ -42,9 +42,9 @@ nothing applies.>
 
 ## Impact Assessment
 
-| Finding Ref | Maps To | Proposed Impact | Status |
-|---|---|---|---|
-| RC-001 | REQ-### / Scope / AC-### / R-### | <impact on the product work> | <proposed / accepted / rejected> |
+| Finding Ref | Maps To | Proposed Impact | Status | Change Proposal |
+|---|---|---|---|---|
+| RC-001 | REQ-### / Scope / AC-### / R-### | <impact on the product work> | <proposed / accepted / rejected> | <CP-### resolving the impact, required when Status is accepted> |
 
 ## Change Proposals
 

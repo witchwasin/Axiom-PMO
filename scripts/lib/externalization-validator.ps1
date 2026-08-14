@@ -9,13 +9,21 @@
 #   echoes a detected value in a diagnostic.
 #
 #   What it CAN prove deterministically:
-#     - every transfer entry carries the required contract fields (EXT-001);
-#     - Confidential/Restricted transfers (and any transfer whose scan was not
-#       clean) carry a named Human reviewer and a resolvable decision (EXT-002);
+#     - every transfer entry carries the required contract fields, including a
+#       required JSON boolean for whether network transfer occurred (EXT-001);
+#     - transfers that require Human review -- Confidential/Restricted
+#       classifications, a non-clean scan, an explicit review-required
+#       declaration, or Internal with no provider-specific policy while the
+#       policy default is on -- carry a named Human reviewer and a resolvable
+#       decision (EXT-002). Public proceeds under policy without Human
+#       evidence; the Internal default is data-driven from
+#       orchestration-policy.externalization.internal_default_human_review;
 #     - a declared "clean" scan is honest -- re-scanning the declared outgoing
-#       artifacts with the configured secret patterns must agree (EXT-003);
-#     - declared outgoing artifact paths resolve inside the project and their
-#       recorded SHA-256 digests are current (EXT-004).
+#       artifacts with the configured secret patterns and the policy's
+#       sensitive-path patterns must agree (EXT-003);
+#     - declared outgoing artifact paths resolve inside the project's PHYSICAL
+#       boundary (symlink/junction escapes are rejected, never followed) and
+#       their recorded SHA-256 digests are current (EXT-004).
 #
 #   It never decides that a particular value IS sensitive. It checks the
 #   declared classification and the declared scan result against what the
@@ -27,10 +35,26 @@ function Get-ExternalizationRegistryPath {
   return Join-Path $Project ([string]$OrchestrationPolicy.externalization.registry)
 }
 
+# Glob-style sensitive path patterns are matched against each path segment and
+# against the full normalized path. A malformed pattern fails closed (treated
+# as a finding) so a policy typo can never silently widen the boundary.
+function Test-SensitivePathMatch {
+  param([string]$Path, [string]$Pattern)
+  $regexText = [regex]::Escape($Pattern).Replace('\*', '.*')
+  try {
+    $rx = [regex]::new("(?i)^$regexText$")
+  } catch { return $true }
+  foreach ($segment in @($Path -split '/')) {
+    if ($rx.IsMatch($segment)) { return $true }
+  }
+  return $rx.IsMatch($Path)
+}
+
 # Re-scan a set of project-relative artifact paths with the configured secret
 # patterns plus the policy's sensitive path patterns. Returns $true when any
 # pattern matches. Never returns the matched value -- callers only learn
-# whether a finding exists, which is all a diagnostic may say.
+# whether a finding exists, which is all a diagnostic may say. Paths that
+# physically escape the project boundary are not read at all.
 function Test-ExternalizationScanFinding {
   param(
     [string]$Project,
@@ -39,16 +63,15 @@ function Test-ExternalizationScanFinding {
     [string[]]$SensitivePathPatterns
   )
 
+  $root = [System.IO.Path]::GetFullPath($Project)
   foreach ($relative in $ArtifactPaths) {
     $normalized = $relative -replace '\\', '/'
     foreach ($pathPattern in $SensitivePathPatterns) {
-      $pattern = $pathPattern -replace '\.', '\.' -replace '\*', '.*'
-      if ($normalized -match "(?i)^$pattern$") { return $true }
+      if (Test-SensitivePathMatch -Path $normalized -Pattern $pathPattern) { return $true }
     }
 
     $full = [System.IO.Path]::GetFullPath((Join-Path $Project $relative))
-    $root = [System.IO.Path]::GetFullPath($Project)
-    if (-not $full.StartsWith($root + [System.IO.Path]::DirectorySeparatorChar)) { continue }
+    if (-not (Test-PhysicalContainment -Path $full -Root $root)) { continue }
     if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { continue }
 
     try {
@@ -72,6 +95,7 @@ function Test-ExternalizationRegistry {
     [string]$Project,
     [string]$Gate,
     $OrchestrationPolicy,
+    $Policy,
     [string[]]$DecisionIds
   )
 
@@ -80,7 +104,7 @@ function Test-ExternalizationRegistry {
   if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return }
   if ($Gate -eq "Draft") { return }
 
-  try { $doc = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json } catch {
+  try { $doc = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json } catch {
     Add-Result FAIL "EXTERNALIZATION.json is not valid JSON" "EXT-001" -Artifact "EXTERNALIZATION.json"
     return
   }
@@ -96,14 +120,21 @@ function Test-ExternalizationRegistry {
   $freshnessProblems = @()
   $humanReviewRequired = @($policy.human_review_required)
   $secretPatterns = @($policy.secret_patterns)
-  $sensitivePathPatterns = @($script:policyEnums.sensitive_paths)
+  $sensitivePathPatterns = @()
+  if ($Policy -and $Policy.permissions -and $Policy.permissions.sensitive_paths) {
+    $sensitivePathPatterns = @($Policy.permissions.sensitive_paths)
+  }
   if ($sensitivePathPatterns.Count -eq 0) {
     $sensitivePathPatterns = @(".env", ".env.*", "*.pem", "*.key", "*.pfx", "*.p12", "id_rsa", "id_ed25519")
+  }
+  $internalDefaultReview = $false
+  if ($policy.PSObject.Properties["internal_default_human_review"]) {
+    $internalDefaultReview = [bool]$policy.internal_default_human_review
   }
 
   foreach ($entry in $entries) {
     $id = [string]$entry.id
-    $required = @("id", "purpose", "provider", "provider_type", "outgoing_artifacts", "classification", "minimization_redaction", "scan_result", "human_review_required", "status", "recorded_at")
+    $required = @("id", "purpose", "provider", "provider_type", "outgoing_artifacts", "classification", "minimization_redaction", "scan_result", "human_review_required", "network_transfer_occurred", "status", "recorded_at")
     $missing = @()
     foreach ($field in $required) {
       $prop = $entry.PSObject.Properties[$field]
@@ -111,17 +142,22 @@ function Test-ExternalizationRegistry {
       # Array/object values (outgoing_artifacts) and DateTime values
       # (recorded_at) are checked by their own rules below; converting them to
       # [string] would either produce whitespace or a culture-local rendering.
-      if ($prop.Value -is [System.Array] -or $prop.Value -is [PSCustomObject] -or $prop.Value -is [datetime]) { continue }
+      if ($prop.Value -is [System.Array] -or $prop.Value -is [PSCustomObject] -or $prop.Value -is [datetime] -or $prop.Value -is [bool]) { continue }
       if ([string]::IsNullOrWhiteSpace([string]$entry.$field)) { $missing += $field }
     }
     $idBad = $id -notmatch '^EXT-\d{3,}$'
     if ($idBad -or $missing.Count -gt 0) { $structureProblems += $(if ($id) { $id } else { "unnamed entry" }); continue }
 
+    # CR-002: network_transfer_occurred must be a real JSON boolean (required).
+    $netProp = $entry.PSObject.Properties["network_transfer_occurred"]
+    if (-not $netProp -or $netProp.Value -isnot [bool]) { $structureProblems += "$id network_transfer_occurred" }
+    $reviewFlagProp = $entry.PSObject.Properties["human_review_required"]
+    if (-not $reviewFlagProp -or $reviewFlagProp.Value -isnot [bool]) { $structureProblems += "$id human_review_required" }
+
     if (@($policy.provider_types) -notcontains [string]$entry.provider_type) { $structureProblems += "$id provider_type" }
     if (@($policy.classifications) -notcontains [string]$entry.classification) { $structureProblems += "$id classification" }
     if (@($policy.scan_results) -notcontains [string]$entry.scan_result) { $structureProblems += "$id scan_result" }
     if (@($policy.statuses) -notcontains [string]$entry.status) { $structureProblems += "$id status" }
-    if ($entry.PSObject.Properties["network_transfer_occurred"] -and [string]$entry.network_transfer_occurred -notmatch '(?i)^(true|false)$') { $structureProblems += "$id network_transfer_occurred" }
     $recordedOk = $false
     if ($entry.recorded_at -is [datetime]) { $recordedOk = $true }
     elseif ([string]$entry.recorded_at -match '^\d{4}-\d{2}-\d{2}T' -or (Test-DateValue ([string]$entry.recorded_at))) { $recordedOk = $true }
@@ -142,7 +178,9 @@ function Test-ExternalizationRegistry {
       }
       $full = [System.IO.Path]::GetFullPath((Join-Path $Project $relative))
       $root = [System.IO.Path]::GetFullPath($Project)
-      if (-not $full.StartsWith($root + [System.IO.Path]::DirectorySeparatorChar) -or -not (Test-Path -LiteralPath $full -PathType Leaf)) {
+      # CR-017: physical containment, not lexical. A symlink/junction that
+      # escapes the project is rejected and never read or hashed.
+      if (-not (Test-PhysicalContainment -Path $full -Root $root) -or -not (Test-Path -LiteralPath $full -PathType Leaf)) {
         $structureProblems += "$id artifact ref"; continue
       }
       $resolvedArtifacts += $relative
@@ -154,13 +192,17 @@ function Test-ExternalizationRegistry {
       }
     }
 
+    # CR-005: the Human-evidence trigger is classification + scan result + an
+    # explicit review-required declaration. "Approved" alone is NOT a trigger
+    # (Public proceeds under policy). Internal with no provider-specific
+    # policy uses the data-driven policy default.
     $requiresHuman = (@($humanReviewRequired) -contains [string]$entry.classification) -or
       (@("finding", "not_run") -contains [string]$entry.scan_result) -or
-      ([string]$entry.status -eq "approved")
-    $declaredRequiresHuman = $false
-    if ($entry.PSObject.Properties["human_review_required"]) {
-      $declaredRequiresHuman = [bool]$entry.human_review_required
+      ($reviewFlagProp -and $reviewFlagProp.Value -eq $true)
+    if (-not $requiresHuman -and [string]$entry.classification -eq "Internal" -and $internalDefaultReview) {
+      $requiresHuman = $true
     }
+    $declaredRequiresHuman = ($reviewFlagProp -and $reviewFlagProp.Value -eq $true)
     if ($requiresHuman -and -not $declaredRequiresHuman) {
       $authorityProblems += "$id review flag"
     }
@@ -170,8 +212,6 @@ function Test-ExternalizationRegistry {
       $decider = if ($decisionRef -and $DecisionIds -contains $decisionRef) { Get-DecisionDecider -DecisionId $decisionRef } else { $null }
       if ([string]::IsNullOrWhiteSpace($reviewer) -or (Test-GenericOwner -Value $reviewer -OwnerPolicy $script:handoffPolicy.owner_policy)) { $authorityProblems += "$id reviewer" }
       if (-not $decisionRef -or $DecisionIds -notcontains $decisionRef -or $null -eq $decider -or (Test-GenericOwner -Value $decider -OwnerPolicy $script:handoffPolicy.owner_policy)) { $authorityProblems += "$id decision" }
-    } elseif ([string]$entry.status -eq "approved" -and -not $declaredRequiresHuman) {
-      $authorityProblems += "$id approval"
     }
 
     # Scan honesty: a declared "clean" scan must agree with a deterministic

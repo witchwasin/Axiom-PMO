@@ -7,7 +7,7 @@
   "generated_at": "2026-08-14T09:45:00Z",
   "inputs": [
     { "kind": "project_summary", "path": "PROJECT.md", "sha256": "c8d3ccf7cae03bc612b4f1271f6cee130803bf9925f17e5cce192317e9d14b70" },
-    { "kind": "build_spec", "path": "DESIGN/BUILD-SPEC.md", "sha256": "ae853789be427e172c5b487823b358e6e6c6f75487f642ab11cc598ca22a5e8e" }
+    { "kind": "build_spec", "path": "DESIGN/BUILD-SPEC.md", "sha256": "83187198bb9ddc956f6d8fe4a3ace322731ca95a9a723dc9d9fb067103b1c4cd" }
   ],
-  "combined_digest": "477a5cb59d8ad382b46a96404f8297ff18fcdc8a1ac3cdb459f2ddfc78c1f84c"
+  "combined_digest": "1836465fff50424e6327a5ce816ff829d5e2f274099033c7484a3b94d864cdce"
 }

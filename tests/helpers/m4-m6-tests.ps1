@@ -272,6 +272,160 @@ None.
   $result = Invoke-ValidationJson $tempRepo $active "Standard" "Scope"
   Assert-Rule $result "RESEARCH-007" "external provider without approved externalization"
 
+  # ---------------------------------------------------------------------------
+  # FB-002 regression mutations (CR-001..CR-012, CR-015, CR-017). Reset the
+  # canonical example to its pristine state first, then exercise each repaired
+  # rule with its own negative mutation.
+  # ---------------------------------------------------------------------------
+  foreach ($rel in @("EXTERNALIZATION.json", "DESIGN/CLAUDE-DESIGN/INPUT-MANIFEST.json", "DESIGN/CLAUDE-DESIGN/REVIEW.json", "CHANGE-REQUESTS.json", "RESEARCH/RESEARCH.md", "RESEARCH/PROVENANCE.json", "PROJECT.md")) {
+    Copy-Item -LiteralPath (Join-Path $RepoPath ("examples/OPTIONAL-TRACKS/" + $rel)) -Destination (Join-Path $active $rel) -Force
+  }
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/DESIGN/CLAUDE-DESIGN/OUTPUT/ui-direction.md") -Destination (Join-Path $outputDir "ui-direction.md") -Force
+
+  # --- CR-002: network_transfer_occurred is a required JSON boolean -----------
+  $extDoc = Get-Content -LiteralPath $extPath -Raw | ConvertFrom-Json
+  $extDoc.entries[0].PSObject.Properties.Remove("network_transfer_occurred")
+  $extDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $extPath -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
+  Assert-Rule $result "EXT-001" "missing network_transfer_occurred is a structural defect"
+
+  # --- CR-005: Public proceeds under policy; Internal default forces review ---
+  $extDoc = Get-Content -LiteralPath $extPath -Raw | ConvertFrom-Json
+  $extDoc.entries[0] = [pscustomobject]@{
+    id = "EXT-001"; purpose = $extDoc.entries[0].purpose; provider = $extDoc.entries[0].provider
+    provider_type = "web"; outgoing_artifacts = $extDoc.entries[0].outgoing_artifacts
+    classification = "Public"; minimization_redaction = $extDoc.entries[0].minimization_redaction
+    scan_result = "clean"; human_review_required = $false; reviewer = ""; decision_ref = ""
+    network_transfer_occurred = $true; status = "approved"; recorded_at = "2026-08-14T09:30:00Z"
+  }
+  $extDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $extPath -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
+  Assert-NoRule $result "EXT-002" "Public approved transfer proceeds under policy"
+  $extDoc = Get-Content -LiteralPath $extPath -Raw | ConvertFrom-Json
+  $extDoc.entries[0].classification = "Internal"
+  $extDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $extPath -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
+  Assert-Rule $result "EXT-002" "Internal without provider policy forces Human review by default"
+
+  # --- CR-015: nested sensitive path (.env at depth) is caught by the scan ----
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/EXTERNALIZATION.json") -Destination $extPath -Force
+  $envDir = Join-Path $active "source"
+  New-Item -ItemType Directory -Force -Path $envDir | Out-Null
+  $envPath = Join-Path $envDir ".env"
+  Set-Content -LiteralPath $envPath -Value "TOKEN=not-a-real-secret-abcdef123456" -Encoding utf8
+  $envHash = (Get-FileHash -LiteralPath $envPath -Algorithm SHA256).Hash.ToLowerInvariant()
+  $extDoc = Get-Content -LiteralPath $extPath -Raw | ConvertFrom-Json
+  $extDoc.entries[0].outgoing_artifacts = @([pscustomobject]@{ path = "source/.env"; sha256 = $envHash })
+  $extDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $extPath -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
+  Assert-Rule $result "EXT-003" "nested sensitive path matches the policy patterns"
+  Remove-Item -LiteralPath $envPath -Force
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/EXTERNALIZATION.json") -Destination $extPath -Force
+
+  # --- CR-017: a repo-relative link that escapes the project is rejected ------
+  $outsideDir = Join-Path ([System.IO.Path]::GetTempPath()) ("fb002-outside " + [guid]::NewGuid().ToString("N"))
+  New-Item -ItemType Directory -Force -Path $outsideDir | Out-Null
+  $outsideFile = Join-Path $outsideDir "leaked.txt"
+  Set-Content -LiteralPath $outsideFile -Value "outside content" -Encoding utf8
+  $linkPath = Join-Path $active "escape-link"
+  try {
+    if ($IsWindows -or ($PSVersionTable.PSEdition -eq "Desktop")) {
+      New-Item -ItemType Junction -Path $linkPath -Target $outsideDir -ErrorAction Stop | Out-Null
+    } else {
+      New-Item -ItemType SymbolicLink -Path $linkPath -Target $outsideDir -ErrorAction Stop | Out-Null
+    }
+    $linkCreated = $true
+  } catch {
+    $linkCreated = $false
+  }
+  if ($linkCreated) {
+    $leakedHash = (Get-FileHash -LiteralPath (Join-Path $linkPath "leaked.txt") -Algorithm SHA256).Hash.ToLowerInvariant()
+    $extDoc = Get-Content -LiteralPath $extPath -Raw | ConvertFrom-Json
+    $extDoc.entries[0].outgoing_artifacts = @([pscustomobject]@{ path = "escape-link/leaked.txt"; sha256 = $leakedHash })
+    $extDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $extPath -Encoding utf8
+    $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
+    Assert-Rule $result "EXT-001" "externalization artifact escaping the boundary is rejected"
+
+    # Same boundary escape through the design provider manifest input set.
+    $projectMdHash = (Get-FileHash -LiteralPath (Join-Path $active "PROJECT.md") -Algorithm SHA256).Hash.ToLowerInvariant()
+    $manifestDoc = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+    $manifestDoc.inputs = @(
+      [pscustomobject]@{ kind = "project_summary"; path = "PROJECT.md"; sha256 = $projectMdHash },
+      [pscustomobject]@{ kind = "raw_source"; path = "escape-link/leaked.txt"; sha256 = $leakedHash; governed_justification = "Containment test fixture." }
+    )
+    $manifestDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $manifestPath -Encoding utf8
+    $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
+    Assert-Rule $result "DPROV-003" "design provider input escaping the boundary is rejected"
+    Remove-Item -LiteralPath $linkPath -Force
+  }
+  Remove-Item -LiteralPath $outsideDir -Recurse -Force -ErrorAction SilentlyContinue
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/EXTERNALIZATION.json") -Destination $extPath -Force
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/DESIGN/CLAUDE-DESIGN/INPUT-MANIFEST.json") -Destination $manifestPath -Force
+
+  # --- CR-007: REVIEW.json is required at Handoff for a claude_design track ---
+  Remove-Item -LiteralPath $reviewPath -Force
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Handoff"
+  Assert-Rule $result "DPROV-005" "missing provider review blocks Handoff"
+
+  # --- CR-008: declared output inventory must match the OUTPUT/ file set ------
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/DESIGN/CLAUDE-DESIGN/REVIEW.json") -Destination $reviewPath -Force
+  $reviewDoc = Get-Content -LiteralPath $reviewPath -Raw | ConvertFrom-Json
+  $reviewDoc.outputs = @([pscustomobject]@{ path = "missing-file.md"; sha256 = ("d" * 64) })
+  $reviewDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $reviewPath -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
+  Assert-Rule $result "DPROV-005" "declared output that does not exist is rejected"
+
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/DESIGN/CLAUDE-DESIGN/REVIEW.json") -Destination $reviewPath -Force
+  Set-Content -LiteralPath (Join-Path $outputDir "extra.md") -Value "undeclared" -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
+  Assert-Rule $result "DPROV-005" "undeclared output file is rejected"
+  Remove-Item -LiteralPath (Join-Path $outputDir "extra.md") -Force
+
+  # --- CR-001: preflight must speak for the current manifest ------------------
+  $reviewDoc = Get-Content -LiteralPath $reviewPath -Raw | ConvertFrom-Json
+  $reviewDoc.preflight.manifest_digest = "0" * 64
+  $reviewDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $reviewPath -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
+  Assert-Rule $result "DPROV-005" "stale preflight manifest digest is rejected"
+
+  # --- CR-009: routing is derived; open technical finding blocks acceptance ---
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/DESIGN/CLAUDE-DESIGN/REVIEW.json") -Destination $reviewPath -Force
+  $reviewDoc = Get-Content -LiteralPath $reviewPath -Raw | ConvertFrom-Json
+  $reviewDoc.findings = @([pscustomobject]@{ id = "DP-002"; lens = "technical"; impact = "technical"; routes_to_change_control = $false; summary = "Test finding with derived routing"; status = "open"; owner = "Demo Tech Lead"; decision_ref = "" })
+  $reviewDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $reviewPath -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
+  Assert-Rule $result "DPROV-007" "self-asserted routing is ignored; open technical finding blocks acceptance"
+
+  # --- CR-010: the externalization payload must cover the manifest inputs -----
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/DESIGN/CLAUDE-DESIGN/REVIEW.json") -Destination $reviewPath -Force
+  $extDoc = Get-Content -LiteralPath $extPath -Raw | ConvertFrom-Json
+  $extDoc.entries[0].outgoing_artifacts = @([pscustomobject]@{ path = "PROJECT.md"; sha256 = "c8d3ccf7cae03bc612b4f1271f6cee130803bf9925f17e5cce192317e9d14b70" })
+  $extDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $extPath -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
+  Assert-Rule $result "DPROV-004" "manifest payload not covered by the externalization entry"
+
+  # --- CR-003: a forged MOM reference is not resolvable ------------------------
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/EXTERNALIZATION.json") -Destination $extPath -Force
+  $provDoc = Get-Content -LiteralPath $provenancePath -Raw | ConvertFrom-Json
+  $provDoc.claims[0].sources = @([pscustomobject]@{ reference = "MOM-99999999"; title = "forged"; issuer = "forged"; date = "2026-07-14"; primary = $true; verification = "verified" })
+  $provDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $provenancePath -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Scope"
+  Assert-Rule $result "RESEARCH-003" "forged repo-local source reference is unresolvable"
+
+  # --- CR-011: accepted Impact Assessment must resolve through a proposal -----
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/RESEARCH/PROVENANCE.json") -Destination $provenancePath -Force
+  $researchReport = Join-Path $active "RESEARCH/RESEARCH.md"
+  $researchText = (Get-Content -LiteralPath $researchReport -Raw) -replace '\| RC-001 \| Scope \(REQ-003 receive\) \| receive is a first-class operation \| accepted \| CP-001 \|', '| RC-001 | Scope (REQ-003 receive) | receive is a first-class operation | accepted | |'
+  Set-Content -LiteralPath $researchReport -Value $researchText -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Scope"
+  Assert-Rule $result "RESEARCH-004" "accepted impact without a governed proposal is rejected"
+
+  # --- CR-012: a rejected proposal still needs a Human decision ---------------
+  $researchText = (Get-Content -LiteralPath $researchReport -Raw) -replace '\| CP-001 \| Defer multi-warehouse stock; demo covers a single site \| scope \| yes \| accepted \| Demo PO \| DEC-004 \|', '| CP-001 | Defer multi-warehouse stock; demo covers a single site | scope | yes | rejected | Demo PO | |'
+  Set-Content -LiteralPath $researchReport -Value $researchText -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Scope"
+  Assert-Rule $result "RESEARCH-004" "rejected proposal without a Human decision is rejected"
+
   Write-Host "[PASS] M4/M5/M6 contract tests completed"
 } finally {
   if (Test-Path -LiteralPath $workRoot) { Remove-Item -LiteralPath $workRoot -Recurse -Force }

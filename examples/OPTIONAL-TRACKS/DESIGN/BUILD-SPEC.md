@@ -1,4 +1,4 @@
-# BUILD-SPEC - HANDOFF-DEMO
+# BUILD-SPEC - OPTIONAL-TRACKS
 
 > Technical specification for the 2026-08-05 demonstration slice.
 > Every section declares a Status. See `docs/rules/HANDOFF-005.md`.

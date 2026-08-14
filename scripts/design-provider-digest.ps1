@@ -66,4 +66,15 @@ Write-Output "combined_digest: $(Get-DesignInputCombinedDigest -Inputs $currentI
 $outputRoot = Get-DesignProviderOutputRoot -Project $project -OrchestrationPolicy $orchestrationPolicy
 Write-Output "outputs_digest: $(Get-DesignOutputSetDigest -OutputRoot $outputRoot)"
 
+# Per-output hashes, for REVIEW.json's declared output inventory. Paths are
+# relative to OUTPUT/ and sorted so the rows can be copied back in order.
+if (Test-Path -LiteralPath $outputRoot) {
+  $prefix = (Resolve-Path -LiteralPath $outputRoot).Path
+  foreach ($file in (Get-ChildItem -LiteralPath $outputRoot -Recurse -File -ErrorAction SilentlyContinue | Sort-Object FullName)) {
+    $relative = $file.FullName.Substring($prefix.Length).TrimStart([char]92, [char]47) -replace '\\', '/'
+    $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+    Write-Output "output: $relative -> $hash"
+  }
+}
+
 exit 0
