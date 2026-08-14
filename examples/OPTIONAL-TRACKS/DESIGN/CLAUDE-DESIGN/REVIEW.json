@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "project_code": "OPTIONAL-TRACKS",
+  "provider": "Claude Design",
+  "preflight": {
+    "status": "passed",
+    "checked_at": "2026-08-14T10:15:00Z",
+    "manifest_digest": "477a5cb59d8ad382b46a96404f8297ff18fcdc8a1ac3cdb459f2ddfc78c1f84c",
+    "outputs_digest": "68710242a1030a108434d8472fc50fbe8b0aec0fd3d4de17d50343a14c8f2f83"
+  },
+  "findings": [
+    {
+      "id": "DP-001",
+      "lens": "technical",
+      "impact": "technical",
+      "routes_to_change_control": true,
+      "summary": "Receive operation missing from the interaction model; split into a first-class operation",
+      "status": "resolved",
+      "owner": "Demo Tech Lead",
+      "decision_ref": "DEC-002"
+    }
+  ],
+  "acceptance": {
+    "decision": "accepted",
+    "reviewer_kind": "human",
+    "reviewer": "A. Nakamura (Delivery Lead)",
+    "decision_ref": "DEC-002"
+  }
+}

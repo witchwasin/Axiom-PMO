@@ -132,6 +132,19 @@ stop
 "@ | Set-Content -LiteralPath (Join-Path $projectDir "DESIGN/FLOW.puml") -Encoding utf8
 }
 
+# M5: a Claude Design project materializes the two provider contracts under
+# their generated names only -- templates/DESIGN-PROVIDER-INPUT.json becomes
+# DESIGN/CLAUDE-DESIGN/INPUT-MANIFEST.json and
+# templates/DESIGN-PROVIDER-REVIEW.json becomes DESIGN/CLAUDE-DESIGN/REVIEW.json.
+# The repository source names never coexist with the generated names. Both are
+# scaffolds with visible placeholders; the provider workflow fills them.
+if ($UiDelivery -eq "claude_design") {
+  New-Item -ItemType Directory -Force -Path (Join-Path $projectDir "DESIGN/CLAUDE-DESIGN") | Out-Null
+  New-Item -ItemType Directory -Force -Path (Join-Path $projectDir "DESIGN/CLAUDE-DESIGN/OUTPUT") | Out-Null
+  Copy-TemplateWithProjectCode (Join-Path $repo "templates/DESIGN-PROVIDER-INPUT.json") (Join-Path $projectDir "DESIGN/CLAUDE-DESIGN/INPUT-MANIFEST.json")
+  Copy-TemplateWithProjectCode (Join-Path $repo "templates/DESIGN-PROVIDER-REVIEW.json") (Join-Path $projectDir "DESIGN/CLAUDE-DESIGN/REVIEW.json")
+}
+
 # Research, Externalization, and Claude Design artifacts are materialized by
 # their owning milestones (M4-M6). M1-M3 record declarations and establish
 # the early System Design/testability contract without creating provider files

@@ -85,20 +85,34 @@ to re-read this file:
 node cli/axiom.mjs status --project P02-ABC
 ```
 
-Projects may also declare two optional branches. In this V2.1 handoff, the
-declarations and early System Design/testability contract are implemented;
-Externalization, Claude Design package enforcement, and Guided Research remain
-pending for the next implementation owner:
+Projects may also declare two optional branches. Research is optional and
+happens before Scope approval; Claude Design is an optional governed provider
+handoff for the UI. Both stay silent until declared, and neither can approve or
+rewrite Scope — only a traceable Human decision can do that:
 
 ```text
 Research:    off | guided | auto
 UI delivery: not_applicable | dev_guided | claude_design
 ```
 
-Research and Claude Design values are declarations only until their owning
-milestones land; neither can approve or rewrite Scope. System Design and
-initial Test Strategy live in `DESIGN/BUILD-SPEC.md` before detailed UI work.
-See the
+- Guided/auto research produces `RESEARCH/RESEARCH.md` and
+  `RESEARCH/PROVENANCE.json`; every material claim maps to a resolvable
+  source, an accepted proposal needs a named Human decision, and an
+  unresolved accepted-impact proposal blocks Scope.
+- Externalization records every transfer that leaves the governed boundary in
+  `EXTERNALIZATION.json`; Confidential/Restricted transfers require named
+  Human evidence, and a declared clean scan must agree with a deterministic
+  re-scan.
+- Claude Design receives a digest-bound input manifest
+  (`DESIGN/CLAUDE-DESIGN/INPUT-MANIFEST.json`), returns output to
+  `DESIGN/CLAUDE-DESIGN/OUTPUT/**`, and is accepted only by a named Human in
+  `DESIGN/CLAUDE-DESIGN/REVIEW.json`.
+
+See [research workflow](docs/concepts/research-workflow.md),
+[externalization](docs/concepts/externalization.md), and
+[Claude Design workflow](docs/concepts/claude-design-workflow.md). System
+Design and initial Test Strategy live in `DESIGN/BUILD-SPEC.md` before
+detailed UI work. See the
 [end-to-end workflow](docs/concepts/end-to-end-workflow.md).
 
 ### Actor legend and compact flow
@@ -108,13 +122,17 @@ external tool · `[SYS]` deterministic validator · `[HG]` Human gate
 
 ```text
 [H-IN] Source -> [AI-R] Intake -> choose execution path + Lite/Standard/Strict
-  -> optional declared branches (future owner implements provider contracts)
-  -> [SYS] Scope -> [HG] Scope Approved
-  -> [AI-A] BUILD-SPEC System Design + initial Test Strategy
-  -> conditional UI path -> [AI-R] Acceptance Cases + Handoff
-  -> [SYS] Handoff checks -> [HG] Design Ready
+  -> optional Research? (off | guided | auto)
+       no -> continue
+       yes -> [SYS/HG] Externalization -> [AI-R/EXT] provider research
+              -> [AI-R] Impact proposal (never automatic Scope)
+  -> [SYS] Scope validation -> [HG] Scope Approved
+  -> [AI-A] System Design + Test Strategy in BUILD-SPEC
+  -> UI delivery: dev-guided flow | Claude Design
+       (manifest -> output -> preflight -> AI review -> Human review)
+  -> [AI-R] Acceptance Cases + Final Handoff -> [SYS] Handoff checks -> [HG] Design Ready
   -> developer build | governed AI contract
-  -> [AI-A/SYS] Change Control when reality differs
+  -> [AI-A/SYS/HG] Controlled Change loop when reality differs
   -> [SYS] evidence/release checks -> [HG] Release Approved
 ```
 
@@ -302,6 +320,9 @@ than aspiration.
 | `DELIVERY.md` or GitHub Issues as the declared task source | **Shipped** |
 | GitHub Action: report-only by default, PR-native Job Summary/annotations/report artifact | **Shipped** |
 | SCOPE-DIFF: deterministic changed-files-vs-approved-scope check, opt-in | **Shipped** |
+| Externalization gate: honest transfer registry with classification, scan honesty, and Human evidence for Confidential/Restricted | **Shipped** |
+| Guided Research: evidence-backed `RESEARCH.md` + `PROVENANCE.json` before Scope, Human-owned change proposals | **Shipped** |
+| Claude Design: governed digest-bound provider handoff, preflight, and named-Human acceptance review | **Shipped** |
 | Execution work-package and evidence-return schemas | **Experimental** |
 | Automated execution-framework evidence import | **Roadmap** |
 | Portfolio dashboard, enterprise identity/RBAC, and deep tracker adapters | **Not shipped** |
@@ -425,8 +446,11 @@ named human Visual Proof review. It never automates a judgement of visual qualit
 Or start from a worked example: [`examples/LITE-BUGFIX`](examples/LITE-BUGFIX),
 [`examples/STANDARD-FEATURE`](examples/STANDARD-FEATURE),
 [`examples/STRICT-HIGH-RISK`](examples/STRICT-HIGH-RISK),
-[`examples/HANDOFF-DEMO`](examples/HANDOFF-DEMO) (a demo handoff), or the fuller
-[`examples/P01-DEMO`](examples/P01-DEMO).
+[`examples/HANDOFF-DEMO`](examples/HANDOFF-DEMO) (a demo handoff), the fuller
+[`examples/P01-DEMO`](examples/P01-DEMO), or
+[`examples/OPTIONAL-TRACKS`](examples/OPTIONAL-TRACKS) (the one canonical
+Standard example combining Guided Research, the Claude Design manifest, and a
+controlled change).
 
 On Linux/macOS or with `make` installed, the same checks are available through
 convenience wrappers (they call the PowerShell reference implementation via
@@ -492,6 +516,9 @@ RELEASE.md          Release scope, test summary, QA/security review, rollback pl
 RAID-log.md         Risks/assumptions/issues/dependencies (Strict, or when meaningful)
 decision-log.md     Logged decisions (Strict, or when meaningful)
 RTM.json            Requirement → design → delivery → test → evidence → release traceability (Strict)
+RESEARCH/           Optional guided research: RESEARCH.md + PROVENANCE.json (before Scope)
+EXTERNALIZATION.json  Optional registry of transfers leaving the governed boundary
+DESIGN/CLAUDE-DESIGN/ Optional Claude Design handoff: INPUT-MANIFEST.json, OUTPUT/**, REVIEW.json
 ```
 
 ## The AI skill system
@@ -557,7 +584,7 @@ Typography: Tahoma / Arial (sans-serif) for voice; Consolas / Courier New
 
 | | |
 |---|---|
-| **Concepts** | [handoff readiness](docs/concepts/handoff-readiness.md) · [visual direction](docs/concepts/visual-direction.md) · [design system](docs/concepts/design-system.md) · [anti-hallucination](docs/concepts/anti-hallucination.md) · [evidence-based execution](docs/concepts/evidence-based-execution.md) · [risk modes](docs/concepts/risk-modes.md) · [human authority](docs/concepts/human-authority.md) |
+| **Concepts** | [handoff readiness](docs/concepts/handoff-readiness.md) · [visual direction](docs/concepts/visual-direction.md) · [design system](docs/concepts/design-system.md) · [research workflow](docs/concepts/research-workflow.md) · [externalization](docs/concepts/externalization.md) · [Claude Design workflow](docs/concepts/claude-design-workflow.md) · [change control](docs/concepts/change-control.md) · [anti-hallucination](docs/concepts/anti-hallucination.md) · [evidence-based execution](docs/concepts/evidence-based-execution.md) · [risk modes](docs/concepts/risk-modes.md) · [human authority](docs/concepts/human-authority.md) |
 | **Guides** | [Claude Code integration](docs/guides/claude-code-integration.md) · [Claude Code walkthrough](docs/guides/claude-code-walkthrough.md) · [artifact map](docs/guides/artifact-map.md) · [GitHub Action](docs/guides/github-action.md) · [M1 walkthrough and recording evidence](docs/guides/m1-walkthrough-and-recording.md) · [PowerShell runtime setup](docs/guides/powershell-runtime.md) · [three-day demo handoff](docs/guides/three-day-demo-handoff.md) |
 | **Reference** | [diagnostics contract](docs/reference/diagnostics-contract.md) · [scope declaration (SCOPE-DIFF)](docs/reference/scope-declaration.md) · [execution contract](docs/reference/execution-contract.md) · [rule reference](docs/rules/) |
 | **Architecture** | [control plane](docs/architecture/control-plane.md) · [Visual Proof](docs/architecture/visual-proof.md) · [M6 threat model](docs/architecture/m6-threat-model.md) · [plugin packaging spike](docs/architecture/plugin-packaging-spike.md) · [validation engine](docs/architecture/validation-engine.md) · [execution contract verification](docs/architecture/execution-contract-verification.md) · [PowerShell portability](docs/architecture/powershell-portability.md) · [lessons learned](docs/architecture/lessons-learned.md) |

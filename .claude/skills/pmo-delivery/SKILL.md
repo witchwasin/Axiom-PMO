@@ -53,6 +53,7 @@ The deterministic validator proves the contract is **complete**. It cannot prove
    someone rewrites the build sequence or waives a build-spec section.
 6. If the visual-artifact triple exists, treat Visual Proof as separate conditional candidate evidence: confirm the manifest has two committed captures, an input digest, complete rubric, named human reviewer, and direction decision references. Do not judge aesthetics yourself, replace the human declaration, or describe this check as a new approval.
 7. Re-run the gate, then `scripts/assess-handoff.ps1` for stage verdicts.
+8. When the Claude Design provider track is active, merge only current accepted output into the Final Handoff — the output set whose digest `DESIGN/CLAUDE-DESIGN/REVIEW.json` records. Unaccepted or stale output is not handoff content (`DPROV-005`/`DPROV-006`).
 
 ### The twelve lenses
 

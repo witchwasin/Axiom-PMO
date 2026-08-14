@@ -39,9 +39,36 @@ declarations, validators use these compatibility defaults silently:
 | `UI delivery` | `legacy` |
 
 New Standard/Strict projects may declare `UI delivery` and receive the early
-`DESIGN/BUILD-SPEC.md` Test Strategy contract. Research, Externalization, and
-Claude Design provider artifacts are intentionally not created until their
-owning M4–M6 work is implemented.
+`DESIGN/BUILD-SPEC.md` Test Strategy contract.
+
+## V2.1 optional tracks (M4–M6)
+
+Existing projects still need no bulk migration. The optional tracks activate
+only when declared or materialized, and a legacy project that declares none of
+them is byte-for-byte silent:
+
+| Track | Activates when | Default when absent |
+|---|---|---|
+| Research | `Research mode:` is `guided` or `auto` | `off` (silent) |
+| Externalization | `EXTERNALIZATION.json` exists | no registry (silent) |
+| Claude Design | `UI delivery: claude_design` at Handoff/Release, or `INPUT-MANIFEST.json` exists | `not_applicable` / `legacy` (silent) |
+
+To adopt a track on an existing project:
+
+1. **Research** — declare `Research mode`, `Research depth`, and `Research
+   provider` in `PROJECT.md`, then complete `templates/RESEARCH.md` and
+   `templates/RESEARCH-PROVENANCE.json`. External providers must cite an
+   approved `EXTERNALIZATION.json` entry.
+2. **Externalization** — copy `templates/EXTERNALIZATION.json` and record each
+   transfer with exact artifact digests, classification, scan result, and
+   Human evidence for Confidential/Restricted.
+3. **Claude Design** — declare `UI delivery: claude_design`; the generator
+   materializes `DESIGN/CLAUDE-DESIGN/INPUT-MANIFEST.json` and
+   `DESIGN/CLAUDE-DESIGN/REVIEW.json`. Compute digests with
+   `scripts/design-provider-digest.ps1`.
+
+Missing optional declarations never fail a legacy project; the compatibility
+defaults above apply silently.
 
 ## Project Migration Steps
 

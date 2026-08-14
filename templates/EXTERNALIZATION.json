@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "entries": [
+    {
+      "id": "EXT-001",
+      "purpose": "<why this data leaves the governed project boundary>",
+      "provider": "<provider or tool name>",
+      "provider_type": "<api | web | storage | messaging | email | local_process>",
+      "outgoing_artifacts": [
+        { "path": "<repo-relative path>", "sha256": "<sha256>" }
+      ],
+      "classification": "<Public | Internal | Confidential | Restricted>",
+      "minimization_redaction": "<what was minimized or redacted, or 'none'>",
+      "scan_result": "<clean | finding | not_run>",
+      "human_review_required": false,
+      "reviewer": "<named human reviewer when required>",
+      "decision_ref": "<DEC-### when required>",
+      "network_transfer_occurred": true,
+      "status": "<proposed | approved | rejected>",
+      "recorded_at": "<ISO-8601>"
+    }
+  ]
+}

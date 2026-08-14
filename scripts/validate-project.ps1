@@ -83,6 +83,9 @@ $repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
 . (Join-Path $PSScriptRoot "lib/design-system-validator.ps1")
 . (Join-Path $PSScriptRoot "lib/visual-proof-validator.ps1")
 . (Join-Path $PSScriptRoot "lib/change-control-validator.ps1")
+. (Join-Path $PSScriptRoot "lib/externalization-validator.ps1")
+. (Join-Path $PSScriptRoot "lib/research-validator.ps1")
+. (Join-Path $PSScriptRoot "lib/design-provider-validator.ps1")
 . (Join-Path $PSScriptRoot "lib/scope-diff-matcher.ps1")
 . (Join-Path $PSScriptRoot "lib/scope-diff-git-adapter.ps1")
 . (Join-Path $PSScriptRoot "lib/scope-diff-validator.ps1")
@@ -150,6 +153,14 @@ if (-not $executionPath) { $executionPath = "development_handoff" }
 $orchestrationDeclarations = Test-OrchestrationDeclarations -Project $project -Gate $Gate -OrchestrationPolicy $orchestrationPolicy
 Test-ChangeControlRegistry -Project $project -Gate $Gate -OrchestrationPolicy $orchestrationPolicy -Mode $Mode -ExecutionPath $executionPath -ProjectReqIds $projectReqIds -DecisionIds $decisionIds
 Test-EarlyTestDesign -Project $project -Mode $Mode -Gate $Gate -ProjectReqIds $projectReqIds
+
+# M4-M6 optional upstream tracks. Each is silent unless the project actually
+# opts in: EXTERNALIZATION.json exists (M4), RESEARCH mode is declared and not
+# off (M6), or the Claude Design provider track is active or required at
+# Handoff/Release (M5). Legacy projects with none of these are untouched.
+Test-ExternalizationRegistry -Project $project -Gate $Gate -OrchestrationPolicy $orchestrationPolicy -DecisionIds $decisionIds
+Test-ResearchWorkflow -Project $project -Gate $Gate -OrchestrationPolicy $orchestrationPolicy -DecisionIds $decisionIds
+Test-DesignProviderWorkflow -Project $project -Gate $Gate -OrchestrationPolicy $orchestrationPolicy -DecisionIds $decisionIds
 
 Test-RaidBlocker -Project $project -Gate $Gate
 

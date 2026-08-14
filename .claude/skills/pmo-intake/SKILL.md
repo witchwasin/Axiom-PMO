@@ -59,6 +59,7 @@ Use the mode, strict-trigger, evidence-status, and approval enums from `pmo-conf
 3. Mark evidence status from configured policy values.
 4. Recommend Lite, Standard, or Strict per work item.
 5. Update or request Source Snapshot refresh when source files change.
+6. When the project declares Research mode `guided` or `auto`, draft the Research Brief from preliminary requirements and unknowns (see `docs/concepts/research-workflow.md`); keep every material claim source-backed in `RESEARCH/PROVENANCE.json`. Research findings are candidate evidence that only a Human decision at Scope can act on.
 
 ## Output Contract
 Return confirmed requirements, assumptions, open questions, source references, confidence notes, and mode recommendation.

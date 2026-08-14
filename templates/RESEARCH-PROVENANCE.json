@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "project_code": "<PROJECT-CODE>",
+  "provider_used": "<feyman | web | auto-resolved provider>",
+  "provider_available": true,
+  "fallback_used": false,
+  "externalization": "<EXT-### from an approved EXTERNALIZATION.json entry when the provider is external>",
+  "retrieved_at": "<ISO-8601>",
+  "claims": [
+    {
+      "id": "RC-001",
+      "claim": "<the material claim>",
+      "report_section": "<RESEARCH.md section that uses this claim>",
+      "evidence_status": "<verified | supported | inferred | missing | conflict>",
+      "sources": [
+        {
+          "reference": "<https://... | FILE:path | MOM-YYYYMMDD>",
+          "title": "<source title>",
+          "issuer": "<source issuer>",
+          "date": "<YYYY-MM-DD when known>",
+          "primary": true,
+          "verification": "<verified | unverified | pending>"
+        }
+      ]
+    }
+  ]
+}

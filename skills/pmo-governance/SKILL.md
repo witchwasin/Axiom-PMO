@@ -26,6 +26,8 @@ Use `pmo-config/artifact-policy.json` for required/conditional/optional governan
 3. Verify RTM coverage for Strict.
 4. Confirm config and docs do not drift.
 5. Validate `CHANGE-REQUESTS.json` when a real deviation exists; AI-proposed impact is candidate evidence, not exhaustive discovery or approval.
+6. For Externalization, maintain `EXTERNALIZATION.json` as a registry of what leaves the governed boundary: exact outgoing artifact paths and digests, declared classification, minimization/redaction, deterministic scan result, and truthful network-transfer declaration. Confidential/Restricted transfers and non-clean scans require a named Human reviewer and a resolvable `DEC-###`; never declare such content safe on your own, never echo a detected value in a diagnostic.
+7. For Research, keep `RESEARCH/RESEARCH.md` and `RESEARCH/PROVENANCE.json` source-backed and draft Impact Assessment and Change Proposals as candidate evidence. Only a Human accepts proposals at Scope (`RESEARCH-004`); an unresolved accepted-impact proposal blocks Scope (`RESEARCH-005`).
 
 ## Output Contract
 Return risk status, required artifacts, missing evidence, and policy deviations.

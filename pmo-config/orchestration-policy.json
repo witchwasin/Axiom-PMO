@@ -12,6 +12,11 @@
     "depths": ["quick", "standard", "deep"],
     "providers": ["none", "feyman", "web", "auto"],
     "artifact_root": "RESEARCH",
+    "report_artifact": "RESEARCH/RESEARCH.md",
+    "provenance_artifact": "RESEARCH/PROVENANCE.json",
+    "external_providers": ["feyman", "web", "auto"],
+    "proposal_statuses": ["proposed", "accepted", "rejected"],
+    "proposal_impacts": ["scope", "requirements", "acceptance", "risk", "none"],
     "fallback_order": ["project_provider", "session_feyman", "configured_feyman", "approved_web", "stop"]
   },
   "ui_delivery": {
@@ -19,12 +24,23 @@
     "provider_root": "DESIGN/CLAUDE-DESIGN",
     "input_manifest": "DESIGN/CLAUDE-DESIGN/INPUT-MANIFEST.json",
     "output_root": "DESIGN/CLAUDE-DESIGN/OUTPUT",
-    "review_manifest": "DESIGN/CLAUDE-DESIGN/REVIEW.json"
+    "review_manifest": "DESIGN/CLAUDE-DESIGN/REVIEW.json",
+    "preflight_statuses": ["passed", "failed"],
+    "acceptance_decisions": ["accepted", "revision_required", "rejected"],
+    "reviewer_kinds": ["ai", "human"],
+    "finding_lenses": ["business_fit", "technical", "ux_ui", "scope"],
+    "finding_statuses": ["open", "resolved"],
+    "finding_impacts": ["none", "technical", "scope"]
   },
   "externalization": {
     "classifications": ["Public", "Internal", "Confidential", "Restricted"],
     "human_review_required": ["Confidential", "Restricted"],
     "registry": "EXTERNALIZATION.json",
+    "schema_version": "1.0",
+    "statuses": ["proposed", "approved", "rejected"],
+    "provider_types": ["api", "web", "storage", "messaging", "email", "local_process"],
+    "scan_results": ["clean", "finding", "not_run"],
+    "required_human_decision": ["Confidential", "Restricted"],
     "secret_patterns": [
       { "id": "github_token", "pattern": "ghp_[A-Za-z0-9_]{20,}" },
       { "id": "openai_key", "pattern": "sk-[A-Za-z0-9]{20,}" },

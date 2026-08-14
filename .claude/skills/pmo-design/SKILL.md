@@ -17,6 +17,7 @@ Turn scoped requirements into flows, a source-backed visual direction, and a bui
 | `visual_direction` | Establish creative/art direction, avoid generic defaults, or choose how the product should feel | see Required Inputs |
 | `design_system` | Turn a selected direction or existing brand into a developer contract and visual sheet | see Required Inputs |
 | `system_design` | Define architecture, data/API boundaries, and early Test Strategy in `DESIGN/BUILD-SPEC.md` | `PROJECT.md`, `DESIGN/BUILD-SPEC.md` |
+| `design_provider` | Prepare the governed Claude Design handoff, run preflight, reconcile candidate output, and record the review | `PROJECT.md`, `DESIGN/BUILD-SPEC.md`, `DESIGN/CLAUDE-DESIGN/**`, `EXTERNALIZATION.json`, `decision-log.md` |
 
 Read `docs/concepts/visual-direction.md` for creative-direction rules and `docs/concepts/design-system.md` for the artifact contract. Do not restate them here.
 
@@ -53,6 +54,18 @@ Only a human may declare `brand_starting_point: undecided | existing`, select an
 1. Complete System Design and the mode-aware Test Strategy in BUILD-SPEC before detailed UI work.
 2. Create flow/wireframe artifacts only for an active UI path and actual UI scope.
 3. Record a technical/scope mismatch as a candidate governed Change Request; do not silently widen the approved contract.
+
+## Execution - design_provider
+
+When `UI delivery: claude_design` is declared (see `docs/concepts/claude-design-workflow.md`):
+
+1. Prepare `DESIGN/CLAUDE-DESIGN/INPUT-MANIFEST.json` from `templates/DESIGN-PROVIDER-INPUT.json`: digest-bound references to the minimum necessary canonical inputs only — never `source/**` by default — plus an approved `EXTERNALIZATION.json` entry, provider, purpose, and generated timestamp. Run `scripts/design-provider-digest.ps1` and record the current digests.
+2. Hand the folder to the Human-operated provider; candidate output lands in `DESIGN/CLAUDE-DESIGN/OUTPUT/**`.
+3. Run the deterministic preflight (paths, manifest, declared screens/states, digests, scope references) before any review is recorded.
+4. Perform semantic candidate reconciliation for business/API/data/permission mismatches before Human review; these are candidate findings, not decisions.
+5. Record the Human review outcome in `DESIGN/CLAUDE-DESIGN/REVIEW.json` with a decision reference. Only a Human may mark acceptance (`DPROV-006`); an AI may propose revision.
+6. Route technical/scope findings through `CHANGE-REQUESTS.json` (`DPROV-007`) before the accepted design baseline is finalized; never silently widen the approved contract.
+7. After revision, recompute all digests; a changed output set invalidates the prior review. Accepted current output is what merges into Final Handoff.
 
 ## Execution - visual_direction
 

@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "entries": [
+    {
+      "id": "EXT-001",
+      "purpose": "Research brief (guided feyman research) and Claude Design manifest inputs sent to the configured providers",
+      "provider": "Feyman research + Claude Design UI provider",
+      "provider_type": "web",
+      "outgoing_artifacts": [
+        { "path": "PROJECT.md", "sha256": "c8d3ccf7cae03bc612b4f1271f6cee130803bf9925f17e5cce192317e9d14b70" },
+        { "path": "DESIGN/BUILD-SPEC.md", "sha256": "ae853789be427e172c5b487823b358e6e6c6f75487f642ab11cc598ca22a5e8e" }
+      ],
+      "classification": "Internal",
+      "minimization_redaction": "Summaries only; no raw transcripts, no customer data; demo dataset is disposable",
+      "scan_result": "clean",
+      "human_review_required": true,
+      "reviewer": "Demo Tech Lead",
+      "decision_ref": "DEC-003",
+      "network_transfer_occurred": true,
+      "status": "approved",
+      "recorded_at": "2026-08-14T09:30:00Z"
+    }
+  ]
+}

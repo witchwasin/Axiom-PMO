@@ -69,6 +69,7 @@ Invoke-Check "validation-fixtures" { & $ps -NoProfile -ExecutionPolicy Bypass -F
 Invoke-Check "example-golden" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/golden/capture-examples.ps1") -RepoPath $repo -Verify }
 Invoke-Check "config-mutation" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/config-mutation-tests.ps1") -RepoPath $repo }
 Invoke-Check "m2-m3-contracts" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/m2-m3-tests.ps1") -RepoPath $repo }
+Invoke-Check "m4-m6-contracts" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/m4-m6-tests.ps1") -RepoPath $repo }
 Invoke-Check "diagnostics-contract" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/diagnostics-contract-tests.ps1") -RepoPath $repo }
 Invoke-Check "line-endings" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/line-ending-tests.ps1") -RepoPath $repo }
 Invoke-Check "handoff-assessment" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/handoff-assessment-tests.ps1") -RepoPath $repo }
@@ -104,6 +105,10 @@ Invoke-Check "plugin-install" { & $ps -NoProfile -ExecutionPolicy Bypass -File (
 Invoke-Check "lite-example" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/validate-project.ps1") -ProjectPath (Join-Path $repo "examples/LITE-BUGFIX") -Mode Lite -Gate Scope -FailOnWarning }
 Invoke-Check "standard-example" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/validate-project.ps1") -ProjectPath (Join-Path $repo "examples/STANDARD-FEATURE") -Mode Standard -Gate Release -FailOnWarning }
 Invoke-Check "strict-example" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/validate-project.ps1") -ProjectPath (Join-Path $repo "examples/STRICT-HIGH-RISK") -Mode Strict -Gate Release -FailOnWarning }
+# M8: the one canonical worked example covering Standard + Guided Research +
+# Claude Design manifest + one controlled change. Design gate exercises all
+# four optional tracks together.
+Invoke-Check "optional-tracks-example" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "scripts/validate-project.ps1") -ProjectPath (Join-Path $repo "examples/OPTIONAL-TRACKS") -Mode Standard -Gate Design -FailOnWarning }
 Invoke-Check "e2e-lite" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/e2e/lite.ps1") -RepoPath $repo }
 Invoke-Check "e2e-standard" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/e2e/standard.ps1") -RepoPath $repo }
 Invoke-Check "e2e-strict" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/e2e/strict.ps1") -RepoPath $repo }

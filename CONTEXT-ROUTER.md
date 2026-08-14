@@ -16,6 +16,7 @@ This file is guidance. The machine-readable map is `pmo-config/context-map.json`
 | Controlled change | `PROJECT.md`, `CHANGE-REQUESTS.json`, affected requirements/artifacts, `decision-log.md` | Only for disputed impact | unrelated project folders |
 | Claude Design handoff/review | `PROJECT.md`, `DESIGN/BUILD-SPEC.md`, `DESIGN/CLAUDE-DESIGN/**`, `EXTERNALIZATION.json`, `decision-log.md` | Only specific governed inputs in the manifest | bulk `source/**`, release docs |
 | Scope question | `PROJECT.md`, `decision-log.md` | Only if summary is missing or disputed | full MOM history |
+| System design | `PROJECT.md`, `DESIGN/BUILD-SPEC.md` | Only for unresolved architecture/data/API questions | flow/wireframe, release docs |
 | Flow / design | `PROJECT.md`, `DESIGN/` | Only for unclear source-backed logic | delivery/release docs |
 | Wireframe | `PROJECT.md`, `DESIGN/FLOW.puml` | Only for missing UX rules | all MOM/transcripts |
 | Visual direction | `PROJECT.md`, `DESIGN/VISUAL-DIRECTION.md` when present, `DESIGN/WIREFRAME.md`, `DESIGN/BRAND/`, `decision-log.md` | Only for creative-brief fields not resolved by the summary | delivery/release docs |
@@ -26,6 +27,7 @@ This file is guidance. The machine-readable map is `pmo-config/context-map.json`
 | QA / bug | `DELIVERY.md`, `RAID-log.md`, `RELEASE.md` | Only if expected behavior is unclear | unrelated design docs |
 | Release | `RELEASE.md`, `RAID-log.md`, `decision-log.md`, `DELIVERY.md` | Only for unresolved acceptance disputes | all skills |
 | Impact from new source | New source file, `PROJECT.md`, affected `DESIGN/` or `DELIVERY.md` | Yes, targeted | unrelated project folders |
+| Mode-specific testability | `PROJECT.md`, `DESIGN/BUILD-SPEC.md` (Test Strategy table) | Only rows already cited in the strategy | release docs, unrelated design |
 
 ---
 

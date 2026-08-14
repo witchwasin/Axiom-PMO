@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "project_code": "<PROJECT-CODE>",
+  "provider": "<provider or tool name>",
+  "purpose": "<what the provider is asked to produce>",
+  "externalization": "<EXT-### from an approved EXTERNALIZATION.json entry>",
+  "generated_at": "<ISO-8601>",
+  "inputs": [
+    { "kind": "project_summary", "path": "PROJECT.md", "sha256": "<sha256>" },
+    { "kind": "build_spec", "path": "DESIGN/BUILD-SPEC.md", "sha256": "<sha256>" }
+  ],
+  "combined_digest": "<sha256 of sorted path|sha256 lines>"
+}

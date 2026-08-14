@@ -3,9 +3,10 @@
 Two choices are independent: who builds (`development_handoff` or
 `governed_ai_execution`) and governance Mode (Lite, Standard, Strict).
 Optional Research and UI delivery declarations select branches; they are
-Human declarations, never detections. In the M0–M3 handoff these values are
-vocabulary and routing only; provider/externalization/research enforcement is
-reserved for M4–M6.
+Human declarations, never detections. Each branch has its own governed
+artifacts and validators (see `research-workflow.md`, `externalization.md`,
+and `claude-design-workflow.md`), and every branch stays silent until
+declared.
 
 ```text
 [H-IN] Source -> [AI-R] Intake -> optional Research/Externalization
@@ -22,9 +23,13 @@ Humans own ambiguity and approvals. AI drafts and reconciles candidate output.
 Deterministic validators check shape, references, digests, Git evidence, and
 freshness. `auto` never means automatic Scope, Design, risk, or Release approval.
 
-| Step | Executor | Human touchpoint | Governed output |
-|---|---|---|---|
-| Intake/research | AI-assisted intake | research focus remains a future optional track | `PROJECT.md` declaration |
-| System/UI design | AI-assisted | UI choice; provider handoff is a future optional track | `DESIGN/BUILD-SPEC.md`, conditional flow/wireframe |
-| Delivery/build | Developer or execution agent | controlled changes | `DELIVERY.md`, conditional `CHANGE-REQUESTS.json` |
-| Verification/release | Deterministic checks + AI review | Release Approved | evidence and release artifacts |
+| Step | Executor | Accountable | Human touchpoint | Governed output |
+|---|---|---|---|---|
+| Intake | AI-assisted intake | PM/PO | declares Mode, Execution path, Research, UI delivery | `PROJECT.md` declarations |
+| Research (optional) | AI drafts brief/impact; provider produces candidate research | Research owner | confirms focus/provider; accepts/rejects Change Proposals at Scope | `RESEARCH/RESEARCH.md`, `RESEARCH/PROVENANCE.json` |
+| Externalization (when data leaves) | AI proposes classification/redaction | Named reviewer | reviews and approves Confidential/Restricted transfers | `EXTERNALIZATION.json` |
+| System design | AI-assisted | Tech Lead | none beyond Design Ready | `DESIGN/BUILD-SPEC.md` + mode-aware Test Strategy |
+| UI: dev-guided | AI-assisted | Developer | UI delivery choice | conditional flow/wireframe |
+| UI: Claude Design (optional) | AI prepares manifest + preflight + reconciliation | Named reviewer | operates provider; reviews and accepts/rejects output | `DESIGN/CLAUDE-DESIGN/INPUT-MANIFEST.json`, `OUTPUT/**`, `REVIEW.json` |
+| Delivery/build | Developer or execution agent | Work item owner | controlled changes | `DELIVERY.md`, conditional `CHANGE-REQUESTS.json` |
+| Verification/release | Deterministic checks + AI review | Release approver | Release Approved | evidence and release artifacts |

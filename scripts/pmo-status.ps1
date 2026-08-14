@@ -69,6 +69,27 @@ $researchDepth = if ($orchestration.ResearchDepth) { $orchestration.ResearchDept
 $researchProvider = if ($orchestration.ResearchProvider) { $orchestration.ResearchProvider } else { "none" }
 $uiDelivery = if ($orchestration.UiDelivery) { $orchestration.UiDelivery } else { "legacy" }
 
+# M7: optional-track state, derived from declared files -- never invented.
+$researchState = "off"
+if ($researchMode -ne "off") {
+  $researchState = if ((Test-Path -LiteralPath (Join-Path $project "RESEARCH/RESEARCH.md")) -and (Test-Path -LiteralPath (Join-Path $project "RESEARCH/PROVENANCE.json"))) { "active" } else { "incomplete" }
+}
+$manifestPath = Join-Path $project "DESIGN/CLAUDE-DESIGN/INPUT-MANIFEST.json"
+$reviewPath = Join-Path $project "DESIGN/CLAUDE-DESIGN/REVIEW.json"
+$uiDeliveryState = if ($uiDelivery -eq "claude_design") { if (Test-Path -LiteralPath $manifestPath) { "preparing" } else { "not_started" } } else { "not_applicable" }
+$providerReviewRecorded = (Test-Path -LiteralPath $reviewPath)
+$openGovernedChanges = 0
+$crPath = Join-Path $project "CHANGE-REQUESTS.json"
+if (Test-Path -LiteralPath $crPath) {
+  try {
+    $crDoc = Get-Content -LiteralPath $crPath -Raw | ConvertFrom-Json
+    $openGovernedChanges = @($crDoc.changes | Where-Object { $_.status -eq "proposed" }).Count
+  } catch {
+    # Unparseable registry: report -1 so the reader knows the count is unknown.
+    $openGovernedChanges = -1
+  }
+}
+
 # Same Continue/try/finally guard scripts/new-project.ps1 already uses around
 # its own Draft-validation call: this script sets Stop, and Windows
 # PowerShell 5.1 turns a child's stderr into a terminating error under Stop
@@ -102,7 +123,11 @@ if ($Format -eq "Json") {
     research_mode = $researchMode
     research_depth = $researchDepth
     research_provider = $researchProvider
+    research_state = $researchState
     ui_delivery = $uiDelivery
+    ui_delivery_state = $uiDeliveryState
+    provider_review_recorded = $providerReviewRecorded
+    open_governed_changes = $openGovernedChanges
     current_gate = $currentGate
     checked_gate = $checkGate
     next_required = $nextFinding
@@ -115,8 +140,10 @@ if ($Format -eq "Json") {
   if ($resultJson) {
     Write-Host "Governance Mode: $($resultJson.effective_mode)"
   }
-  Write-Host "Research:        $researchMode ($researchDepth, $researchProvider)"
-  Write-Host "UI Delivery:     $uiDelivery"
+  Write-Host "Research:        $researchMode ($researchDepth, $researchProvider) - $researchState"
+  Write-Host "UI Delivery:     $uiDelivery - $uiDeliveryState"
+  Write-Host "Open Changes:    $openGovernedChanges"
+  Write-Host "Provider Review: $(if ($providerReviewRecorded) { 'recorded' } else { 'not recorded' })"
   Write-Host "Current Gate:    $currentGate"
   Write-Host ""
   if ($nextFinding) {

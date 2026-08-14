@@ -47,6 +47,10 @@ function Set-E2EProjectContent {
   $text = $text -replace '<mitigation>', "None needed for a fixture"
   $text = $text -replace '<owner>', "E2E PM"
   $text = $text -replace '<approver name>', "E2E Approver"
+  # The Design Ready role matrix placeholder entered the template with the
+  # M1 declaration work; without this the generated Lite/Standard project
+  # fails PLACEHOLDER-001 at the Release gate.
+  $text = $text -replace '<Product Owner / Project Manager / Tech Lead / Solution Architect>', 'Product Owner'
   $text = $text -replace '(?m)^\| (Scope Approved|Design Ready|Release Approved) \| pending', '| $1 | approved'
   # Lite gets no decision-log, so its approval evidence must be a typed ref that
   # resolves without one (H4). Swap the template's DEC-00N approval evidence for
@@ -63,7 +67,11 @@ function Set-E2EProjectContent {
   $text = $text -replace '- Task source of truth: `file` / `github`', '- Task source of truth: `file`'
   $reviewStage = if ($Mode -eq "Lite") { "none" } else { "qa" }
   $strictTrigger = if ($Mode -eq "Strict") { "permission" } else { "none" }
-  $designRef = if ($Mode -eq "Lite") { "not_required" } else { "DESIGN/FLOW.puml" }
+  # M1 changed the generator: DESIGN/FLOW.puml is created only when a UI
+  # delivery path is active (default: not_applicable), while DESIGN/BUILD-SPEC.md
+  # is always generated for Standard/Strict. Point the design ref at the file
+  # that actually exists or REF-001 fails every generated project.
+  $designRef = if ($Mode -eq "Lite") { "not_required" } else { "DESIGN/BUILD-SPEC.md" }
   # Lite work-item evidence must resolve without a decision-log (H4); use a
   # typed ISSUE ref. Standard/Strict use DEC-003 which their decision-log resolves.
   $workItemEvidence = if ($Mode -eq "Lite") { "ISSUE:123" } else { "DEC-003" }
@@ -130,7 +138,7 @@ function Set-E2EProjectContent {
         [pscustomobject]@{
           requirement_id = "REQ-001"
           source_ref = "$momId item-1"
-          design_ref = "DESIGN/FLOW.puml"
+          design_ref = "DESIGN/BUILD-SPEC.md"
           delivery_ref = "D-001"
           test_ref = "TEST-001"
           evidence_ref = "DEC-003"
@@ -151,6 +159,31 @@ function Set-E2EProjectContent {
       $text = $text -replace '<screen>', "E2E screen"
       $text = $text -replace '<Screen Name>', "E2E Screen"
       Set-Content -LiteralPath $wireframeFile -Value $text -Encoding utf8 -NoNewline
+    }
+  }
+
+  # --- DESIGN/BUILD-SPEC.md (Standard/Strict): the M1 declaration-driven
+  #     testability contract makes every generated project require a real Test
+  #     Strategy at the Design gate, and the Release gate rejects template
+  #     placeholders. Fill the canonical row and sweep the prose guidance.
+  if ($Mode -ne "Lite") {
+    $specFile = Join-Path $ProjectPath "DESIGN/BUILD-SPEC.md"
+    if (Test-Path -LiteralPath $specFile) {
+      $text = Get-Content -LiteralPath $specFile -Raw
+      # Table cells first (they carry enum values the prose sweep below would
+      # flatten); identical replacements to Set-E2EHandoffContent, which runs
+      # later for handoff projects and becomes a no-op on already-filled rows.
+      $text = $text -replace '\| <rear camera / offline read / file export> \| <AC-002> \| <how it is actually served> \| <DEC-001> \|',
+        "| Local file read | AC-001 | Same-origin fetch over HTTPS | DEC-002 |"
+      $text = $text -replace '\| <Part> \| <quantity_on_hand> \| <integer> \| <pieces> \| <1 per part per location> \| <>= 0> \|',
+        "| Record | count | integer | items | 1 per record | >= 0 |"
+      $text = $text -replace '\| <element> \| <yes / no> \| <DEC-001 or .not applicable.> \| <DEC-002 or .retained with the record.> \|',
+        "| Record identifier | no | not applicable | retained with the record |"
+      $text = $text -replace '\| AC-001 \| <REQ-001> \| <Given \.\.\., when \.\.\., then \.\.\.> \| <automated> \| <seed name> \| <how to reset> \|',
+        "| AC-001 | REQ-001 | Given a seeded record, when it is read, then the count is returned | automated | e2e-seed | Regenerate the fixture |"
+      $text = $text -replace '\| <area> \| <REQ-001 or R-001> \| <unit / integration / system / security / usability> \| <automated> \| <environment> \| <named owner> \|', "| E2E happy path | REQ-001 | system | automated | local | E2E PM |"
+      $text = [regex]::Replace($text, '(?m)^<[^>\r\n]+>[ \t]*\r?$', "Specified deterministically by the E2E fixture.")
+      Set-Content -LiteralPath $specFile -Value $text -Encoding utf8 -NoNewline
     }
   }
 

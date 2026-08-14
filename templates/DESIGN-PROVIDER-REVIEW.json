@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "project_code": "<PROJECT-CODE>",
+  "provider": "<provider or tool name>",
+  "preflight": {
+    "status": "<passed | failed>",
+    "checked_at": "<ISO-8601>",
+    "manifest_digest": "<combined_digest from INPUT-MANIFEST.json>",
+    "outputs_digest": "<sha256 of the OUTPUT/ file set>"
+  },
+  "findings": [
+    {
+      "id": "DP-001",
+      "lens": "<business_fit | technical | ux_ui | scope>",
+      "impact": "<none | technical | scope>",
+      "routes_to_change_control": false,
+      "summary": "<finding summary>",
+      "status": "<open | resolved>",
+      "owner": "<named owner>",
+      "decision_ref": "<DEC-### when resolved>"
+    }
+  ],
+  "acceptance": {
+    "decision": "<accepted | revision_required | rejected>",
+    "reviewer_kind": "<ai | human>",
+    "reviewer": "<named human reviewer>",
+    "decision_ref": "<DEC-###>"
+  }
+}

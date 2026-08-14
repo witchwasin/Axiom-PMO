@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "changes": [
+    {
+      "id": "CR-001",
+      "detected_at": "2026-08-14T10:00:00Z",
+      "source": "review",
+      "classification": "patch",
+      "summary": "Split receive into a first-class operation per design review finding DP-001",
+      "reason": "Design provider semantic reconciliation found stock consumption without a receive path.",
+      "affected_requirements": ["REQ-003"],
+      "affected_artifacts": ["DESIGN/BUILD-SPEC.md"],
+      "scope_impact": false,
+      "acceptance_impact": false,
+      "mode_impact": "none",
+      "status": "implemented",
+      "owner": "Demo Tech Lead",
+      "decision_ref": "DEC-002",
+      "downstream_validation": {
+        "status": "current",
+        "artifacts": [{ "path": "DESIGN/BUILD-SPEC.md", "sha256": "ae853789be427e172c5b487823b358e6e6c6f75487f642ab11cc598ca22a5e8e" }],
+        "execution_contracts": []
+      }
+    }
+  ]
+}

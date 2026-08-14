@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0",
+  "project_code": "OPTIONAL-TRACKS",
+  "provider_used": "feyman",
+  "provider_available": true,
+  "fallback_used": false,
+  "externalization": "EXT-001",
+  "retrieved_at": "2026-08-14T09:00:00Z",
+  "claims": [
+    {
+      "id": "RC-001",
+      "claim": "The current stock model covers consumption only; receive and photo attachment are not yet first-class operations.",
+      "report_section": "Existing Solutions",
+      "evidence_status": "verified",
+      "sources": [
+        {
+          "reference": "MOM-20260714",
+          "title": "Handoff kickoff meeting",
+          "issuer": "Sponsor and delivery team",
+          "date": "2026-07-14",
+          "primary": true,
+          "verification": "verified"
+        }
+      ]
+    },
+    {
+      "id": "RC-002",
+      "claim": "Part photos must not leave the site network and are disposable demo data.",
+      "report_section": "Feature Parity",
+      "evidence_status": "verified",
+      "sources": [
+        {
+          "reference": "MOM-20260714",
+          "title": "Handoff kickoff meeting",
+          "issuer": "Sponsor and delivery team",
+          "date": "2026-07-14",
+          "primary": true,
+          "verification": "verified"
+        },
+        {
+          "reference": "FILE:decision-log.md",
+          "title": "Project decision log",
+          "issuer": "OPTIONAL-TRACKS",
+          "date": "2026-07-15",
+          "primary": false,
+          "verification": "verified"
+        }
+      ]
+    }
+  ]
+}

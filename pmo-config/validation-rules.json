@@ -600,6 +600,102 @@
       "suggestion": "Implement, reject, or supersede the change and record current downstream artifact (and, for governed AI execution, execution-contract) digests before continuing.",
       "documentation": "docs/rules/CHANGE-003.md"
     },
+    "EXT-001": {
+      "severity": "fail",
+      "description": "The externalization registry is malformed: a transfer entry is missing required fields, uses an unrecognized classification/provider type/scan result/status, or cites an outgoing artifact that does not resolve inside the project.",
+      "suggestion": "Use templates/EXTERNALIZATION.json. Every entry records purpose, provider, provider type, exact outgoing artifact paths with SHA-256 digests, declared classification, minimization/redaction statement, deterministic scan result, network-transfer declaration, status, and timestamp.",
+      "documentation": "docs/rules/EXT-001.md"
+    },
+    "EXT-002": {
+      "severity": "fail",
+      "description": "A Confidential/Restricted transfer, a transfer whose scan was not clean, or an approved transfer lacks the required Human evidence: a named reviewer (not a generic token) and a resolvable DEC-### with a named decider.",
+      "suggestion": "Have a named Human review the transfer and record the decision in decision-log.md, then cite it. AI may propose classification and redaction but may never declare Confidential/Restricted content safe on its own.",
+      "documentation": "docs/rules/EXT-002.md"
+    },
+    "EXT-003": {
+      "severity": "fail",
+      "description": "A transfer declares scan_result 'clean' but a deterministic re-scan of its outgoing artifacts matches a configured secret pattern or sensitive path pattern.",
+      "suggestion": "Remove the matching value or file from the outgoing set, or treat the transfer as finding and obtain the required Human decision. Detected values are never echoed in diagnostics; re-scan the artifacts yourself to see them.",
+      "documentation": "docs/rules/EXT-003.md"
+    },
+    "EXT-004": {
+      "severity": "fail",
+      "description": "A declared outgoing artifact digest is missing, malformed, or no longer matches the current file hash.",
+      "suggestion": "Recompute the SHA-256 of each outgoing artifact after any edit so the registry records what actually left the boundary.",
+      "documentation": "docs/rules/EXT-004.md"
+    },
+    "DPROV-002": {
+      "severity": "fail",
+      "description": "The Claude Design input manifest is missing on a claude_design project at Handoff/Release, or is incomplete: required fields, provider/purpose, generated timestamp, input references, or combined digest are absent or placeholder.",
+      "suggestion": "Materialize DESIGN/CLAUDE-DESIGN/INPUT-MANIFEST.json from templates/DESIGN-PROVIDER-INPUT.json and fill every field; the repository source name and the project name must never both exist.",
+      "documentation": "docs/rules/DPROV-002.md"
+    },
+    "DPROV-003": {
+      "severity": "fail",
+      "description": "A manifest input path does not resolve inside the project, its recorded SHA-256 is stale, or the combined digest does not match a recomputation over the declared inputs.",
+      "suggestion": "Point inputs at the canonical governed artifacts (PROJECT.md, SCOPE.json, DESIGN/BUILD-SPEC.md, selected Visual Direction, Acceptance Cases) and rerun scripts/design-provider-digest.ps1 after any change.",
+      "documentation": "docs/rules/DPROV-003.md"
+    },
+    "DPROV-004": {
+      "severity": "fail",
+      "description": "The design provider input manifest does not cite an approved EXTERNALIZATION.json entry even though provider content leaves the governed boundary.",
+      "suggestion": "Create an externalization entry with classification, scan result, and required Human evidence, have it approved, and cite its EXT-### id in the manifest.",
+      "documentation": "docs/rules/DPROV-004.md"
+    },
+    "DPROV-005": {
+      "severity": "fail",
+      "description": "Design provider output is outside the declared OUTPUT/ folder, a review decision was recorded before a passing preflight, or a recorded acceptance's outputs digest no longer matches the current OUTPUT/ file set.",
+      "suggestion": "Keep candidate deliverables under DESIGN/CLAUDE-DESIGN/OUTPUT/**, run the deterministic preflight first, and re-run it whenever output changes so REVIEW.json records the current digest.",
+      "documentation": "docs/rules/DPROV-005.md"
+    },
+    "DPROV-006": {
+      "severity": "fail",
+      "description": "The design provider review lacks valid Human authority: an AI reviewer marked acceptance, the reviewer is a generic token, or the decision reference does not resolve to a named decider.",
+      "suggestion": "A named Human must accept the design with a decision recorded in decision-log.md. An AI may perform candidate reconciliation and propose revision, but may never mark Human acceptance.",
+      "documentation": "docs/rules/DPROV-006.md"
+    },
+    "DPROV-007": {
+      "severity": "fail",
+      "description": "A design provider review finding routed to Change Control (routes_to_change_control) has no corresponding entry in CHANGE-REQUESTS.json.",
+      "suggestion": "Record the finding as a governed change request whose summary names the finding id before the accepted design baseline is finalized.",
+      "documentation": "docs/rules/DPROV-007.md"
+    },
+    "RESEARCH-002": {
+      "severity": "fail",
+      "description": "Guided/auto research is declared but RESEARCH/RESEARCH.md or RESEARCH/PROVENANCE.json is missing, RESEARCH.md lacks a required section, or the provenance schema is unsupported.",
+      "suggestion": "Complete templates/RESEARCH.md and templates/RESEARCH-PROVENANCE.json: status/scope, problem and questions, existing solutions, feature parity, standards, differentiation, risks, Impact Assessment, Change Proposals, and explicit limits.",
+      "documentation": "docs/rules/RESEARCH-002.md"
+    },
+    "RESEARCH-003": {
+      "severity": "fail",
+      "description": "A material research claim lacks a valid evidence status or does not map to at least one resolvable source (URL, FILE: path inside the project, or declared source reference).",
+      "suggestion": "Give every claim in PROVENANCE.json at least one source with a resolvable reference, title/issuer, and evidence status; a claim without a source is an opinion, not research.",
+      "documentation": "docs/rules/RESEARCH-003.md"
+    },
+    "RESEARCH-004": {
+      "severity": "fail",
+      "description": "A research change proposal marked accepted lacks a resolvable DEC-### with a named decider, or was accepted without a named Human owner. Research cannot rewrite a Requirement on its own.",
+      "suggestion": "Have a named Human accept or reject each proposal at Scope and cite the decision in decision-log.md; AI may propose, only a Human decides.",
+      "documentation": "docs/rules/RESEARCH-004.md"
+    },
+    "RESEARCH-005": {
+      "severity": "fail",
+      "description": "Scope or a later gate is being validated while a research change proposal with accepted impact is still unresolved (not accepted).",
+      "suggestion": "Resolve the proposal at Scope -- accept it with a named-Human decision, reject it, or narrow its impact -- before the gate can pass.",
+      "documentation": "docs/rules/RESEARCH-005.md"
+    },
+    "RESEARCH-006": {
+      "severity": "fail",
+      "description": "The research record is not truthful about the provider: provider_used is blank or a placeholder, a fallback is claimed while the provider was available, or the provider was unavailable with neither a fallback nor a stop.",
+      "suggestion": "Record the provider actually used, its availability, and whether a fallback ran. When the configured provider is unavailable, record a truthful fallback or an explicit stop rather than fabricating research output.",
+      "documentation": "docs/rules/RESEARCH-006.md"
+    },
+    "RESEARCH-007": {
+      "severity": "fail",
+      "description": "Research uses an external provider (feyman, web, or auto) but does not cite an approved EXTERNALIZATION.json entry, so a confidential brief has no Human externalization evidence.",
+      "suggestion": "Sanitize/minimize the brief through an approved externalization entry and cite its EXT-### id in RESEARCH/PROVENANCE.json before sending anything to a provider.",
+      "documentation": "docs/rules/RESEARCH-007.md"
+    },
     "DOCTOR-013": {
       "severity": "fail",
       "description": "pmo-config/onboarding-questions.json is missing a question for a strict trigger declared in policy.json enums.strict_triggers, or carries a question for a trigger id the enum no longer declares. The interactive `axiom init` wizard's 'Help me decide' path reads its question list from that file keyed by trigger id -- an uncovered trigger would either be unaskable or ask about something that no longer exists.",
