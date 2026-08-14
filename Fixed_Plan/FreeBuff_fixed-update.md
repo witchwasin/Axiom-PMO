@@ -232,7 +232,7 @@
 
 | Field | Value |
 |---|---|
-| Commit SHA(s) | See the commit created with this FB-003 report |
+| Commit SHA(s) | `3620659` (FB-003 final repair batch + FB-003 report) |
 | Pushed to `origin/V2.1` | Yes — Human Owner authorized push for this plan's work |
 | Compare / PR link (if any) | — |
 
