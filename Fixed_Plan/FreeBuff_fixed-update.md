@@ -166,7 +166,7 @@
 
 | Field | Value |
 |---|---|
-| Commit SHA(s) | (recorded after commit below) |
+| Commit SHA(s) | `95f3a7e` (FB-002 P0 repair batch) |
 | Pushed to `origin/V2.1` | Yes — Human Owner authorized push for this plan's work |
 | Compare / PR link (if any) | — |
 
