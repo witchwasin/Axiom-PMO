@@ -267,7 +267,12 @@ foreach ($case in $cases) {
 
   $previousErrorActionPreference = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
-  $output = & $pwshExe @psArgs 2>$null
+  # Preserve child diagnostics. On Windows PowerShell 5.1, stderr from a
+  # native child becomes ErrorRecord output even when the child only reports
+  # a parser/runtime failure. Discarding it here previously reduced every
+  # fixture to an unexplained EXIT_CODE=1 and made host-only failures
+  # impossible to diagnose from CI.
+  $output = & $pwshExe @psArgs 2>&1
   $nativeExitCode = $LASTEXITCODE
   $ErrorActionPreference = $previousErrorActionPreference
 
