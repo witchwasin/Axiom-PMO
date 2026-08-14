@@ -7,7 +7,7 @@
 
 ## Research Status and Scope
 
-Status: <in_progress | complete>
+Status: <in_progress | complete | stopped>
 
 <What is being researched, and what is deliberately out of research scope.>
 

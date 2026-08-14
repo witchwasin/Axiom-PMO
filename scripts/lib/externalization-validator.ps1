@@ -187,7 +187,7 @@ function Test-ExternalizationRegistry {
       $claimed = [string]$ref.sha256
       if ($claimed -notmatch '^[a-fA-F0-9]{64}$') {
         $freshnessProblems += "$id digest"
-      } elseif ((Get-FileHash -LiteralPath $full -Algorithm SHA256).Hash.ToLowerInvariant() -ne $claimed.ToLowerInvariant()) {
+      } elseif ((Get-ArtifactSha256 -Path $full) -ne $claimed.ToLowerInvariant()) {
         $freshnessProblems += $id
       }
     }

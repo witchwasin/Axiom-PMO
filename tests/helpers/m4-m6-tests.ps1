@@ -426,6 +426,71 @@ None.
   $result = Invoke-ValidationJson $tempRepo $active "Standard" "Scope"
   Assert-Rule $result "RESEARCH-004" "rejected proposal without a Human decision is rejected"
 
+  # ---------------------------------------------------------------------------
+  # CR-018: canonical artifact hashing -- LF/CRLF and UTF-8 BOM stable for text,
+  # byte-sensitive for binary, real content changes still invalidate digests.
+  # ---------------------------------------------------------------------------
+  foreach ($rel in @("EXTERNALIZATION.json", "DESIGN/CLAUDE-DESIGN/INPUT-MANIFEST.json", "DESIGN/CLAUDE-DESIGN/REVIEW.json", "CHANGE-REQUESTS.json", "RESEARCH/RESEARCH.md", "RESEARCH/PROVENANCE.json", "PROJECT.md", "DESIGN/BUILD-SPEC.md")) {
+    Copy-Item -LiteralPath (Join-Path $RepoPath ("examples/OPTIONAL-TRACKS/" + $rel)) -Destination (Join-Path $active $rel) -Force
+  }
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/DESIGN/CLAUDE-DESIGN/OUTPUT/ui-direction.md") -Destination (Join-Path $outputDir "ui-direction.md") -Force
+
+  # LF -> CRLF must not change a text artifact digest.
+  $projectMd = Join-Path $active "PROJECT.md"
+  $lfText = (Get-Content -LiteralPath $projectMd -Raw) -replace "`r`n", "`n"
+  [System.IO.File]::WriteAllText($projectMd, ($lfText -replace "`n", "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
+  Assert-Clean $result "LF to CRLF does not change provider digests"
+
+  # A UTF-8 BOM must not change a text artifact digest either.
+  $buildSpec = Join-Path $active "DESIGN/BUILD-SPEC.md"
+  $bsBytes = [System.IO.File]::ReadAllBytes($buildSpec)
+  $bomPrefix = [byte[]](0xEF, 0xBB, 0xBF)
+  [System.IO.File]::WriteAllBytes($buildSpec, ($bomPrefix + $bsBytes))
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
+  Assert-Clean $result "UTF-8 BOM does not change provider digests"
+
+  # Binary artifacts hash by original bytes: one changed byte fails EXT-004.
+  $assetDir = Join-Path $active "assets"
+  New-Item -ItemType Directory -Force -Path $assetDir | Out-Null
+  $pngPath = Join-Path $assetDir "logo.png"
+  [System.IO.File]::WriteAllBytes($pngPath, [byte[]](0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x01, 0x02))
+  $pngHash = (Get-FileHash -LiteralPath $pngPath -Algorithm SHA256).Hash.ToLowerInvariant()
+  $extDoc = Get-Content -LiteralPath $extPath -Raw | ConvertFrom-Json
+  $extDoc.entries[0].outgoing_artifacts += [pscustomobject]@{ path = "assets/logo.png"; sha256 = $pngHash }
+  $extDoc | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $extPath -Encoding utf8
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
+  Assert-Clean $result "binary artifact hashes by bytes"
+  $pngBytes = [System.IO.File]::ReadAllBytes($pngPath)
+  $pngBytes[9] = 0x99
+  [System.IO.File]::WriteAllBytes($pngPath, $pngBytes)
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Design"
+  Assert-Rule $result "EXT-004" "binary byte change invalidates the digest"
+
+  # --- CR-014/CR-021: generator E2E -- a real optional-track generation must
+  # pass its own Draft gate (scaffolding placeholders are tolerated at Draft).
+  $genOut = Join-Path $tempRepo "projects"
+  New-Item -ItemType Directory -Force -Path $genOut | Out-Null
+  & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tempRepo "scripts/new-project.ps1") -ProjectCode "E2E-TRACKS" -Mode Standard -ResearchMode guided -ResearchProvider feyman -UiDelivery claude_design -OutputRoot $genOut 2>&1 | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "optional-track generator exited $LASTEXITCODE" }
+  $genProject = Join-Path $genOut "E2E-TRACKS"
+  $result = Invoke-ValidationJson $tempRepo $genProject "Standard" "Draft"
+  Assert-Clean $result "generated optional-track project passes Draft"
+
+  # --- CR-021: active-track Handoff and Release coverage ----------------------
+  foreach ($rel in @("EXTERNALIZATION.json", "DESIGN/CLAUDE-DESIGN/INPUT-MANIFEST.json", "DESIGN/CLAUDE-DESIGN/REVIEW.json", "CHANGE-REQUESTS.json", "RESEARCH/RESEARCH.md", "RESEARCH/PROVENANCE.json", "PROJECT.md", "DESIGN/BUILD-SPEC.md")) {
+    Copy-Item -LiteralPath (Join-Path $RepoPath ("examples/OPTIONAL-TRACKS/" + $rel)) -Destination (Join-Path $active $rel) -Force
+  }
+  Copy-Item -LiteralPath (Join-Path $RepoPath "examples/OPTIONAL-TRACKS/DESIGN/CLAUDE-DESIGN/OUTPUT/ui-direction.md") -Destination (Join-Path $outputDir "ui-direction.md") -Force
+  Remove-Item -LiteralPath $pngPath -Force -ErrorAction SilentlyContinue
+
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Handoff"
+  Assert-Clean $result "active-track example passes Handoff"
+  $result = Invoke-ValidationJson $tempRepo $active "Standard" "Release"
+  $m46Fails = @($result.Json.results | Where-Object { $_.level -eq "FAIL" -and $_.rule_id -match '^(EXT|DPROV|RESEARCH)-' })
+  if ($m46Fails.Count -gt 0) { throw "M4-M6 rules failed at Release: $($m46Fails.rule_id -join ', ')" }
+  Write-Host "[PASS] active-track M4-M6 rules hold at Release"
+
   Write-Host "[PASS] M4/M5/M6 contract tests completed"
 } finally {
   if (Test-Path -LiteralPath $workRoot) { Remove-Item -LiteralPath $workRoot -Recurse -Force }

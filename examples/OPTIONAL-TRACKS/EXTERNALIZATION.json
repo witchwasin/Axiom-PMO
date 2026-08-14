@@ -7,7 +7,7 @@
       "provider": "Feyman research + Claude Design UI provider",
       "provider_type": "web",
       "outgoing_artifacts": [
-        { "path": "PROJECT.md", "sha256": "c8d3ccf7cae03bc612b4f1271f6cee130803bf9925f17e5cce192317e9d14b70" },
+        { "path": "PROJECT.md", "sha256": "a3d7a1112bf3e2ccf1233f4d6d250be3b30440dd1ce9ca57d2a037bed23dfd21" },
         { "path": "DESIGN/BUILD-SPEC.md", "sha256": "83187198bb9ddc956f6d8fe4a3ace322731ca95a9a723dc9d9fb067103b1c4cd" }
       ],
       "classification": "Internal",

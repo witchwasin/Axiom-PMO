@@ -127,6 +127,51 @@ try {
 
   Copy-Item -LiteralPath (Join-Path $RepoPath "pmo-config/orchestration-policy.json") -Destination $orchestrationPolicyPath -Force
 
+  # CR-005/CR-021: externalization.internal_default_human_review is
+  # load-bearing. With the safe default true, an Internal transfer without
+  # Human evidence fails EXT-002; flipping the key must change that behavior.
+  $extPath = Join-Path $tempRepo "examples/OPTIONAL-TRACKS/EXTERNALIZATION.json"
+  $extDoc = Get-Content -LiteralPath $extPath -Raw | ConvertFrom-Json
+  $extDoc.entries[0].classification = "Internal"
+  $extDoc.entries[0].human_review_required = $false
+  $extDoc.entries[0].reviewer = ""
+  $extDoc.entries[0].decision_ref = ""
+  $extDoc | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $extPath -Encoding utf8
+
+  $expectedExt002 = {
+    $output = & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tempRepo "scripts/validate-project.ps1") -ProjectPath (Join-Path $tempRepo "examples/OPTIONAL-TRACKS") -Mode Standard -Gate Scope -Format Json
+    $json = ($output | Out-String) | ConvertFrom-Json
+    @($json.results | Where-Object { $_.rule_id -eq "EXT-002" -and $_.level -eq "FAIL" }).Count
+  }
+  $failsWithDefault = & $expectedExt002
+  if ($failsWithDefault -lt 1) { throw "Internal transfer without evidence must fail EXT-002 with the default policy" }
+  Write-Host "[PASS] internal_default_human_review=true makes Internal require Human evidence"
+
+  $orchestrationPolicy = Get-Content -LiteralPath $orchestrationPolicyPath -Raw | ConvertFrom-Json
+  $orchestrationPolicy.externalization.internal_default_human_review = $false
+  $orchestrationPolicy | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $orchestrationPolicyPath -Encoding utf8
+  $failsFlipped = & $expectedExt002
+  if ($failsFlipped -ne 0) { throw "Flipping internal_default_human_review to false must allow the transfer (got $failsFlipped EXT-002 FAILs)" }
+  Write-Host "[PASS] internal_default_human_review=false removes the Internal requirement"
+
+  # CR-006/CR-021: research.research_statuses is load-bearing -- a stopped
+  # project must fail when the policy no longer admits the stopped state.
+  $provPath = Join-Path $tempRepo "examples/OPTIONAL-TRACKS/RESEARCH/PROVENANCE.json"
+  $provDoc = Get-Content -LiteralPath $provPath -Raw | ConvertFrom-Json
+  $provDoc.research_status = "stopped"
+  $provDoc | Add-Member -NotePropertyName stop_reason -NotePropertyValue "Provider unavailable and no fallback configured" -Force
+  $provDoc | Add-Member -NotePropertyName next_action -NotePropertyValue "Human decides whether to defer research or proceed without it" -Force
+  $provDoc | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $provPath -Encoding utf8
+  $orchestrationPolicy = Get-Content -LiteralPath $orchestrationPolicyPath -Raw | ConvertFrom-Json
+  $orchestrationPolicy.research.research_statuses = @($orchestrationPolicy.research.research_statuses | Where-Object { $_ -ne "stopped" })
+  $orchestrationPolicy | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $orchestrationPolicyPath -Encoding utf8
+
+  Invoke-ExpectJsonRuleFailure "research_statuses mutation" "RESEARCH-006" {
+    & $pwshExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tempRepo "scripts/validate-project.ps1") -ProjectPath (Join-Path $tempRepo "examples/OPTIONAL-TRACKS") -Mode Standard -Gate Scope -Format Json
+  }
+
+  Copy-Item -LiteralPath (Join-Path $RepoPath "pmo-config/orchestration-policy.json") -Destination $orchestrationPolicyPath -Force
+
   # P7.3: schema_version mutation -- proves DOCTOR-006 actually reads the
   # field instead of only checking that it exists once at authoring time.
   # policy.json still carries the artifact-policy-test's mutation to $policyPath

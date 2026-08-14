@@ -1,11 +1,18 @@
 {
   "schema_version": "1.0",
   "project_code": "<PROJECT-CODE>",
+  "research_status": "<in_progress | complete | stopped>",
+  "stop_reason": "<why research stopped; required when research_status is stopped>",
+  "next_action": "<what the Human or automation must do next; required when stopped>",
   "provider_used": "<feyman | web | auto-resolved provider>",
   "provider_available": true,
   "fallback_used": false,
   "externalization": "<EXT-### from an approved EXTERNALIZATION.json entry when the provider is external>",
   "retrieved_at": "<ISO-8601>",
+  "freshness": {
+    "model": "<cutoff | none>",
+    "cutoff": "<YYYY-MM-DD; required when model is cutoff>"
+  },
   "claims": [
     {
       "id": "RC-001",

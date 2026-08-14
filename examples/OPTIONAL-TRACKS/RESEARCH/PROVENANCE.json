@@ -1,11 +1,16 @@
 {
   "schema_version": "1.0",
   "project_code": "OPTIONAL-TRACKS",
+  "research_status": "complete",
   "provider_used": "feyman",
   "provider_available": true,
   "fallback_used": false,
   "externalization": "EXT-001",
   "retrieved_at": "2026-08-14T09:00:00Z",
+  "freshness": {
+    "model": "cutoff",
+    "cutoff": "2026-08-15"
+  },
   "claims": [
     {
       "id": "RC-001",

@@ -146,6 +146,7 @@ function Test-ResearchWorkflow {
   $provenance = $null
   $claims = @()
   $claimIds = @()
+  $researchStatus = $null
   if (-not (Test-Path -LiteralPath $provenancePath -PathType Leaf)) {
     $structureProblems += "RESEARCH/PROVENANCE.json"
   } else {
@@ -157,12 +158,42 @@ function Test-ResearchWorkflow {
     $claims = @($provenance.claims)
     if ($claims.Count -eq 0) { $structureProblems += "claims" }
     foreach ($claim in $claims) { if ([string]$claim.id -match '^RC-\d{3,}$') { $claimIds += [string]$claim.id } }
+    $rsProp = $provenance.PSObject.Properties["research_status"]
+    if ($rsProp -and -not [string]::IsNullOrWhiteSpace([string]$provenance.research_status)) {
+      $researchStatus = ([string]$provenance.research_status).Trim()
+    }
   }
 
   # ---------------------------------------------------------------- RESEARCH-003
   $provenanceProblems = @()
   $evidenceStatuses = @($script:policyEnums.evidence_statuses)
   if ($evidenceStatuses.Count -eq 0) { $evidenceStatuses = @("verified", "supported", "inferred", "missing", "conflict") }
+  $sourceVerifications = @($policy.source_verifications)
+  if ($sourceVerifications.Count -eq 0) { $sourceVerifications = @("verified", "unverified", "pending") }
+  $freshnessModels = @($policy.freshness_models)
+  if ($freshnessModels.Count -eq 0) { $freshnessModels = @("cutoff", "none") }
+
+  # CR-013 remainder: the freshness contract is deterministic and declared --
+  # a cutoff date the project owns, or an explicit no-freshness declaration.
+  # Local validation never claims a web source is currently true or available.
+  # ISO YYYY-MM-DD strings compare ordinally, so this is culture-free and
+  # host-independent (M6: dates/freshness must stay deterministic).
+  $freshnessCutoff = $null
+  if ($provenance) {
+    $freshness = $provenance.freshness
+    if (-not $freshness -or [string]::IsNullOrWhiteSpace([string]$freshness.model)) {
+      $provenanceProblems += "freshness"
+    } elseif (@($freshnessModels) -notcontains [string]$freshness.model) {
+      $provenanceProblems += "freshness model"
+    } elseif ([string]$freshness.model -eq "cutoff") {
+      $cutoffRaw = ([string]$freshness.cutoff).Trim()
+      if ($cutoffRaw -notmatch '^\d{4}-\d{2}-\d{2}$') {
+        $provenanceProblems += "freshness cutoff"
+      } else {
+        $freshnessCutoff = $cutoffRaw
+      }
+    }
+  }
   $snapshotIds = Get-ResearchSnapshotIds -Project $Project
   $projectText = Get-ProjectTextCache -Project $Project
   $reportHeadings = @()
@@ -196,6 +227,20 @@ function Test-ResearchWorkflow {
       if ([string]::IsNullOrWhiteSpace($title) -or (Test-PlaceholderValue $title) -or
           [string]::IsNullOrWhiteSpace($issuer) -or (Test-PlaceholderValue $issuer)) {
         $provenanceProblems += "$id source metadata"
+      }
+      if ($source.PSObject.Properties["primary"] -and $source.primary -isnot [bool]) {
+        $provenanceProblems += "$id primary"
+      }
+      if ($source.PSObject.Properties["verification"] -and @($sourceVerifications) -notcontains [string]$source.verification) {
+        $provenanceProblems += "$id verification"
+      }
+      if ($source.PSObject.Properties["date"]) {
+        $dateRaw = ([string]$source.date).Trim()
+        if (-not [string]::IsNullOrWhiteSpace($dateRaw) -and $dateRaw -notmatch '^\d{4}-\d{2}-\d{2}$') {
+          $provenanceProblems += "$id date"
+        } elseif (-not [string]::IsNullOrWhiteSpace($dateRaw) -and $null -ne $freshnessCutoff) {
+          if ([string]::CompareOrdinal($dateRaw, $freshnessCutoff) -gt 0) { $provenanceProblems += "$id stale source" }
+        }
       }
     }
     if (-not $sourceOk) { $provenanceProblems += "$id unresolvable source" }
@@ -244,6 +289,12 @@ function Test-ResearchWorkflow {
         $scopeProblems += $proposalId
       }
     }
+    # CR-006: a stopped research track must stay blocking/actionable at Scope
+    # and later gates until a Human turns it off -- it must not silently pass
+    # as completed research.
+    if ($researchStatus -eq "stopped" -and (@("Scope", "Design", "Handoff", "Release") -contains $Gate)) {
+      $scopeProblems += "stopped research"
+    }
 
     # CR-011: Impact Assessment rows -- finding refs must be real claims; an
     # accepted impact must resolve through a Change Proposal with a Human
@@ -288,7 +339,21 @@ function Test-ResearchWorkflow {
     if ($providerAvailableProp) { $providerAvailable = [bool]$providerAvailableProp.Value }
     $fallbackUsed = $null
     if ($fallbackUsedProp) { $fallbackUsed = [bool]$fallbackUsedProp.Value }
-    if ($providerAvailable -eq $false -and $fallbackUsed -eq $false) {
+
+    # CR-006: the research state is part of the truthfulness contract. A
+    # stopped track must say why and what happens next; it must never be
+    # presented as completed research (RESEARCH-005 blocks it at Scope+).
+    if ([string]::IsNullOrWhiteSpace([string]$researchStatus)) {
+      $providerProblems += "research_status"
+    } elseif (@($policy.research_statuses) -notcontains $researchStatus) {
+      $providerProblems += "research_status"
+    }
+    if ($researchStatus -eq "stopped") {
+      $stopReason = [string]$provenance.stop_reason
+      $nextAction = [string]$provenance.next_action
+      if ([string]::IsNullOrWhiteSpace($stopReason) -or (Test-PlaceholderValue $stopReason)) { $providerProblems += "stop_reason" }
+      if ([string]::IsNullOrWhiteSpace($nextAction) -or (Test-PlaceholderValue $nextAction)) { $providerProblems += "next_action" }
+    } elseif ($researchStatus -ne "stopped" -and $providerAvailable -eq $false -and $fallbackUsed -eq $false) {
       # Provider unavailable with no fallback and no stop marker is a
       # fabricated claim of research output.
       $providerProblems += "unavailable without fallback"

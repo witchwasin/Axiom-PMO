@@ -1,5 +1,11 @@
 # PROJECT - OPTIONAL-TRACKS
 
+> **⚠️ SYNTHETIC EXAMPLE FIXTURE** — Everything under `examples/OPTIONAL-TRACKS/`
+> is fabricated demonstration evidence: fictional people, meetings, providers,
+> approvals, digests, and events. No real customer, person, system, provider
+> call, or Human decision occurred. It exists only to show the artifact shapes
+> and gate behavior. Do not cite it as real evidence.
+
 > Status: design-ready
 > Default mode: Standard
 > Execution path: development_handoff

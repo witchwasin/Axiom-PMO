@@ -23,6 +23,7 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "lib/config-loader.ps1")
 . (Join-Path $PSScriptRoot "lib/ordinal-sort.ps1")
 . (Join-Path $PSScriptRoot "lib/handoff-validator.ps1")
+. (Join-Path $PSScriptRoot "lib/artifact-hash.ps1")
 . (Join-Path $PSScriptRoot "lib/design-provider-validator.ps1")
 
 $repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
@@ -45,7 +46,7 @@ foreach ($input in $inputs) {
   $relative = [string]$input.path
   $full = Join-Path $project $relative
   if (Test-Path -LiteralPath $full -PathType Leaf) {
-    $hash = (Get-FileHash -LiteralPath $full -Algorithm SHA256).Hash.ToLowerInvariant()
+    $hash = Get-ArtifactSha256 -Path $full
   } else {
     $hash = "MISSING"
   }
@@ -58,7 +59,7 @@ $currentInputs = @()
 foreach ($input in $inputs) {
   $relative = [string]$input.path
   $full = Join-Path $project $relative
-  $hash = if (Test-Path -LiteralPath $full -PathType Leaf) { (Get-FileHash -LiteralPath $full -Algorithm SHA256).Hash.ToLowerInvariant() } else { "MISSING" }
+  $hash = if (Test-Path -LiteralPath $full -PathType Leaf) { Get-ArtifactSha256 -Path $full } else { "MISSING" }
   $currentInputs += [pscustomobject]@{ path = $relative; sha256 = $hash }
 }
 Write-Output "combined_digest: $(Get-DesignInputCombinedDigest -Inputs $currentInputs)"
@@ -72,7 +73,7 @@ if (Test-Path -LiteralPath $outputRoot) {
   $prefix = (Resolve-Path -LiteralPath $outputRoot).Path
   foreach ($file in (Get-ChildItem -LiteralPath $outputRoot -Recurse -File -ErrorAction SilentlyContinue | Sort-Object FullName)) {
     $relative = $file.FullName.Substring($prefix.Length).TrimStart([char]92, [char]47) -replace '\\', '/'
-    $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+    $hash = Get-ArtifactSha256 -Path $file.FullName
     Write-Output "output: $relative -> $hash"
   }
 }

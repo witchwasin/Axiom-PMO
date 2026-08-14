@@ -84,6 +84,7 @@ $repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
 . (Join-Path $PSScriptRoot "lib/visual-proof-validator.ps1")
 . (Join-Path $PSScriptRoot "lib/change-control-validator.ps1")
 . (Join-Path $PSScriptRoot "lib/path-containment.ps1")
+. (Join-Path $PSScriptRoot "lib/artifact-hash.ps1")
 . (Join-Path $PSScriptRoot "lib/externalization-validator.ps1")
 . (Join-Path $PSScriptRoot "lib/research-validator.ps1")
 . (Join-Path $PSScriptRoot "lib/design-provider-validator.ps1")

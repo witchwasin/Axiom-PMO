@@ -5,7 +5,7 @@
   "preflight": {
     "status": "passed",
     "checked_at": "2026-08-14T10:15:00Z",
-    "manifest_digest": "1836465fff50424e6327a5ce816ff829d5e2f274099033c7484a3b94d864cdce",
+    "manifest_digest": "00fdc7f679c000d953543246e6b3e302e628e5c31e99bbc46d07c2db0495bb13",
     "outputs_digest": "68710242a1030a108434d8472fc50fbe8b0aec0fd3d4de17d50343a14c8f2f83"
   },
   "outputs": [

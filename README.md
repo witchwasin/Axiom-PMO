@@ -140,6 +140,110 @@ Humans answer ambiguity and own approvals. AI drafts candidate evidence and
 deterministic validators check what code can prove; `auto` never means automatic
 Scope, Design, risk, or Release approval.
 
+## Quick start
+
+Requires PowerShell (Windows PowerShell 5.1 or PowerShell 7 / `pwsh`). The CLI
+additionally needs Node.js; everything it does is also available by calling the
+scripts directly.
+
+```bash
+# See the framework catch something real
+node cli/axiom.mjs demo
+
+# Start a project, with handoff scaffolding
+node cli/axiom.mjs init --code P02-MYPROJECT --mode Standard --handoff --target demo
+
+# Put real source under source/MOM, source/REQ, source/Transcript
+# (user-owned; the agent never edits these), then fill PROJECT.md.
+# Every requirement needs a source_ref and an evidence_status.
+
+# Ask whether a developer can start
+node cli/axiom.mjs handoff --project projects/P02-MYPROJECT --mode Standard
+
+# Validate at any gate
+node cli/axiom.mjs validate --project projects/P02-MYPROJECT --gate Release --fail-on-warning
+```
+
+Without Node, the same things through PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/new-project.ps1 -ProjectCode P02-MYPROJECT -Mode Standard -IncludeHandoff -Target demo
+powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath projects/P02-MYPROJECT -Mode Standard -Gate Handoff
+powershell -ExecutionPolicy Bypass -File scripts/assess-handoff.ps1 -ProjectPath projects/P02-MYPROJECT -Mode Standard
+powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath projects/P02-MYPROJECT -Mode Standard -Gate Release -FailOnWarning
+```
+
+### The gates
+
+```text
+Draft → Scope → Design → Handoff → Build/QA → Release
+```
+
+| Gate | Asks |
+|---|---|
+| `Draft` | Does the project exist in a usable shape? |
+| `Scope` | Is every requirement sourced and approved? |
+| `Design` | Is the design ready and approved? |
+| `Handoff` | **Can a developer start, integrate, and demonstrate this?** |
+| `Release` | Is it tested, reviewed, approved, and reversible? |
+
+`Handoff` introduces no new human approval — it reuses the existing
+`Design Ready` sign-off and checks whether the contract is complete enough to
+act on. See [handoff readiness](docs/concepts/handoff-readiness.md).
+
+Or start from a worked example:
+[`examples/LITE-BUGFIX`](examples/LITE-BUGFIX),
+[`examples/STANDARD-FEATURE`](examples/STANDARD-FEATURE),
+[`examples/STRICT-HIGH-RISK`](examples/STRICT-HIGH-RISK),
+[`examples/HANDOFF-DEMO`](examples/HANDOFF-DEMO) (a demo handoff), the fuller
+[`examples/P01-DEMO`](examples/P01-DEMO), or
+[`examples/OPTIONAL-TRACKS`](examples/OPTIONAL-TRACKS) (the one canonical
+Standard example combining Guided Research, the Claude Design manifest, and a
+controlled change — a **synthetic fixture**: every person, meeting, provider
+call, approval, and digest in it is fabricated demonstration evidence).
+
+On Linux/macOS or with `make` installed, the same checks are available through
+convenience wrappers (they call the PowerShell reference implementation via
+`pwsh`):
+
+```bash
+make check      # doctor + validation + mutation + e2e
+./scripts/check.sh   # equivalent wrapper
+```
+
+### Run it as a GitHub Action
+
+No local PowerShell install required -- GitHub-hosted runners already ship
+one. Report-only by default, so a first install cannot break a pull request
+nobody has configured a rule set for yet.
+
+```yaml
+- uses: witchwasin/Axiom-PMO@<pinned-sha-or-tag>
+  with:
+    project: projects/P02-MYPROJECT
+    mode: Standard
+    gate: Release
+```
+
+Full inputs, outputs, and the report contract: [docs/guides/github-action.md](docs/guides/github-action.md).
+
+Add `enable-scope-diff: "true"` to also check that the PR's changed files
+stayed inside the project's approved `SCOPE.json` -- deterministic path
+matching, no LLM judging whether a file "seems related":
+
+```yaml
+- uses: actions/checkout@v7
+  with:
+    fetch-depth: 0   # SCOPE-DIFF needs the base commit, not just the current one
+- uses: witchwasin/Axiom-PMO@<pinned-sha-or-tag>
+  with:
+    project: projects/P02-MYPROJECT
+    gate: Release
+    enable-scope-diff: "true"
+```
+
+Scope syntax, precedence, and git range semantics: [docs/reference/scope-declaration.md](docs/reference/scope-declaration.md).
+
 ## Why this matters now
 
 AI coding agents can plan, implement, test, review, and produce their own
@@ -320,12 +424,18 @@ than aspiration.
 | `DELIVERY.md` or GitHub Issues as the declared task source | **Shipped** |
 | GitHub Action: report-only by default, PR-native Job Summary/annotations/report artifact | **Shipped** |
 | SCOPE-DIFF: deterministic changed-files-vs-approved-scope check, opt-in | **Shipped** |
-| Externalization gate: honest transfer registry with classification, scan honesty, and Human evidence for Confidential/Restricted | **Shipped** |
-| Guided Research: evidence-backed `RESEARCH.md` + `PROVENANCE.json` before Scope, Human-owned change proposals | **Shipped** |
-| Claude Design: governed digest-bound provider handoff, preflight, and named-Human acceptance review | **Shipped** |
+| Externalization gate: honest transfer registry with classification, scan honesty, and Human evidence for Confidential/Restricted | **In review** (V2.1) |
+| Guided Research: evidence-backed `RESEARCH.md` + `PROVENANCE.json` before Scope, Human-owned change proposals | **In review** (V2.1) |
+| Claude Design: governed digest-bound provider handoff, preflight, and named-Human acceptance review | **In review** (V2.1) |
 | Execution work-package and evidence-return schemas | **Experimental** |
 | Automated execution-framework evidence import | **Roadmap** |
 | Portfolio dashboard, enterprise identity/RBAC, and deep tracker adapters | **Not shipped** |
+
+The three optional tracks marked **In review (V2.1)** — Externalization,
+Guided Research, and Claude Design — are implemented on the `V2.1` branch and
+pass the local validation suites, but they have not yet been independently
+reviewed to closure or accepted by the Human Owner. They are **not** shipped
+until that happens.
 
 ### Current fit
 
@@ -354,112 +464,6 @@ mode decides how much process is *required*, not how much is *allowed*.
 A project can never be silently downgraded: if a work item carries a Strict
 trigger, the validator forces the whole project's effective mode to Strict even
 if you pass `-Mode Lite` on the command line.
-
-## Quick start
-
-Requires PowerShell (Windows PowerShell 5.1 or PowerShell 7 / `pwsh`). The CLI
-additionally needs Node.js; everything it does is also available by calling the
-scripts directly.
-
-```bash
-# See the framework catch something real
-node cli/axiom.mjs demo
-
-# Start a project, with handoff scaffolding
-node cli/axiom.mjs init --code P02-MYPROJECT --mode Standard --handoff --target demo
-
-# Put real source under source/MOM, source/REQ, source/Transcript
-# (user-owned; the agent never edits these), then fill PROJECT.md.
-# Every requirement needs a source_ref and an evidence_status.
-
-# Ask whether a developer can start
-node cli/axiom.mjs handoff --project projects/P02-MYPROJECT --mode Standard
-
-# Validate at any gate
-node cli/axiom.mjs validate --project projects/P02-MYPROJECT --gate Release --fail-on-warning
-```
-
-Without Node, the same things through PowerShell:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/new-project.ps1 -ProjectCode P02-MYPROJECT -Mode Standard -IncludeHandoff -Target demo
-powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath projects/P02-MYPROJECT -Mode Standard -Gate Handoff
-powershell -ExecutionPolicy Bypass -File scripts/assess-handoff.ps1 -ProjectPath projects/P02-MYPROJECT -Mode Standard
-powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath projects/P02-MYPROJECT -Mode Standard -Gate Release -FailOnWarning
-```
-
-### Run it as a GitHub Action
-
-No local PowerShell install required -- GitHub-hosted runners already ship
-one. Report-only by default, so a first install cannot break a pull request
-nobody has configured a rule set for yet.
-
-```yaml
-- uses: witchwasin/Axiom-PMO@<pinned-sha-or-tag>
-  with:
-    project: projects/P02-MYPROJECT
-    mode: Standard
-    gate: Release
-```
-
-Full inputs, outputs, and the report contract: [docs/guides/github-action.md](docs/guides/github-action.md).
-
-Add `enable-scope-diff: "true"` to also check that the PR's changed files
-stayed inside the project's approved `SCOPE.json` -- deterministic path
-matching, no LLM judging whether a file "seems related":
-
-```yaml
-- uses: actions/checkout@v7
-  with:
-    fetch-depth: 0   # SCOPE-DIFF needs the base commit, not just the current one
-- uses: witchwasin/Axiom-PMO@<pinned-sha-or-tag>
-  with:
-    project: projects/P02-MYPROJECT
-    gate: Release
-    enable-scope-diff: "true"
-```
-
-Scope syntax, precedence, and git range semantics: [docs/reference/scope-declaration.md](docs/reference/scope-declaration.md).
-
-### The gates
-
-```text
-Draft → Scope → Design → Handoff → Build/QA → Release
-```
-
-| Gate | Asks |
-|---|---|
-| `Draft` | Does the project exist in a usable shape? |
-| `Scope` | Is every requirement sourced and approved? |
-| `Design` | Is the design ready and approved? |
-| `Handoff` | **Can a developer start, integrate, and demonstrate this?** |
-| `Release` | Is it tested, reviewed, approved, and reversible? |
-
-`Handoff` is new in 1.1 and introduces no new human approval — it reuses the
-existing `Design Ready` sign-off and checks whether the contract is complete
-enough to act on. When a project already has a visual direction plus both design-system
-contract views, it also conditionally checks committed desktop/mobile capture evidence and a
-named human Visual Proof review. It never automates a judgement of visual quality. See
-[handoff readiness](docs/concepts/handoff-readiness.md) and
-[Visual Proof](docs/architecture/visual-proof.md).
-
-Or start from a worked example: [`examples/LITE-BUGFIX`](examples/LITE-BUGFIX),
-[`examples/STANDARD-FEATURE`](examples/STANDARD-FEATURE),
-[`examples/STRICT-HIGH-RISK`](examples/STRICT-HIGH-RISK),
-[`examples/HANDOFF-DEMO`](examples/HANDOFF-DEMO) (a demo handoff), the fuller
-[`examples/P01-DEMO`](examples/P01-DEMO), or
-[`examples/OPTIONAL-TRACKS`](examples/OPTIONAL-TRACKS) (the one canonical
-Standard example combining Guided Research, the Claude Design manifest, and a
-controlled change).
-
-On Linux/macOS or with `make` installed, the same checks are available through
-convenience wrappers (they call the PowerShell reference implementation via
-`pwsh`):
-
-```bash
-make check      # doctor + validation + mutation + e2e
-./scripts/check.sh   # equivalent wrapper
-```
 
 ## Validate the framework itself
 

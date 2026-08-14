@@ -63,7 +63,7 @@ function Get-DesignOutputSetDigest {
     $prefix = (Resolve-Path -LiteralPath $OutputRoot).Path
     foreach ($file in (Get-ChildItem -LiteralPath $OutputRoot -Recurse -File -ErrorAction SilentlyContinue | Sort-Object FullName)) {
       $relative = $file.FullName.Substring($prefix.Length).TrimStart([char]92, [char]47) -replace '\\', '/'
-      $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+      $hash = Get-ArtifactSha256 -Path $file.FullName
       $lines += "$relative|$hash"
     }
   }
@@ -106,7 +106,7 @@ function Test-DesignOutputInventory {
     if (-not $actualFiles.ContainsKey($relative.ToLowerInvariant())) {
       $problems += "missing declared output"
     } else {
-      $actualHash = (Get-FileHash -LiteralPath $actualFiles[$relative.ToLowerInvariant()] -Algorithm SHA256).Hash.ToLowerInvariant()
+      $actualHash = Get-ArtifactSha256 -Path $actualFiles[$relative.ToLowerInvariant()]
       if ([string]::IsNullOrWhiteSpace([string]$decl.sha256) -or $actualHash -ne ([string]$decl.sha256).ToLowerInvariant()) {
         $problems += "stale declared output digest"
       }
@@ -207,7 +207,7 @@ function Test-DesignProviderWorkflow {
     }
     $claimed = [string]$input.sha256
     if ($claimed -notmatch '^[a-fA-F0-9]{64}$' -or
-        (Get-FileHash -LiteralPath $full -Algorithm SHA256).Hash.ToLowerInvariant() -ne $claimed.ToLowerInvariant()) {
+        (Get-ArtifactSha256 -Path $full) -ne $claimed.ToLowerInvariant()) {
       $freshnessProblems += $relative
     }
   }

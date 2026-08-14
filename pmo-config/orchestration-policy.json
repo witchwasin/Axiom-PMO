@@ -17,6 +17,9 @@
     "external_providers": ["feyman", "web", "auto"],
     "proposal_statuses": ["proposed", "accepted", "rejected"],
     "proposal_impacts": ["scope", "requirements", "acceptance", "risk", "none"],
+    "research_statuses": ["in_progress", "complete", "stopped"],
+    "freshness_models": ["cutoff", "none"],
+    "source_verifications": ["verified", "unverified", "pending"],
     "fallback_order": ["project_provider", "session_feyman", "configured_feyman", "approved_web", "stop"]
   },
   "ui_delivery": {

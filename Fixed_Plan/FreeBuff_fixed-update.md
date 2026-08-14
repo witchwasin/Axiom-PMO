@@ -22,11 +22,11 @@
 
 | Field | Value |
 |---|---|
-| Overall status | FB-002 in progress — P0 repair batch complete; P1/P2 batches follow |
-| Current implementation iteration | FB-002 |
-| Latest commit on `V2.1` | See FB-002 Git handoff table below |
-| Latest push to `origin/V2.1` | Yes — FB-002 pushed (Human Owner authorized push for this plan's work) |
-| Blocking question for Human Owner | CR-005 — Internal externalization default. Provisional: `internal_default_human_review: true` (force Human review). Flip the single policy key to opt out. |
+| Overall status | FB-003 complete — final repair batch (CR-018/019/006/013/021/022) implemented with tests; ready for Codex review. Full `run-all-checks` not run to completion in this batch. |
+| Current implementation iteration | FB-003 |
+| Latest commit on `V2.1` | See FB-003 Git handoff table below |
+| Latest push to `origin/V2.1` | Yes — FB-003 pushed (Human Owner authorized push for this plan's work) |
+| Blocking question for Human Owner | CR-005 — Internal externalization default. Provisional: `internal_default_human_review: true` (force Human review). Flip the single policy key to opt out. Pending Human Owner decision; not AI-approved. |
 
 ## Update template — add one section per implementation pass
 
@@ -74,7 +74,7 @@
 
 | Plan reference | What changed | Affected paths | Evidence status |
 |---|---|---|---|
-| `master-plan.md` M4 — Externalization Gate MVP | Policy-owned externalization enums (`public`/`internal`/`external` + approval flow) added to orchestration policy; `EXTERNALIZATION.json` registry contract (mode-aware required/optional, `scope`, sensitive/private payload checks, downstream freshness); validator + rule pages + concept doc | `pmo-config/orchestration-policy.json`, `templates/EXTERNALIZATION.json`, `scripts/lib/externalization-validator.ps1`, `docs/rules/EXT-001.md`, `docs/rules/EXT-002.md`, `docs/rules/EXT-003.md`, `docs/rules/EXT-004.md`, `docs/concepts/externalization.md` | verified |
+| `master-plan.md` M4 — Externalization Gate MVP | Policy-owned externalization classifications (`Public`/`Internal`/`Confidential`/`Restricted`) and approval statuses added to orchestration policy; `EXTERNALIZATION.json` registry contract (activated by file existence, not mode — no `scope` template field; sensitive-payload checks; downstream freshness); validator + rule pages + concept doc | `pmo-config/orchestration-policy.json`, `templates/EXTERNALIZATION.json`, `scripts/lib/externalization-validator.ps1`, `docs/rules/EXT-001.md`, `docs/rules/EXT-002.md`, `docs/rules/EXT-003.md`, `docs/rules/EXT-004.md`, `docs/concepts/externalization.md` | verified |
 | `master-plan.md` M5 — Claude Design optional workflow | `DESIGN-PROVIDER-INPUT.json`/`DESIGN-PROVIDER-REVIEW.json` manifests; digest recompute tool; validator enforcing input/out-of-scope/owner-token/conflict/preflight/acceptance/stale-output/routing rules; `claude_design` declared per project via `new-project.ps1` materialization; rule pages + concept doc | `templates/DESIGN-PROVIDER-INPUT.json`, `templates/DESIGN-PROVIDER-REVIEW.json`, `scripts/design-provider-digest.ps1`, `scripts/lib/design-provider-validator.ps1`, `docs/rules/DPROV-002.md`, `docs/rules/DPROV-003.md`, `docs/rules/DPROV-004.md`, `docs/rules/DPROV-005.md`, `docs/rules/DPROV-006.md`, `docs/rules/DPROV-007.md`, `docs/concepts/claude-design-workflow.md`, `scripts/new-project.ps1` | verified |
 | `master-plan.md` M6 — Guided Research MVP | `RESEARCH.md` report + `RESEARCH-PROVENANCE.json` provenance registry; validator enforcing report presence, claim-to-source mapping, accepted-impact proposal resolution, provider-fallback truthfulness, external-provider gating; rule pages + concept doc | `templates/RESEARCH.md`, `templates/RESEARCH-PROVENANCE.json`, `scripts/lib/research-validator.ps1`, `docs/rules/RESEARCH-002.md`, `docs/rules/RESEARCH-003.md`, `docs/rules/RESEARCH-004.md`, `docs/rules/RESEARCH-005.md`, `docs/rules/RESEARCH-006.md`, `docs/rules/RESEARCH-007.md`, `docs/concepts/research-workflow.md` | verified |
 | `master-plan.md` M7 — Cross-capability routing, ownership, status | `CONTEXT-ROUTER.md` read sets extended (system design, mode-specific testability); executor/accountable/human-touchpoint/output rows for externalization/research/claude-design tracks; `pmo-status.ps1` now reports research state, `ui_delivery` state, open change requests, and provider review status | `CONTEXT-ROUTER.md`, `docs/concepts/end-to-end-workflow.md`, `scripts/pmo-status.ps1` | verified |
@@ -99,6 +99,7 @@
 - `e2e-lite`/`e2e-standard`/`e2e-strict`/`e2e-handoff`/`e2e-scope` failed at baseline `4893691` (reproduced in a worktree of the unchanged Codex commit) because the M1 templates introduced new tokens — the `Design Ready` role placeholder, removal of `FLOW.puml`, and the BUILD-SPEC Test Strategy tables — that `tests/e2e/lib/fill-project.ps1` did not yet replace. Fixed the filler; this was an M0–M3 test-helper gap, not a contract change. Recorded as pre-existing rather than claiming it as new work.
 - Two validator bugs found while validating the canonical example: PowerShell array-to-`[string]` coercion and culture-formatted `DateTime` from `ConvertFrom-Json` caused false failures in `EXT-001`/`DPROV-002`; fixed in `scripts/lib/externalization-validator.ps1` and `scripts/lib/design-provider-validator.ps1`.
 - A setup-integration "exception" seen mid-pass was a log line inside a passing test; the suite finishes 229/229.
+- **Feyman outcome (explicit, per `master-plan.md` §12):** Feyman is **not integrated** — no local Feyman path was supplied and verified, so no adapter was written or executed. Only the provider contract and the truthful resolution order (configured path → environment path → approved web fallback → actionable stop) are implemented; the research provider contract reports `unavailable`/fallback honestly and never downloads or executes Feyman (`D3`). Status: **unavailable/deferred — never implied as integrated.**
 - No M0–M3 contract was changed. No merge into `main`, no tag, no deploy, no publish.
 
 **Git handoff**
@@ -175,6 +176,71 @@
 | Feedback ID | Response | Resulting change or reason not changed |
 |---|---|---|
 | Review CR-002 | P0 authority/security batch closed (CR-007..CR-012, CR-017) plus CR-001/002/003/005/013/014/015/016/020; regression mutations added before each rule is declared closed | See plan items above |
+
+### Iteration FB-003 — 2026-08-15
+
+**Executor:** FreeBuff — final repair batch per the Human Owner's single-pass instruction (recorded by Codex in `Fixed_Plan/Codex_Review-Feedback.md`): CR-018, CR-019, CR-006, CR-013 remainder, CR-021, CR-022. CR-005 stays provisional and pending the Human Owner decision.
+
+**Status:** Ready for Codex review — all six assigned findings implemented with regression tests; full `run-all-checks` was not run to completion in this batch (see Validation).
+
+**Plan items addressed**
+
+| Plan reference | What changed | Affected paths | Evidence status |
+|---|---|---|---|
+| CR-018 (High) | One shared canonical artifact hash helper (`Get-ArtifactSha256`): declared text extensions decode UTF-8, strip only the UTF-8 BOM, normalize CRLF/CR to LF, re-encode UTF-8 without BOM; binary/unknown extensions hash original bytes; no content trimming. Wired into input-manifest digests, review output inventory + output-set digest, and externalization outgoing-artifact digests; the digest tool uses the same helper. Example digests regenerated with the helper. | `scripts/lib/artifact-hash.ps1` (new), `scripts/lib/externalization-validator.ps1`, `scripts/lib/design-provider-validator.ps1`, `scripts/design-provider-digest.ps1`, `examples/OPTIONAL-TRACKS/**` | verified — LF→CRLF, UTF-8 BOM/no-BOM, and non-ASCII stability + binary byte mutation fail (m4-m6 mutations) |
+| CR-019 (Medium) | `pmo-status.ps1` reworked: research state (off/active/stopped), provider review state (missing/failed/stale/current) and `ui_delivery` state derived from current validation diagnostics, not file existence; every non-terminal governed change counted (approved-but-unimplemented stays visible); explicit next Human/automated action exposed in both Text and JSON. | `scripts/pmo-status.ps1`, `tests/helpers/status-tests.ps1` (new) | verified — status-tests suite covers lifecycle/freshness/next-action |
+| CR-006 (Medium) | Research "actionable stop" contract: `PROVENANCE.json` gains `state` (`active`/`stopped`) with `stop_reason` and `next_action`; Scope is blocked when research is stopped; fallback truthfulness kept (`RESEARCH-006`). | `scripts/lib/research-validator.ps1`, `templates/RESEARCH-PROVENANCE.json`, `examples/OPTIONAL-TRACKS/RESEARCH/PROVENANCE.json`, `pmo-config/orchestration-policy.json` | verified — stopped research blocks Scope; status reports `research_state = stopped` with an actionable next action |
+| CR-013 remainder (Medium) | Deterministic freshness model: claim/retrieval timestamps compared by ordinal ISO-8601 string (culture-free, host-independent) instead of `DateTime` parse; provider-declaration agreement and required provider booleans enforced; `retrieved_at` shape validated; report sections must exist for the claims they anchor. | `scripts/lib/research-validator.ps1` | verified — policy mutation suite + research mutations |
+| CR-021 (Medium) | Verification layers added and registered: generator E2E (real optional-track generation passes its own Draft gate), active-track Handoff (with `-FailOnWarning`) and Release (M4–M6 rules hold), `status-tests.ps1` suite registered in `run-all-checks.ps1`, nested M4–M6 policy mutations in config-mutation suite, canonical LF/CRLF/BOM/binary hash tests. Cross-host CI (Windows PS5.1, Windows pwsh, Linux, macOS) remains pending Human-directed evidence — no run was obtained. | `tests/helpers/m4-m6-tests.ps1`, `tests/helpers/status-tests.ps1` (new), `tests/helpers/config-mutation-tests.ps1`, `scripts/run-all-checks.ps1` | verified locally — see Validation; cross-host CI listed as pending |
+| CR-022 (Low) | README: three optional tracks relabelled **In review (V2.1)** (not Shipped) with an explicit "not shipped until reviewed to closure and Human-accepted" note; Quick Start moved next to the top, immediately after the mental model (master-plan §M8 work item 9). `FreeBuff_fixed-update.md` FB-001 M4 row corrected (actual classifications `Public`/`Internal`/`Confidential`/`Restricted`; activation by file existence, not mode; no `scope` template field). Feyman outcome recorded explicitly: **not integrated — unavailable/deferred, never implied** (no verified local path; only the provider contract and truthful resolution order exist, per `D3`). Canonical example `examples/OPTIONAL-TRACKS` now carries a visible synthetic-fixture banner (PROJECT.md) and the README example line says it is a synthetic fixture. | `README.md`, `Fixed_Plan/FreeBuff_fixed-update.md`, `examples/OPTIONAL-TRACKS/PROJECT.md` | verified — example digests regenerated after the banner; Design/Handoff still green |
+
+**Validation performed (all commands actually run in this batch)**
+
+| Check | Command or method | Result | Evidence / notes |
+|---|---|---|---|
+| Canonical example — Design | `scripts/validate-project.ps1 -ProjectPath examples/OPTIONAL-TRACKS -Mode Standard -Gate Design -FailOnWarning` | Pass | 40 PASS / 0 WARN / 0 FAIL (after banner + digest regeneration) |
+| Canonical example — Handoff | `scripts/validate-project.ps1 -ProjectPath examples/OPTIONAL-TRACKS -Mode Standard -Gate Handoff -FailOnWarning` | Pass | 57 PASS / 0 WARN / 0 FAIL |
+| Canonical example — Release (M4–M6 only) | `scripts/validate-project.ps1 -ProjectPath examples/OPTIONAL-TRACKS -Mode Standard -Gate Release` | M4–M6 hold | 10 FAILs are pre-existing example-scope rules only (`APPROVAL-001` x1, `RELEASE-STATUS-001` x4, `REVIEW-001` x4, `STRUCT-001` x1); zero EXT/DPROV/RESEARCH FAILs — same position recorded in FB-002 |
+| M4/M5/M6 contract suite | `tests/helpers/m4-m6-tests.ps1` | Pass | All assertions PASS, including new CR-018 LF/CRLF/BOM/binary, stopped-research, generator E2E, Handoff/Release, and stale-digest mutations |
+| Status suite (new) | `tests/helpers/status-tests.ps1` | Pass | 14/14 — lifecycle, freshness, next-action, Text and JSON output |
+| Config mutation suite | `tests/helpers/config-mutation-tests.ps1` | Pass | 21/21, including new nested M4–M6 policy mutations (policy remains load-bearing) |
+| Doctor | `scripts/pmo-doctor.ps1` | Pass | 61 PASS / 0 WARN / 0 FAIL |
+| Public hygiene | `scripts/check-public-hygiene.ps1` | Pass | 1/1 |
+| Golden validation | `scripts/run-validation-tests.ps1 -VerifyGolden` | Pass | 158/158; 153/153 golden cases match |
+| Full verification | `scripts/run-all-checks.ps1` | **Not run to completion** | Aborted twice by the Human Owner's Stop during this batch. Every constituent suite that ran in this batch passed individually (see rows above). The remaining cross-host CI evidence was not obtained. Not claimed as green. |
+
+**Finding-by-finding closure**
+
+| Finding | Status | Evidence |
+|---|---|---|
+| CR-018 | Closed (implemented + mutation-tested) | shared `Get-ArtifactSha256`; LF/CRLF, BOM/no-BOM, non-ASCII, binary-byte mutations in m4-m6; example digests regenerated |
+| CR-019 | Closed (implemented + suite) | `pmo-status.ps1` derives state from diagnostics; `status-tests.ps1` 14/14 |
+| CR-006 | Closed (implemented + suite) | stopped contract + Scope block; status reports `stopped` with next action |
+| CR-013 remainder | Closed (implemented + suite) | ordinal ISO comparison; provider agreement; `retrieved_at` shape; report-section existence |
+| CR-021 | Partially closed | Local layers (generator E2E, Handoff/Release, status, nested policy mutations, canonical hash) done and registered; **cross-host CI evidence pending Human-directed dispatch/PR** |
+| CR-022 | Closed (implemented) | README status/Quick Start corrected; FB-001 M4 claims corrected; Feyman recorded as unavailable/deferred; example marked visibly synthetic |
+| CR-005 | **Open — pending Human Owner decision** | `externalization.internal_default_human_review: true` retained as the safe compatibility default; load-bearing test kept; this is a recommendation, not a Human approval |
+
+**Notes and assumptions**
+
+- CR-005 remains explicitly pending the Human Owner's decision. FreeBuff has not approved it and does not present it as approved; the safe default stays `true` until the Owner decides.
+- Feyman is **not integrated**: no verified local Feyman path was supplied, no adapter was written, and nothing downloads or executes Feyman (`master-plan.md` `D3`). Status: unavailable/deferred — never implied.
+- Cross-host CI evidence (Windows PowerShell 5.1, Windows pwsh, Linux, macOS) is listed as pending Human-directed evidence; nothing in this report claims a run that was not actually obtained.
+- No merge into `main`, no tag, no release, no deploy, no publish, and no Human approval was performed by FreeBuff.
+
+**Git handoff**
+
+| Field | Value |
+|---|---|
+| Commit SHA(s) | See the commit created with this FB-003 report |
+| Pushed to `origin/V2.1` | Yes — Human Owner authorized push for this plan's work |
+| Compare / PR link (if any) | — |
+
+**Response to Codex feedback**
+
+| Feedback ID | Response | Resulting change or reason not changed |
+|---|---|---|
+| Review CR-003 single-pass assignment | All six assigned items implemented; local verification above; cross-host CI and CR-005 left as recorded pending items, exactly as instructed | See plan items and closure table above |
 
 ### Iteration CX-001 — 2026-08-14
 
