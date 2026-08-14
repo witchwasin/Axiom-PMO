@@ -57,7 +57,7 @@ function Test-ExecutionAncestry {
 
   # "Continue" guard: callers set ErrorActionPreference = Stop, and Windows
   # PowerShell 5.1 turns native stderr into a terminating error under Stop
-  # (docs/architecture/powershell-portability.md §1). `merge-base
+  # (docs/architecture/powershell-portability.md section 1). `merge-base
   # --is-ancestor` writes to stderr on a malformed object name, which would
   # kill the run instead of returning the false this function contracts to.
   $previousEap = $ErrorActionPreference

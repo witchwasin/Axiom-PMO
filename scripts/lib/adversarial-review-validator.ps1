@@ -123,7 +123,7 @@ function Get-EffectiveModeForVerification {
   return $effectiveMode
 }
 
-# The bindings docs/architecture/adversarial-review.md §3.3 requires before an
+# The bindings docs/architecture/adversarial-review.md section 3.3 requires before an
 # externally-observed review means anything stronger than "a CI job on this
 # commit happened to succeed." Independent AI Reviewer's independent review of this branch found
 # the first version of this function FATAL: it verified head_sha, status,
@@ -416,7 +416,7 @@ function Test-AdversarialReviewEvidence {
 
   # --- AREV-007: semantic finding contract (M3) -----------------------------
   #
-  # MasterPlan §6 M3 formalizes the L3 output contract on every semantic
+  # MasterPlan section 6 M3 formalizes the L3 output contract on every semantic
   # finding of an adversarial review: requirement_ref (which REQ-### this
   # finding speaks about, resolving against PROJECT.md In Scope), plus -- when
   # the finding has a claim to make -- implementation_claim and test_claim,

@@ -128,6 +128,26 @@ $goldenSample = "{`n  `"level`": `"FAIL`",`n  `"rule_id`": `"HANDOFF-004`"`n}`nE
 Assert-True "golden comparison ignores the line ending" `
   (Test-GoldenMatch -Expected $goldenSample -Actual ($goldenSample -replace "`n", "`r`n"))
 
+# --- 5. PowerShell source must stay ASCII-safe for Windows PowerShell 5.1 ---
+#
+# Windows PowerShell 5.1 treats UTF-8 source without a BOM as the active ANSI
+# code page. Some multi-byte punctuation sequences can therefore decode into a
+# smart quote and terminate a string at parse time. Keeping executable .ps1
+# sources ASCII-only avoids both parser failures and corrupted diagnostics.
+$nonAsciiPowerShell = @()
+foreach ($rootRelative in @("scripts", "tests")) {
+  $scanRoot = Join-Path $repo $rootRelative
+  foreach ($file in (Get-ChildItem -LiteralPath $scanRoot -Recurse -File -Filter *.ps1)) {
+    $bytes = [System.IO.File]::ReadAllBytes($file.FullName)
+    if (@($bytes | Where-Object { $_ -gt 127 }).Count -gt 0) {
+      $relative = $file.FullName.Substring($repo.Length).TrimStart([char[]]@('/', '\\'))
+      $nonAsciiPowerShell += $relative
+    }
+  }
+}
+Assert-True "PowerShell source is ASCII-safe for Windows PowerShell 5.1" `
+  ($nonAsciiPowerShell.Count -eq 0) (($nonAsciiPowerShell | Select-Object -First 5) -join ', ')
+
 Write-Host ""
 Write-Host "Summary: PASS=$pass FAIL=$fail"
 if ($fail -gt 0) { exit 1 }

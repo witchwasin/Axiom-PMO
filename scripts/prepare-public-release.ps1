@@ -92,7 +92,7 @@ if ($distinctVersions.Count -eq 1) {
 # running checks that may legitimately fail and collecting their exit codes
 # as problems. Windows PowerShell 5.1 turns a child's stderr into a
 # terminating error under "Stop" (docs/architecture/powershell-portability.md
-# §1), so a failing check would abort the report instead of being reported --
+# section 1), so a failing check would abort the report instead of being reported --
 # exactly backwards.
 Section "Public hygiene"
 $previousEap = $ErrorActionPreference

@@ -17,7 +17,7 @@ param(
 # well-behaved input verifies nothing -- the interesting cases are the ones
 # where the result is wrong, self-serving, or actively lying, because that is
 # the threat model this milestone exists for
-# (docs/architecture/execution-contract-verification.md §3).
+# (docs/architecture/execution-contract-verification.md section 3).
 
 $ErrorActionPreference = "Stop"
 
@@ -1307,7 +1307,7 @@ function Get-VouchedRecordDigest {
     Assert-True "artifact approved for another test is not reusable: EXEC-005" `
       ((Get-Rules $r.Json) -contains "EXEC-005") `
       ("verdict=" + $r.Json.execution_verification.verdict)
-    Assert-True "…and the reason names the test mismatch" `
+    Assert-True "and the reason names the test mismatch" `
       ((@($r.Json.results | Where-Object { $_.rule_id -eq "EXEC-005" }) | Select-Object -First 1).message -match "approves evidence for test 'integration tests'")
   } finally { Remove-ExecFixture $dir }
 }.Invoke()

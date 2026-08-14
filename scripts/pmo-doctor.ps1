@@ -426,7 +426,7 @@ if ($rulesWithBrokenDocs.Count -eq 0) {
 # The rule this encodes: in a script that sets "Stop", every native
 # invocation either drops to "Continue" around the call, or matches one of
 # the two safe patterns below. Documented in
-# docs/architecture/powershell-portability.md §1.
+# docs/architecture/powershell-portability.md section 1.
 #
 # Deliberately a lexical check, not a parse: it looks at the ~15 lines before
 # each invocation for a "Continue" assignment or a wrapper call. That is

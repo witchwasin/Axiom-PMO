@@ -95,7 +95,7 @@ function Test-DeliveryWorkItems {
   # H1: Lite Release now requires DELIVERY.md via the artifact matrix
   # (pmo-config/artifact-policy.json), like every other mode. The previous
   # escape hatch here accepted any PROJECT.md merely *containing the words*
-  # "work item" — which left $workItems empty and silently skipped every
+  # "work item" -- which left $workItems empty and silently skipped every
   # Release completion check (RELEASE-STATUS-001 / TEST-EVIDENCE-001 /
   # REVIEW-001). A one-file DELIVERY.md is not heavy for Lite; an
   # unparseable work-item claim is not evidence.

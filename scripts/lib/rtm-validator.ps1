@@ -197,7 +197,7 @@ function Test-TestEvidenceGitGroundTruth {
     if ($status) {
       $uncommittedNote = " The file also has uncommitted changes, so its current content is not part of the verified range."
     }
-    $message = "$($row.ID) is passed but cites FILE:evidence '$gitRelPath', which was not changed within the release's verified commit range $BaseRef..$HeadRef — a report that predates this release's work cannot prove the released code passes.$uncommittedNote"
+    $message = "$($row.ID) is passed but cites FILE:evidence '$gitRelPath', which was not changed within the release's verified commit range $BaseRef..$HeadRef -- a report that predates this release's work cannot prove the released code passes.$uncommittedNote"
     if ($Mode -eq "Strict") {
       Add-Result FAIL $message "TEST-EVIDENCE-003" -Artifact $gitRelPath
     } else {

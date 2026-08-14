@@ -75,7 +75,7 @@ if (Test-Path -LiteralPath $privatePatternsPath -PathType Leaf) {
 # "Continue" around the git calls: this script sets ErrorActionPreference to
 # Stop, and Windows PowerShell 5.1 turns a native command's stderr into a
 # terminating error under Stop (see docs/architecture/powershell-portability.md
-# §1). `ls-files --exclude-from` writes to stderr when the file it names is
+# section 1). `ls-files --exclude-from` writes to stderr when the file it names is
 # absent, which would kill the hygiene check itself rather than let the
 # $LASTEXITCODE branch below report it.
 $trackedFiles = @()

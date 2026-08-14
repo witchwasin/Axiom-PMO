@@ -23,7 +23,7 @@ param(
 )
 
 # The strongest evidence source in Milestone 5's MVP, per
-# docs/architecture/execution-contract-verification.md §4.3 -- and the one
+# docs/architecture/execution-contract-verification.md section 4.3 -- and the one
 # that was, until this fix, entirely unbuilt. An EXECUTION-RESULT.json
 # claiming a `runner-exit-record` used to require nothing but the agent
 # typing plausible field values. This script is what makes the claim real:

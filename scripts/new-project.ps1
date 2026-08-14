@@ -183,7 +183,7 @@ Write-Host "Draft validation:"
 # "Continue" around the child process: this script sets ErrorActionPreference
 # to Stop, and Windows PowerShell 5.1 turns a child's stderr into a
 # terminating error under Stop (docs/architecture/powershell-portability.md
-# §1). A draft project is *expected* to fail validation, so anything the
+# section 1). A draft project is *expected* to fail validation, so anything the
 # validator writes to stderr here would abort project creation at the last
 # step -- after the files were already written.
 $previousEap = $ErrorActionPreference
