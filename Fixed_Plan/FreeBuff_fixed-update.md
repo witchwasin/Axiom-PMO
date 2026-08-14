@@ -8,11 +8,15 @@
 
 ## Working agreement
 
-1. Read `master-plan.md` and the latest unresolved entries in `Codex_Review-Feedback.md` before editing.
-2. Work only within the approved plan. Record an ambiguity, conflict, or out-of-scope request as a blocker; do not infer a product decision.
-3. For every completed change, provide the plan reference, affected paths, validation evidence, commit SHA, and push status below.
-4. Push each reviewable pass to `origin/V2.1`. Do not merge into `main`, tag, publish, deploy, or represent AI work as human approval.
-5. Keep previous update entries intact. Add a new dated iteration for each pass.
+1. Read `master-plan.md` before editing. For every pass after Codex's first review, also read the latest unresolved entries in `Codex_Review-Feedback.md`.
+2. **Initial pass: execute the complete approved plan autonomously from start to finish.** Do not pause for milestone-by-milestone review or seek routine confirmation. Stop only for a genuine blocker: an ambiguity, conflict, missing evidence, or out-of-scope request that the plan and repository cannot resolve without a Human Owner decision.
+3. After completing the initial end-to-end pass, update this file with all work and validation evidence, commit, and push one reviewable handoff to `origin/V2.1`. Codex will then conduct the first review.
+4. After the first Codex review, resolve its findings in subsequent end-to-end correction passes, record the response here, and push each completed correction pass for the next review.
+5. Work only within the approved plan. Do not infer a product decision or silently add scope.
+6. For every completed change, provide the plan reference, affected paths, validation evidence, commit SHA, and push status below.
+7. Always write paths relative to the repository root (for example, `Fixed_Plan/master-plan.md` or `scripts/validate-project.ps1`). Never use a machine-specific absolute path.
+8. Do not merge into `main`, tag, publish, deploy, or represent AI work as human approval.
+9. Keep previous update entries intact. Add a new dated iteration for each pass.
 
 ## Current status
 

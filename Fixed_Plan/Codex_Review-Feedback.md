@@ -8,11 +8,13 @@
 
 ## Review protocol
 
-1. Codex reviews the latest pushed `V2.1` commit(s), the matching FreeBuff iteration, and the applicable parts of `master-plan.md`.
-2. Every finding must state a plan reference, affected path or evidence inspected, severity, and clear next action.
-3. If the plan or evidence cannot resolve a material question, Codex records it as **Needs Human Owner Decision** and asks the Human Owner rather than guessing.
-4. FreeBuff addresses open findings in a new iteration in `FreeBuff_fixed-update.md`, pushes the work, and records the resulting commit SHA.
-5. A finding may be closed only when repository evidence demonstrates it is addressed. Human-decision findings remain pending until the Human Owner decides.
+1. FreeBuff first completes one autonomous, end-to-end implementation pass across the approved plan and pushes it to `V2.1`. Codex then reviews that complete first handoff; Codex does not interrupt it with milestone-by-milestone review.
+2. Codex reviews the latest pushed `V2.1` commit(s), the matching FreeBuff iteration, and the applicable parts of `master-plan.md`.
+3. Every finding must state a plan reference, affected path or evidence inspected, severity, and clear next action.
+4. If the plan or evidence cannot resolve a material question, Codex records it as **Needs Human Owner Decision** and asks the Human Owner rather than guessing.
+5. FreeBuff addresses open findings in a new iteration in `FreeBuff_fixed-update.md`, pushes the work, and records the resulting commit SHA.
+6. A finding may be closed only when repository evidence demonstrates it is addressed. Human-decision findings remain pending until the Human Owner decides.
+7. All paths in updates and findings must be relative to the repository root; machine-specific absolute paths are not allowed.
 
 ## Review status
 
