@@ -334,3 +334,50 @@ the plan cannot resolve it.
 | Finding ID | Verified in FreeBuff iteration | Commit SHA | Evidence | Closure status |
 |---|---|---|---|---|
 | — | — | — | — | — |
+
+### Review CX-004 — 2026-08-15 (Codex final takeover review)
+
+**Review scope**
+
+| Field | Value |
+|---|---|
+| Executor | Codex (FreeBuff stopped; no further FreeBuff changes requested) |
+| Inputs reviewed | FreeBuff FB-003 commits `3620659`, `97d0734`; Codex repair commits `e2edece`, `44bc9b9`, `e8c35b2`, `ed92d52`, `b82c8ea`, `b22bcb0` |
+| Branch | `V2.1` |
+| Plan references | `Fixed_Plan/master-plan.md` M0–M8, Definition of Done, CR-001–CR-022 |
+| Evidence boundary | Local targeted evidence is verified below. Full post-`b22bcb0` local exit and cross-host CI were not completed after the Human Owner stopped the long-running jobs. |
+
+**Human Owner decision — CR-005**
+
+The Human Owner directed that `externalization.internal_default_human_review` be set to `false`. This is recorded as a Human decision, not an AI approval: clean `Internal` transfers may proceed under the configured policy; `Confidential`/`Restricted`, sensitive findings, and any policy-required review still require Human evidence. The older FreeBuff report text that says this decision is pending/`true` remains unchanged as historical FreeBuff evidence.
+
+**Codex repairs completed**
+
+- Split M2–M3, M4–M6, and status invocations in `scripts/run-all-checks.ps1`, with explicit suite names and executed-check assertions.
+- Corrected freshness cutoff direction and enforced Research provenance shape: UTC ISO-8601 `retrieved_at`, JSON boolean `primary`, verification enum, required source date when cutoff is active, and provider resolution/agreement including `auto`.
+- Preserved child-validator diagnostics, made PowerShell sources ASCII-safe for Windows PowerShell 5.1, decoded UTF-8 fixtures explicitly, removed junctions with `Directory.Delete`, and hardened native Git calls in release-evidence tests.
+- Recorded the repeatable failure pattern and safeguards in `docs/architecture/lessons-learned.md` and `docs/architecture/powershell-portability.md`.
+
+**Local evidence**
+
+| Check | Result |
+|---|---|
+| OPTIONAL-TRACKS Design / Handoff | 40/40 and 57/57, no warnings/failures |
+| M4–M6 contract/mutation suite | Pass, including new CR-006/013/018, provider, stopped-state, E2E, and release mutations |
+| Status lifecycle | 14/14 |
+| Config mutation | Pass |
+| Doctor / public hygiene | 61/61 / pass |
+| Golden validation | 158/158 checks; 153/153 golden matches |
+| CLI checks | 50/50 |
+| Plugin mirror drift | Pass |
+| Line-ending tests | 7/7 |
+| Release-evidence tests | 26/26 |
+| Full `run-all-checks.ps1` after `b22bcb0` | Interrupted by the Human Owner to conserve runtime/credits after the repaired suites had run; no final aggregate exit is claimed |
+
+**CI and closure status**
+
+The post-`b22bcb0` workflow `31837117289` was cancelled while the four host jobs were still running. Earlier host failures were repaired by the commits above, but there is no completed post-fix all-host green run. Therefore CR-021 remains **Pending Human-directed CI evidence**, and the V2.1 Definition of Done is not claimed complete. CR-001–CR-020 and CR-022 have local implementation/targeted evidence; their final cross-host closure is subject to the same CI evidence boundary. Feyman remains `unavailable/deferred`; no integration is claimed.
+
+**Handoff decision**
+
+V2.1 is clean and pushed with the implementation and this review record. No merge to `main` is performed because one material question remains: should a Human Owner authorize a future CI run (or accept an explicit CI waiver) before merge? Until that decision/evidence exists, `main` must remain unchanged.
