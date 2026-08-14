@@ -232,6 +232,61 @@ evidence, not an approval to merge, release, or change Human-owned policy.
   and wait for the Human Owner to decide whether the Internal default remains
   `true` or is changed to `false`.
 
+### Single-pass assignment — FreeBuff FB-003 final repair batch
+
+**Instruction from the Human Owner, recorded by Codex:** Complete every
+remaining implementation, documentation, and locally verifiable test task in
+this section autonomously before requesting another Codex review. Do not send
+milestone-by-milestone handoffs or request interim review. Work only on branch
+`V2.1`, keep every path repository-relative, and make no merge, release, tag,
+deployment, provider API call, or Human approval.
+
+**Required completion scope**
+
+1. **CR-018 first (High):** implement the shared canonical artifact-hash
+   design specified in Review CR-003. Replace raw hashing only for the new
+   Design Provider and Externalization artifact contracts; preserve byte
+   identity wherever an existing schema explicitly requires it. Regenerate
+   canonical-example records and add the complete LF/CRLF, UTF-8 BOM/no-BOM,
+   non-ASCII, binary, and true-content-change tests.
+2. **CR-019:** make `scripts/pmo-status.ps1` report validated lifecycle and
+   freshness—not mere file existence—count all non-terminal governed changes,
+   and expose an explicit next Human or automated action in both Text and JSON.
+   Add status tests for accepted-current, stale/missing review, stopped
+   research, and approved-but-unimplemented change.
+3. **CR-006 and CR-013 remainder:** add a truthful research `complete` or
+   actionable `stopped` contract with stop reason/next action. Add a
+   deterministic provenance freshness model without claiming web verification;
+   update template, validator, rule/concept docs, example, and mutations.
+4. **CR-021:** add the missing active optional-track generator/E2E,
+   Handoff/Release, nested-policy-mutation, canonical-hash, and status layers.
+   Run all applicable local checks. Do not claim Windows PowerShell 5.1,
+   Windows pwsh, Linux, macOS, or CI evidence that was not actually obtained;
+   list those as pending Human-directed evidence where applicable.
+5. **CR-022:** correct README, Quick Start, concept/rule pages, canonical
+   example labelling, and `Fixed_Plan/FreeBuff_fixed-update.md` so that they
+   accurately state feature status, limitations, provider evidence, and actual
+   schema/policy behavior. The example must be visibly synthetic.
+6. **CR-005:** retain the current safe compatibility default
+   `externalization.internal_default_human_review: true` and its load-bearing
+   test. Do not flip it or present it as an approved Human policy choice; record
+   it as an explicit pending Human Owner decision in the final update.
+
+**Final handoff only**
+
+- Before handoff, run targeted positive/negative/config/diagnostic tests and
+  the applicable full local checks: Doctor, public hygiene, validation golden
+  verification, `run-all-checks`, CLI tests, optional-track Design/Scope/
+  Handoff/Release, generator/E2E, plugin mirror drift, and the new canonical
+  hash tests.
+- Update `Fixed_Plan/FreeBuff_fixed-update.md` once with an FB-003 completion
+  report: exact commits, commands/results, remaining CI evidence, every
+  deferred item, and a finding-by-finding closure table. Do not mark CR-005 as
+  Human-approved.
+- Commit and push the completed FB-003 batch to `origin/V2.1` once. Then stop
+  and request exactly one final Codex review. Codex will not provide interim
+  review during this batch.
+
 ### Review CX-002 — 2026-08-14
 
 **Review scope:** Codex's own M0–M3 implementation handoff, checked against
