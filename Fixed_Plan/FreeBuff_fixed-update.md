@@ -105,7 +105,7 @@
 
 | Field | Value |
 |---|---|
-| Commit SHA(s) | (recorded after commit below) |
+| Commit SHA(s) | `05f04b5` (M4–M8 implementation + FB-001 update) |
 | Pushed to `origin/V2.1` | Yes — Human Owner authorized push for this plan's work |
 | Compare / PR link (if any) | — |
 
