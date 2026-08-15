@@ -79,3 +79,11 @@ export function testDateValue(value: string): boolean {
     dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d
   );
 }
+
+/** Placeholder content detection, ported from Test-PlaceholderContent. */
+export function testPlaceholderContent(content: string, extension: string): boolean {
+  if (extension === ".html") {
+    return /{{[^}]+}}|<PLACEHOLDER:[^>]+>|TODO|TBD/.test(content);
+  }
+  return /<[^>\r\n]+>|TODO|TBD/.test(content);
+}
