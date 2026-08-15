@@ -22,6 +22,7 @@ import { testRaidBlocker, testReleaseArtifact, testReleaseScopeCompletion, testS
 import { testDesignSystemTokens } from "../rules/design-system-validator.js";
 import { testDesignProviderWorkflow } from "../rules/design-provider-validator.js";
 import { testVisualProofReview } from "../rules/visual-proof-validator.js";
+import { testHandoffReadiness, testEarlyTestDesign } from "../rules/handoff-validator.js";
 
 export interface ChainResult {
   diagnostics: Diagnostic[];
@@ -75,6 +76,7 @@ export function runPortedChain(
     acc, catalog, project, gate, config.orchestrationPolicy, effectiveMode, executionPath,
     sourceResult.projectReqIds, decisionIds, config.handoffPolicy,
   );
+  testEarlyTestDesign(acc, catalog, project, effectiveMode, gate, sourceResult.projectReqIds, projectText, config.handoffPolicy);
 
   // Optional tracks (PS order: externalization, research, design-provider).
   testExternalizationRegistry(acc, catalog, project, gate, config.orchestrationPolicy, config.policy, decisionIds, config.handoffPolicy);
@@ -97,6 +99,7 @@ export function runPortedChain(
   );
 
   if (gate === "Handoff") {
+    testHandoffReadiness(acc, catalog, ctx, effectiveMode, gate, workItemResult.workItems, workItemResult.deliveryIds, sourceResult.projectReqIds, decisionIds, projectText);
     testVisualProofReview(acc, catalog, project, effectiveMode, config.handoffPolicy, projectText, decisionIds);
   }
   testDesignSystemTokens(acc, catalog, project, gate);

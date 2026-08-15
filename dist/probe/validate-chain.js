@@ -20,6 +20,7 @@ import { testRaidBlocker, testReleaseArtifact, testReleaseScopeCompletion, testS
 import { testDesignSystemTokens } from "../rules/design-system-validator.js";
 import { testDesignProviderWorkflow } from "../rules/design-provider-validator.js";
 import { testVisualProofReview } from "../rules/visual-proof-validator.js";
+import { testHandoffReadiness, testEarlyTestDesign } from "../rules/handoff-validator.js";
 export function runPortedChain(repoRoot, project, mode, gate) {
     const acc = createAccumulator();
     const config = importPmoConfig(repoRoot);
@@ -46,6 +47,7 @@ export function runPortedChain(repoRoot, project, mode, gate) {
     const executionPath = getProjectExecutionPath(project) ?? "development_handoff";
     testOrchestrationDeclarations(acc, catalog, project, gate, config.orchestrationPolicy);
     testChangeControlRegistry(acc, catalog, project, gate, config.orchestrationPolicy, effectiveMode, executionPath, sourceResult.projectReqIds, decisionIds, config.handoffPolicy);
+    testEarlyTestDesign(acc, catalog, project, effectiveMode, gate, sourceResult.projectReqIds, projectText, config.handoffPolicy);
     // Optional tracks (PS order: externalization, research, design-provider).
     testExternalizationRegistry(acc, catalog, project, gate, config.orchestrationPolicy, config.policy, decisionIds, config.handoffPolicy);
     testResearchWorkflow(acc, catalog, project, gate, config.orchestrationPolicy, policyEnums, decisionIds, config.handoffPolicy);
@@ -55,6 +57,7 @@ export function runPortedChain(repoRoot, project, mode, gate) {
     testReleaseScopeCompletion(acc, catalog, ctx, workItemResult.workItems, releaseResult.releaseText, effectiveMode, gate, decisionIds, releaseResult.releaseRegistry);
     testStrictReleaseGuardrails(acc, catalog, ctx, policyEnums, sourceRefRegex, project, effectiveMode, gate, sourceResult.projectReqIds, workItemResult.deliveryIds, decisionIds, releaseResult.releaseRegistry, sourceResult.projectSourceIds);
     if (gate === "Handoff") {
+        testHandoffReadiness(acc, catalog, ctx, effectiveMode, gate, workItemResult.workItems, workItemResult.deliveryIds, sourceResult.projectReqIds, decisionIds, projectText);
         testVisualProofReview(acc, catalog, project, effectiveMode, config.handoffPolicy, projectText, decisionIds);
     }
     testDesignSystemTokens(acc, catalog, project, gate);

@@ -29,6 +29,10 @@ const PORTED_RULE_IDS = new Set([
     "STRICT-002", "DESIGN-001",
     "DPROV-002", "DPROV-003", "DPROV-004", "DPROV-005", "DPROV-006", "DPROV-007",
     "VPROOF-001", "VPROOF-002",
+    "HANDOFF-001", "HANDOFF-002", "HANDOFF-003", "HANDOFF-004", "HANDOFF-005",
+    "HANDOFF-006", "HANDOFF-007", "HANDOFF-008", "HANDOFF-009", "HANDOFF-010",
+    "HANDOFF-011", "HANDOFF-012", "HANDOFF-013", "HANDOFF-014",
+    "TEST-DESIGN-001", "TEST-DESIGN-002",
 ]);
 function resolvePwsh() {
     if (process.env.AXIOM_PWSH)
@@ -91,6 +95,17 @@ const CASES = [
     { fixture: "tests/fixtures/invalid-approval-role-standard", mode: "Standard", gate: "Release" },
     // Visual proof (VPROOF-*) + design provider (DPROV-*) exercised at Handoff.
     { fixture: "examples/DESIGN-SYSTEM-DEMO", mode: "Standard", gate: "Handoff" },
+    // Handoff gate (HANDOFF-*) exercised at Handoff.
+    { fixture: "examples/HANDOFF-DEMO", mode: "Standard", gate: "Handoff" },
+    { fixture: "tests/fixtures/valid-handoff-strict", mode: "Strict", gate: "Handoff" },
+    { fixture: "tests/fixtures/valid-handoff-lite", mode: "Lite", gate: "Handoff" },
+    { fixture: "tests/fixtures/invalid-handoff-missing", mode: "Standard", gate: "Handoff" },
+    { fixture: "tests/fixtures/invalid-handoff-generic-owner", mode: "Standard", gate: "Handoff" },
+    { fixture: "tests/fixtures/invalid-handoff-sequence-inverted", mode: "Standard", gate: "Handoff" },
+    { fixture: "tests/fixtures/invalid-handoff-review-missing", mode: "Standard", gate: "Handoff" },
+    { fixture: "tests/fixtures/invalid-handoff-sensitive-no-decision", mode: "Standard", gate: "Handoff" },
+    { fixture: "tests/fixtures/invalid-handoff-header-renamed", mode: "Standard", gate: "Handoff" },
+    { fixture: "tests/fixtures/invalid-handoff-project-mismatch", mode: "Standard", gate: "Handoff" },
 ];
 function main() {
     let totalPass = 0;
