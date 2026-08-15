@@ -517,6 +517,30 @@ artifact requirement changes. The modes redesign is a separate decision.
 tests); golden coverage 63/138 rules (46%) to be raised to ~100% before port;
 distribution target = committed, dependency-free Node bundle.
 
+### DEC-027 — Interpreter migration: runtime matrix + branch/PR strategy (2026-08-15)
+
+- **Status:** Approved
+- **Approved by:** WITCHWASIN K. (Human Owner)
+- **Date:** 2026-08-15
+- **source_ref:** ROADMAP.md (DEC-026); Fixed_plan/master-plan.md v3 §13 items #3 and #7
+- **session_ref:** directed by the Human Owner in the planning conversation of 2026-08-15
+- **evidence_status:** supported
+
+**Decision:** Two §13 open decisions for the interpreter migration are fixed.
+
+1. **Node/OS matrix** (CR-010): Windows + Linux + macOS are all **required** at the
+   Phase 6 differential gate, matching the existing CI hosts (`ubuntu-24.04`,
+   `windows-2025`, `macos-15`). Node minimum = **22**, pinned = **24.18.0** (the version
+   already pinned in `action.yml` and `pmo-checks.yml`).
+2. **Branch/PR strategy**: a single long-lived branch
+   (`feat/migrate-interpreter-to-node-ts`) carries Phases 1–6 continuously; the only
+   separate PRs are Phase 8 (cutover) and Phase 9 (deletion), each squash-merged to
+   `main` after its own Human authorization.
+
+**Evidence:** existing CI already runs the three-OS matrix at the pinned Node version; a
+single migration branch keeps the strangler ports and the differential gate in one reviewable
+stream until the cutover/deletion decisions split them.
+
 Definition of done:
 
 ```text

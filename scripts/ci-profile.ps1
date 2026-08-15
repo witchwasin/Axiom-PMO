@@ -108,9 +108,16 @@ function Resolve-CiProfile {
     if ($p.StartsWith('.github/workflows/') -or $p -eq 'action.yml' -or
         $p.StartsWith('scripts/lib/') -or
         $p -eq 'scripts/run-all-checks.ps1' -or $p -eq 'scripts/validate-project.ps1' -or
-        $p -eq 'scripts/ci-profile.ps1' -or $p -eq 'scripts/run-ci-suite.ps1') {
+        $p -eq 'scripts/ci-profile.ps1' -or $p -eq 'scripts/run-ci-suite.ps1' -or
+        # CR-010 (interpreter migration): the Node/TypeScript runtime and its
+        # build surface are full-matrix changes, exactly like the PowerShell
+        # interpreter they are replacing. An unknown-path fallthrough must not
+        # let a src/ or dist/ change run on a single Linux leg while the
+        # Windows/macOS candidates stay unproven.
+        $p.StartsWith('src/') -or $p.StartsWith('dist/') -or
+        $p -eq 'package.json' -or $p -eq 'package-lock.json' -or $p.StartsWith('tsconfig')) {
       if ($level -lt 2) { $level = 2 }
-      Add-Unique $reasons "$p -> high-risk (workflow / shared-lib / runtime / CI control plane)"
+      Add-Unique $reasons "$p -> high-risk (workflow / shared-lib / runtime / CI control plane / Node interpreter)"
       continue
     }
 

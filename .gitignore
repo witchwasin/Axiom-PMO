@@ -44,8 +44,13 @@ ehthumbs.db
 # ==========================
 node_modules/
 .next/
-dist/
 build/
+
+# dist/ is the committed, dependency-free runtime bundle (DEC-026 §3). It must
+# be tracked, not ignored: both the CLI and the GitHub Action consume it at
+# runtime with no `npm install`. Only node_modules/ and build/ stay ignored.
+!dist/
+dist/*.map
 
 # ==========================
 # Temp Files
