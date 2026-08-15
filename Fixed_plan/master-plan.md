@@ -1,67 +1,88 @@
-# Axiom-PMO — Interpreter Migration Master Plan
+# Axiom-PMO — Interpreter Migration Master Plan (v2)
 
 **Branch:** `feat/migrate-interpreter-to-node-ts`
-**Scope:** Reimplement the validation interpreter in Node.js + TypeScript, prove byte-for-byte equivalence against the existing PowerShell implementation using the repository's golden-master test fixtures, then retire the PowerShell implementation entirely.
 **Status:** PLANNING — no implementation has started. This document is the executable handoff.
+**Supersedes:** `master-plan.md` v1 (commit `6432b6d`), which was reviewed by Claude Opus 5 and
+Codex. This v2 incorporates every accepted finding. The response log and the three
+strategic disagreements are in `Deepseek-Fixed.md`.
 
 ---
 
-## 0. Purpose of this document
+## 0. Purpose and owner goals
 
-This is a self-contained plan so that a fresh AI agent (or human engineer) can pick it
-up and execute the migration without re-deriving the reasoning. It states:
+This is a self-contained plan so a fresh AI agent (or human engineer) can execute the
+migration without re-deriving the reasoning. It states what is changing, why, what must
+not change, how equivalence is proven, in what order, and when it is safe to delete
+PowerShell.
 
-1. **What** is changing and **why** (the problem, with evidence).
-2. **What must not change** (the invariants that define correctness).
-3. **How** equivalence will be proven (the golden-master oracle).
-4. **In what order** to do the work (phases with entry/exit criteria).
-5. **When** it is safe to delete PowerShell.
+The **Human Owner's goals** (stated in this session, and the acceptance criteria for
+this work) are:
 
-If anything here conflicts with the current state of the repository on disk, the code
-on disk wins — update this document to match, do not silently diverge from it.
+1. The repository must be genuinely usable, so that an independent AI reviewer gives it
+   near-full marks.
+2. Two weak points are in scope:
+   - **Weak point A — too many documents / too much process.** Answered by the
+     Lite/Standard/Strict modes (user picks governance level and required handoff
+     artifacts per job). **This is a separate workstream and is NOT part of this plan.**
+   - **Weak point B — PowerShell.** The owner's reason: *"most people don't use
+     PowerShell; it is the wrong fit for the target ecosystem."* **This migration is the
+     answer to weak point B.**
+3. The "actual usage / adoption" weakness is **explicitly accepted** by the owner ("no
+   one is using this yet"). This lowers compatibility risk but is a belief about a
+   public repo; Phase 0 verifies it (see §9 Phase 0, and §11).
+4. The decision to migrate has **already been made** by the owner. The `DEC-###` (§12)
+   records it; it is not a re-decision.
 
----
-
-## 1. Executive summary
-
-Axiom-PMO's real governance logic already lives in **JSON policy files**
-(`pmo-config/*.json`). The PowerShell under `scripts/` is an **interpreter** that
-reads those JSON files, parses Markdown artifacts, and emits diagnostics. That
-interpreter is the single largest source of friction in the product for two reasons:
-
-1. **Adoption friction** — the target audience (AI-delivery teams on macOS/Linux,
-   using Node-first frameworks like spec-kit, BMAD, OpenSpec, and Claude Code) must
-   install PowerShell (`pwsh`) just to run the framework. The Node CLI (`cli/axiom.mjs`)
-   already requires Node, so PowerShell is a *second* runtime nobody in the target
-   ecosystem otherwise uses.
-
-2. **It is the root cause of its own defect class** — the framework must run on both
-   PowerShell 7 (dev, macOS/Linux) and Windows PowerShell 5.1 (CI/Windows). The
-   repository's own rule catalog documents this as having caused **three shipped
-   defects** (`DOCTOR-010`), plus a second class of invisible `$IsWindows` bugs
-   (`DOCTOR-011`).
-
-**Decision:** port the interpreter to Node.js + TypeScript, driven by the **same**
-`pmo-config/*.json` files, and use the existing golden-master fixtures as the
-equivalence oracle. Once the Node path is proven identical across the full fixture
-matrix and the example projects, delete the PowerShell implementation.
-
-**Net effect:** one runtime (Node) for CLI, validator, and GitHub Action; the entire
-`DOCTOR-010`/`DOCTOR-011` portability bug class disappears; and the governance logic
-(which lives in JSON) is untouched.
+If anything here conflicts with the repository on disk, the code on disk wins — update
+this document to match, do not silently diverge.
 
 ---
 
-## 2. Problem statement (evidence, not opinion)
+## 1. Executive summary (corrected)
 
-### 2.1 The target runtime is already Node, so PowerShell is a tax
+Axiom-PMO's validation behavior is implemented in **~24,181 lines of PowerShell**
+(9,277 in `scripts/lib/`, 5,268 in `scripts/*.ps1`, 9,636 in `tests/*.ps1`). The
+`pmo-config/*.json` files hold **rule identity, severity, and remediation text** — but
+the **firing conditions** (when a rule triggers, its blocking behavior, mode/gate
+branching, reference resolution, filesystem/git semantics) live in that PowerShell.
+This is a **behavioral reimplementation**, not a mechanical port of "machinery over a
+JSON engine."
 
-- `cli/axiom.mjs` is a Node program and already requires Node (it spawns `pwsh`).
-- The GitHub Action runner (`scripts/github-action/run-action.mjs`,
-  `render-report.mjs`, `emit-annotations.mjs`) is **already Node**.
-- The interactive onboarding (`init`) is already Node (`node:readline`).
-- Therefore every user already has Node installed. `pwsh` is an *additional*
-  requirement on macOS/Linux that serves no purpose except hosting the interpreter.
+The migration reimplements the interpreter in Node.js + TypeScript, proves it
+**canonical-form equivalent** to the current PowerShell implementation by
+golden-master differential comparison (after raising golden coverage from ~46% to
+~100%), then retires PowerShell.
+
+**Net effect:** one runtime (Node) for CLI, validator, and GitHub Action; the
+`DOCTOR-010`/`DOCTOR-011` portability defect class disappears; the governance logic
+(rule catalog + policy JSON) is preserved byte-for-byte.
+
+**Two deliberate separations, stated up front:**
+
+- **Weak point A (modes) is out of scope.** This plan changes no rule, gate, mode, or
+  artifact requirement. The modes redesign is a separate `DEC-###`, separate branch,
+  separate plan.
+- **Dropping Windows PowerShell 5.1 is a cheap prerequisite step in this plan, not a
+  substitute for the migration.** It removes the 5.1/7 portability class early, but it
+  does not satisfy the owner's ecosystem-fit goal (PowerShell 7 is still PowerShell).
+  See §3.
+
+---
+
+## 2. Problem statement (evidence, corrected)
+
+### 2.1 Ecosystem fit is the primary problem
+
+The target audience — AI-delivery teams on macOS/Linux using Node-first frameworks
+(spec-kit, BMAD, OpenSpec, Claude Code) — must install `pwsh` to run the framework. The
+CLI (`cli/axiom.mjs`), the GitHub Action runner (`scripts/github-action/*.mjs`), and
+the interactive onboarding already require Node. PowerShell is a second runtime the
+target ecosystem otherwise does not use.
+
+**Corrected caveat (CR-020):** the README documents a Node-free PowerShell path, so
+"every user already has Node" is an assumption, not a fact. Node-only **removes a
+supported path**. This is a deliberate breaking-support trade-off, documented in the
+`DEC-###`, and costless only because the owner reports zero active users (§0.3).
 
 ### 2.2 PowerShell portability is a demonstrated bug source
 
@@ -73,22 +94,18 @@ From `pmo-config/validation-rules.json`:
 > `DOCTOR-011`: "$IsWindows ... does not exist in Windows PowerShell 5.1 ... It is
 > invisible on PowerShell 7, which is where this repository is developed."
 
-These are not hypothetical risks; they are recorded, shipped defect classes caused by
-maintaining a 5.1/7-compatible codebase. A single-runtime interpreter eliminates the
-class entirely.
+**Correction:** this class exists because the code must satisfy PowerShell 5.1 **and**
+7 simultaneously. Dropping 5.1 removes it (one CI leg, `pwsh-host.ps1` simplified, two
+doctor rules retired). That step is in the plan (§9 Phase 0) and is cheap — but it
+fixes the **defect class**, not the **ecosystem-fit** problem, which is the owner's
+actual reason for the migration.
 
-### 2.3 The "two implementations would drift" argument is about a different problem
+### 2.3 "Two implementations would drift" is about a different problem
 
-The comment at the top of `cli/axiom.mjs` argues against a *second permanent*
-implementation, because it would drift from the PowerShell reference. That concern is
-correct for the wrong reason. This plan is not a permanent fork; it is a **migration**:
-
-- The PowerShell implementation remains the oracle **only until** the Node
-  implementation is proven byte-identical by the golden master.
-- After proof, PowerShell is **deleted**, leaving exactly one implementation.
-
-There is no "two implementations live forever" state; there is a migration with a
-temporary oracle and a permanent single implementation.
+The `cli/axiom.mjs` header argues against a second *permanent* implementation. This
+plan is a **migration**: PowerShell is the compatibility oracle only until the Node
+implementation is proven equivalent, then it is deleted. There is exactly one
+implementation at the end.
 
 ---
 
@@ -96,471 +113,507 @@ temporary oracle and a permanent single implementation.
 
 | Axis | Current | Target |
 |---|---|---|
-| Validation interpreter | PowerShell (35 modules under `scripts/lib/`) | TypeScript library under `src/` (or `lib/`) |
-| CLI | `cli/axiom.mjs` shells out to `.ps1` | `cli/axiom.mjs` calls the TS library in-process (thin dispatch over `lib/`) |
-| GitHub Action | Node `.mjs` shells out to `.ps1` | Node `.mjs` calls the TS library |
-| Config / policy source of truth | `pmo-config/*.json` | **unchanged** (same files, same contents) |
-| Governance logic | JSON (already) | **unchanged** |
-| PowerShell | reference implementation | **deleted** after proof |
-| Runtime requirement | Node **and** pwsh | Node only |
+| Validation interpreter | PowerShell (89 `.ps1` files) | TypeScript library under `src/`, compiled to a **committed, dependency-free `dist/` bundle** |
+| CLI | `cli/axiom.mjs` spawns `pwsh` | `cli/axiom.mjs` calls the bundled library in-process |
+| GitHub Action | Node `.mjs` → Node CLI → `pwsh` | **Action → Node CLI → Node library** (boundary preserved; CR-014) |
+| Config / policy | `pmo-config/*.json` | **unchanged bytes** (semantics frozen; runtime-reference edits pre-authorized; CR-013) |
+| Governance logic | JSON (catalog) + PowerShell (firing conditions) | same catalog JSON + TypeScript firing conditions, equivalent |
+| Runtime requirement | Node **and** pwsh (or pwsh only) | **Node only** |
+| Windows PowerShell 5.1 | supported | **dropped early** as a prerequisite (§9 Phase 0) |
 
-**The non-negotiable invariant:** the *semantics* of validation — which artifact
-fields are required per mode/gate, which enums are valid, which rule fires with which
-severity and exit code — must be **byte-for-byte identical** between the final Node
-implementation and the current PowerShell implementation. The proof of this is the
-golden-master suite (see §8).
+**Distribution default (CR-007 / F6):** commit a dependency-free or bundled `dist/`
+consumed by both CLI and Action. No `npm install` at runtime; `private: true`; no
+publication path. This is decision #1 in §13 and requires the Human decision in the
+`DEC-###`.
 
 ---
 
-## 4. Why this approach (reasoning)
+## 4. Why this approach
 
-### 4.1 The hard part is already done — the logic is in JSON
+### 4.1 The port surface is large and behavioral — plan for it honestly
 
-The governance content is data, not code. `pmo-config/` contains 17 files, including:
+The `pmo-config/*.json` are a **catalog** (severity, description, suggestion), not a
+rule engine. Every rule's firing condition is code. The migration therefore ports
+**behavior**, not just plumbing. The plan sizes this correctly (24,181 lines) and
+uses a strangler pattern so value ships incrementally and a stall at 60% does not leave
+a half-ported, untrusted tree (§9).
 
-- `policy.json` — enums, approval roles/checkpoints, table schemas, strict triggers,
-  permission model.
-- `validation-rules.json` — ~100 rules, each with `severity`, `description`,
-  `suggestion`, and optional `documentation` path. This is the **rule catalog**; the
-  PowerShell "rules" are largely interpreters over these definitions.
-- `artifact-policy.json` — the mode×gate artifact matrix.
-- `handoff-policy.json`, `scope-diff-policy.json`, `orchestration-policy.json`,
-  `adversarial-review-policy.json`, `context-map.json`, and others.
+A **behavior inventory** (produced in Phase 0) classifies every rule/capability as
+`config-driven`, `code-driven`, or `hybrid`. Config-mutation tests then prove every
+load-bearing policy key still drives the Node implementation (CR-003).
 
-The PowerShell is the *machinery*: Markdown table parsing, config loading, path
-containment, reference resolution, result writing. Porting machinery is mechanical;
-porting "governance logic" is not required because there is very little governance
-logic outside the JSON.
+### 4.2 The oracle must be completed before it can be used
 
-### 4.2 The oracle already exists
+Golden masters currently cover **63 of 138 rules (46%)**. Equivalence is only provable
+for rules that have a golden. Phase 0 raises coverage to ~100% against the **current**
+PowerShell implementation, before any port begins. This is the single highest-value
+item in the plan and retains its value even if the migration is cancelled.
 
-The repository already contains the exact tool needed to prove equivalence:
+### 4.3 Canonical-form equivalence, not byte equivalence
 
-- `tests/` — positive/negative fixture matrix + **golden masters**.
-- `scripts/run-validation-tests.ps1` — runs the fixture matrix and diffs against
-  golden masters.
-- `scripts/run-all-checks.ps1` — goldens + config-mutation + end-to-end + CLI.
-- `examples/` — 9 worked example projects (Lite, Standard, Strict, handoff, optional
-  tracks, demo).
+The existing `scripts/lib/golden-normalizer.ps1` deliberately ignores BOM, indentation,
+CRLF/LF, `\uXXXX` escaping, and path separators. The correct equivalence claim is
+**canonical-form**: ordered result sequence, `rule_id`, `level`, `blocking`, message
+text, summary counters, and exit code must match. "Byte-for-byte" is not the contract
+and is removed from the plan (F7 / CR-005).
 
-Golden-master testing is the *only* correct way to prove a rewrite did not change
-behavior. It exists; we use it as the gate.
+### 4.4 Single runtime removes the defect class and the adoption tax together
 
-### 4.3 Single runtime removes a whole defect class and the adoption tax at once
+Porting removes both §2.1 and §2.2. The dual-runtime state is temporary and bounded.
 
-Porting removes both problems in §2 with one change. There is no intermediate state
-that is worse than today: until cut-over, both implementations run side by side and
-must agree.
+### 4.5 TypeScript, not JavaScript-only, and not Python
 
-### 4.4 TypeScript, not JavaScript-only, and not Python
-
-- **TypeScript** because the rule catalog and JSON schemas benefit from explicit
-  types (rule ids, severities, table schemas) and the codebase is already
-  Node/ESM-friendly (`cli/axiom.mjs` is ESM).
-- **Node, not Python**, because the CLI and Action already require Node — porting to
-  Python would still leave a second runtime. Node makes it a single runtime.
+- **TypeScript** because the rule catalog and JSON schemas benefit from explicit types
+  and the codebase is ESM-friendly.
+- **Node, not Python**, because CLI + Action already require Node — Node makes it a
+  single runtime.
 
 ---
 
 ## 5. Non-goals / out of scope
 
-- **Do not change governance semantics.** Do not add, remove, or weaken rules. If the
-  golden master disagrees, the Node code is wrong (or, in a deliberate, separately
-  reviewed change, the golden master itself is updated — but that is out of scope here
-  and must be a separate, human-approved decision).
-- **Do not redesign the policy schema.** `pmo-config/*.json` stays byte-identical
-  unless a doctor check demands otherwise.
-- **Do not add features** (new rules, new gates, new modes, dashboards).
-- **Do not publish anything** (no npm package, no marketplace publish).
-- **Do not change the diagnostics contract** (`schema_version`, field names, exit
-  codes). Consumers depend on it. See §8.4 for the exact contract.
+- **Do not change governance semantics.** No rule, gate, mode, artifact requirement, or
+  approval matrix changes. The modes redesign (owner weak point A) is a **separate
+  plan**.
+- **Do not redesign the policy schema.** `pmo-config/*.json` bytes are frozen except a
+  pre-authorized manifest of runtime-reference/version edits (CR-013).
+- **Do not add features** (no new rules, gates, modes, dashboards).
+- **Do not publish anything** (no npm package, no marketplace publish; `private: true`).
+- **Do not change the diagnostics contract** except the schema-mandated fields (see §8.4).
 
 ---
 
-## 6. Current architecture (as of branch point)
+## 6. Current architecture (complete inventory)
 
-### 6.1 Components
+### 6.1 Components and their PowerShell surface
 
-```
-cli/axiom.mjs                     Thin Node wrapper: finds pwsh, maps verb → script, forwards args, preserves exit code.
-scripts/*.ps1                     Orchestrators (validate-project, new-project, pmo-doctor, assess-handoff,
-                                  run-validation-tests, run-all-checks, demo, export-execution-contract,
-                                  verify-execution-result, run-execution-command, pmo-status, setup-claude-integration, …).
-scripts/lib/*.ps1                 35 interpreter modules (see §6.3).
-scripts/github-action/*.mjs       Node action runner (already Node).
-pmo-config/*.json                 Source-of-truth policy (17 files).
-templates/                        Blank artifacts.
-examples/                         Worked example projects (the differential-test corpus).
-tests/                            Fixture matrix + golden masters.
-```
+| Surface | Count | Notes |
+|---|---:|---|
+| `scripts/lib/*.ps1` | 35 | interpreter modules |
+| top-level `scripts/*.ps1` | 25 | orchestrators + tools |
+| `tests/*.ps1` | 29 (9,636 lines) | test suite, itself PowerShell |
+| total tracked `.ps1` | **89** | the full deletion surface |
 
-### 6.2 The JSON-first insight (read this before porting anything)
+The v1 plan covered 35 lib modules + ~12 orchestrators. The complete set is materially
+larger; Phase 0 produces the machine-checked disposition for all 89 (CR-002).
 
-The validator's behavior is driven by JSON in `pmo-config/`, not by hardcoded logic:
+### 6.2 The JSON files are a catalog, not a rule engine (corrected)
 
-- Rule ids, severities, descriptions, suggestions → `validation-rules.json`.
-- Valid enums (modes, gates, statuses, evidence statuses, roles, strict triggers) →
-  `policy.json`.
-- Required artifacts per mode/gate → `artifact-policy.json`.
-- Approval role matrix → `policy.json` `approval_roles`.
-- Table column schemas → `policy.json` `table_schemas`.
+`validation-rules.json` (138 rules) carries `severity`, `description`, `suggestion`,
+and optional `documentation` — **no predicate, threshold, or matcher**. `policy.json`
+carries enums, approval roles/checkpoints, table schemas, strict triggers, permissions.
+Firing conditions live in PowerShell. Correct statement for the port:
 
-**Implication for the port:** the TypeScript modules should read these same JSON files.
-Do not transcribe enum values or rule text into TypeScript source; load them from
-`pmo-config/` at runtime exactly as the PowerShell does. This is what makes
-"byte-identical" achievable and keeps future rule edits in one place.
+> *Rule identity, severity, and remediation text are data; rule firing conditions are
+> code and must be ported line by line.*
 
-### 6.3 Classification of the 35 `scripts/lib/*.ps1` modules
+15 rule ids are emitted with no catalog entry (`SECRET-*`, `BRANCH-*`, `COMMIT-*`,
+`LOCAL-PATH-*`, `OLD-NAME-*`, `OLD-URL-*` — from `check-public-hygiene.ps1`); 3 catalog
+rules are never referenced (`DOCTOR-EXAMPLE`, `DOCTOR-HOOK`, `DOCTOR-STRUCT`). Phase 0
+reconciles this in the behavior inventory.
 
-Port these in dependency order. Group A first (pure plumbing), then B (policy-driven
-core), then C (domain validators).
+### 6.3 Module disposition (complete, to be finalized in Phase 0)
 
-**Group A — Infrastructure / plumbing (port mechanically):**
+The 89 files each get one disposition: `port | replace | temporary-oracle |
+retire-with-evidence`. Every row records: callers, public/maintainer status, outputs,
+filesystem/git side effects, replacement path, tests, and retirement criterion.
 
-| Module | Responsibility |
-|---|---|
-| `pwsh-host.ps1` | Host detection (`$IsWindows` workaround, `Test-WindowsHost`). **Obsolete after port — delete, not port.** |
-| `config-loader.ps1` | Load `pmo-config/*.json` (handles UTF-8 BOM). |
-| `markdown-files.ps1` | Discover/read Markdown artifacts. |
-| `markdown-table-parser.ps1` | Parse Markdown tables → rows/columns. |
-| `markdown-table-parser` deps | (see `ordinal-sort`, `marker-block`) |
-| `ordinal-sort.ps1` | Deterministic ordering (guarantees stable output). |
-| `marker-block.ps1` | Parse marker-delimited blocks in Markdown. |
-| `path-containment.ps1` | Ensure FILE: refs stay inside project root. |
-| `artifact-hash.ps1` | SHA-256 digesting. |
-| `golden-normalizer.ps1` | Normalize output before golden-master diff. |
-| `result-writer.ps1` | Emit diagnostics (Text / JSON), attach suggestions. |
-| `framework-checkout.ps1` | Locate framework root vs project root. |
+**Group A — Infrastructure (port mechanically, minus host detection):**
 
-**Group B — Policy-driven core (port with care; logic must mirror JSON):**
+`config-loader`, `markdown-files`, `markdown-table-parser`, `marker-block`,
+`ordinal-sort`, `path-containment`, `artifact-hash`, `golden-normalizer`,
+`result-writer`, `framework-checkout`. **`pwsh-host.ps1` is retired, not ported** (no
+Node equivalent needed).
 
-| Module | Responsibility |
-|---|---|
-| `mode-resolver.ps1` | Resolve effective mode (Lite/Standard/Strict), non-downgrade. |
-| `artifact-policy.ps1` | Required-artifact lookup per mode/gate. |
-| `approval-validator.ps1` | Approval table checks, role matrix, named-person rules. |
-| `reference-resolver.ps1` | Resolve source/design/decision/release refs. |
-| `execution-path-validator.ps1` | Validate `execution_path` declaration. |
+**Group B — Policy-driven core (port with care):**
 
-**Group C — Domain validators (port; mostly read policy + check artifacts):**
+`mode-resolver`, `artifact-policy`, `approval-validator`, `reference-resolver`,
+`execution-path-validator`.
 
-| Module | Responsibility |
-|---|---|
-| `source-validator.ps1` | Source-of-truth checks, source_ref, placeholders. |
-| `workitem-validator.ps1` | Work-items table checks. |
-| `rtm-validator.ps1` | RTM.json traceability (Strict). |
-| `release-validator.ps1` | Release gate (rollback, test summary, QA/security review). |
-| `handoff-validator.ps1` | Handoff gate (build order, owners, acceptance cases). |
-| `scope-diff-validator.ps1` | SCOPE-DIFF orchestration. |
-| `scope-diff-matcher.ps1` | Path-pattern matching against SCOPE.json. |
-| `scope-diff-git-adapter.ps1` | Git diff (base..head) invocation. |
-| `execution-contract-schema.ps1` | EXECUTION-CONTRACT schema. |
-| `execution-contract-validator.ps1` | Contract validation. |
-| `execution-contract-git.ps1` | Git ground-truth reconciliation. |
-| `execution-contract-evidence.ps1` | Evidence checks (ci-check, run records). |
-| `adversarial-review-validator.ps1` | AREV (EXECUTION-REVIEW) checks. |
-| `change-control-validator.ps1` | CHANGE-REQUESTS checks. |
-| `externalization-validator.ps1` | EXTERNALIZATION checks. |
-| `research-validator.ps1` | RESEARCH + PROVENANCE checks. |
-| `design-provider-validator.ps1` | Claude Design manifest/review checks. |
-| `design-system-validator.ps1` | Design-system token contract checks. |
-| `visual-proof-validator.ps1` | Visual Proof (VISUAL-REVIEW) checks. |
+**Group C — Domain validators (port; read policy + check artifacts):**
 
-### 6.4 Orchestrators that must also be ported or replaced
+`source-validator`, `workitem-validator`, `rtm-validator`, `release-validator`,
+`handoff-validator`, `scope-diff-validator`, `scope-diff-matcher`,
+`scope-diff-git-adapter`, `execution-contract-schema`, `execution-contract-validator`,
+`execution-contract-git`, `execution-contract-evidence`,
+`adversarial-review-validator`, `change-control-validator`,
+`externalization-validator`, `research-validator`, `design-provider-validator`,
+`design-system-validator`, `visual-proof-validator`.
 
-`validate-project.ps1` (219 lines) is the main entrypoint and must become the Node
-entrypoint. Others: `new-project.ps1` (generator), `pmo-doctor.ps1` (framework
-self-check), `assess-handoff.ps1` (readiness assessment), `demo.ps1`,
-`run-validation-tests.ps1`, `run-all-checks.ps1`, `export-execution-contract.ps1`,
-`verify-execution-result.ps1`, `run-execution-command.ps1`, `pmo-status.ps1`,
-`setup-claude-integration.ps1`. Each maps to an existing CLI verb in `cli/axiom.mjs`.
+**Orchestrators/tools that v1 omitted (must be dispositioned; F9 / CR-002):**
+
+`aggregate-diagnostics`, `build-plugin-package`, `capture-plugin-load-evidence`,
+`check-public-hygiene`, `ci-profile`, `design-provider-digest`, `handoff-digest`,
+`hook-scope-advisory`, `measure-context`, `prepare-public-release`, `run-ci-suite`,
+`update-source-snapshot`, `visual-proof-digest`.
+
+**Tests (F3):** `tests/*.ps1` (29 files, 9,636 lines) must be ported or re-derived from
+goldens. A test suite ported by the same agent that ports the implementation is **not an
+independent oracle**; the golden masters are the only independent oracle, which is why
+their coverage must reach ~100% (Phase 0).
 
 ---
 
 ## 7. Target architecture
 
 ```
-src/                         TypeScript interpreter library
-  config/                    config loader (pmo-config/*.json)
+src/                         TypeScript interpreter
+  config/                    config loader (BOM/no-BOM tolerant)
   markdown/                  table parser, marker blocks, files
-  core/                      mode resolver, artifact policy, reference resolver
-  rules/                     one module per rule group (mirrors §6.3 groups B & C)
-  output/                    result writer (Text/JSON), golden normalizer
+  core/                      mode resolver, artifact policy, reference resolver,
+                             ValidationContext (typed, per-run; no module globals)
+  rules/                     one module per rule group; typed rule-ID registry
+  output/                    result writer (Text/JSON), canonical normalizer
   git/                       scope-diff adapter, execution-contract git
-cli/axiom.mjs                thin dispatch over src/ (no validation logic remains here)
-scripts/github-action/*.mjs  unchanged shape, now call src/ instead of spawning .ps1
-pmo-config/*.json            UNCHANGED
-tests/                       UNCHANGED fixtures + golden masters (the oracle)
+  digest/                    canonical artifact SHA-256 (must match artifact-hash.ps1)
+dist/                        committed, dependency-free bundle (CLI + Action consume this)
+cli/axiom.mjs                thin dispatch over dist/ (no validation logic in the CLI)
+scripts/github-action/*.mjs  unchanged shape; call CLI (Action -> CLI -> library)
+pmo-config/*.json            UNCHANGED semantics (see CR-013 for the edit manifest)
+tests/                       golden masters (independent oracle) + ported/re-derived tests
 ```
 
-**Principle carried over from the old CLI comment, inverted:** the "zero validation
-logic in the CLI" rule becomes "validation logic lives only in `src/`; the CLI is a
-thin dispatcher over `src/`." There is still exactly one implementation of the logic.
+**Rules carried over from the reviews, now load-bearing:**
+
+1. One permanent implementation at the end; dual-state is bounded.
+2. Never edit a golden master to make the port pass.
+3. Governance changes are separated from the migration and approved independently.
+4. Differential comparison is a hard gate.
+5. Human decisions required for toolchain, compatibility, cutover, deletion, release.
+6. PowerShell is the **compatibility oracle** (not "correctness oracle") until final proof.
+
+**`ValidationContext` (CR-012):** a typed, per-run object holding configuration, roots,
+diagnostic accumulator, filesystem, Git/`gh`, clock, UUID, environment, and process
+adapters. Do not port PowerShell `$script:` globals into Node module globals. Add
+sequential and concurrent multi-project tests to catch state/cache leakage.
+
+**Rule-ID registry (CR-018):** a typed registry or generated manifest consumed by
+validators and `pmo-doctor` (`DOCTOR-007` reconciliation), so deleting PowerShell does
+not leave `pmo-doctor` scanning for emitters that no longer exist.
 
 ---
 
-## 8. Equivalence proof strategy (the core of this migration)
+## 8. Equivalence proof strategy
 
-### 8.1 Golden master as oracle
+### 8.1 Golden master is the compatibility oracle
 
-The PowerShell implementation is correct **by definition** for this migration. The
-Node implementation is correct **iff** it produces the same output.
+The current PowerShell implementation is the **compatibility oracle** for this
+migration. The Node implementation is correct **iff** it produces the same canonical
+output. Golden masters may preserve existing defects; intentional fixes belong in
+separate, separately-reviewed changes (CR-005).
 
-The existing golden masters in `tests/` are the frozen expected outputs. Strategy:
+### 8.2 Comparator classes (CR-005 / F7)
 
-1. Before touching anything, **freeze a baseline**: run `run-validation-tests.ps1`
-   and `run-all-checks.ps1`, confirm green, and record the golden-master files and
-   exit codes as the frozen baseline (copy them to a `Fixed_plan/baseline/` snapshot
-   for reference — read-only, never edited).
-2. The Node implementation must reproduce those outputs **exactly**.
+| Output | Required comparison |
+|---|---|
+| JSON diagnostics | Strict deep equality of keys, types, `null`/absent, exact strings, ordered arrays, summaries, exit values; normalize only declared host paths |
+| Text diagnostics | Canonical comparison via a versioned normalizer **or** raw bytes on one named platform — not both |
+| Generated files | Command-specific byte, encoding, newline, digest, permission, overwrite checks |
+| stdout/stderr | Captured separately; not merged unless the command contract merges them |
+| Intentional changes | Allowed-delta ledger with Human decision reference |
 
-### 8.2 Differential harness
+### 8.3 Compatibility-case manifest (CR-006)
 
-Build a harness that runs **both** implementations over the same corpus and diffs:
+Validator behavior is defined by an **invocation tuple**, not a directory:
 
-- **Corpus:** every fixture in `tests/` **plus** every project in `examples/`.
-- **Comparison points (must all match):**
-  1. Exit code (0 pass / 1 fail / 2 blocking-warning).
-  2. JSON diagnostics — parsed and compared field-by-field (not string diff, to
-     tolerate key ordering, **but** aim for byte-identical where the contract
-     allows).
-  3. Text diagnostics for `-Format Text` — byte-identical (this is where ordering and
-     wording bugs hide).
-- **Determinism check:** run the Node implementation N times over the same input and
-  assert identical output (guards against non-deterministic ordering; the existing
-  `ordinal-sort.ps1` exists precisely to make output deterministic).
+```text
+entrypoint + project + mode + gate + format + FailOnWarning + optional flags
++ cwd + environment + git state + platform
+```
 
-### 8.3 The differential harness must itself be runtime-agnostic
-
-The harness can be Node (run `.ps1` via a `pwsh` child for the reference side, and
-the TS library in-process for the candidate side). The reference side may use `pwsh`
-only until the migration completes; the harness is a migration tool and is deleted
-with PowerShell.
+Phase 0 extracts a versioned manifest. Every case declares: entrypoint, arguments, cwd,
+environment, preconditions, required OS/runtime dimensions, expected exit, comparator
+class, expected stdout/stderr, expected filesystem/git changes, allowed nondeterministic
+fields, prohibited side effects, and required/skipped status. The full config-mutation
+suite is part of the Phase 4 and Phase 6 gates.
 
 ### 8.4 Invariants that must be preserved exactly
 
-These are non-negotiable; the golden master and the diagnostics contract encode them.
+- **Diagnostic row contract** (from `pmo-config/diagnostics-schema.json`): `schema_version`,
+  `level`, `rule_id`, `message`, `blocking`, `artifact`, `item_id`, `field`,
+  `suggestion`, `documentation_url`. (v1 incorrectly wrote `severity`/`file`/`line`.)
+- **Envelope + summary consistency**, `null` vs absent behavior, optional `scope_diff`,
+  privacy constraints (`sensitive_data_policy`), assessment envelope, CLI handoff
+  envelope — validated against the schema as a hard, independent gate.
+- **Exit codes are per-entrypoint, not one global map** (CR-008):
+  - Validator: `0` pass, `1` ≥1 FAIL, `2` blocking WARN under `-FailOnWarning`.
+  - CLI usage: `64`. Missing-host `127` (deleted after port).
+  - `setup`: `2` for usage/error (not a blocking warning).
+  - `axiom run`: propagates arbitrary child exit codes.
+  - Reserve a distinct **infrastructure-failure** code (non-0/1/2) and add a top-level
+    exception boundary so a Node crash is never misclassified as a governance verdict;
+    Action report-only mode must never soften runtime/parsing/config failures.
+- **Config reading semantics:** accept BOM and no-BOM; strip exactly one leading U+FEFF
+  when present (CR-019 — not all files currently have a BOM).
+- **Canonical artifact digest** (F8): text → strict UTF-8 decode, strip one BOM,
+  CRLF/CR→LF, re-encode no-BOM, SHA-256; binary → raw bytes; extension allowlist
+  `.md .markdown .json .puml .csv .txt .yaml .yml .html .htm`; unknown extension fails
+  safe to byte hashing. These digests are **persisted in shipped artifacts**
+  (`HANDOFF-REVIEW.json`, `VISUAL-REVIEW.json`, `INPUT-MANIFEST.json`, `REVIEW.json`);
+  a divergence makes existing evidence go stale. Dedicated fixture set (LF/CRLF,
+  BOM/no-BOM, binary, unknown extension, multi-file combined digest) verified before
+  Phase 4.
+- **Case and enums:** case-sensitive, from `policy.json`; free text is a failure.
+- **Deterministic ordering:** match `ordinal-sort.ps1` semantics; a "helpful" JS sort
+  with different collation breaks golden masters silently.
+- **Path containment:** FILE: refs escaping the project root are a containment breach
+  (`REF-002`); symlink/junction/case behavior covered by the security gate (CR-017).
 
-- **Exit codes:** `0` pass, `1` ≥1 FAIL, `2` `-FailOnWarning` with blocking WARN,
-  `64` CLI usage error, `127` no PowerShell host (the `127` case is **deleted** after
-  the port — Node no longer needs a host; the CLI must never emit 127 again, and
-  consumers/tests that assert 127 must be updated in the cut-over phase).
-- **Diagnostics contract:** JSON `schema_version`, per-result fields (`rule_id`,
-  `severity`, `message`, `suggestion`, `documentation_url`, `file`, `line`).
-- **Config reading semantics:** `pmo-config/*.json` ship with a UTF-8 BOM;
-  `JSON.parse` rejects it, so the loader must strip it (`﻿`) exactly as
-  `cli/axiom.mjs` already does and as `ConvertFrom-Json` tolerated it.
-- **Case and enums:** enum values are case-sensitive and come from `policy.json`;
-  free text in an enum column is a failure (`ENUM-001`).
-- **Deterministic ordering:** output ordering must match `ordinal-sort.ps1`; a
-  "helpful" JS sort with different collation will break golden masters silently.
-- **Path containment:** FILE: refs escaping the project root are a containment
-  breach (`REF-002`); path resolution must use the same containment rules.
+### 8.5 Final-tree proof (CR-009)
 
----
+The tree that passes the hard differential gate is not the delivered tree — Phases 8–9
+rewire callers and delete PowerShell. Therefore:
 
-## 9. Migration phases (ordered, each gated)
-
-Do **not** proceed past a phase until its exit criteria are met. Commit at the end of
-each phase with a message prefix `feat(node-interpreter): …`.
-
-### Phase 0 — Freeze baseline
-
-- Record HEAD SHA as the branch point.
-- Run the full suite (PowerShell) once; confirm green.
-- Snapshot golden masters + exit codes into `Fixed_plan/baseline/` (read-only).
-
-**Exit:** baseline is green and snapshotted; `Fixed_plan/baseline/README.md` lists the
-commands run and the SHA they were run at.
-
-### Phase 1 — Scaffold the Node/TS interpreter
-
-- Choose and wire a TS build/test setup (e.g. `tsc` + a minimal test runner, or
-  `vitest`/`node:test` — match whatever keeps the repo dependency-light; no runtime
-  framework that forces a config the repo doesn't want).
-- Set up `src/` with the directory layout in §7.
-- Add a CI-visible `npm run build` / `npm test` that is currently empty/skipped.
-
-**Exit:** `tsc` compiles; a trivial unit test passes; CI still green (nothing depends
-on the new code yet).
-
-### Phase 2 — Port infrastructure (Group A)
-
-Port: `config-loader`, `markdown-files`, `markdown-table-parser`, `marker-block`,
-`ordinal-sort`, `path-containment`, `artifact-hash`, `golden-normalizer`,
-`result-writer`, `framework-checkout`.
-
-- Unit-test each against the same inputs the PowerShell version consumes.
-- **Delete `pwsh-host.ps1` from the port scope** — host detection has no Node
-  equivalent and is not needed.
-
-**Exit:** each module has unit tests; a small end-to-end smoke (load a config, parse a
-table, emit a JSON result) matches the PowerShell output for a hand-written fixture.
-
-### Phase 3 — Port policy-driven core (Group B)
-
-Port: `mode-resolver`, `artifact-policy`, `approval-validator`, `reference-resolver`,
-`execution-path-validator`.
-
-**Exit:** effective-mode resolution matches `mode-resolver.ps1` for a matrix of
-{requested mode} × {PROJECT.md default} × {work-item mode/trigger} cases, including
-the non-downgrade FAIL/WARN behavior (`MODE-001`).
-
-### Phase 4 — Port domain validators (Group C)
-
-Port all Group C modules, driven by `validation-rules.json` and `artifact-policy.json`.
-
-**Exit:** the Node library can run a full `validate-project` equivalent on
-`examples/` and produce structured diagnostics; manually spot-check a few examples
-against `pmo-config/validation-rules.json` severities.
-
-### Phase 5 — Port orchestrators & wire the CLI
-
-Port `validate-project` (the entrypoint), `new-project`, `assess-handoff`,
-`pmo-doctor`, `demo`, `export-execution-contract`, `verify-execution-result`,
-`run-execution-command`, `pmo-status`, `setup-claude-integration`.
-
-- Rewire `cli/axiom.mjs` to call `src/` in-process for these verbs (remove the
-  `pwsh` spawn). Keep the verb surface identical.
-- Keep `pwsh` fallback **temporarily** via an env flag (e.g. `AXIOM_IMPL=pwsh`) so
-  the differential harness can still run the reference side.
-
-**Exit:** `node cli/axiom.mjs validate --project examples/STANDARD-FEATURE --gate Release`
-runs entirely in Node and prints a result.
-
-### Phase 6 — Differential harness (the gate)
-
-Build the harness (§8.2) and run it over `tests/` + `examples/` with both
-implementations.
-
-**Exit:** **zero** differences across the full corpus — exit codes, JSON diagnostics,
-and Text output all match. This is the hard gate; no phase 7 until it is green.
-
-### Phase 7 — Dual-run in CI
-
-- Add a CI job that runs the differential harness on every push.
-- Run both the PowerShell suite and the Node suite for a settling period (this is the
-  "migration with temporary oracle" window).
-
-**Exit:** N consecutive green CI runs (pick N = a few days of commits, or as the team
-decides) with no drift.
-
-### Phase 8 — Cut over
-
-- Make Node the default and only path for the CLI and the GitHub Action.
-- Remove the `AXIOM_IMPL=pwsh` fallback from the CLI.
-- Update `action.yml`, `Makefile`, `scripts/check.sh`, `clean-room/Dockerfile`, and
-  `hooks/` to drop the `pwsh` dependency.
-- Update docs (`README.md`, `TESTING.md`, `CONTRIBUTING.md`, `docs/guides/powershell-runtime.md`,
-  the "Requires PowerShell" text, install instructions) to say "Node only".
-- Update any test/consumer that asserted exit code `127` (no PowerShell host).
-
-**Exit:** the framework runs with Node as the only runtime; the `pwsh` requirement is
-gone from every entrypoint and doc.
-
-### Phase 9 — Delete PowerShell
-
-- Remove `scripts/*.ps1` and `scripts/lib/*.ps1`.
-- Remove the differential harness (its job is done; the golden-master suite remains,
-  now run by Node).
-- Delete `docs/guides/powershell-runtime.md` (or repurpose to a "runtime: Node" note).
-- Remove the now-obsolete doctor rules that checked PowerShell portability
-  (`DOCTOR-010`, `DOCTOR-011`) and their doc pages — they no longer describe any code.
-  **This is a deliberate rule-catalog edit and must be recorded as such** (see §11).
-
-**Exit:** no `.ps1` remains under `scripts/`; the full golden-master suite passes on
-Node alone; `pmo-doctor` is green.
-
-### Phase 10 — Cleanup & documentation
-
-- Update `AGENTS.md`/`CLAUDE.md`/`CONTEXT-ROUTER.md` if they reference PowerShell.
-- Update `CHANGELOG.md` and `VERSION` per the release process.
-- Record the migration in `decision-log`/`DEC-###` style per repo convention, and add
-  a ROADMAP note.
-
-**Exit:** the repo no longer mentions PowerShell as a runtime anywhere, and the
-change is documented for the next reader.
+- Build the harness skeleton + mutant self-tests in Phase 1, run it after every phase
+  group.
+- Run **direct reference** and **direct candidate** entrypoints; never let both route
+  through one `AXIOM_IMPL` dispatcher.
+- Re-run the final differential **after** all cutover rewiring and deletion changes.
+- Keep the reference implementation in a detached checkout/worktree at the baseline SHA
+  until final proof.
+- Retain an implementation-neutral compatibility runner + archived proof report; remove
+  only the PowerShell adapter.
+- Harness mutants: changed exit, reordered result, missing field, stderr change,
+  unexpected file write (each must fail the harness).
 
 ---
 
-## 10. Success criteria / Definition of Done
+## 9. Migration phases (each gated; human-authority compliant)
 
-1. `node cli/axiom.mjs check` (or its Node equivalent) passes the full fixture matrix
-   + golden masters, with **zero** PowerShell involved.
-2. The differential harness reported **zero** differences for the full corpus before
-   PowerShell was removed.
-3. No `.ps1` file remains under `scripts/`.
-4. The GitHub Action runs on Node alone and still emits the same report contract.
-5. All docs and entrypoints describe a **Node-only** runtime; exit code `127` is
-   retired.
-6. `pmo-doctor` is green against the new Node implementation and no longer contains
-   the PowerShell-portability rules (`DOCTOR-010`/`DOCTOR-011`).
-7. Governance semantics are unchanged: no rule was added, removed, or weakened other
-   than the two obsolete doctor rules removed in Phase 9 (which is a *cleanup*, not a
-   governance change).
+Do not proceed past a phase until its exit criteria are met. **No autonomous commit.**
+Per CR-011 and `AGENTS.md` §8: at the end of each phase, *prepare the scoped diff and
+evidence, then stop for Human review and explicit commit authorization.* Push, PR,
+merge, cutover, tag, and release each require separate authorization. Commit types
+match the actual change (`feat`, `fix`, `test`, `docs`, `chore`).
+
+### Phase -1 — Authorization
+
+Record the `DEC-###` (§12) superseding ROADMAP Milestone 3.5's non-goal. The owner has
+already directed the migration; this phase **records** it. Nothing proceeds past Phase 0
+without the recorded DEC.
+
+**Exit:** `DEC-###` present in `decision-log.md` with the evidence payload (§12).
+
+### Phase 0 — Complete inventory, immutable baseline, golden-coverage gap
+
+- Generate the machine-checked 89-file `.ps1` disposition matrix (port/replace/
+  temporary-oracle/retire-with-evidence), with callers and side effects.
+- Extract and version the compatibility-case manifest (§8.3).
+- **Drop Windows PowerShell 5.1** as a prerequisite: delete the 5.1 CI leg, simplify
+  `pwsh-host.ps1`, retire `DOCTOR-010`/`DOCTOR-011` (recorded, not silent).
+- Record baseline: Git SHA, golden/comparator hashes, config hashes, commands, OS,
+  PowerShell/Node/Git versions, locale, timezone, filesystem behavior, CI run IDs.
+- Run and record the full cross-host matrix at the same SHA.
+- **Raise golden coverage to ~100%** against the current PowerShell implementation, for
+  every rule that currently lacks one (75 rules).
+- Keep the reference runnable from an immutable detached checkout/worktree.
+- Verify the "zero active users" assumption (forks/stars/Action consumers); if any
+  external consumer exists, restore the fuller rollback/compat machinery (CR-016/CR-020).
+- Produce the behavior inventory (§4.1) classifying each rule `config-driven /
+  code-driven / hybrid`.
+
+**Exit:** disposition matrix complete; goldens ~100%; baseline fingerprint archived; DEC
+recorded; 5.1 dropped and doctor green.
+
+### Phase 1 — Build/distribution contract, harness skeleton, CI routing
+
+- Decide and implement the Node/build/distribution contract (default: committed,
+  dependency-free bundled `dist/`; `private: true`; reproducible `npm ci` for dev only).
+- Add the differential harness skeleton + mutant self-tests.
+- Update the CI risk classifier to treat `src/`, `dist/`, `package*.json`, `tsconfig*`
+  as full-matrix changes (CR-010).
+- Add candidate-only CI jobs that poison/unset PowerShell access so accidental fallback
+  cannot pass.
+
+**Exit:** `tsc` compiles; harness self-tests pass; CI classifier recognizes new paths.
+
+### Phases 2–4 — Strangler port, golden-coverage-anchored (F10 + F2 merged)
+
+Port **one leaf validator group at a time**, in this order of operation per group:
+
+1. Confirm goldens exist for that group (from Phase 0).
+2. Port the group to TypeScript against the same `pmo-config/*.json`.
+3. Unit + characterization + config-mutation + sequential/concurrent tests.
+4. Differential-check just that group (direct reference vs direct candidate).
+5. Land green with both implementations live for that group.
+
+Start with `scope-diff-validator` (~5 rules, self-contained, git-backed). If effort
+stops after three groups, three validators are in Node, nothing is broken, no revert
+needed.
+
+**Exit:** each ported group is golden-covered, unit-tested, mutation-tested, and
+differentially green.
+
+### Phase 5 — Complete executable + test surface
+
+Port/replace every public, maintainer, CI, hook, plugin, digest, release, and test
+entrypoint in the disposition inventory. Preserve Action → CLI → library as the public
+boundary. Port/re-derive `tests/` so `node cli/axiom.mjs check` runs without PowerShell.
+
+**Exit:** the Node path runs the full fixture matrix + config-mutation + end-to-end
+without invoking PowerShell.
+
+### Phase 6 — Final-tree differential gate
+
+Run every compatibility case against direct frozen reference and direct Node candidate
+entrypoints. Compare diagnostics, exits, stdout/stderr, generated files, permissions,
+hashes, git/filesystem side effects, privacy behavior, CLI, Action, plugin, clean-room
+operation.
+
+**Exit:** zero unexplained skips, zero unapproved differences; archived report binding
+both SHAs, manifest/comparator hashes, host versions, skips, deltas.
+
+### Phase 7 — Node-default canary + settling window
+
+Make Node default while retaining the chosen rollback mechanism. Run a Human-defined
+numeric N across the Node/OS matrix; reset N on any interpreter/harness/comparator/
+config/golden/case-manifest change. Exercise real `uses: ./`, plugin install,
+read-only/non-checkout execution, Node-only clean rooms.
+
+**Exit:** N clean runs with no drift; N and reset rules recorded.
+
+### Phase 8 — Human-approved cutover (separate decision)
+
+Separate Human authorization after reviewing Phase 6/7 evidence. Update active runtime
+surfaces, migration docs, support policy, versioning, consumer contracts.
+
+### Phase 9 — Human-approved PowerShell deletion (separate decision)
+
+Deletion is a separate PR/release decision. Re-run the final-tree proof **after**
+deletion changes. Retain the implementation-neutral corpus runner + proof artifacts;
+remove only the reference adapter and retired implementation.
+
+### Phase 10 — Documentation reconciliation
+
+Remove stale active PowerShell instructions from README, TESTING, CONTRIBUTING,
+`docs/guides/powershell-runtime.md`, `Makefile`, `scripts/check.sh`,
+`clean-room/Dockerfile`, `hooks/`, `action.yml`. Preserve historical records (CHANGELOG,
+release notes, `powershell-portability.md`) under a reviewed allowlist (CR-021).
+
+**Exit:** no active runtime/CI/skill/hook/template/config/support/install doc invokes
+PowerShell; historical records intact.
 
 ---
 
-## 11. Risks & mitigations
+## 10. Definition of Done (Codex's revised list, adopted)
+
+The migration is complete only when all of the following are true:
+
+- [ ] A named Human Owner authorized and recorded migration, compatibility, build,
+      support, cutover, and deletion decisions.
+- [ ] Every `.ps1` has a reviewed disposition; every live caller has a replacement or
+      approved retirement.
+- [ ] The Node library uses explicit per-run state and passes sequential/concurrent
+      isolation tests.
+- [ ] The Node CLI, Action, plugin, hooks, maintainer tools, generator, execution tools,
+      release tools, and test runner all work without PowerShell.
+- [ ] Candidate-only tests run where PowerShell is unavailable or deliberately poisoned.
+- [ ] The full compatibility-case manifest passes with zero unexplained skips and zero
+      unapproved differences.
+- [ ] JSON output validates against `diagnostics-schema.json` and the assessment schema.
+- [ ] Config mutation proves the same policy files remain load-bearing.
+- [ ] All intentional deltas are listed with before/after behavior and a `DEC-###`.
+- [ ] Runtime/infrastructure failures cannot be softened by Action report-only mode.
+- [ ] The supported Node/OS matrix passes on the exact final SHA.
+- [ ] Clean-room CLI, `uses: ./`, and read-only/non-checkout plugin tests pass.
+- [ ] Rollback to the baseline SHA has been exercised and has a named owner.
+- [ ] A named Human authorized final deletion; a separate Human reviewed the final diff.
+- [ ] No active runtime surface invokes PowerShell; historical records remain intact.
+
+---
+
+## 11. Risks & mitigations (corrected)
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| Subtle output differences (ordering, BOM, case, collation) break golden masters silently | High — wrong merge | Differential harness over full corpus + determinism check (§8.2–8.3); preserve `ordinal-sort` semantics exactly |
-| Someone "improves" behavior while porting | Silent governance change | Golden master is authoritative; any diff is a bug unless it's a separate human-approved decision; **never edit a golden master to make a port pass** |
-| Port stalls halfway → two implementations drift | Medium | Phases are gated; PowerShell stays the oracle until Phase 8; no partial cut-over |
-| `DOCTOR-010`/`DOCTOR-011` removal touches the rule catalog | Low | Record as a deliberate cleanup decision; these rules describe deleted code |
-| TS build config over-engineering | Low | Keep it minimal (tsc + node:test/vitest); no framework that fights the repo |
-| Losing the `127` "no pwsh" semantics confuses a consumer | Low | No consumer should rely on 127 after Node-only; update tests/docs in Phase 8 |
-| Markdown table parser edge cases differ | High | Port the parser to match `markdown-table-parser.ps1` exactly; add fixture cases for empty cells, pipes-in-cells, marker blocks, multi-line cells |
+| Firing-condition port drifts from PS behavior | High | Golden coverage ~100% (Phase 0) + per-group differential gate (Phases 2–4) |
+| Golden comparison normalizes away a real diff | High | Comparator-class table (§8.2); deep-equality for JSON; harness mutants prove the harness fails on real diffs |
+| Digest divergence makes shipped evidence go stale (F8) | High | Canonical digest is a named invariant + dedicated fixture set, verified before Phase 4 |
+| `tests/` ported by the same agent as impl → not independent | High | Golden masters are the independent oracle; coverage raised first; decide port vs re-derive explicitly |
+| 5.1/7 bifurcation bugs (DOCTOR-010/011) | Medium | Dropped in Phase 0 as prerequisite; class eliminated, not ported |
+| Supply-chain surface from TS tooling (CR-017) | High | Zero runtime deps, `private: true`, committed lockfile, dependency/license review, lifecycle-script policy, containment tests (symlink/junction/case), named security reviewer |
+| Stateful commands (init/setup/export/run) not proven by goldens (CR-015) | High | Fresh-tree before/after comparison; inject/freeze clocks/UUIDs; structural comparators for nondeterministic fields |
+| Config bytes reference PowerShell paths (CR-013) | Medium | Freeze semantics; pre-authorized manifest of runtime-reference/version edits; unexpected deltas reported |
+| `pmo-doctor` reconciliation breaks after PS deletion (CR-018) | Medium | Typed rule-ID registry/generated manifest; replace `.ps1`-scanning doctor checks |
+| CI omits Windows/macOS (CR-010) | High | Update classifier before code lands; candidate jobs on min+current Node × Win/Linux/macOS |
+| Node crash misread as governance verdict (CR-008) | High | Distinct infra-failure code + top-level exception boundary; Action never softens infra failures |
+| Final delivered tree ≠ proven tree (CR-009) | High | Re-run final differential after cutover + deletion; reference kept in detached worktree |
+| Abandonment at 60% | Medium | Strangler by value (Phases 2–4); each group lands green; stop-after-N leaves nothing broken |
+| "No users" assumption wrong | Medium | Phase 0 verifies; if consumers exist, restore full CR-016/CR-020 machinery |
 
 ---
 
-## 12. Rollback plan
+## 12. Decision record (draft — owner assigns the number)
 
-- **Before Phase 8 (cut-over):** the change is additive and the PowerShell path
-  remains default, so rollback is trivial — revert the branch commits. Nothing ships.
-- **After Phase 8 but before Phase 9:** PowerShell files still exist; the
-  `AXIOM_IMPL=pwsh` fallback can be restored (keep the code in the CLI until Phase 9)
-  and the default flipped back.
-- **After Phase 9 (PowerShell deleted):** rollback means reverting to the pre-migration
-  SHA — which is why Phase 0 snapshots the baseline SHA and golden masters. Reverting
-  is a `git revert` of the migration commits; the golden masters and fixtures were
-  never changed, so the reverted PowerShell suite still passes.
+```markdown
+### DEC-0XX — Supersede Milestone 3.5 non-goal: authorize Node/TypeScript validator
+
+- **Status:** Approved
+- **Approved by:** WITCHWASIN K. (Human Owner)
+- **Date:** 2026-08-15
+- **source_ref:** ROADMAP.md (Milestone 3.5 non-goals); Fixed_plan/master-plan.md v2
+- **evidence_status:** supported
+
+**Decision:** The ROADMAP Milestone 3.5 non-goal "Rewriting the validator in TypeScript
+or another language" is superseded. A Node.js/TypeScript reimplementation of the
+validation interpreter is authorized, proven canonical-form equivalent to the current
+PowerShell implementation by golden-master differential comparison, after which
+PowerShell is retired. Milestone 3.5's second non-goal "Dropping Windows PowerShell 5.1
+before compatibility evidence supports it" is addressed separately: 5.1 is dropped as an
+independent prerequisite step (evidence: the recorded 5.1/7 portability defects), not as
+part of the TypeScript decision.
+
+**Scope:** interpreter (runtime) migration only. No governance rule, gate, mode, or
+artifact requirement changes. The modes redesign is a separate decision.
+
+**Evidence:** port surface 24,181 lines PowerShell (9,277 lib + 5,268 scripts + 9,636
+tests); golden coverage 63/138 rules (46%) to be raised to ~100% before port;
+distribution target = committed, dependency-free Node bundle.
+```
 
 ---
 
-## 13. Open decisions for the Human Owner
+## 13. Open decisions requiring the Human Owner
 
-These are decisions the executing agent should **not** make unilaterally; surface them
-and record a `DEC-###` before proceeding past the relevant phase.
+These are decisions the executing agent must **not** make unilaterally; record a
+`DEC-###` before the relevant phase.
 
-1. **TS toolchain choice** (Phase 1): `tsc` + which test runner (`node:test` vs
-   `vitest` vs other). Recommend the minimal one consistent with the repo's
-   dependency-light posture.
-2. **Settling window length N** (Phase 7): how many green CI runs before cut-over.
-3. **`DOCTOR-010`/`DOCTOR-011` removal** (Phase 9): confirm these two rule entries and
-   their doc pages are authorized to be deleted as obsolete.
-4. **Branch/PR strategy**: single long-lived branch vs stacked PRs per phase. This
-   plan assumes commits land on `feat/migrate-interpreter-to-node-ts`; a merge strategy
-   to `main` (squash vs merge) is a separate decision.
+1. **Distribution/build contract** (Phase 1): committed dependency-free `dist/` bundle
+   (recommended default) vs `npm ci && build` vs container. This outranks the toolchain
+   question.
+2. **TS toolchain**: `tsc` + which test runner (`node:test` vs `vitest`), minimal,
+   dependency-light.
+3. **Supported Node/OS matrix**: minimum and current Node versions; which OS are
+   blocking at the cutover gate (CR-010).
+4. **Settling window N** and its reset rules (Phase 7).
+5. **`DEC-0XX` number** and recording in `decision-log.md` (Phase -1).
+6. **Zero-active-user assumption** confirmation (Phase 0) — if disproven, restore full
+   compatibility machinery.
+7. **Branch/PR strategy**: single long-lived branch vs stacked PRs; squash vs merge to
+   `main`.
+
+The three **strategic disagreements** for the next review round are recorded in
+`Deepseek-Fixed.md` §7: (a) drop-5.1 is a prerequisite not a substitute; (b) the DEC is
+a record not a re-decision; (c) "no users" justifies lighter rollback/compat machinery.
 
 ---
 
 ## 14. Handoff checklist for the executing agent
 
-Before starting, confirm:
+Before starting:
 
-- [ ] Read `AGENTS.md`, `CLAUDE.md`, `CONTEXT-ROUTER.md` (repo rules).
-- [ ] Read `TESTING.md` and run the current suite once to establish green.
-- [ ] Confirm `pmo-config/*.json` contents match the assumptions in §6.2.
-- [ ] Confirm the 35-module list in §6.3 matches `ls scripts/lib/`.
-- [ ] Record the baseline SHA and golden-master snapshot (Phase 0).
+- [ ] Read `AGENTS.md`, `CLAUDE.md`, `CONTEXT-ROUTER.md`, `TESTING.md`.
+- [ ] Confirm `DEC-0XX` is recorded (Phase -1).
+- [ ] Run the current suite once to establish green.
+- [ ] Confirm the 89-file disposition matrix and behavior inventory are generated.
+- [ ] Record the baseline SHA and fingerprints (Phase 0).
 
 While working:
 
 - [ ] Never edit `tests/` golden masters or `pmo-config/*.json` to make the port pass.
-- [ ] Commit per phase with the `feat(node-interpreter):` prefix.
+- [ ] Never commit autonomously — prepare the diff, stop for Human authorization.
 - [ ] Keep the differential harness running after each phase group lands.
-- [ ] Surface §13 decisions as `DEC-###` records, do not decide them silently.
+- [ ] Keep governance changes (if any) in separate, approved changes — none are in scope.
+- [ ] Surface §13 decisions as `DEC-###` records; do not decide them silently.
 
 Definition of done is §10 in full.
