@@ -178,7 +178,15 @@ jobs:
           package-manager-cache: false
 
       - name: Run PMO framework checks (${{ matrix.name }})
-        shell: ${{ matrix.shell }}
+        # A literal, not ${{ matrix.shell }}: GitHub Actions does not make the
+        # matrix context available to the `shell:` key (only to `run:`/`env:`/
+        # `with:` etc. -- see docs/architecture/ci-risk-based.md). pwsh is
+        # preinstalled on every runner in the matrix (windows-2025,
+        # ubuntu-24.04, macos-15) and only interprets this script; the actual
+        # host under test is still ${{ matrix.exe }}, invoked as a child
+        # process below, so windows-ps51 still genuinely runs
+        # powershell.exe 5.1.
+        shell: pwsh
         run: |
           if ($env:SUITE -and $env:SUITE -ne '') {
             ${{ matrix.exe }} -NoProfile -ExecutionPolicy Bypass -File scripts/run-ci-suite.ps1 -Suite $env:SUITE -RepoPath .
@@ -189,12 +197,12 @@ jobs:
           SUITE: ${{ inputs.suite }}
 
       - name: Run public hygiene checks
-        shell: ${{ matrix.shell }}
+        shell: pwsh
         run: |
           ${{ matrix.exe }} -NoProfile -ExecutionPolicy Bypass -File scripts/check-public-hygiene.ps1 -RepoPath .
 
       - name: Verify fault injection propagates as a failure
-        shell: ${{ matrix.shell }}
+        shell: pwsh
         run: |
           ${{ matrix.exe }} -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -RepoPath . -TestChildScript tests/helpers/exit-1.ps1
           if ($LASTEXITCODE -eq 0) {
