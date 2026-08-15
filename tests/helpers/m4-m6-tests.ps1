@@ -339,7 +339,7 @@ None.
   Set-Content -LiteralPath $outsideFile -Value "outside content" -Encoding utf8
   $linkPath = Join-Path $active "escape-link"
   try {
-    if ($IsWindows -or ($PSVersionTable.PSEdition -eq "Desktop")) {
+    if ($IsWindows) {
       New-Item -ItemType Junction -Path $linkPath -Target $outsideDir -ErrorAction Stop | Out-Null
     } else {
       New-Item -ItemType SymbolicLink -Path $linkPath -Target $outsideDir -ErrorAction Stop | Out-Null

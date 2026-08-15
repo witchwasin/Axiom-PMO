@@ -540,18 +540,6 @@
       "description": "A rule's documentation path does not resolve to a file in the repository.",
       "suggestion": "Create the referenced docs/rules/*.md page, or remove the `documentation` key so the rule emits documentation_url: null instead of a dead link."
     },
-    "DOCTOR-010": {
-      "severity": "fail",
-      "description": "A script under scripts/ that sets ErrorActionPreference = Stop invokes a native command (git, gh, a shell, a child PowerShell) without dropping to Continue around the call. Windows PowerShell 5.1 turns any native command's stderr into a terminating error under Stop -- including purely informational output, and despite 2>$null -- so the script dies rather than handling the result. This has caused three separate shipped defects.",
-      "suggestion": "Wrap the invocation: save $ErrorActionPreference, set it to \"Continue\", call the command inside try, restore it in finally. Reuse Invoke-NativeCapture where it is already available. The safe patterns that need no guard are `--quiet` (git suppresses stderr itself) and `2>$stderrFile` (a real file redirect). See docs/architecture/powershell-portability.md.",
-      "documentation": "docs/rules/DOCTOR-010.md"
-    },
-    "DOCTOR-011": {
-      "severity": "fail",
-      "description": "A PowerShell file under scripts/ or tests/ branches on $IsWindows directly. That variable does not exist in Windows PowerShell 5.1 -- it is $null there, and 5.1 only runs on Windows -- so `if ($IsWindows -ne $true)` is TRUE on Windows and any branch written as Unix-only runs there anyway. It is invisible on PowerShell 7, which is where this repository is developed.",
-      "suggestion": "Use Test-WindowsHost from scripts/lib/pwsh-host.ps1, which checks $PSVersionTable.PSEdition first. See docs/rules/DOCTOR-011.md and docs/architecture/powershell-portability.md.",
-      "documentation": "docs/rules/DOCTOR-011.md"
-    },
     "TEST-DESIGN-001": {
       "severity": "fail",
       "description": "Standard or Strict Design lacks a complete mode-aware Test Strategy in BUILD-SPEC.",

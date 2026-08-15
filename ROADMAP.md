@@ -486,9 +486,36 @@ Deliverables:
 
 Non-goals:
 
-- Rewriting the validator in TypeScript or another language.
-- Dropping Windows PowerShell 5.1 before compatibility evidence supports it.
+- Rewriting the validator in TypeScript or another language. *(Superseded 2026-08-15 by `DEC-026`.)*
+- Dropping Windows PowerShell 5.1 before compatibility evidence supports it. *(Addressed 2026-08-15 by `DEC-026` as an independent prerequisite step, not part of the TypeScript decision.)*
 - Promoting macOS to required based on a single successful run.
+
+### DEC-026 — Supersession record (2026-08-15)
+
+- **Status:** Approved
+- **Approved by:** WITCHWASIN K. (Human Owner)
+- **Date:** 2026-08-15
+- **source_ref:** ROADMAP.md (Milestone 3.5 non-goals); Fixed_plan/master-plan.md v3
+- **session_ref:** directed by the Human Owner in the planning conversation of 2026-08-15
+  (that conversation is not visible to downstream agents; this pointer is recorded so the
+  DEC stands on its own)
+- **evidence_status:** supported
+
+**Decision:** The ROADMAP Milestone 3.5 non-goal "Rewriting the validator in TypeScript
+or another language" is superseded. A Node.js/TypeScript reimplementation of the
+validation interpreter is authorized, proven canonical-form equivalent to the current
+PowerShell implementation by golden-master differential comparison, after which
+PowerShell is retired. Milestone 3.5's second non-goal "Dropping Windows PowerShell 5.1
+before compatibility evidence supports it" is addressed separately: 5.1 is dropped as an
+independent prerequisite step (evidence: the recorded 5.1/7 portability defects), not as
+part of the TypeScript decision.
+
+**Scope:** interpreter (runtime) migration only. No governance rule, gate, mode, or
+artifact requirement changes. The modes redesign is a separate decision.
+
+**Evidence:** port surface 24,181 lines PowerShell (9,277 lib + 5,268 scripts + 9,636
+tests); golden coverage 63/138 rules (46%) to be raised to ~100% before port;
+distribution target = committed, dependency-free Node bundle.
 
 Definition of done:
 

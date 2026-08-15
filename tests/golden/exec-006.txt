@@ -1,0 +1,57 @@
+{
+"schema_version": "1.1",
+"project": "<REPO_ROOT>",
+"requested_mode": "Standard",
+"effective_mode": "Standard",
+"gate": "Draft",
+"summary": {
+"pass": 0,
+"warn": 1,
+"warn_blocking": 1,
+"fail": 1,
+"exit_code": 1
+},
+"results": [
+{
+"schema_version": "1.1",
+"level": "FAIL",
+"rule_id": "EXEC-006",
+"message": "The result reports performing a git action the contract did not grant: deploy",
+"blocking": true,
+"artifact": "EXECUTION-RESULT.json",
+"item_id": "D-001",
+"field": "git_actions_performed",
+"suggestion": "git_authority in the contract is the full grant; commit, push, merge, and deploy default to false. If the work genuinely needs an action, have a human grant it in the contract and re-export before the work runs -- not after.",
+"documentation_url": "https://github.com/witchwasin/Axiom-PMO/blob/main/docs/rules/EXEC-006.md"
+},
+{
+"schema_version": "1.1",
+"level": "WARN",
+"rule_id": "AREV-001",
+"message": "No EXECUTION-REVIEW.json found. In Standard mode, adversarial review evidence is advisory.",
+"blocking": true,
+"artifact": "EXECUTION-REVIEW.json",
+"item_id": "D-001",
+"field": null,
+"suggestion": "Produce an adversarial review of the execution and record it as EXECUTION-REVIEW.json beside the execution contract, using templates/EXECUTION-REVIEW.json. See docs/architecture/adversarial-review.md.",
+"documentation_url": "https://github.com/witchwasin/Axiom-PMO/blob/main/docs/rules/AREV-001.md"
+}
+],
+"execution_verification": {
+"contract_path": "<REPO_ROOT>/.execution/D-001/EXECUTION-CONTRACT.json",
+"result_path": "<REPO_ROOT>/.execution/D-001/EXECUTION-RESULT.json",
+"work_item_id": "D-001",
+"contract_sha256": "7b5f169fb885372c25ba2305b0d4455ce2cb70290605f149698359f7ffe29208",
+"base_sha": "48f2d65c35f5c8035cd4c5f09d3e805c576bc18a",
+"head_sha": "48f2d65c35f5c8035cd4c5f09d3e805c576bc18a",
+"observed_commit_count": 0,
+"changed_files_observed": [],
+"changed_files_out_of_scope": [],
+"unverified_required_tests": [],
+"authority_violations": [
+"deploy"
+],
+"verdict": "fail"
+}
+}
+EXIT_CODE=1

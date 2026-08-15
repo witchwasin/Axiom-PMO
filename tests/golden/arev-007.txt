@@ -1,0 +1,91 @@
+{
+"schema_version": "1.1",
+"project": "<REPO_ROOT>",
+"requested_mode": "Standard",
+"effective_mode": "Standard",
+"gate": "Draft",
+"summary": {
+"pass": 4,
+"warn": 0,
+"warn_blocking": 0,
+"fail": 1,
+"exit_code": 1
+},
+"results": [
+{
+"schema_version": "1.1",
+"level": "PASS",
+"rule_id": "AREV-001",
+"message": "EXECUTION-REVIEW.json is present and structurally valid.",
+"blocking": true,
+"artifact": "EXECUTION-REVIEW.json",
+"item_id": "D-001",
+"field": null,
+"suggestion": null,
+"documentation_url": null
+},
+{
+"schema_version": "1.1",
+"level": "PASS",
+"rule_id": "AREV-002",
+"message": "The review's contract_sha256, base_sha, and head_sha match the execution under verification.",
+"blocking": true,
+"artifact": "EXECUTION-REVIEW.json",
+"item_id": "D-001",
+"field": null,
+"suggestion": null,
+"documentation_url": null
+},
+{
+"schema_version": "1.1",
+"level": "PASS",
+"rule_id": "AREV-003",
+"message": "provenance.tier is artifact-observed (advisory mode; not required to satisfy a check).",
+"blocking": true,
+"artifact": "EXECUTION-REVIEW.json",
+"item_id": "D-001",
+"field": null,
+"suggestion": null,
+"documentation_url": null
+},
+{
+"schema_version": "1.1",
+"level": "PASS",
+"rule_id": "AREV-004",
+"message": "Every finding carries a valid finding_id, severity, category, status, description, and suggestion.",
+"blocking": true,
+"artifact": "EXECUTION-REVIEW.json",
+"item_id": "D-001",
+"field": null,
+"suggestion": null,
+"documentation_url": null
+},
+{
+"schema_version": "1.1",
+"level": "FAIL",
+"rule_id": "AREV-007",
+"message": "Finding AF-001 is missing requirement_ref -- every semantic finding must name the REQ-### it speaks about.",
+"blocking": true,
+"artifact": "EXECUTION-REVIEW.json",
+"item_id": "AF-001",
+"field": "requirement_ref",
+"suggestion": "Fill requirement_ref with a REQ-### declared in PROJECT.md In Scope, and give every finding an implementation_claim and test_claim -- or the explicit N/A marker when the finding has no natural claim to make. A blank claim field is 'forgot to fill in', not 'not applicable'.",
+"documentation_url": "https://github.com/witchwasin/Axiom-PMO/blob/main/docs/rules/AREV-007.md"
+}
+],
+"execution_verification": {
+"contract_path": "<REPO_ROOT>/.execution/D-001/EXECUTION-CONTRACT.json",
+"result_path": "<REPO_ROOT>/.execution/D-001/EXECUTION-RESULT.json",
+"work_item_id": "D-001",
+"contract_sha256": "217e0b679f9b155327cd7e5658ffcb381c2d61df173f20f6d8ad94c40906a460",
+"base_sha": "0bea349b010951a29e1e274446257daaff79f46e",
+"head_sha": "0bea349b010951a29e1e274446257daaff79f46e",
+"observed_commit_count": 0,
+"changed_files_observed": [],
+"changed_files_out_of_scope": [],
+"unverified_required_tests": [],
+"authority_violations": [],
+"verdict": "fail"
+}
+}
+EXIT_CODE=1

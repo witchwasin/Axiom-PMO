@@ -1,0 +1,55 @@
+{
+"schema_version": "1.1",
+"project": "<REPO_ROOT>",
+"requested_mode": "Standard",
+"effective_mode": "Standard",
+"gate": "Draft",
+"summary": {
+"pass": 0,
+"warn": 1,
+"warn_blocking": 1,
+"fail": 1,
+"exit_code": 1
+},
+"results": [
+{
+"schema_version": "1.1",
+"level": "FAIL",
+"rule_id": "EXEC-003",
+"message": "The execution result claims a requirement the contract does not cover: REQ-999",
+"blocking": true,
+"artifact": "EXECUTION-RESULT.json",
+"item_id": "REQ-999",
+"field": "requirement_refs",
+"suggestion": "A result may satisfy fewer requirements than approved, but never more, and must name the same work item and base commit the contract does. Correct the result, or export a contract that actually covers the work performed and get it approved.",
+"documentation_url": "https://github.com/witchwasin/Axiom-PMO/blob/main/docs/rules/EXEC-003.md"
+},
+{
+"schema_version": "1.1",
+"level": "WARN",
+"rule_id": "AREV-001",
+"message": "No EXECUTION-REVIEW.json found. In Standard mode, adversarial review evidence is advisory.",
+"blocking": true,
+"artifact": "EXECUTION-REVIEW.json",
+"item_id": "D-001",
+"field": null,
+"suggestion": "Produce an adversarial review of the execution and record it as EXECUTION-REVIEW.json beside the execution contract, using templates/EXECUTION-REVIEW.json. See docs/architecture/adversarial-review.md.",
+"documentation_url": "https://github.com/witchwasin/Axiom-PMO/blob/main/docs/rules/AREV-001.md"
+}
+],
+"execution_verification": {
+"contract_path": "<REPO_ROOT>/.execution/D-001/EXECUTION-CONTRACT.json",
+"result_path": "<REPO_ROOT>/.execution/D-001/EXECUTION-RESULT.json",
+"work_item_id": "D-001",
+"contract_sha256": "681626bcb67c027a2dcb666249d3a05867325e78c8ea6362cab0a883cc79eb6c",
+"base_sha": "997b855d8e97db37bccf02f3499aae287a7321d0",
+"head_sha": "997b855d8e97db37bccf02f3499aae287a7321d0",
+"observed_commit_count": 0,
+"changed_files_observed": [],
+"changed_files_out_of_scope": [],
+"unverified_required_tests": [],
+"authority_violations": [],
+"verdict": "fail"
+}
+}
+EXIT_CODE=1

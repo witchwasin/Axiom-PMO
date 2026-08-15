@@ -1,18 +1,15 @@
 # Resolve the PowerShell executable used to spawn child validator/doctor
 # processes.
 #
-# Why this exists: the runners used to hardcode `& powershell`, which only
-# resolves on Windows PowerShell 5.1. On PowerShell 7 (`pwsh`) -- the documented
-# minimum for Linux/macOS and the default in the Makefile and scripts/check.sh
-# -- every child invocation failed with "The term 'powershell' is not
-# recognized", so the whole fixture suite reported FAIL for reasons unrelated to
-# the validator under test.
+# Windows PowerShell 5.1 was dropped as a prerequisite step (DEC-026, 2026-08-15),
+# so `powershell` / `powershell.exe` are no longer valid resolution candidates.
+# The only supported host is PowerShell 7 (`pwsh`).
 #
 # Resolution order:
 #   1. $env:AXIOM_PWSH             -- explicit override (CI pinning, odd installs)
 #   2. the *current* host's own executable -- a child process of the same host
 #      as the parent is always the closest match to the caller's intent
-#   3. pwsh -> powershell -> powershell.exe on PATH
+#   3. pwsh on PATH
 #
 # Callers must treat a $null return as "PowerShell not found" and surface the
 # remediation text from Get-PowerShellHostMissingMessage rather than silently
@@ -45,7 +42,7 @@ function Get-PowerShellHost {
     # discovery below is enough on its own.
   }
 
-  foreach ($name in @("pwsh", "powershell", "powershell.exe")) {
+  foreach ($name in @("pwsh")) {
     $candidates.Add($name) | Out-Null
   }
 
@@ -122,20 +119,13 @@ function Invoke-PowerShellScript {
 function Test-WindowsHost {
   <#
     .SYNOPSIS
-      Is this running on Windows, on every supported host?
+      Is this running on Windows?
     .DESCRIPTION
-      $IsWindows does not exist in Windows PowerShell 5.1 -- it is $null there,
-      and 5.1 only ever runs on Windows. So `if ($IsWindows -ne $true)` is TRUE
-      on 5.1 and any "Unix only" branch guarded that way runs on Windows
-      anyway.
-
-      That is not hypothetical: it shipped in the Milestone 6.3 and 6.5 test
-      suites and CI caught it, running a symlink case and a `chmod` case on
-      Windows PowerShell 5.1. The correct test checks the edition first, and
-      scripts/run-execution-command.ps1 already did -- the lesson just had not
-      been given a name anything else could call.
+      Windows PowerShell 5.1 was dropped (DEC-026, 2026-08-15), so the 5.1
+      edition check is gone: `$IsWindows` exists on PowerShell 7 on every
+      platform. The bare `$IsWindows` pitfall (DOCTOR-011) no longer applies.
   #>
   [CmdletBinding()]
   param()
-  return (($PSVersionTable.PSEdition -eq "Desktop") -or ($IsWindows -eq $true))
+  return ($IsWindows -eq $true)
 }

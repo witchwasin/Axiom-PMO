@@ -1,0 +1,71 @@
+{
+"schema_version": "1.1",
+"project": "<REPO_ROOT>",
+"requested_mode": "Standard",
+"effective_mode": "Standard",
+"gate": "Draft",
+"summary": {
+"pass": 0,
+"warn": 1,
+"warn_blocking": 1,
+"fail": 2,
+"exit_code": 1
+},
+"results": [
+{
+"schema_version": "1.1",
+"level": "FAIL",
+"rule_id": "EXEC-005",
+"message": "A test the contract requires is backed only by 'runner-exit-record' evidence, which is artifact-observed: the artifact is well-formed and matches its declared digest, but it lives where the actor being verified can write it, so nothing here establishes who produced it. No human acceptance applies to it either -- no test-evidence-accepted claim is present. Satisfy this with evidence from a source the actor cannot impersonate (a ci-check), or have a human accept this specific artifact: a 'test-evidence-accepted' claim naming test_name and evidence_sha256, citing a decision record whose row names that same digest.",
+"blocking": true,
+"artifact": "EXECUTION-RESULT.json",
+"item_id": "unit tests",
+"field": "test_evidence",
+"suggestion": "Attach evidence from a source the executing actor cannot impersonate: a ci-check naming the exact commit_sha (its conclusion is queried live, never read from the result). If only local artifacts exist, a human must accept that specific artifact -- a test-evidence-accepted claim naming test_name and evidence_sha256, citing a DEC-### whose row in decision-log.md names that same digest. A vouch that names nothing promotes nothing. If the test genuinely did not run, report execution_status: partial rather than manufacturing evidence.",
+"documentation_url": "https://github.com/witchwasin/Axiom-PMO/blob/main/docs/rules/EXEC-005.md"
+},
+{
+"schema_version": "1.1",
+"level": "FAIL",
+"rule_id": "EXEC-007",
+"message": "The result claims 'release-approval' authority as actor 'agent', which is not authorized to grant it. An execution agent cannot approve its own work.",
+"blocking": true,
+"artifact": "EXECUTION-RESULT.json",
+"item_id": "release-approval",
+"field": "authority_claims",
+"suggestion": "An execution agent may report implementation-complete and nothing more. Approvals are human authority and must cite an existing, unambiguous DEC-### in decision-log.md that was not introduced by the same execution's own commits; commit authorship alone does not prove a human actor.",
+"documentation_url": "https://github.com/witchwasin/Axiom-PMO/blob/main/docs/rules/EXEC-007.md"
+},
+{
+"schema_version": "1.1",
+"level": "WARN",
+"rule_id": "AREV-001",
+"message": "No EXECUTION-REVIEW.json found. In Standard mode, adversarial review evidence is advisory.",
+"blocking": true,
+"artifact": "EXECUTION-REVIEW.json",
+"item_id": "D-001",
+"field": null,
+"suggestion": "Produce an adversarial review of the execution and record it as EXECUTION-REVIEW.json beside the execution contract, using templates/EXECUTION-REVIEW.json. See docs/architecture/adversarial-review.md.",
+"documentation_url": "https://github.com/witchwasin/Axiom-PMO/blob/main/docs/rules/AREV-001.md"
+}
+],
+"execution_verification": {
+"contract_path": "<REPO_ROOT>/.execution/D-001/EXECUTION-CONTRACT.json",
+"result_path": "<REPO_ROOT>/.execution/D-001/EXECUTION-RESULT.json",
+"work_item_id": "D-001",
+"contract_sha256": "4573ed908fa981882dfbe2368864d6a4431235207a1cbf48c7ae1ee52787bf43",
+"base_sha": "47cf7a4621eeab7a637931a09edbf0780b2cc973",
+"head_sha": "47cf7a4621eeab7a637931a09edbf0780b2cc973",
+"observed_commit_count": 0,
+"changed_files_observed": [],
+"changed_files_out_of_scope": [],
+"unverified_required_tests": [
+"unit tests"
+],
+"authority_violations": [
+"authority:release-approval"
+],
+"verdict": "fail"
+}
+}
+EXIT_CODE=1

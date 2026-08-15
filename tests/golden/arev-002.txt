@@ -1,0 +1,91 @@
+{
+"schema_version": "1.1",
+"project": "<REPO_ROOT>",
+"requested_mode": "Standard",
+"effective_mode": "Standard",
+"gate": "Draft",
+"summary": {
+"pass": 3,
+"warn": 0,
+"warn_blocking": 0,
+"fail": 2,
+"exit_code": 1
+},
+"results": [
+{
+"schema_version": "1.1",
+"level": "PASS",
+"rule_id": "AREV-001",
+"message": "EXECUTION-REVIEW.json is present and structurally valid.",
+"blocking": true,
+"artifact": "EXECUTION-REVIEW.json",
+"item_id": "D-001",
+"field": null,
+"suggestion": null,
+"documentation_url": null
+},
+{
+"schema_version": "1.1",
+"level": "FAIL",
+"rule_id": "AREV-002",
+"message": "The review answers a different contract than the one under verification (contract_sha256 mismatch).",
+"blocking": true,
+"artifact": "EXECUTION-REVIEW.json",
+"item_id": "D-001",
+"field": "contract_sha256",
+"suggestion": "Re-generate the review against the exact contract digest and commit range being verified.",
+"documentation_url": "https://github.com/witchwasin/Axiom-PMO/blob/main/docs/rules/AREV-002.md"
+},
+{
+"schema_version": "1.1",
+"level": "FAIL",
+"rule_id": "AREV-003",
+"message": "provenance.tier is artifact-observed, which never satisfies Strict on its own: no review-evidence-accepted authority claim was found.",
+"blocking": true,
+"artifact": "EXECUTION-REVIEW.json",
+"item_id": "D-001",
+"field": "provenance.tier",
+"suggestion": "Either bind the review to an externally-observed CI check with a pinned, verifiable workflow digest, have a named human who is not the executor attest it, or have a human record a review-evidence-accepted authority claim in decision-log.md for an artifact-observed review. See pmo-config/adversarial-review-policy.json evidence_provenance.",
+"documentation_url": "https://github.com/witchwasin/Axiom-PMO/blob/main/docs/rules/AREV-003.md"
+},
+{
+"schema_version": "1.1",
+"level": "PASS",
+"rule_id": "AREV-004",
+"message": "Every finding carries a valid finding_id, severity, category, status, description, and suggestion.",
+"blocking": true,
+"artifact": "EXECUTION-REVIEW.json",
+"item_id": "D-001",
+"field": null,
+"suggestion": null,
+"documentation_url": null
+},
+{
+"schema_version": "1.1",
+"level": "PASS",
+"rule_id": "AREV-007",
+"message": "Every finding carries a resolvable requirement_ref, an implementation_claim/test_claim (or the explicit N/A marker), and a named owner.",
+"blocking": true,
+"artifact": "EXECUTION-REVIEW.json",
+"item_id": "D-001",
+"field": null,
+"suggestion": null,
+"documentation_url": null
+}
+],
+"execution_verification": {
+"contract_path": "<REPO_ROOT>/.execution/D-001/EXECUTION-CONTRACT.json",
+"result_path": "<REPO_ROOT>/.execution/D-001/EXECUTION-RESULT.json",
+"work_item_id": "D-001",
+"contract_sha256": "b12b6dd48dd4a721613be85290ca3c1459ffad2b6ec15e23cc1359dc5005fa0a",
+"base_sha": "f7b87efe805eb8fa52cddf8bd4e6e1da2ed556ec",
+"head_sha": "f7b87efe805eb8fa52cddf8bd4e6e1da2ed556ec",
+"observed_commit_count": 0,
+"changed_files_observed": [],
+"changed_files_out_of_scope": [],
+"unverified_required_tests": [],
+"authority_violations": [],
+"verdict": "fail"
+}
+}
+EXIT_CODE=1

@@ -1,0 +1,57 @@
+{
+"schema_version": "1.1",
+"project": "<REPO_ROOT>",
+"requested_mode": "Standard",
+"effective_mode": "Standard",
+"gate": "Draft",
+"summary": {
+"pass": 0,
+"warn": 1,
+"warn_blocking": 1,
+"fail": 1,
+"exit_code": 1
+},
+"results": [
+{
+"schema_version": "1.1",
+"level": "FAIL",
+"rule_id": "EXEC-005",
+"message": "A test the contract requires is not backed by verified evidence -- its 'agent-assertion' entry did not verify: 'agent-assertion' is not independently verifiable by design (agent-claimed evidence). An agent's own assertion that a test passed is a claim, not evidence.",
+"blocking": true,
+"artifact": "EXECUTION-RESULT.json",
+"item_id": "unit tests",
+"field": "test_evidence",
+"suggestion": "Attach evidence from a source the executing actor cannot impersonate: a ci-check naming the exact commit_sha (its conclusion is queried live, never read from the result). If only local artifacts exist, a human must accept that specific artifact -- a test-evidence-accepted claim naming test_name and evidence_sha256, citing a DEC-### whose row in decision-log.md names that same digest. A vouch that names nothing promotes nothing. If the test genuinely did not run, report execution_status: partial rather than manufacturing evidence.",
+"documentation_url": "https://github.com/witchwasin/Axiom-PMO/blob/main/docs/rules/EXEC-005.md"
+},
+{
+"schema_version": "1.1",
+"level": "WARN",
+"rule_id": "AREV-001",
+"message": "No EXECUTION-REVIEW.json found. In Standard mode, adversarial review evidence is advisory.",
+"blocking": true,
+"artifact": "EXECUTION-REVIEW.json",
+"item_id": "D-001",
+"field": null,
+"suggestion": "Produce an adversarial review of the execution and record it as EXECUTION-REVIEW.json beside the execution contract, using templates/EXECUTION-REVIEW.json. See docs/architecture/adversarial-review.md.",
+"documentation_url": "https://github.com/witchwasin/Axiom-PMO/blob/main/docs/rules/AREV-001.md"
+}
+],
+"execution_verification": {
+"contract_path": "<REPO_ROOT>/.execution/D-001/EXECUTION-CONTRACT.json",
+"result_path": "<REPO_ROOT>/.execution/D-001/EXECUTION-RESULT.json",
+"work_item_id": "D-001",
+"contract_sha256": "df7dda8f38d4461ee53d33fc1b7a39c270d268c7c9a44650c5a0b05019919f1f",
+"base_sha": "431cf438a5a20841b1976972669c51fc3a473a95",
+"head_sha": "431cf438a5a20841b1976972669c51fc3a473a95",
+"observed_commit_count": 0,
+"changed_files_observed": [],
+"changed_files_out_of_scope": [],
+"unverified_required_tests": [
+"unit tests"
+],
+"authority_violations": [],
+"verdict": "fail"
+}
+}
+EXIT_CODE=1

@@ -1,0 +1,65 @@
+Axiom-PMO Framework Doctor: <REPO_ROOT>
+
+[PASS] DOCTOR-STRUCT Found AGENTS.md
+[PASS] DOCTOR-STRUCT Found CLAUDE.md
+[PASS] DOCTOR-STRUCT Found VERSION
+[PASS] DOCTOR-STRUCT Found CHANGELOG.md
+[PASS] DOCTOR-STRUCT Found README.md
+[PASS] DOCTOR-STRUCT Found TESTING.md
+[PASS] DOCTOR-STRUCT Found SECURITY.md
+[PASS] DOCTOR-STRUCT Found MIGRATION.md
+[PASS] DOCTOR-STRUCT Found CONTEXT-ROUTER.md
+[PASS] DOCTOR-STRUCT Found pmo-config/context-map.json
+[PASS] DOCTOR-STRUCT Found pmo-config/policy.json
+[PASS] DOCTOR-STRUCT Found pmo-config/skill-manifest.json
+[PASS] DOCTOR-STRUCT Found pmo-config/validation-rules.json
+[PASS] DOCTOR-STRUCT Found pmo-config/artifact-policy.json
+[PASS] DOCTOR-STRUCT Found pmo-config/reference-types.json
+[PASS] DOCTOR-STRUCT Found pmo-config/orchestration-policy.json
+[PASS] DOCTOR-STRUCT Found scripts/validate-project.ps1
+[PASS] DOCTOR-STRUCT Found scripts/pmo-doctor.ps1
+[PASS] DOCTOR-STRUCT Found scripts/run-validation-tests.ps1
+[PASS] DOCTOR-STRUCT Found scripts/run-all-checks.ps1
+[PASS] DOCTOR-STRUCT Found scripts/new-project.ps1
+[PASS] DOCTOR-STRUCT Found scripts/update-source-snapshot.ps1
+[PASS] DOCTOR-STRUCT Found scripts/measure-context.ps1
+[PASS] DOCTOR-STRUCT Found templates/PROJECT.md
+[PASS] DOCTOR-STRUCT Found templates/DELIVERY.md
+[PASS] DOCTOR-STRUCT Found templates/RELEASE.md
+[PASS] DOCTOR-STRUCT Found templates/RAID-log.md
+[PASS] DOCTOR-STRUCT Found templates/decision-log.md
+[PASS] DOCTOR-STRUCT Found templates/RTM.json
+[PASS] DOCTOR-STRUCT Found templates/WIREFRAME.md
+[PASS] DOCTOR-EXAMPLE Found examples/LITE-BUGFIX
+[PASS] DOCTOR-EXAMPLE Found examples/STANDARD-FEATURE
+[PASS] DOCTOR-EXAMPLE Found examples/STRICT-HIGH-RISK
+[PASS] DOCTOR-EXAMPLE Found examples/P01-DEMO
+[PASS] DOCTOR-001 Active skill runtime contains exactly 7 skills
+[PASS] DOCTOR-SKILL-001 Active skill frontmatter is valid
+[PASS] TABLE-001 Markdown table column counts are consistent
+[PASS] DOCTOR-003 Context map references central policy and skill manifest
+[PASS] DOCTOR-003 Validation rule catalog parses from JSON runtime config
+[PASS] DOCTOR-003 Orchestration policy exposes the required optional-workflow enums
+[PASS] DOCTOR-005 VERSION, CHANGELOG, and JSON config versions match
+[PASS] DOCTOR-006 All pmo-config/*.json carry a supported schema_version (1.0)
+[PASS] DOCTOR-007 Validation rule catalog matches the rule ids emitted by the scripts
+[PASS] DOCTOR-008 Every fail/warn rule in the catalog carries a suggestion
+[PASS] DOCTOR-009 Every rule documentation path resolves to a file
+[PASS] DOCTOR-013 onboarding-questions.json covers exactly the declared strict triggers (13)
+[PASS] DOCTOR-014 No experimental rule carries a blocking severity
+[PASS] PERMISSION-000 .claude/settings.json parses as JSON
+[PASS] PERMISSION-001 .claude/settings.json does not allow git push/commit/tag by default
+[PASS] PERMISSION-003 .claude/settings.json asks before git commit/push/tag
+[PASS] PERMISSION-004 .claude/settings.json denies common secret and private key paths
+[PASS] PERMISSION-005 .claude/settings.json disables bypass permissions mode
+[PASS] PERMISSION-002 .claude/settings.json allows the framework doctor command
+[PASS] PERMISSION-002 .claude/settings.json allows the validation fixture test command
+[PASS] PERMISSION-006 .claude/settings.json asks before WebSearch
+[PASS] DOCTOR-HOOK No fake PMO echo hooks found in settings
+[PASS] PERMISSION-007 .gitignore uses precise sensitive-file patterns
+[FAIL] DOCTOR-002 Router or core rules reference archived legacy skill: pmo-gap-analysis
+[FAIL] DOCTOR-004 Active skill has legacy rule references: pmo-intake/SKILL.md:SystemFlow
+[PASS] DOCTOR-000 No broken local markdown links found
+
+Summary: PASS=58 WARN=0 FAIL=2
+EXIT_CODE=1

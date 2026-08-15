@@ -228,7 +228,19 @@ $cases = @(
   @{ Name = "handoff-header-reordered"; Path = "tests/fixtures/invalid-handoff-header-reordered"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-013"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @("HANDOFF-004") },
   @{ Name = "handoff-header-buildspec"; Path = "tests/fixtures/invalid-handoff-header-buildspec"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-013"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
   @{ Name = "handoff-project-mismatch"; Path = "tests/fixtures/invalid-handoff-project-mismatch"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-014"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
-  @{ Name = "handoff-review-project-mismatch"; Path = "tests/fixtures/invalid-handoff-review-project-mismatch"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-014"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() }
+  @{ Name = "handoff-review-project-mismatch"; Path = "tests/fixtures/invalid-handoff-review-project-mismatch"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $false; Rule = "HANDOFF-014"; ExpectedLevel = "FAIL"; Type = "negative"; AllowedSecondaryRules = @() },
+
+  # -- Optional governed tracks (M4/M5/M6), Phase 0 golden-coverage expansion --
+  # OPTIONAL-TRACKS exercises every opt-in validator in one project:
+  # CHANGE-001/002, TEST-DESIGN-001/002, EXT-001..004, RESEARCH-002..007,
+  # DPROV-002..007. Captured at three gates so each track's rules appear in the
+  # golden corpus. Release is deliberately not passing (APPROVAL-001 +
+  # RELEASE-STATUS-001 + REVIEW-001 fire), which is fine: golden capture stores
+  # the raw result set, and the FAIL findings here are exactly what makes those
+  # rules observable.
+  @{ Name = "optional-tracks-design"; Path = "examples/OPTIONAL-TRACKS"; Mode = "Standard"; Gate = "Design"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
+  @{ Name = "optional-tracks-handoff"; Path = "examples/OPTIONAL-TRACKS"; Mode = "Standard"; Gate = "Handoff"; ShouldPass = $true; Rule = ""; ExpectedLevel = ""; FailOnWarning = $true; Type = "positive" },
+  @{ Name = "optional-tracks-release"; Path = "examples/OPTIONAL-TRACKS"; Mode = "Standard"; Gate = "Release"; ShouldPass = $false; Rule = ""; ExpectedLevel = ""; Type = "negative" }
 )
 
 $doctorCases = @(

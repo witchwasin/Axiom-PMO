@@ -110,7 +110,7 @@ $cwdRelative = if ($cwdFull -eq $rootFull) { "." } else { ($cwdFull.Substring($r
 # script against `exit 0`, not reasoned about in advance. A child process's
 # exit only ends the child; $LASTEXITCODE after `&` reliably reflects it on
 # every supported host.
-$onWindows = ($PSVersionTable.PSEdition -eq "Desktop") -or ($IsWindows -eq $true)
+$onWindows = ($IsWindows -eq $true)
 $shellExe = if ($onWindows) { "cmd.exe" } else { "/bin/sh" }
 $shellArgs = if ($onWindows) { @("/c", $Command) } else { @("-c", $Command) }
 

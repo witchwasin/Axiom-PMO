@@ -1,0 +1,43 @@
+{
+"schema_version": "1.1",
+"project": "<REPO_ROOT>",
+"requested_mode": "Standard",
+"effective_mode": "Standard",
+"gate": "Draft",
+"summary": {
+"pass": 0,
+"warn": 0,
+"warn_blocking": 0,
+"fail": 1,
+"exit_code": 1
+},
+"results": [
+{
+"schema_version": "1.1",
+"level": "FAIL",
+"rule_id": "AREV-001",
+"message": "No EXECUTION-REVIEW.json found. In Strict mode, adversarial review evidence is required.",
+"blocking": true,
+"artifact": "EXECUTION-REVIEW.json",
+"item_id": "D-001",
+"field": null,
+"suggestion": "Produce an adversarial review of the execution and record it as EXECUTION-REVIEW.json beside the execution contract, using templates/EXECUTION-REVIEW.json. See docs/architecture/adversarial-review.md.",
+"documentation_url": "https://github.com/witchwasin/Axiom-PMO/blob/main/docs/rules/AREV-001.md"
+}
+],
+"execution_verification": {
+"contract_path": "<REPO_ROOT>/.execution/D-001/EXECUTION-CONTRACT.json",
+"result_path": "<REPO_ROOT>/.execution/D-001/EXECUTION-RESULT.json",
+"work_item_id": "D-001",
+"contract_sha256": "ad53dfb90bc556cf9d003255dbbef63df928ea1283bd4c4fa7b74503efa6f9ca",
+"base_sha": "7db8e283a50d93d41d89e2753f27594ac0af722e",
+"head_sha": "7db8e283a50d93d41d89e2753f27594ac0af722e",
+"observed_commit_count": 0,
+"changed_files_observed": [],
+"changed_files_out_of_scope": [],
+"unverified_required_tests": [],
+"authority_violations": [],
+"verdict": "fail"
+}
+}
+EXIT_CODE=1
