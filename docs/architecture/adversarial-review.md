@@ -5,9 +5,8 @@
 > design, and a GO / GO WITH REFRAME / NO-GO recommendation — authorized for
 > research only by the Human Owner, 2026-08-03 (`DEC-012`). Implementation
 > (Milestone 8.1) is a separate decision this document does not make; per
-> `research/m7-m9-proposal.md` and `DEC-012` itself, "no code, schema, or
-> policy file for adversarial review may be written under this decision beyond
-> the research report itself."
+> `DEC-012` itself, "no code, schema, or policy file for adversarial review may
+> be written under this decision beyond the research report itself."
 
 ## 1. Objective
 

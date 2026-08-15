@@ -33,8 +33,7 @@ When an AI execution framework produces test results, reviews, or a "done"
 signal, that output is **candidate evidence**. It becomes trusted only after
 Axiom-PMO validates it — resolvable references, valid statuses, met acceptance
 criteria, no unresolved deviations. This is the same standard the framework
-applies to its own development (see the
-[case study](../../case-studies/unauthorized-git-mutation.md)).
+applies to its own development.
 
 ## How it is enforced
 

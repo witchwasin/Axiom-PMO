@@ -49,10 +49,8 @@ in the repository can settle.
 ## Why this is a first-class control
 
 The framework exists partly because these boundaries were once left in prose and
-crossed anyway — see
-[the case study](../../case-studies/unauthorized-git-mutation.md). The lesson:
-authorization is part of the specification, and technical correctness does not
-imply permission to ship.
+crossed anyway. The lesson: authorization is part of the specification, and
+technical correctness does not imply permission to ship.
 
 ## How it is encoded
 

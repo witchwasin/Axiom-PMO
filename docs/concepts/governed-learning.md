@@ -93,7 +93,6 @@ reviewed one has.
 ## See also
 
 - `pmo-config/learning-policy.json` — the runtime policy this page describes.
-- `research/m7-m9-proposal.md` section 4 — full design history.
 - [`docs/architecture/adversarial-review.md`](../architecture/adversarial-review.md) —
   Milestone 8, sequenced ahead of this one so its review-disposition data
   could inform this event schema.

@@ -11,13 +11,11 @@ the project under its old name.
   and diagram labels, and documentation reflect this.
 - **Version.** `0.5.x` → `1.0.0` (canonical everywhere; git tag `v1.0.0`).
 - **New files.** MIT `LICENSE`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, issue and
-  pull-request templates, a `case-studies/` directory, `docs/` (concepts,
-  architecture, governance, integrations, tutorials), experimental
-  `integrations/` schemas, and cross-platform helpers (`Makefile`,
-  `scripts/check.sh`, `scripts/check.cmd`).
-- **Reports.** Internal remediation/acceptance reports were reduced to
-  public-facing release notes and a case study; a single public baseline
-  remains at `reports/public-release-baseline.md`.
+  pull-request templates, `docs/` (concepts, architecture, governance,
+  integrations, tutorials), experimental `integrations/` schemas, and
+  cross-platform helpers (`Makefile`, `scripts/check.sh`, `scripts/check.cmd`).
+- **Reports.** Internal remediation and acceptance reports were reduced to
+  public-facing release notes under `docs/releases/`.
 
 ## What did NOT change (no action needed)
 

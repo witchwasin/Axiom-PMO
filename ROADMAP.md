@@ -52,7 +52,7 @@ control layer they operate inside.
 
 ### Core product versus optional integration
 
-Set by the Human Owner (Witchwasin K., 2026-07-31), recorded as `DEC-006`, and
+Set by the Human Owner on 2026-07-31, recorded as `DEC-006`, and
 binding on how this repository is documented and presented. Amended
 2026-08-04 (`DEC-017`) to extend the boundary to Milestone 7 -- onboarding is
 required infrastructure for using the product at all, unlike Milestone 6.
@@ -460,7 +460,7 @@ Current evidence and gaps:
 - **Confirmed:** Human-approved threshold: Ubuntu PowerShell 7 must pass two
   consecutive full CI runs on `main` after `continue-on-error` is removed before
   M3.5 can be accepted.
-- **Confirmed:** Human acceptance recorded on 2026-07-29 in Codex chat. The
+- **Confirmed:** Human acceptance recorded on 2026-07-29. The
   human decision accepts M3.5 with branch protection deferred and not required
   for this milestone acceptance.
 
@@ -1123,8 +1123,7 @@ carried through Independent AI Reviewer's three implementation-review rounds alo
 8.0/8.1/9 with no finding raised against this milestone specifically at any
 round; Independent AI Reviewer's final verdict (round 3, against `70fbe99`) was ACCEPT. Human
 Owner closed and merged 2026-08-03 (`DEC-016`), merge commit `1235034`. Full
-design, rejected alternatives, and the reasoning for each is
-`research/m7-m9-proposal.md` section 2.
+design is [`docs/concepts/execution-paths.md`](docs/concepts/execution-paths.md).
 
 Core product. The capability is not new -- both execution paths already exist
 as working engines (the Handoff gate, and export/run/verify) -- this milestone
@@ -1224,8 +1223,8 @@ an acceptance criterion and not its intent, a behaviour change hidden inside a
 refactor.
 
 Named "Adversarial Review **Evidence**," never "Gate": it is not authority, and
-a verdict must never change a validator exit code. Full design and the
-rejected alternatives are `research/m7-m9-proposal.md` section 3.
+a verdict must never change a validator exit code. Full design is
+[`docs/architecture/adversarial-review.md`](docs/architecture/adversarial-review.md).
 
 ### Milestone 8.0 - Research and go/no-go
 
@@ -1356,7 +1355,7 @@ merged to `main` at `1235034`.
 Objective: organizational memory over diagnostics the validator already
 emits -- recurring findings clustered and disposed as true defect, false
 positive, or user error, surfaced as human-reviewed improvement candidates.
-Full design is `research/m7-m9-proposal.md` section 4.
+Full design is [`docs/concepts/governed-learning.md`](docs/concepts/governed-learning.md).
 
 Status: **CLOSED and MERGED to `main`** -- Independent AI Reviewer round 1: 1 MAJOR, fixed; round
 2: no new finding against this milestone; round 3 final verdict: ACCEPT.
@@ -1537,8 +1536,8 @@ push, tag, release, deployment, marketplace publication, or npm publication.
   CHANGES (check names compared case-insensitively), then ACCEPT once fixed;
   merged to `main` 2026-08-02.
 - Milestones 7, 8.0, and 9 design: proposed by the Human Owner, drafted and
-  revised across three rounds against two independent Independent AI Reviewer reviews
-  (`research/m7-m9-proposal.md`). Milestone 7 authorized for implementation and
+  revised across three rounds against two independent reviews.
+  Milestone 7 authorized for implementation and
   Milestone 8.0 authorized for research only, 2026-08-03 (`DEC-011`,
   `DEC-012`); Milestone 9's local/opt-in boundary confirmed the same day
   (`DEC-013`) ahead of any implementation authorization; a Permanent Non-Goals

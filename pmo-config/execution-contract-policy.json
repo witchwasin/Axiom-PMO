@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0",
+  "version": "2.1.0",
   "schema_version": "1.0",
   "purpose": "Runtime policy for Milestone 5 execution-contract verification (scripts/lib/execution-contract-*.ps1). Defines what an execution result may claim, which claims Axiom-PMO can verify against observable ground truth, and which actors may grant which authority. Design rationale: docs/architecture/execution-contract-verification.md.",
   "core_principle": "An agent-authored EXECUTION-RESULT.json is written by the same actor being verified. It is a claim, not evidence, until Axiom-PMO independently confirms it against git ground truth or a checked CI run.",

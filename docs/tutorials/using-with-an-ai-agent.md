@@ -43,4 +43,3 @@ human confirmation (`pmo-git-safety`). See
 The agent's job is to make the evidence and the recommendation clear. **The human
 authorizes.** If an agent ever reports work as shipped or approved without a
 human doing so, treat it exactly as the framework does — as an unverified claim.
-See [the case study](../../case-studies/unauthorized-git-mutation.md).

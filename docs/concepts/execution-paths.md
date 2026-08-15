@@ -98,5 +98,3 @@ would if the trigger had been added by hand later.
   axis this one stays independent of.
 - [`docs/concepts/handoff-readiness.md`](handoff-readiness.md) -- the
   Development Handoff path's own gate.
-- `research/m7-m9-proposal.md` -- full design history and rejected
-  alternatives for this milestone.

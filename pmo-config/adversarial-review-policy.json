@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0",
+  "version": "2.1.0",
   "schema_version": "1.0",
   "purpose": "Runtime policy for Milestone 8.1 adversarial review evidence (scripts/lib/adversarial-review-validator.ps1). Defines what an EXECUTION-REVIEW.json may claim, which claims Axiom-PMO can verify against external ground truth, and who may set which finding status. Design rationale and threat model: docs/architecture/adversarial-review.md.",
   "core_principle": "An EXECUTION-REVIEW.json is candidate evidence, never authority. A verdict recorded in it must never change a validator exit code, and it never substitutes for a human approval row in PROJECT.md -- the same standing pmo-config/handoff-policy.json already gives a semantic handoff review.",

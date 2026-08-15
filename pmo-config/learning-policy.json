@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0",
+  "version": "2.1.0",
   "schema_version": "1.0",
   "purpose": "Runtime policy for Milestone 9 (Failure Pattern Registry and Governed Improvement Proposals, scripts/aggregate-diagnostics.ps1). Organizational memory over diagnostics the validator already emits -- an aggregator, not a new engine.",
   "boundary": {

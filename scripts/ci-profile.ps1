@@ -165,7 +165,7 @@ function Resolve-CiProfile {
     }
 
     # --- fast: docs / report only ------------------------------------------
-    if ($p.StartsWith('docs/') -or $p.StartsWith('Fixed_Plan/') -or ($p -notmatch '/' -and $p -match '(?i)\.md$')) {
+    if ($p.StartsWith('docs/') -or ($p -notmatch '/' -and $p -match '(?i)\.md$')) {
       Add-Unique $reasons "$p -> docs/report only (fast)"
       continue
     }

@@ -11,9 +11,9 @@ developers or execution frameworks.**
 
 [![Axiom-PMO Checks](https://github.com/witchwasin/Axiom-PMO/actions/workflows/pmo-checks.yml/badge.svg)](https://github.com/witchwasin/Axiom-PMO/actions/workflows/pmo-checks.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](CHANGELOG.md)
 
-Version `2.0.0` · MIT License · PowerShell reference implementation (Windows
+Version `2.1.0` · MIT License · PowerShell reference implementation (Windows
 PowerShell 5.1 and PowerShell 7; Linux/macOS via `pwsh`)
 
 ---
@@ -115,29 +115,60 @@ Design and initial Test Strategy live in `DESIGN/BUILD-SPEC.md` before
 detailed UI work. See the
 [end-to-end workflow](docs/concepts/end-to-end-workflow.md).
 
-### Actor legend and compact flow
+### How work flows end to end
 
-`[H-IN]` Human input · `[AI-A]` AI-assisted · `[AI-R]` AI-run · `[EXT]`
-external tool · `[SYS]` deterministic validator · `[HG]` Human gate
+Eight stages, three human gates, one deterministic validator between them.
+`[SYS]` is a script that exits non-zero; `[HUMAN]` is a named person, and
+nothing else can stand in for them.
 
 ```text
-[H-IN] Source -> [AI-R] Intake -> choose execution path + Lite/Standard/Strict
-  -> optional Research? (off | guided | auto)
-       no -> continue
-       yes -> [SYS/HG] Externalization -> [AI-R/EXT] provider research
-              -> [AI-R] Impact proposal (never automatic Scope)
-  -> [SYS] Scope validation -> [HG] Scope Approved
-  -> [AI-A] System Design + Test Strategy in BUILD-SPEC
-  -> UI delivery: dev-guided flow | Claude Design
-       (manifest -> output -> preflight -> AI review -> Human review)
-  -> [AI-R] Acceptance Cases + Final Handoff -> [SYS] Handoff checks -> [HG] Design Ready
-  -> developer build | governed AI contract
-  -> [AI-A/SYS/HG] Controlled Change loop when reality differs
-  -> [SYS] evidence/release checks -> [HG] Release Approved
+   source/MOM   source/REQ   source/Transcript
+   user-owned inputs -- the AI reads them, and never edits them
+        |
+        v
+   [1] INTAKE ....... read the source, write PROJECT.md
+        |             choose the mode: Lite | Standard | Strict
+        |
+        +-- [2] RESEARCH -- optional: off | guided | auto
+        |       anything leaving the governed boundary clears the
+        |       Externalization gate first, and findings come back as
+        |       proposals, never as scope
+        v
+   [3] SCOPE ........ every requirement carries source_ref and
+        |             evidence_status -- nothing is invented
+        |
+        |--> [SYS]    validate-project.ps1 -Gate Scope
+        |--> [HUMAN]  ===== Scope Approved =====
+        v
+   [4] DESIGN ....... FLOW.puml + BUILD-SPEC.md: system design and the
+        |             test strategy, before detailed UI work
+        |             optional: visual direction, design system, wireframes
+        v
+   [5] HANDOFF ...... HANDOFF.md: build order, owners, constraints, and
+        |             acceptance cases a developer can actually act on
+        |
+        |--> [SYS]    validate-project.ps1 -Gate Handoff
+        |--> [HUMAN]  ===== Design Ready =====
+        v
+   [6] BUILD ........ developer handoff  OR  governed AI execution
+        |
+        |<-- CONTROLLED CHANGE: when reality differs from the contract,
+        |    the difference is recorded and re-approved -- never
+        |    silently absorbed into scope
+        v
+   [7] VERIFY ....... tests, QA, and RTM traceability
+        |             evidence is checked, not claimed
+        v
+   [8] RELEASE ...... RELEASE.md: scope, UAT, deployment, rollback
+        |
+        |--> [SYS]    validate-project.ps1 -Gate Release
+        |--> [HUMAN]  ===== Release Approved =====
+        v
+   shipped -- every claim traceable to a source and to an approver
 ```
 
-Humans answer ambiguity and own approvals. AI drafts candidate evidence and
-deterministic validators check what code can prove; `auto` never means automatic
+Humans answer ambiguity and own approvals. AI drafts candidate evidence, and
+deterministic validators check what code can prove. `auto` never means automatic
 Scope, Design, risk, or Release approval.
 
 ## Quick start
@@ -306,10 +337,8 @@ Axiom-PMO turns each of them into a **machine-verifiable contract** enforced by 
 validator that exits non-zero when the contract is broken — the same way a
 linter fails a pull request.
 
-> See [`case-studies/unauthorized-git-mutation.md`](case-studies/unauthorized-git-mutation.md)
-> — *"The Agent That Shipped Without Permission"* — for the incident that shaped
-> these controls. The code may have been fine. The authorization was part of the
-> specification, and it was missing.
+> The code may have been fine. The authorization was part of the specification,
+> and it was missing.
 
 ## What Axiom-PMO does
 
@@ -505,9 +534,7 @@ pmo-config/                               Runtime policy as JSON — the source 
 .claude/skills/                           The 7 active AI skills (one per workflow stage)
 docs/                                     Concepts, architecture, governance, integrations, tutorials, per-mode guides
 integrations/                             Experimental execution-contract schemas (framework interop)
-case-studies/                             Governance lessons (e.g. the unauthorized-git-mutation incident)
 tests/                                    Fixture matrix + golden masters + config-mutation + end-to-end tests
-reports/                                  Public release baseline and sanitized project-history archive
 ```
 
 A project built with this template looks like:
@@ -603,7 +630,7 @@ Typography: Tahoma / Arial (sans-serif) for voice; Consolas / Courier New
 | **Process** | [Lite](docs/process/lite.md) · [Standard](docs/process/standard.md) · [Strict](docs/process/strict.md) |
 | **Tutorials** | [your first project](docs/tutorials/first-project.md) · [using it with an AI agent](docs/tutorials/using-with-an-ai-agent.md) |
 | **Integrations** | [overview](docs/integrations/overview.md) · [Superpowers](docs/integrations/superpowers.md) · [BMAD](docs/integrations/bmad.md) · [spec-kit](docs/integrations/spec-kit.md) · [OpenSpec](docs/integrations/openspec.md) |
-| **Releases** | [2.0.0](docs/releases/v2.0.0.md) · [1.5.0](docs/releases/v1.5.0.md) · [1.4.0](docs/releases/v1.4.0.md) · [1.3.0](docs/releases/v1.3.0.md) · [1.2.0](docs/releases/v1.2.0.md) · [1.1.1](docs/releases/v1.1.1.md) · [1.1.0](docs/releases/v1.1.0.md) · [1.0.0](docs/releases/v1.0.0.md) · [changelog](CHANGELOG.md) |
+| **Releases** | [2.1.0](docs/releases/v2.1.0.md) · [2.0.0](docs/releases/v2.0.0.md) · [1.5.0](docs/releases/v1.5.0.md) · [1.4.0](docs/releases/v1.4.0.md) · [1.3.0](docs/releases/v1.3.0.md) · [1.2.0](docs/releases/v1.2.0.md) · [1.1.1](docs/releases/v1.1.1.md) · [1.1.0](docs/releases/v1.1.0.md) · [1.0.0](docs/releases/v1.0.0.md) · [changelog](CHANGELOG.md) |
 
 If you are an AI agent working in this repository, start with
 [`AGENTS.md`](AGENTS.md), [`CLAUDE.md`](CLAUDE.md), and
@@ -681,7 +708,7 @@ strengthen the product direction without weakening governance.
 
 ## Project status
 
-Version `2.0.0`. The validation engine, governance model, and diagnostic
+Version `2.1.0`. The validation engine, governance model, and diagnostic
 contract are stable. 1.1 added the `Handoff` gate between `Design` and
 `Release`; 1.2 added a reusable GitHub Action and SCOPE-DIFF changed-file
 scope enforcement, so a pull request can be checked — and, optionally,

@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0",
+  "version": "2.1.0",
   "schema_version": "1.0",
   "documentation_base_url": "https://github.com/witchwasin/Axiom-PMO/blob/main",
   "documentation_note": "A rule's `documentation` value is a repo-relative path. pmo-doctor DOCTOR-009 fails when the file does not exist, so a rule can never advertise a dead link. Rules without a `documentation` entry emit documentation_url: null.",
@@ -551,12 +551,6 @@
       "description": "A PowerShell file under scripts/ or tests/ branches on $IsWindows directly. That variable does not exist in Windows PowerShell 5.1 -- it is $null there, and 5.1 only runs on Windows -- so `if ($IsWindows -ne $true)` is TRUE on Windows and any branch written as Unix-only runs there anyway. It is invisible on PowerShell 7, which is where this repository is developed.",
       "suggestion": "Use Test-WindowsHost from scripts/lib/pwsh-host.ps1, which checks $PSVersionTable.PSEdition first. See docs/rules/DOCTOR-011.md and docs/architecture/powershell-portability.md.",
       "documentation": "docs/rules/DOCTOR-011.md"
-    },
-    "DOCTOR-012": {
-      "severity": "fail",
-      "description": "Two rows in the framework's decision-log.md share a DEC-### id. Decision ids are reference targets -- ROADMAP, CHANGELOG and the EXEC-* authority rules all cite them, and EXEC-007 resolves them at runtime and treats more than one match as ambiguous. A duplicate makes every citation of that id unresolvable.",
-      "suggestion": "Give the newer decision its own unused id and update the references that meant it, semantically rather than by global replacement. Do not change the content, decider, date, or approval state of either row. See docs/rules/DOCTOR-012.md.",
-      "documentation": "docs/rules/DOCTOR-012.md"
     },
     "TEST-DESIGN-001": {
       "severity": "fail",

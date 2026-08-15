@@ -105,7 +105,7 @@ escalates down):
 | `pmo-config/**`, `templates/**`, generator | config mutation + generator/E2E | Windows PowerShell 5.1 **and** PowerShell 7 |
 | `examples/**`, `demo/**` | validation fixtures | Linux pwsh |
 | `.claude/**`, `skills/**`, `hooks/**` | plugin mirror drift | Linux pwsh |
-| `docs/**`, `Fixed_Plan/**`, top-level `*.md` | markdown / public hygiene | no cross-host by default |
+| `docs/**`, top-level `*.md` | markdown / public hygiene | no cross-host by default |
 
 The **high-risk set → `full`**, always:
 

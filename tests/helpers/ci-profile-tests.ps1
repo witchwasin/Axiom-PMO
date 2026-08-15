@@ -85,7 +85,6 @@ function Assert-Profile {
 
 # --- fast (docs / report only) ---------------------------------------------
 Assert-Profile "docs-only"         @("docs/architecture/foo.md") "fast" "" "linux"
-Assert-Profile "fixed-plan-only"   @("Fixed_Plan/Risk-Based-CI-Execution-Plan.md") "fast" "" "linux"
 Assert-Profile "top-level-markdown" @("README.md") "fast" "" "linux"
 Assert-Profile "empty-paths"       @() "fast" "" "linux"
 

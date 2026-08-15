@@ -1,6 +1,6 @@
 {
   "name": "axiom-pmo",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Governance and development-handoff skills for Axiom-PMO: turn source material into scoped requirements, check handoff readiness, and verify execution results against an approved contract.",
   "author": {
     "name": "WITCHWASIN K."

@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0",
+  "version": "2.1.0",
   "schema_version": "1.0",
   "$comment": "Wording for `axiom init`'s 'Help me decide' path. One entry per pmo-config/policy.json enums.strict_triggers id -- pmo-doctor DOCTOR-013 fails if the two ever disagree. This file supplies presentation text only; the trigger list, the mode-escalation logic, and the enum itself stay in policy.json so this file can never become a second source of truth for what a strict trigger IS.",
   "questions": {

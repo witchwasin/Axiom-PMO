@@ -1,5 +1,52 @@
 # Changelog
 
+## 2.1.0 - 2026-08-15
+
+Three optional governed tracks reach the validator, and CI stops paying for the
+full cross-host matrix on work that cannot affect a runtime. Backward
+compatible for projects: every new track activates by artifact existence, so a
+project that declares none of them validates exactly as it did on 2.0.0.
+
+### Added
+
+- **Externalization gate** (`EXT-001`..`EXT-004`) — an `EXTERNALIZATION.json`
+  registry for transfers that leave the governed boundary, with policy-owned
+  classifications, a required truthful `network_transfer_occurred`, and Human
+  review evidence where policy demands it.
+- **Claude Design provider workflow** (`DPROV-002`..`DPROV-007`) — governed
+  input manifest, declared output inventory, preflight digest freshness, and a
+  named-Human acceptance that Handoff and Release actually require.
+- **Guided research** (`RESEARCH-002`..`RESEARCH-007`) — `RESEARCH.md` plus a
+  provenance registry, with claim-to-source resolution, a deterministic
+  freshness contract, and an actionable `stopped` state so an unavailable
+  provider can be reported truthfully instead of faked.
+- **Risk-based CI** — `.github/workflows/pmo-checks.yml` resolves a `fast`,
+  `targeted`, or `full` profile per event. `scripts/ci-profile.ps1` is the
+  single source of truth for the path-to-profile mapping and
+  `tests/helpers/ci-profile-tests.ps1` guards it. See
+  [`docs/architecture/ci-risk-based.md`](docs/architecture/ci-risk-based.md).
+- **Canonical artifact hashing** — one shared helper normalizes governed text
+  before hashing, so an LF-to-CRLF conversion no longer invalidates provider
+  and externalization evidence.
+
+### Changed
+
+- Physical path containment is shared across the new validators, so a symlink
+  or Windows junction can no longer resolve outside a project boundary.
+- `scripts/pmo-status.ps1` reports validated lifecycle and freshness rather
+  than file existence, counts every non-terminal governed change, and names the
+  next Human or automated action.
+
+### Removed
+
+- The framework's own development records — internal planning, review, and
+  report directories, and the framework-level `decision-log.md` — are no longer
+  part of the published repository. They documented how this repository was
+  built, not how to use it.
+- `DOCTOR-012`, which checked decision-id uniqueness in that framework-level
+  log, went with it. The same property inside a *project* is still enforced,
+  by the `EXEC` and `HANDOFF` rules that resolve a `DEC-###` at validation time.
+
 ## 2.0.0 - 2026-08-13
 
 MasterPlan v.2.0 closes the two remaining "claimed vs. actual" gaps with
@@ -239,7 +286,7 @@ implementation 2026-08-03 (`DEC-011`), on branch
 - New `pmo-config/onboarding-questions.json`, kept in sync with
   `policy.json`'s strict-trigger enum by a new `DOCTOR-013` check.
 - See [`docs/concepts/execution-paths.md`](docs/concepts/execution-paths.md)
-  and `research/m7-m9-proposal.md` for full design.
+  for full design.
 
 Backward compatible. No existing required artifact changed for either path;
 the path-artifact delta is empty as of this milestone.
@@ -903,9 +950,8 @@ still passes.
 - **MIT `LICENSE`.**
 - **`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, issue templates, and a pull-request
   template** that encode governance-preserving contribution expectations.
-- **Case study** (`case-studies/unauthorized-git-mutation.md`) — a sanitized
-  account of the unauthorized-git-mutation incident that motivated the git
-  authority controls.
+- **Git authority controls** — the commit/push/tag boundaries an agent may not
+  cross on its own, enforced by the validator rather than by prose.
 - **Interoperability documentation** (`docs/integrations/`) describing a Level
   0–4 coexistence model and an authority-precedence order, plus an
   **experimental** generic execution-contract and result schema under

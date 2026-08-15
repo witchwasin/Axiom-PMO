@@ -34,5 +34,4 @@ corresponding `ROADMAP.md` entry, then remove or change the `lifecycle` field.
 
 ## See also
 
-`pmo-config/learning-policy.json rule_lifecycle`, `research/m7-m9-proposal.md`
-section 4.
+`pmo-config/learning-policy.json rule_lifecycle`.
