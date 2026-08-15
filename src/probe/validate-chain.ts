@@ -20,6 +20,8 @@ import { testExternalizationRegistry } from "../rules/externalization-validator.
 import { testResearchWorkflow } from "../rules/research-validator.js";
 import { testRaidBlocker, testReleaseArtifact, testReleaseScopeCompletion, testStrictReleaseGuardrails } from "../rules/release-validator.js";
 import { testDesignSystemTokens } from "../rules/design-system-validator.js";
+import { testDesignProviderWorkflow } from "../rules/design-provider-validator.js";
+import { testVisualProofReview } from "../rules/visual-proof-validator.js";
 
 export interface ChainResult {
   diagnostics: Diagnostic[];
@@ -73,8 +75,11 @@ export function runPortedChain(
     acc, catalog, project, gate, config.orchestrationPolicy, effectiveMode, executionPath,
     sourceResult.projectReqIds, decisionIds, config.handoffPolicy,
   );
+
+  // Optional tracks (PS order: externalization, research, design-provider).
   testExternalizationRegistry(acc, catalog, project, gate, config.orchestrationPolicy, config.policy, decisionIds, config.handoffPolicy);
   testResearchWorkflow(acc, catalog, project, gate, config.orchestrationPolicy, policyEnums, decisionIds, config.handoffPolicy);
+  testDesignProviderWorkflow(acc, catalog, project, gate, config.orchestrationPolicy, decisionIds, config.handoffPolicy);
 
   testRaidBlocker(acc, catalog, project, gate);
 
@@ -91,6 +96,9 @@ export function runPortedChain(
     releaseResult.releaseRegistry, sourceResult.projectSourceIds,
   );
 
+  if (gate === "Handoff") {
+    testVisualProofReview(acc, catalog, project, effectiveMode, config.handoffPolicy, projectText, decisionIds);
+  }
   testDesignSystemTokens(acc, catalog, project, gate);
   testSensitiveFilenames(acc, catalog, fileSets.allProjectFiles, project);
   testLinks(acc, catalog, fileSets.governedFiles, fileSets.userSourceFiles, gate);

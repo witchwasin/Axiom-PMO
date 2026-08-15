@@ -31,6 +31,8 @@ const PORTED_RULE_IDS = new Set([
   "BLOCKER-001", "RELEASE-001", "QA-REVIEW-001", "SECURITY-REVIEW-001",
   "TEST-SUMMARY-001", "RELEASE-SCOPE-001", "RELEASE-STATUS-001", "REVIEW-001", "TEST-EVIDENCE-001",
   "STRICT-002", "DESIGN-001",
+  "DPROV-002", "DPROV-003", "DPROV-004", "DPROV-005", "DPROV-006", "DPROV-007",
+  "VPROOF-001", "VPROOF-002",
 ]);
 
 interface ReferenceEnvelope {
@@ -108,6 +110,8 @@ const CASES: ProbeCase[] = [
   { fixture: "tests/fixtures/valid-test-summary-waived", mode: "Standard", gate: "Release" },
   { fixture: "tests/fixtures/invalid-lite-release-no-approval", mode: "Lite", gate: "Release" },
   { fixture: "tests/fixtures/invalid-approval-role-standard", mode: "Standard", gate: "Release" },
+  // Visual proof (VPROOF-*) + design provider (DPROV-*) exercised at Handoff.
+  { fixture: "examples/DESIGN-SYSTEM-DEMO", mode: "Standard", gate: "Handoff" },
 ];
 
 function main(): void {

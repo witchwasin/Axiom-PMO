@@ -18,6 +18,8 @@ import { testExternalizationRegistry } from "../rules/externalization-validator.
 import { testResearchWorkflow } from "../rules/research-validator.js";
 import { testRaidBlocker, testReleaseArtifact, testReleaseScopeCompletion, testStrictReleaseGuardrails } from "../rules/release-validator.js";
 import { testDesignSystemTokens } from "../rules/design-system-validator.js";
+import { testDesignProviderWorkflow } from "../rules/design-provider-validator.js";
+import { testVisualProofReview } from "../rules/visual-proof-validator.js";
 export function runPortedChain(repoRoot, project, mode, gate) {
     const acc = createAccumulator();
     const config = importPmoConfig(repoRoot);
@@ -44,12 +46,17 @@ export function runPortedChain(repoRoot, project, mode, gate) {
     const executionPath = getProjectExecutionPath(project) ?? "development_handoff";
     testOrchestrationDeclarations(acc, catalog, project, gate, config.orchestrationPolicy);
     testChangeControlRegistry(acc, catalog, project, gate, config.orchestrationPolicy, effectiveMode, executionPath, sourceResult.projectReqIds, decisionIds, config.handoffPolicy);
+    // Optional tracks (PS order: externalization, research, design-provider).
     testExternalizationRegistry(acc, catalog, project, gate, config.orchestrationPolicy, config.policy, decisionIds, config.handoffPolicy);
     testResearchWorkflow(acc, catalog, project, gate, config.orchestrationPolicy, policyEnums, decisionIds, config.handoffPolicy);
+    testDesignProviderWorkflow(acc, catalog, project, gate, config.orchestrationPolicy, decisionIds, config.handoffPolicy);
     testRaidBlocker(acc, catalog, project, gate);
     const releaseResult = testReleaseArtifact(acc, catalog, ctx, project, effectiveMode, gate, workItemResult.deliveryIds, decisionIds);
     testReleaseScopeCompletion(acc, catalog, ctx, workItemResult.workItems, releaseResult.releaseText, effectiveMode, gate, decisionIds, releaseResult.releaseRegistry);
     testStrictReleaseGuardrails(acc, catalog, ctx, policyEnums, sourceRefRegex, project, effectiveMode, gate, sourceResult.projectReqIds, workItemResult.deliveryIds, decisionIds, releaseResult.releaseRegistry, sourceResult.projectSourceIds);
+    if (gate === "Handoff") {
+        testVisualProofReview(acc, catalog, project, effectiveMode, config.handoffPolicy, projectText, decisionIds);
+    }
     testDesignSystemTokens(acc, catalog, project, gate);
     testSensitiveFilenames(acc, catalog, fileSets.allProjectFiles, project);
     testLinks(acc, catalog, fileSets.governedFiles, fileSets.userSourceFiles, gate);
