@@ -93,3 +93,42 @@ export function getProjectOrchestrationDeclarations(projectRoot) {
         uiDelivery: values["UI delivery"] ?? null,
     };
 }
+/** Joined source-ref regex, ported from Get-PolicySourceRefRegex. */
+export function getPolicySourceRefRegex(policyEnums) {
+    let patterns = policyEnums["source_ref_patterns"] ?? [];
+    if (patterns.length === 0) {
+        patterns = ["MOM-\\d{8}", "REQ-\\d{8}", "REQ-V\\d+", "TR-\\d{8}", "DEC-\\d{3}", "ISSUE-\\d+", "PR-\\d+", "source_ref"];
+    }
+    return patterns.join("|");
+}
+import { addResult } from "../core/result-writer.js";
+/** Orchestration declaration validation (RESEARCH-001 / DPROV-001), ported from
+ *  Test-OrchestrationDeclarations. */
+export function testOrchestrationDeclarations(acc, catalog, project, gate, orchestrationPolicy) {
+    const d = getProjectOrchestrationDeclarations(project);
+    if (d.researchMode) {
+        const research = orchestrationPolicy["research"] ?? {};
+        const valid = research["modes"] ?? [];
+        if (!valid.includes(d.researchMode)) {
+            addResult(acc, catalog, "FAIL", "PROJECT.md Research mode is not recognized", { ruleId: "RESEARCH-001", artifact: "PROJECT.md", field: "Research mode" });
+        }
+        else {
+            const badDepth = !d.researchDepth || !(research["depths"] ?? []).includes(d.researchDepth);
+            const badProvider = !d.researchProvider || !(research["providers"] ?? []).includes(d.researchProvider);
+            if (badDepth || badProvider) {
+                addResult(acc, catalog, "FAIL", "PROJECT.md research declarations are incomplete or invalid", { ruleId: "RESEARCH-001", artifact: "PROJECT.md" });
+            }
+            else if (d.researchMode === "off" && d.researchProvider !== "none") {
+                addResult(acc, catalog, "FAIL", "Research mode off requires Research provider none", { ruleId: "RESEARCH-001", artifact: "PROJECT.md", field: "Research provider" });
+            }
+            else if (d.researchMode !== "off" && d.researchProvider === "none") {
+                addResult(acc, catalog, "FAIL", "Enabled research requires a provider declaration", { ruleId: "RESEARCH-001", artifact: "PROJECT.md", field: "Research provider" });
+            }
+        }
+    }
+    if (d.uiDelivery && !((orchestrationPolicy["ui_delivery"] ?? {})["values"] ?? []).includes(d.uiDelivery)) {
+        addResult(acc, catalog, "FAIL", "PROJECT.md UI delivery is not recognized", { ruleId: "DPROV-001", artifact: "PROJECT.md", field: "UI delivery" });
+    }
+    void gate;
+    return d;
+}

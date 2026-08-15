@@ -33,7 +33,7 @@ export function testTestSummary(
   registry: ReleaseRegistry,
   project: string,
   referenceTypesConfig: ReferenceTypesConfig,
-  decisionIds: string[],
+  decisionIds: string[] | null,
   mode: Mode,
 ): void {
   for (const row of registry.testRows) {
@@ -168,7 +168,7 @@ export function testRtmTraceability(
   sourceRefRegex: string,
   projectReqIds: string[],
   deliveryIds: string[],
-  decisionIds: string[],
+  decisionIds: string[] | null,
   registry: ReleaseRegistry,
   projectSourceIds: string[],
 ): void {

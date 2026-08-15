@@ -160,10 +160,10 @@ export function testExternalizationRegistry(acc, catalog, project, gate, orchest
         if (requiresHuman) {
             const reviewer = String(entry.reviewer ?? "");
             const decisionRef = String(entry.decision_ref ?? "");
-            const decider = decisionRef && decisionIds.includes(decisionRef) ? getDecisionDecider(project, decisionRef) : null;
+            const decider = decisionRef && (decisionIds ?? []).includes(decisionRef) ? getDecisionDecider(project, decisionRef) : null;
             if (reviewer.trim() === "" || testGenericOwner(reviewer, ownerPolicy))
                 authorityProblems.push(`${id} reviewer`);
-            if (!decisionRef || !decisionIds.includes(decisionRef) || decider === null || testGenericOwner(decider, ownerPolicy))
+            if (!decisionRef || !(decisionIds ?? []).includes(decisionRef) || decider === null || testGenericOwner(decider, ownerPolicy))
                 authorityProblems.push(`${id} decision`);
         }
         if (entry.scan_result === "clean" && testExternalizationScanFinding(project, resolvedArtifacts, secretPatterns, sensitivePathPatterns)) {

@@ -58,7 +58,7 @@ export function testChangeControlRegistry(
   mode: Mode,
   executionPath: string,
   projectReqIds: string[],
-  decisionIds: string[],
+  decisionIds: string[] | null,
   handoffPolicy: Record<string, unknown>,
 ): void {
   const path = join(project, "CHANGE-REQUESTS.json");
@@ -123,8 +123,8 @@ export function testChangeControlRegistry(
     if (testGenericOwner(String(change.owner ?? ""), ownerPolicy)) authorityProblems.push(`${id} owner`);
     if (["approved", "implemented", "rejected", "superseded"].includes(change.status ?? "")) {
       const decisionRef = String(change.decision_ref ?? "");
-      const decider = decisionRef && decisionIds.includes(decisionRef) ? getDecisionDecider(project, decisionRef) : null;
-      if (!decisionRef || !decisionIds.includes(decisionRef) || decider === null || testGenericOwner(decider, ownerPolicy)) {
+      const decider = decisionRef && (decisionIds ?? []).includes(decisionRef) ? getDecisionDecider(project, decisionRef) : null;
+      if (!decisionRef || !(decisionIds ?? []).includes(decisionRef) || decider === null || testGenericOwner(decider, ownerPolicy)) {
         authorityProblems.push(`${id} decision`);
       }
     }

@@ -9,7 +9,7 @@ function getDesignPathFromRef(value) {
     const m = /(DESIGN[\\/][^\s,|]+?\.(puml|md|html))/.exec(value);
     return m ? m[1] : "";
 }
-export function testDeliveryWorkItems(acc, catalog, project, deliveryPath, gate, policyEnums, projectReqIds, projectBusinessIds, projectTaskSource) {
+export function testDeliveryWorkItems(acc, catalog, project, deliveryPath, gate, policyEnums, sentinelRules, projectReqIds, projectBusinessIds, projectTaskSource) {
     let deliveryText = null;
     let workItems = [];
     let deliveryIds = [];
@@ -49,7 +49,7 @@ export function testDeliveryWorkItems(acc, catalog, project, deliveryPath, gate,
         const strictTriggers = policyEnums["strict_triggers"] ?? [];
         for (const item of workItems) {
             const requiredFields = ["ID", "Mode", "Mode Reason", "Mode Approved By", "Requirement Ref", "Design Ref", "Acceptance Criteria", "Test Checklist", "Owner", "Status", "Review Stage", "Evidence Ref"];
-            const blankFields = requiredFields.filter((f) => !item[f] || testFieldValue(f, item[f], item["Mode"] ?? ""));
+            const blankFields = requiredFields.filter((f) => !item[f] || testFieldValue(f, item[f], item["Mode"] ?? "", sentinelRules));
             if (blankFields.length > 0) {
                 const lvl = gate === "Release" ? "FAIL" : "WARN";
                 addResult(acc, catalog, lvl, `${item["ID"]} has missing work item fields: ${blankFields.join(", ")}`, { ruleId: "WORKITEM-001" });
@@ -77,7 +77,7 @@ export function testDeliveryWorkItems(acc, catalog, project, deliveryPath, gate,
                 }
             }
             for (const designRef of splitReferenceValues(item["Design Ref"] ?? "")) {
-                if (designRef === "not_required" && !testFieldValue("Design Ref", designRef, item["Mode"] ?? ""))
+                if (designRef === "not_required" && !testFieldValue("Design Ref", designRef, item["Mode"] ?? "", sentinelRules))
                     continue;
                 const designPath = getDesignPathFromRef(designRef);
                 if (designPath && !(existsSync(join(project, designPath)) && statSync(join(project, designPath)).isFile())) {

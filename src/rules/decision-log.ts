@@ -6,12 +6,21 @@ import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { getTableRowsAfterHeading } from "../markdown/table-parser.js";
 
-export function getDecisionIds(project: string): string[] {
+export function getDecisionIds(project: string): string[] | null {
   const path = join(project, "decision-log.md");
-  if (!existsSync(path)) return [];
+  if (!existsSync(path)) return null;
   const text = readFileSync(path, "utf8");
   const ids = text.match(/DEC-\d{3}/g) ?? [];
-  return [...new Set(ids)].sort();
+  const unique = [...new Set(ids)].sort();
+  // PowerShell collapses a zero-result `return @()` to $null, so callers see
+  // "no id set supplied" (resolve shape-match) rather than "empty set"
+  // (nothing resolves). Replicate that: zero ids -> null.
+  return unique.length === 0 ? null : unique;
+}
+
+/** PowerShell `-contains` semantics: null set contains nothing. */
+export function contains(ids: string[] | null, value: string): boolean {
+  return (ids ?? []).includes(value);
 }
 
 export function getDecisionDecider(project: string, decisionId: string): string | null {

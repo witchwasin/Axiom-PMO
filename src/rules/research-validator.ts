@@ -57,7 +57,7 @@ function getProjectTextCache(project: string): string {
   return parts.join("\n");
 }
 
-function testResearchSourceResolvable(reference: string, project: string, snapshotIds: string[], decisionIds: string[], projectText: string): boolean {
+function testResearchSourceResolvable(reference: string, project: string, snapshotIds: string[], decisionIds: string[] | null, projectText: string): boolean {
   const ref = reference.trim();
   if (!ref) return false;
   if (/^https?:\/\//.test(ref)) return true;
@@ -68,7 +68,7 @@ function testResearchSourceResolvable(reference: string, project: string, snapsh
     const root = resolve(project);
     return testPhysicalContainment(full, root) && existsSync(full) && statSync(full).isFile();
   }
-  if (/^DEC-\d{3,}$/.test(ref)) return decisionIds.includes(ref);
+  if (/^DEC-\d{3,}$/.test(ref)) return (decisionIds ?? []).includes(ref);
   if (/^(MOM|REQ)-[A-Za-z0-9_]+/.test(ref)) return snapshotIds.includes(ref);
   if (/^(TR|ISSUE|PR)-\S+/.test(ref)) {
     return projectText.trim() !== "" && new RegExp(ref.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).test(projectText);
@@ -83,7 +83,7 @@ export function testResearchWorkflow(
   gate: Gate,
   orchestrationPolicy: Record<string, unknown>,
   policyEnums: Record<string, unknown>,
-  decisionIds: string[],
+  decisionIds: string[] | null,
   handoffPolicy: Record<string, unknown>,
 ): void {
   const policy = (orchestrationPolicy["research"] as Record<string, unknown>) ?? {};
@@ -235,8 +235,8 @@ export function testResearchWorkflow(
       if (owner.trim() === "" || testGenericOwner(owner, ownerPolicy)) proposalProblems.push(`${proposalId} owner`);
 
       if (status === "accepted" || status === "rejected") {
-        const decider = decisionRef && decisionIds.includes(decisionRef) ? getDecisionDecider(project, decisionRef) : null;
-        if (!decisionRef || !decisionIds.includes(decisionRef) || decider === null || testGenericOwner(decider, ownerPolicy)) proposalProblems.push(`${proposalId} decision`);
+        const decider = decisionRef && (decisionIds ?? []).includes(decisionRef) ? getDecisionDecider(project, decisionRef) : null;
+        if (!decisionRef || !(decisionIds ?? []).includes(decisionRef) || decider === null || testGenericOwner(decider, ownerPolicy)) proposalProblems.push(`${proposalId} decision`);
       }
 
       const blocksScope = /^\s*yes\b/i.test(acceptedImpact) || impact === "scope";

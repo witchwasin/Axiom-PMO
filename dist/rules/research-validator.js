@@ -78,7 +78,7 @@ function testResearchSourceResolvable(reference, project, snapshotIds, decisionI
         return testPhysicalContainment(full, root) && existsSync(full) && statSync(full).isFile();
     }
     if (/^DEC-\d{3,}$/.test(ref))
-        return decisionIds.includes(ref);
+        return (decisionIds ?? []).includes(ref);
     if (/^(MOM|REQ)-[A-Za-z0-9_]+/.test(ref))
         return snapshotIds.includes(ref);
     if (/^(TR|ISSUE|PR)-\S+/.test(ref)) {
@@ -259,8 +259,8 @@ export function testResearchWorkflow(acc, catalog, project, gate, orchestrationP
             if (owner.trim() === "" || testGenericOwner(owner, ownerPolicy))
                 proposalProblems.push(`${proposalId} owner`);
             if (status === "accepted" || status === "rejected") {
-                const decider = decisionRef && decisionIds.includes(decisionRef) ? getDecisionDecider(project, decisionRef) : null;
-                if (!decisionRef || !decisionIds.includes(decisionRef) || decider === null || testGenericOwner(decider, ownerPolicy))
+                const decider = decisionRef && (decisionIds ?? []).includes(decisionRef) ? getDecisionDecider(project, decisionRef) : null;
+                if (!decisionRef || !(decisionIds ?? []).includes(decisionRef) || decider === null || testGenericOwner(decider, ownerPolicy))
                     proposalProblems.push(`${proposalId} decision`);
             }
             const blocksScope = /^\s*yes\b/i.test(acceptedImpact) || impact === "scope";

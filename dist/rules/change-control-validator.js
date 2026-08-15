@@ -91,8 +91,8 @@ export function testChangeControlRegistry(acc, catalog, project, gate, orchestra
             authorityProblems.push(`${id} owner`);
         if (["approved", "implemented", "rejected", "superseded"].includes(change.status ?? "")) {
             const decisionRef = String(change.decision_ref ?? "");
-            const decider = decisionRef && decisionIds.includes(decisionRef) ? getDecisionDecider(project, decisionRef) : null;
-            if (!decisionRef || !decisionIds.includes(decisionRef) || decider === null || testGenericOwner(decider, ownerPolicy)) {
+            const decider = decisionRef && (decisionIds ?? []).includes(decisionRef) ? getDecisionDecider(project, decisionRef) : null;
+            if (!decisionRef || !(decisionIds ?? []).includes(decisionRef) || decider === null || testGenericOwner(decider, ownerPolicy)) {
                 authorityProblems.push(`${id} decision`);
             }
         }

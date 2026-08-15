@@ -65,7 +65,7 @@ export function testProjectSourceSection(
   gate: Gate,
   sourceRefRegex: string,
   policyEnums: Record<string, unknown>,
-  decisionIds: string[],
+  decisionIds: string[] | null,
 ): ProjectSourceResult {
   let projectTaskSource: string | null = null;
   const taskSourceMatch = /^\s*>?\s*Task source:\s*(file|github)\s*$/m.exec(projectText);

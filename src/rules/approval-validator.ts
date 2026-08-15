@@ -25,7 +25,7 @@ export function testApproval(
   ctx: { project: string; referenceTypesConfig: ReferenceTypesConfig; policy: Record<string, unknown>; handoffPolicy: Record<string, unknown> },
   projectText: string,
   gateName: string,
-  decisionIds: string[],
+  decisionIds: string[] | null,
   requireEvidenceExists: boolean,
   approvalMode: Mode,
 ): void {

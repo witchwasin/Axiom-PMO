@@ -83,7 +83,7 @@ export function testReleaseArtifact(acc, catalog, ctx, project, mode, gate, deli
     releaseText = readFileSync(releasePath, "utf8");
     releaseRegistry = getReleaseRegistry(releaseText);
     const rollbackSectionLines = getTableLinesAfterHeading(releaseText, "^##\\s+Structured Rollback Plan");
-    const waiverMatch = /^##\s+Structured Rollback Plan\s*([\s\S]*?)(?=^##\s|\z)/m.exec(releaseText);
+    const waiverMatch = /^##\s+Structured Rollback Plan\s*([\s\S]*?)(?=^##\s|(?![\s\S]))/m.exec(releaseText);
     let waiver = null;
     if (waiverMatch && /^\s*rollback_required:\s*false\s*$/m.test(waiverMatch[1])) {
         const section = waiverMatch[1];
@@ -149,7 +149,7 @@ export function testReleaseArtifact(acc, catalog, ctx, project, mode, gate, deli
             testReviewRow(acc, catalog, ctx, releaseText, "Security", "SECURITY-REVIEW-001", mode, decisionIds, releaseRegistry);
         }
         testTestSummary(acc, catalog, releaseRegistry, project, ctx.referenceTypesConfig, decisionIds, mode);
-        const testWaiverMatch = /^##\s+Test Summary\s*([\s\S]*?)(?=^##\s|\z)/m.exec(releaseText);
+        const testWaiverMatch = /^##\s+Test Summary\s*([\s\S]*?)(?=^##\s|(?![\s\S]))/m.exec(releaseText);
         let testWaiver = null;
         if (testWaiverMatch && /^\s*test_required:\s*false\s*$/m.test(testWaiverMatch[1])) {
             const section = testWaiverMatch[1];

@@ -7,10 +7,18 @@ import { getTableRowsAfterHeading } from "../markdown/table-parser.js";
 export function getDecisionIds(project) {
     const path = join(project, "decision-log.md");
     if (!existsSync(path))
-        return [];
+        return null;
     const text = readFileSync(path, "utf8");
     const ids = text.match(/DEC-\d{3}/g) ?? [];
-    return [...new Set(ids)].sort();
+    const unique = [...new Set(ids)].sort();
+    // PowerShell collapses a zero-result `return @()` to $null, so callers see
+    // "no id set supplied" (resolve shape-match) rather than "empty set"
+    // (nothing resolves). Replicate that: zero ids -> null.
+    return unique.length === 0 ? null : unique;
+}
+/** PowerShell `-contains` semantics: null set contains nothing. */
+export function contains(ids, value) {
+    return (ids ?? []).includes(value);
 }
 export function getDecisionDecider(project, decisionId) {
     const path = join(project, "decision-log.md");

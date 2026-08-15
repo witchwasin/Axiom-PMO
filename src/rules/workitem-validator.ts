@@ -27,6 +27,7 @@ export function testDeliveryWorkItems(
   deliveryPath: string,
   gate: Gate,
   policyEnums: Record<string, unknown>,
+  sentinelRules: Record<string, unknown>,
   projectReqIds: string[],
   projectBusinessIds: string[],
   projectTaskSource: string | null,
@@ -74,7 +75,7 @@ export function testDeliveryWorkItems(
 
     for (const item of workItems) {
       const requiredFields = ["ID", "Mode", "Mode Reason", "Mode Approved By", "Requirement Ref", "Design Ref", "Acceptance Criteria", "Test Checklist", "Owner", "Status", "Review Stage", "Evidence Ref"];
-      const blankFields = requiredFields.filter((f) => !item[f] || testFieldValue(f, item[f]!, item["Mode"] ?? ""));
+      const blankFields = requiredFields.filter((f) => !item[f] || testFieldValue(f, item[f]!, item["Mode"] ?? "", sentinelRules));
       if (blankFields.length > 0) {
         const lvl = gate === "Release" ? "FAIL" : "WARN";
         addResult(acc, catalog, lvl, `${item["ID"]} has missing work item fields: ${blankFields.join(", ")}`, { ruleId: "WORKITEM-001" });
@@ -104,7 +105,7 @@ export function testDeliveryWorkItems(
       }
 
       for (const designRef of splitReferenceValues(item["Design Ref"] ?? "")) {
-        if (designRef === "not_required" && !testFieldValue("Design Ref", designRef, item["Mode"] ?? "")) continue;
+        if (designRef === "not_required" && !testFieldValue("Design Ref", designRef, item["Mode"] ?? "", sentinelRules)) continue;
         const designPath = getDesignPathFromRef(designRef);
         if (designPath && !(existsSync(join(project, designPath)) && statSync(join(project, designPath)).isFile())) {
           addResult(acc, catalog, "FAIL", `${item["ID"]} references missing design file: ${designPath}`, { ruleId: "REF-001" });

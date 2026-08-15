@@ -3,11 +3,20 @@
 
 export type TableRow = Record<string, string>;
 
+// PowerShell inline flags `(?i)` / `(?m)` / `(?s)` are not valid in JS RegExp;
+// strip a leading `(?flags)` group and pass them as constructor flags.
+function toRegExp(pattern: string): RegExp {
+  const m = /^\(\?([a-z]+)\)/.exec(pattern);
+  if (m) return new RegExp(pattern.slice(m[0].length), m[1]);
+  return new RegExp(pattern);
+}
+
 export function getTableRowsAfterHeading(text: string, headingPattern: string): TableRow[] {
+  const rx = toRegExp(headingPattern);
   const lines = text.split(/\r?\n/);
   let start = -1;
   for (let i = 0; i < lines.length; i++) {
-    if (new RegExp(headingPattern).test(lines[i]!)) {
+    if (rx.test(lines[i]!)) {
       start = i;
       break;
     }
@@ -54,10 +63,11 @@ export function getTableRowsAfterHeading(text: string, headingPattern: string): 
 }
 
 export function getTableLinesAfterHeading(text: string, headingPattern: string): string[] {
+  const rx = toRegExp(headingPattern);
   const lines = text.split(/\r?\n/);
   let start = -1;
   for (let i = 0; i < lines.length; i++) {
-    if (new RegExp(headingPattern).test(lines[i]!)) {
+    if (rx.test(lines[i]!)) {
       start = i;
       break;
     }

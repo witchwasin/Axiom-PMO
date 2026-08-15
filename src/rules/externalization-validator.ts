@@ -79,7 +79,7 @@ export function testExternalizationRegistry(
   gate: Gate,
   orchestrationPolicy: Record<string, unknown>,
   policy: Record<string, unknown>,
-  decisionIds: string[],
+  decisionIds: string[] | null,
   handoffPolicy: Record<string, unknown>,
 ): void {
   const extPolicy = (orchestrationPolicy["externalization"] as Record<string, unknown>) ?? {};
@@ -180,9 +180,9 @@ export function testExternalizationRegistry(
     if (requiresHuman) {
       const reviewer = String(entry.reviewer ?? "");
       const decisionRef = String(entry.decision_ref ?? "");
-      const decider = decisionRef && decisionIds.includes(decisionRef) ? getDecisionDecider(project, decisionRef) : null;
+      const decider = decisionRef && (decisionIds ?? []).includes(decisionRef) ? getDecisionDecider(project, decisionRef) : null;
       if (reviewer.trim() === "" || testGenericOwner(reviewer, ownerPolicy)) authorityProblems.push(`${id} reviewer`);
-      if (!decisionRef || !decisionIds.includes(decisionRef) || decider === null || testGenericOwner(decider, ownerPolicy)) authorityProblems.push(`${id} decision`);
+      if (!decisionRef || !(decisionIds ?? []).includes(decisionRef) || decider === null || testGenericOwner(decider, ownerPolicy)) authorityProblems.push(`${id} decision`);
     }
 
     if (entry.scan_result === "clean" && testExternalizationScanFinding(project, resolvedArtifacts, secretPatterns, sensitivePathPatterns)) {

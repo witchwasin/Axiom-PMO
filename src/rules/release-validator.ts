@@ -38,7 +38,7 @@ function testReviewRow(
   reviewType: string,
   ruleId: string,
   approvalMode: Mode,
-  decisionIds: string[],
+  decisionIds: string[] | null,
   registry: ReleaseRegistry,
 ): boolean {
   const rows = getTableRowsAfterHeading(releaseText, "^##\\s+QA\\s*/\\s*Security Review");
@@ -101,7 +101,7 @@ export function testReleaseArtifact(
   mode: Mode,
   gate: Gate,
   deliveryIds: string[],
-  decisionIds: string[],
+  decisionIds: string[] | null,
 ): ReleaseArtifactResult {
   let releaseText = "";
   const releasePath = join(project, "RELEASE.md");
@@ -114,7 +114,7 @@ export function testReleaseArtifact(
   releaseRegistry = getReleaseRegistry(releaseText);
 
   const rollbackSectionLines = getTableLinesAfterHeading(releaseText, "^##\\s+Structured Rollback Plan");
-  const waiverMatch = /^##\s+Structured Rollback Plan\s*([\s\S]*?)(?=^##\s|\z)/m.exec(releaseText);
+  const waiverMatch = /^##\s+Structured Rollback Plan\s*([\s\S]*?)(?=^##\s|(?![\s\S]))/m.exec(releaseText);
   let waiver: { changeType: string; reason: string; approver: string } | null = null;
   if (waiverMatch && /^\s*rollback_required:\s*false\s*$/m.test(waiverMatch[1]!)) {
     const section = waiverMatch[1]!;
@@ -175,7 +175,7 @@ export function testReleaseArtifact(
     }
     testTestSummary(acc, catalog, releaseRegistry, project, ctx.referenceTypesConfig, decisionIds, mode);
 
-    const testWaiverMatch = /^##\s+Test Summary\s*([\s\S]*?)(?=^##\s|\z)/m.exec(releaseText);
+    const testWaiverMatch = /^##\s+Test Summary\s*([\s\S]*?)(?=^##\s|(?![\s\S]))/m.exec(releaseText);
     let testWaiver: { reason: string; approvedBy: string; evidence: string } | null = null;
     if (testWaiverMatch && /^\s*test_required:\s*false\s*$/m.test(testWaiverMatch[1]!)) {
       const section = testWaiverMatch[1]!;
@@ -230,7 +230,7 @@ export function testReleaseScopeCompletion(
   releaseText: string,
   mode: Mode,
   gate: Gate,
-  decisionIds: string[],
+  decisionIds: string[] | null,
   releaseRegistry: ReleaseRegistry,
 ): void {
   if (!(gate === "Release" && workItems && workItems.length > 0)) return;
@@ -292,7 +292,7 @@ export function testStrictReleaseGuardrails(
   gate: Gate,
   projectReqIds: string[],
   deliveryIds: string[],
-  decisionIds: string[],
+  decisionIds: string[] | null,
   releaseRegistry: ReleaseRegistry,
   projectSourceIds: string[],
 ): void {
