@@ -2,7 +2,7 @@
 // when a required config file is missing — runtime config is the single source
 // of truth, there is no silent fallback to hardcoded values. Ported from
 // scripts/lib/config-loader.ps1 Import-PmoConfig.
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 // Strip exactly one leading U+FEFF when present (not all files have a BOM).
 function parseJsonFile(path) {
@@ -76,4 +76,20 @@ export function testPlaceholderContent(content, extension) {
         return /{{[^}]+}}|<PLACEHOLDER:[^>]+>|TODO|TBD/.test(content);
     }
     return /<[^>\r\n]+>|TODO|TBD/.test(content);
+}
+/** PROJECT.md optional workflow declarations, ported from Get-ProjectOrchestrationDeclarations. */
+export function getProjectOrchestrationDeclarations(projectRoot) {
+    const path = join(projectRoot, "PROJECT.md");
+    const text = existsSync(path) ? readFileSync(path, "utf8") : "";
+    const values = {};
+    for (const name of ["Research mode", "Research depth", "Research provider", "UI delivery"]) {
+        const m = new RegExp(`^\\s*>?\\s*${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:\\s*(.+?)\\s*$`, "m").exec(text);
+        values[name] = m ? m[1].trim() : null;
+    }
+    return {
+        researchMode: values["Research mode"] ?? null,
+        researchDepth: values["Research depth"] ?? null,
+        researchProvider: values["Research provider"] ?? null,
+        uiDelivery: values["UI delivery"] ?? null,
+    };
 }

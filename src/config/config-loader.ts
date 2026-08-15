@@ -3,7 +3,7 @@
 // of truth, there is no silent fallback to hardcoded values. Ported from
 // scripts/lib/config-loader.ps1 Import-PmoConfig.
 
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Config, ValidationRules } from "../core/context.js";
 
@@ -86,4 +86,30 @@ export function testPlaceholderContent(content: string, extension: string): bool
     return /{{[^}]+}}|<PLACEHOLDER:[^>]+>|TODO|TBD/.test(content);
   }
   return /<[^>\r\n]+>|TODO|TBD/.test(content);
+}
+
+export interface OrchestrationDeclarations {
+  researchMode: string | null;
+  researchDepth: string | null;
+  researchProvider: string | null;
+  uiDelivery: string | null;
+}
+
+/** PROJECT.md optional workflow declarations, ported from Get-ProjectOrchestrationDeclarations. */
+export function getProjectOrchestrationDeclarations(projectRoot: string): OrchestrationDeclarations {
+  const path = join(projectRoot, "PROJECT.md");
+  const text = existsSync(path) ? readFileSync(path, "utf8") : "";
+
+  const values: Record<string, string | null> = {};
+  for (const name of ["Research mode", "Research depth", "Research provider", "UI delivery"]) {
+    const m = new RegExp(`^\\s*>?\\s*${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:\\s*(.+?)\\s*$`, "m").exec(text);
+    values[name] = m ? m[1]!.trim() : null;
+  }
+
+  return {
+    researchMode: values["Research mode"] ?? null,
+    researchDepth: values["Research depth"] ?? null,
+    researchProvider: values["Research provider"] ?? null,
+    uiDelivery: values["UI delivery"] ?? null,
+  };
 }
