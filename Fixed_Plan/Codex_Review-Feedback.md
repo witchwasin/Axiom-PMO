@@ -381,3 +381,52 @@ The post-`b22bcb0` workflow `31837117289` was cancelled while the four host jobs
 **Handoff decision**
 
 V2.1 is clean and pushed with the implementation and this review record. No merge to `main` is performed because one material question remains: should a Human Owner authorize a future CI run (or accept an explicit CI waiver) before merge? Until that decision/evidence exists, `main` must remain unchanged.
+
+---
+
+## Risk-based CI execution (2026-08-15)
+
+Per the Human Owner-approved `Fixed_Plan/Risk-Based-CI-Execution-Plan.md`, the CI workflow was converted to risk-based profiles. This is a workflow/automation change, not a closure of CR-021: CR-021 still requires a completed post-`ff2f43b` full cross-host run, which this change enables but does not itself produce.
+
+- `.github/workflows/pmo-checks.yml` now resolves `fast` / `targeted` / `full` from a `determine-profile` job (dispatch input, push-to-main = full, PR = path-based).
+- `scripts/ci-profile.ps1` is the single source of truth for the path-to-profile mapping; `tests/helpers/ci-profile-tests.ps1` is its regression test (registered in `run-all-checks.ps1` as `ci-profile`).
+- `scripts/run-ci-suite.ps1` maps a named suite to a single check for a `targeted` dispatch.
+- `docs/architecture/ci-risk-based.md` is the permanent SOP and mapping reference.
+- `full` behavior (four required hosts + three dogfood jobs) is unchanged; only when it runs automatically changed.
+
+**Cross-host CI evidence for CR-021 remains pending Human-directed dispatch** — no host run was obtained during this change, and none is claimed.
+
+### Follow-up review of the risk-based CI change (2026-08-15)
+
+Two issues were found by reviewing the change above and were corrected in the
+same working tree before commit. Recorded here as candidate evidence, not as a
+Codex review or an approval.
+
+1. **The classifier did not protect itself.** `scripts/ci-profile.ps1` fell
+   through to the generic `scripts/**` rule (`targeted`). Because a
+   `pull_request` classifies its own diff with the merge commit's copy of the
+   classifier, a future edit that weakened the mapping — sending `scripts/**` to
+   `fast` — would have selected `fast` for itself, skipped `run-all-checks.ps1`,
+   and therefore skipped `tests/helpers/ci-profile-tests.ps1`, the test that
+   guards the mapping. This is the failure mode
+   `Fixed_Plan/Risk-Based-CI-Execution-Plan.md` §2 prohibits ("ห้ามใช้ path
+   filter ที่ทำให้การแก้ validator หรือ configuration สำคัญถูกข้ามโดยไม่ตั้งใจ").
+   `scripts/ci-profile.ps1` and `scripts/run-ci-suite.ps1` are now in the
+   high-risk set (`full`), with two added assertions.
+
+2. **Branch protection changed meaning without being recorded.** GitHub reports
+   a skipped job as success for required status checks. Because every host job
+   is now gated on the resolved profile, a `fast` or `targeted` pull request
+   leaves `pmo-checks` skipped — which branch protection reads as satisfied.
+   This is the intended trade (the full matrix moves to the merge/release gate
+   and to high-risk pull requests), but it changes what a pre-existing required
+   check proves. `docs/architecture/ci-risk-based.md` now carries a
+   "Branch protection" section stating that `determine-profile` — the only
+   ungated job — is the check to require, and that no host job should be read as
+   evidence a pull request ran on that host.
+
+**Not yet proven:** the workflow itself has never executed. `determine-profile`,
+the matrix expansion, and the profile gating have unit-test coverage of the
+classifier only. A dispatch or pull request is required before any claim that
+profile selection works end to end — including the acceptance criterion
+"workflow เลือก `fast`, `targeted`, `full` ได้จริง".

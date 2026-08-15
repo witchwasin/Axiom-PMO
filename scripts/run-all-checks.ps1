@@ -83,6 +83,11 @@ Invoke-Check "visual-proof" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Jo
 Invoke-Check "scope-diff" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/scope-diff-tests.ps1") -RepoPath $repo }
 Invoke-Check "release-evidence" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/release-evidence-tests.ps1") -RepoPath $repo }
 Invoke-Check "execution-contract" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/execution-contract-tests.ps1") -RepoPath $repo }
+# Risk-based CI: the classifier that maps changed paths to a fast/targeted/full
+# profile is the load-bearing rule for the workflow, so it must be covered by a
+# regression test -- a silent edit that widened or narrowed the mapping would
+# otherwise ship with no signal.
+Invoke-Check "ci-profile" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/ci-profile-tests.ps1") -RepoPath $repo }
 Invoke-Check "adversarial-review" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/adversarial-review-tests.ps1") -RepoPath $repo }
 Invoke-Check "learning-registry" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/learning-registry-tests.ps1") -RepoPath $repo }
 Invoke-Check "demo-smoke" { & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "tests/helpers/demo-smoke-tests.ps1") -RepoPath $repo }

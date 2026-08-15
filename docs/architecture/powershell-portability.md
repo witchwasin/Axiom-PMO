@@ -9,7 +9,9 @@ Windows, PowerShell 7 on Linux, and PowerShell 7 on macOS
 ([Milestone 3.5](../../ROADMAP.md)). Code that works on one is not code that
 works on four, and the differences are not exotic — they are ordinary
 constructs that behave differently, silently, in ways a local test run on a
-developer's Mac cannot reveal.
+developer's Mac cannot reveal. This is why a `scripts/` change under
+[risk-based CI](ci-risk-based.md) selects Windows PowerShell 5.1 **and**
+PowerShell 7 as the minimum hosts rather than settling for a single Linux run.
 
 Every entry below **caused a real, shipped defect in this repository**, most
 of them caught by CI on a leg the author could not run locally. They are

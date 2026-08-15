@@ -5,19 +5,211 @@ on:
   push:
     branches:
       - main
-  # Lets a maintainer run this workflow against a feature branch (for example
-  # to gather real CI evidence for a milestone under review) without
-  # widening the automatic push trigger above.
+  # Lets a maintainer (or an AI executor under Human direction) run this
+  # workflow against a feature branch with an explicit risk-based profile --
+  # without widening the automatic push trigger above and without defaulting
+  # to every host on ordinary work. See docs/architecture/ci-risk-based.md.
   workflow_dispatch:
+    inputs:
+      profile:
+        description: 'CI profile: fast, targeted, or full'
+        required: true
+        type: choice
+        default: 'fast'
+        options: [fast, targeted, full]
+      suite:
+        description: 'Suite for the targeted profile (doctor, hygiene, golden, validation-fixtures, config-mutation, line-ending, plugin-drift, cli, github-action, all)'
+        required: false
+        type: string
+      host:
+        description: 'Host for the targeted profile (windows-ps51, windows-ps7, linux, macos, all)'
+        required: false
+        type: choice
+        default: 'linux'
+        options: [windows-ps51, windows-ps7, linux, macos, all]
 
 permissions:
   contents: read
 
 jobs:
+  # Risk-based CI entry point (see docs/architecture/ci-risk-based.md). One job
+  # resolves the profile -- fast, targeted, or full -- from the event:
+  #
+  #   * workflow_dispatch -> the caller's explicit `profile` input
+  #   * push to main       -> always `full` (the merge/release gate)
+  #   * pull_request       -> classified from the changed paths by
+  #                           scripts/ci-profile.ps1 (single source of truth)
+  #
+  # Every downstream job is gated on this output, so ordinary work never fires
+  # every host by accident, and a validator/config change can never be narrowed
+  # to a docs-only fast run by a path filter. If the diff cannot be resolved the
+  # resolver fails safe to `full` rather than silently fast.
+  determine-profile:
+    runs-on: ubuntu-24.04
+    outputs:
+      profile: ${{ steps.resolve.outputs.profile }}
+      suite: ${{ steps.resolve.outputs.suite }}
+      hosts: ${{ steps.resolve.outputs.hosts }}
+      matrix: ${{ steps.resolve.outputs.matrix }}
+      reason: ${{ steps.resolve.outputs.reason }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Resolve CI profile
+        id: resolve
+        shell: pwsh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_PROFILE: ${{ inputs.profile }}
+          DISPATCH_SUITE: ${{ inputs.suite }}
+          DISPATCH_HOST: ${{ inputs.host }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $classifier = Join-Path $env:GITHUB_WORKSPACE "scripts/ci-profile.ps1"
+          if ($env:EVENT_NAME -eq "workflow_dispatch") {
+            & $classifier -Profile $env:DISPATCH_PROFILE -TargetHost $env:DISPATCH_HOST -Suite $env:DISPATCH_SUITE -GithubOutput
+            exit 0
+          }
+          if ($env:EVENT_NAME -eq "push") {
+            # A push to main is the merge/release gate: always the full matrix.
+            & $classifier -Profile "full" -GithubOutput
+            exit 0
+          }
+
+          # pull_request: classify from the changed paths.
+          $changed = @()
+          $base = $env:BASE_SHA
+          $head = $env:HEAD_SHA
+          if ($base -and $head -and $base -ne $head) {
+            $previousErrorActionPreference = $ErrorActionPreference
+            $ErrorActionPreference = "Continue"
+            $diff = @(git diff --name-only "$base...$head" 2>&1)
+            $diffExit = $LASTEXITCODE
+            $ErrorActionPreference = $previousErrorActionPreference
+            if ($diffExit -eq 0) {
+              $changed = @($diff | Where-Object { $_.Trim() })
+            } else {
+              # Could not resolve the diff: fail safe to full, never silent-fast.
+              Write-Host "::warning::git diff failed (exit $diffExit); resolving to full profile"
+              & $classifier -Profile "full" -GithubOutput
+              exit 0
+            }
+          }
+          $changedPath = Join-Path $env:RUNNER_TEMP "changed-files.txt"
+          $changed | Set-Content -LiteralPath $changedPath -Encoding utf8
+          & $classifier -ChangedPathsPath $changedPath -GithubOutput
+
+  # fast: docs/report-only changes and ordinary work. Runs the five cheap,
+  # high-value local-equivalent checks on one Linux pwsh host. This is the
+  # default for a normal pull request so the four-host matrix does not run on
+  # work that cannot affect a runtime.
+  fast-checks:
+    needs: determine-profile
+    if: needs.determine-profile.outputs.profile == 'fast'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24.18.0'
+          package-manager-cache: false
+
+      - name: Framework doctor
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1 -RepoPath .
+
+      - name: Public hygiene
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/check-public-hygiene.ps1 -RepoPath .
+
+      - name: Example goldens
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File tests/golden/capture-examples.ps1 -RepoPath . -Verify
+
+      - name: Plugin mirror drift
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/build-plugin-package.ps1 -Check
+
+      - name: CLI tests
+        shell: pwsh
+        run: |
+          node tests/helpers/cli-tests.mjs
+
+  # targeted: code in a known area. Runs the full local-equivalent suite
+  # (run-all-checks + hygiene + fault injection) on only the host(s) the
+  # classifier selects -- e.g. Windows PowerShell 5.1 + PowerShell 7 for a
+  # scripts/ change, Linux pwsh for a cli/ change. A dispatch may instead name a
+  # single `suite` to narrow further via scripts/run-ci-suite.ps1.
+  targeted-checks:
+    needs: determine-profile
+    if: needs.determine-profile.outputs.profile == 'targeted'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.determine-profile.outputs.matrix) }}
+    runs-on: ${{ matrix.runsOn }}
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24.18.0'
+          package-manager-cache: false
+
+      - name: Run PMO framework checks (${{ matrix.name }})
+        shell: ${{ matrix.shell }}
+        run: |
+          if ($env:SUITE -and $env:SUITE -ne '') {
+            ${{ matrix.exe }} -NoProfile -ExecutionPolicy Bypass -File scripts/run-ci-suite.ps1 -Suite $env:SUITE -RepoPath .
+          } else {
+            ${{ matrix.exe }} -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -RepoPath .
+          }
+        env:
+          SUITE: ${{ inputs.suite }}
+
+      - name: Run public hygiene checks
+        shell: ${{ matrix.shell }}
+        run: |
+          ${{ matrix.exe }} -NoProfile -ExecutionPolicy Bypass -File scripts/check-public-hygiene.ps1 -RepoPath .
+
+      - name: Verify fault injection propagates as a failure
+        shell: ${{ matrix.shell }}
+        run: |
+          ${{ matrix.exe }} -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -RepoPath . -TestChildScript tests/helpers/exit-1.ps1
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "FAULT INJECTION DID NOT PROPAGATE: run-all-checks.ps1 exited 0 with a failing -TestChildScript"
+            exit 1
+          }
+          Write-Host "Fault injection correctly propagated as exit $LASTEXITCODE"
+          exit 0
+
   # Windows PowerShell 5.1 (the OS-bundled powershell.exe) is the long-standing
   # reference platform. It stays a required, blocking regression so behaviour
   # cannot drift away from the environment most Windows developers still have.
   pmo-checks:
+    needs: determine-profile
+    if: needs.determine-profile.outputs.profile == 'full'
     runs-on: windows-2025
     # This job runs run-all-checks.ps1 twice (normal pass + fault-injection
     # pass) plus a hygiene check, on the slowest host (Windows PowerShell
@@ -75,6 +267,8 @@ jobs:
   # green on the first CI run before relying on it; branch protection must add
   # it as a required check separately (a human action).
   pmo-checks-windows-pwsh7:
+    needs: determine-profile
+    if: needs.determine-profile.outputs.profile == 'full'
     runs-on: windows-2025
     # Single run-all-checks.ps1 pass, but on 2026-08-03 (commit 4750395) it
     # still finished with only ~13s of margin inside the old 15-minute
@@ -118,6 +312,8 @@ jobs:
   # requires two consecutive green main runs after this promotion, plus human
   # acceptance; branch protection is a separate repository setting.
   pmo-checks-linux-pwsh7:
+    needs: determine-profile
+    if: needs.determine-profile.outputs.profile == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -162,6 +358,8 @@ jobs:
   # cross-host evidence, not to gate releases. Promote only with a reliable
   # track record.
   pmo-checks-macos-pwsh7:
+    needs: determine-profile
+    if: needs.determine-profile.outputs.profile == 'full'
     runs-on: macos-15
     timeout-minutes: 15
     continue-on-error: true
@@ -188,6 +386,8 @@ jobs:
   # This is the evidence that the composite action definition -- inputs,
   # outputs, the upload-artifact step -- actually works end to end.
   dogfood-github-action:
+    needs: determine-profile
+    if: needs.determine-profile.outputs.profile == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -269,6 +469,8 @@ jobs:
   # A shallow checkout (the default everywhere else in this file) is now
   # enough, because both refs are created locally.
   dogfood-scope-diff:
+    needs: determine-profile
+    if: needs.determine-profile.outputs.profile == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -427,6 +629,8 @@ jobs:
   # `conclusion: success` for a check the API reports otherwise is still
   # rejected, because the claimed conclusion is never read.
   dogfood-ci-check-evidence:
+    needs: determine-profile
+    if: needs.determine-profile.outputs.profile == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     # Read access to check runs on this repository's own commits.

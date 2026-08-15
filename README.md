@@ -482,6 +482,13 @@ decorative), a structured-diagnostics contract test, a demo smoke test, CLI
 exit-code tests, and generator-to-release end-to-end flows including the Handoff
 gate. See [`TESTING.md`](TESTING.md).
 
+CI runs the same checks under a [risk-based profile](docs/architecture/ci-risk-based.md):
+`fast` for docs and ordinary work, `targeted` for code in a known area (the
+minimum host is Windows PowerShell 5.1 for PowerShell changes), and `full`
+for the merge/release gate and high-risk changes. The workflow picks the
+profile from the changed paths on a pull request; a push to `main` always runs
+`full`.
+
 ## Repository layout
 
 ```

@@ -304,3 +304,91 @@
 | Commit SHA(s) | Branch HEAD for CX-002; supplied in the Human handoff message after commit creation |
 | Pushed to `origin/V2.1` | No |
 | Next working branch | `V2.1` |
+
+### Iteration RCI-001 — 2026-08-15 (risk-based CI execution)
+
+**Status:** Ready for Codex/Human review — implementation + local evidence complete; cross-host CI evidence pending.
+
+**Scope:** Execute `Fixed_Plan/Risk-Based-CI-Execution-Plan.md` against branch `V2.1`. This is a workflow/automation change, not a closure of CR-021. No merge into `main`, no push, no full CI run performed.
+
+**Plan items addressed**
+
+| Plan reference | What changed | Affected paths | Evidence status |
+|---|---|---|---|
+| §1 workflow profiles | `pmo-checks.yml` resolves `fast`/`targeted`/`full` from a `determine-profile` job; `workflow_dispatch` gains `profile`/`suite`/`host` inputs; `full` (4 required hosts + 3 dogfood jobs) unchanged, only when it auto-runs changed | `.github/workflows/pmo-checks.yml` | verified — YAML parses; dispatch inputs present |
+| §2 automatic triggers | PR → path-based classification; push-to-main → always `full`; diff failure fails safe to `full`; no default-all-hosts on ordinary work | `.github/workflows/pmo-checks.yml`, `scripts/ci-profile.ps1` | verified — classifier smoke-tested |
+| §3 file→suite/host mapping | Single source of truth in `scripts/ci-profile.ps1`; high-risk set (`.github/workflows/**`, `action.yml`, `scripts/lib/**`, `scripts/run-all-checks.ps1`, `scripts/validate-project.ps1`, `scripts/ci-profile.ps1`, `scripts/run-ci-suite.ps1`) → `full`; `scripts/**`/`tests/**` → Windows PowerShell 5.1 + PowerShell 7 minimum | `scripts/ci-profile.ps1`, `docs/architecture/ci-risk-based.md` | verified — 30/30 regression assertions |
+| §4 fast checks | `scripts/run-ci-suite.ps1` runs any one named check; fast checks are doctor, hygiene, goldens, plugin drift, CLI | `scripts/run-ci-suite.ps1` | verified — whitelist maps 10 suites; unknown suite rejected |
+| §5 dispatch rules / §6 evidence split / §7 docs | SOP written as `docs/architecture/ci-risk-based.md`; README, lessons-learned, powershell-portability updated | `docs/architecture/ci-risk-based.md`, `README.md`, `docs/architecture/lessons-learned.md`, `docs/architecture/powershell-portability.md` | verified — doctor reports no broken links |
+| regression test | `tests/helpers/ci-profile-tests.ps1` registered in `run-all-checks.ps1` as `ci-profile` | `tests/helpers/ci-profile-tests.ps1`, `scripts/run-all-checks.ps1` | verified — 30/30 |
+| follow-up review (see below) | CI control plane escalated to `full` so the classifier cannot narrow its own guard away; branch-protection consequence of skipped jobs documented | `scripts/ci-profile.ps1`, `tests/helpers/ci-profile-tests.ps1`, `docs/architecture/ci-risk-based.md`, `Fixed_Plan/Codex_Review-Feedback.md` | verified — 30/30 assertions; lone `scripts/ci-profile.ps1` change now resolves to `full` |
+
+**Local validation (PowerShell 7.6.4 on macOS — Windows PowerShell 5.1 cannot run on this host)**
+
+All rows ran against the working tree on top of baseline `18a3aa0` — that is,
+the content of this commit, not the baseline commit itself.
+
+| Check | Command | Result |
+|---|---|---|
+| Profile regression | `pwsh -File tests/helpers/ci-profile-tests.ps1 -RepoPath .` | 30 PASS / 0 FAIL |
+| Framework doctor | `pwsh -File scripts/pmo-doctor.ps1 -RepoPath .` | 61 PASS / 0 WARN / 0 FAIL |
+| Public hygiene | `pwsh -File scripts/check-public-hygiene.ps1 -RepoPath .` | PASS=1 FAIL=0 |
+| Example goldens | `pwsh -File tests/golden/capture-examples.ps1 -RepoPath . -Verify` | all golden outputs match |
+| Plugin mirror drift | `pwsh -File scripts/build-plugin-package.ps1 -Check` | PASS (7 files in sync) |
+| CLI | `node tests/helpers/cli-tests.mjs` (AXIOM_PWSH set) | 50 PASS / 0 FAIL |
+| Syntax parse | `Parser::ParseFile` over the changed/new `.ps1` files | all parse clean |
+| Workflow YAML | `yaml.safe_load` over `.github/workflows/pmo-checks.yml` | parses; 10 jobs, 3 dispatch inputs |
+| Self-classification | `scripts/ci-profile.ps1 -ChangedPathsPath <this changeset>` | resolves to `full`, all four hosts |
+| Full local suite | `pwsh -File scripts/run-all-checks.ps1 -RepoPath .` | Completed; every check passed (last suite `github-action` 71/71) |
+
+`run-all-checks.ps1` is fail-fast: `Invoke-Check` prints `Check failed: <name>`
+and exits on the first non-zero child, and the run also exits 1 if a required
+check never executed. Reaching the closing line `All Axiom-PMO framework checks
+completed.` is therefore the pass evidence. This is the first completed local
+aggregate run since `b22bcb0`, the gap Review CX-004 recorded as unfinished —
+on **one** host (macOS, PowerShell 7.6.4). It is tier-1 local evidence and is
+not cross-host evidence for CR-021.
+
+**Follow-up review before commit**
+
+Two issues were found by reviewing the change above and corrected in the same
+working tree. Detail is in `Fixed_Plan/Codex_Review-Feedback.md` under
+"Follow-up review of the risk-based CI change".
+
+1. `scripts/ci-profile.ps1` classified itself as `targeted` via the generic
+   `scripts/**` rule. Since a pull request classifies its own diff with the
+   merge commit's copy of the classifier, an edit that weakened the mapping
+   could have selected a cheap profile for itself and skipped
+   `tests/helpers/ci-profile-tests.ps1` — the guard for that mapping. The CI
+   control plane (`ci-profile.ps1`, `run-ci-suite.ps1`) is now in the high-risk
+   set, covered by two added assertions.
+2. GitHub reports a **skipped** job as success for required status checks, so
+   gating the host jobs on a profile silently changed what an existing required
+   check proves. This is the intended trade, but it was undocumented;
+   `docs/architecture/ci-risk-based.md` now has a "Branch protection" section
+   naming `determine-profile` (the only ungated job) as the check to require.
+
+**Evidence split**
+
+1. **Local verified** — all rows above ran on the executor's macOS machine with PowerShell 7.6.4.
+2. **Targeted CI verified** — not run. No dispatch performed; Windows PowerShell 5.1 host is not available locally.
+3. **Full cross-host verified** — not run. The post-`ff2f43b` full matrix remains **pending Human-directed dispatch**; this change enables it but does not produce it.
+
+**The workflow itself has never executed.** Local evidence covers the classifier
+as a unit only. `determine-profile`, the matrix expansion, and the profile
+gating have no runtime evidence, so the plan's acceptance criterion "workflow
+เลือก `fast`, `targeted`, `full` ได้จริง" is **not yet met**. A dispatch or pull
+request is required before that criterion can be claimed.
+
+CR-021 remains **pending cross-host CI evidence**; the V2.1 Definition of Done is not claimed complete, and nothing above is presented as a full or cross-host pass. Feyman remains `unavailable/deferred`; no integration is claimed.
+
+**Git handoff**
+
+| Field | Value |
+|---|---|
+| Baseline commit | `18a3aa0a654c5ec5d8ce47163c7387598823b224` |
+| Changed files | 11 — 7 modified, 4 added (an earlier draft of this row said 10/6/4; corrected) |
+| Commit SHA | Local commit on `V2.1`; supplied in the Human handoff message after commit creation |
+| Pushed to `origin/V2.1` | No — pending explicit Human authorization |
+| Merge into `main` | Not performed |
+| Required next step | Dispatch or open a pull request so the workflow actually runs; see the acceptance-criterion note above |

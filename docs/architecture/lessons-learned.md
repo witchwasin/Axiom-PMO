@@ -303,6 +303,12 @@ exact exception and line number rather than a host guess.
    at `-Gate Release` on every CI leg, where no `HANDOFF-###` rule evaluates,
    so a broken Handoff gate in the example that exists to demonstrate the
    Handoff gate shipped green.
+10. **The CI profile mapping is code, not prose.** `scripts/ci-profile.ps1`
+    decides `fast`/`targeted`/`full` from changed paths; a path filter that
+    silently widens or narrows coverage is a code change, and
+    `tests/helpers/ci-profile-tests.ps1` is the regression test that fails on
+    it. When a new directory is added, update the classifier and its test
+    together — see [`ci-risk-based.md`](ci-risk-based.md).
 
 ---
 
@@ -325,5 +331,6 @@ exact exception and line number rather than a host guess.
 ## Related
 
 - [`powershell-portability.md`](powershell-portability.md) — the constructs themselves, and `DOCTOR-010` / `DOCTOR-011` which enforce two of them
+- [`ci-risk-based.md`](ci-risk-based.md) — the fast/targeted/full profiles and the path→suite/host mapping
 - [`validation-engine.md`](validation-engine.md) — how the engine defends itself
 - [`../../AGENTS.md`](../../AGENTS.md) — the behavioural rules these lessons sit under
