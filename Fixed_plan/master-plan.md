@@ -1,9 +1,10 @@
-# Axiom-PMO — Interpreter Migration Master Plan (v2)
+# Axiom-PMO — Interpreter Migration Master Plan (v3)
 
 **Branch:** `feat/migrate-interpreter-to-node-ts`
 **Status:** PLANNING — no implementation has started. This document is the executable handoff.
-**Supersedes:** `master-plan.md` v1 (commit `6432b6d`), which was reviewed by Claude Opus 5 and
-Codex. This v2 incorporates every accepted finding. The response log and the three
+**Supersedes:** `master-plan.md` v2 (commit `5270008`), which closed F1–F10 and CR-001–CR-021
+and was adjudicated by Claude Opus 5 in `Fixed_plan/Claude-Review-v2.md`. This v3 closes
+G1–G4 plus the two adjudication tightenings from that round. The response log and the three
 strategic disagreements are in `Deepseek-Fixed.md`.
 
 ---
@@ -30,7 +31,7 @@ this work) are:
 3. The "actual usage / adoption" weakness is **explicitly accepted** by the owner ("no
    one is using this yet"). This lowers compatibility risk but is a belief about a
    public repo; Phase 0 verifies it (see §9 Phase 0, and §11).
-4. The decision to migrate has **already been made** by the owner. The `DEC-###` (§12)
+4. The decision to migrate has **already been made** by the owner. The `DEC-026` (§12)
    records it; it is not a re-decision.
 
 If anything here conflicts with the repository on disk, the code on disk wins — update
@@ -82,7 +83,7 @@ target ecosystem otherwise does not use.
 **Corrected caveat (CR-020):** the README documents a Node-free PowerShell path, so
 "every user already has Node" is an assumption, not a fact. Node-only **removes a
 supported path**. This is a deliberate breaking-support trade-off, documented in the
-`DEC-###`, and costless only because the owner reports zero active users (§0.3).
+`DEC-026`, and costless only because the owner reports zero active users (§0.3).
 
 ### 2.2 PowerShell portability is a demonstrated bug source
 
@@ -124,7 +125,7 @@ implementation at the end.
 **Distribution default (CR-007 / F6):** commit a dependency-free or bundled `dist/`
 consumed by both CLI and Action. No `npm install` at runtime; `private: true`; no
 publication path. This is decision #1 in §13 and requires the Human decision in the
-`DEC-###`.
+`DEC-026`.
 
 ---
 
@@ -376,6 +377,24 @@ rewire callers and delete PowerShell. Therefore:
 - Harness mutants: changed exit, reordered result, missing field, stderr change,
   unexpected file write (each must fail the harness).
 
+### 8.6 Stateful/mutating commands (CR-015)
+
+Golden masters are validator output and cannot prove commands that write files, mint
+timestamps/UUIDs, or touch user-owned files (`init`, `setup`, `export`, `run`,
+`aggregate-diagnostics`, and the release helpers). Prove each such command by:
+
+- Running reference and candidate in **separate fresh temporary trees**, then diffing the
+  full file manifest before/after.
+- Injecting or freezing clocks and UUIDs where the command mints them; otherwise use
+  structural comparators for declared nondeterministic fields.
+- Asserting no unrelated file changes; verifying encoding, BOM, newline, mode/executable
+  bits, symlinks, and junction behavior.
+- Covering dry-run, uninstall, and partial-failure atomicity for `new-project`,
+  `setup-claude-integration`, `export-execution-contract`, `run-execution-command`, and
+  `aggregate-diagnostics`.
+
+Phase 5's exit criteria reference this methodology (see §9).
+
 ---
 
 ## 9. Migration phases (each gated; human-authority compliant)
@@ -388,16 +407,20 @@ match the actual change (`feat`, `fix`, `test`, `docs`, `chore`).
 
 ### Phase -1 — Authorization
 
-Record the `DEC-###` (§12) superseding ROADMAP Milestone 3.5's non-goal. The owner has
-already directed the migration; this phase **records** it. Nothing proceeds past Phase 0
-without the recorded DEC.
+Record the `DEC-026` (§12) superseding ROADMAP Milestone 3.5's non-goal by appending the
+§12 block to `ROADMAP.md`'s decision history (or `CHANGELOG.md`, per the existing
+DEC-016…DEC-025 convention). The owner has already directed the migration; this phase
+**records** it. Nothing proceeds past Phase 0 without the recorded DEC.
 
-**Exit:** `DEC-###` present in `decision-log.md` with the evidence payload (§12).
+**Exit:** `DEC-026` present in `ROADMAP.md` (or `CHANGELOG.md`) with the evidence payload
+(§12).
 
 ### Phase 0 — Complete inventory, immutable baseline, golden-coverage gap
 
 - Generate the machine-checked 89-file `.ps1` disposition matrix (port/replace/
   temporary-oracle/retire-with-evidence), with callers and side effects.
+- Derive a function/module-level dependency graph across the 89-file disposition set; use
+  it (not the Group A/B/C table) to sequence Phases 2–4 (CR-012 / G2).
 - Extract and version the compatibility-case manifest (§8.3).
 - **Drop Windows PowerShell 5.1** as a prerequisite: delete the 5.1 CI leg, simplify
   `pwsh-host.ps1`, retire `DOCTOR-010`/`DOCTOR-011` (recorded, not silent).
@@ -407,13 +430,13 @@ without the recorded DEC.
 - **Raise golden coverage to ~100%** against the current PowerShell implementation, for
   every rule that currently lacks one (75 rules).
 - Keep the reference runnable from an immutable detached checkout/worktree.
-- Verify the "zero active users" assumption (forks/stars/Action consumers); if any
-  external consumer exists, restore the fuller rollback/compat machinery (CR-016/CR-020).
 - Produce the behavior inventory (§4.1) classifying each rule `config-driven /
   code-driven / hybrid`.
 
-**Exit:** disposition matrix complete; goldens ~100%; baseline fingerprint archived; DEC
-recorded; 5.1 dropped and doctor green.
+**Exit:** disposition matrix complete; dependency graph derived; goldens ~100%; baseline
+fingerprint archived; DEC recorded; 5.1 dropped and doctor green; zero-active-user check
+completed and recorded (actual result, not assumed — if any external consumer exists, the
+fuller CR-016/CR-020 machinery is restored).
 
 ### Phase 1 — Build/distribution contract, harness skeleton, CI routing
 
@@ -451,7 +474,8 @@ entrypoint in the disposition inventory. Preserve Action → CLI → library as 
 boundary. Port/re-derive `tests/` so `node cli/axiom.mjs check` runs without PowerShell.
 
 **Exit:** the Node path runs the full fixture matrix + config-mutation + end-to-end
-without invoking PowerShell.
+without invoking PowerShell; stateful/mutating commands pass the §8.6 fresh-tree
+methodology.
 
 ### Phase 6 — Final-tree differential gate
 
@@ -517,6 +541,8 @@ The migration is complete only when all of the following are true:
 - [ ] The supported Node/OS matrix passes on the exact final SHA.
 - [ ] Clean-room CLI, `uses: ./`, and read-only/non-checkout plugin tests pass.
 - [ ] Rollback to the baseline SHA has been exercised and has a named owner.
+- [ ] A named Human security reviewer has signed off on the supply-chain and containment
+      surface (CR-017) before Phase 8 cutover.
 - [ ] A named Human authorized final deletion; a separate Human reviewed the final diff.
 - [ ] No active runtime surface invokes PowerShell; historical records remain intact.
 
@@ -543,15 +569,18 @@ The migration is complete only when all of the following are true:
 
 ---
 
-## 12. Decision record (draft — owner assigns the number)
+## 12. Decision record (draft — owner chooses the recording location)
 
 ```markdown
-### DEC-0XX — Supersede Milestone 3.5 non-goal: authorize Node/TypeScript validator
+### DEC-026 — Supersede Milestone 3.5 non-goal: authorize Node/TypeScript validator
 
 - **Status:** Approved
 - **Approved by:** WITCHWASIN K. (Human Owner)
 - **Date:** 2026-08-15
-- **source_ref:** ROADMAP.md (Milestone 3.5 non-goals); Fixed_plan/master-plan.md v2
+- **source_ref:** ROADMAP.md (Milestone 3.5 non-goals); Fixed_plan/master-plan.md v3
+- **session_ref:** directed by the Human Owner in the planning conversation of 2026-08-15
+  (that conversation is not visible to downstream agents; this pointer is recorded so the
+  DEC stands on its own)
 - **evidence_status:** supported
 
 **Decision:** The ROADMAP Milestone 3.5 non-goal "Rewriting the validator in TypeScript
@@ -586,7 +615,9 @@ These are decisions the executing agent must **not** make unilaterally; record a
 3. **Supported Node/OS matrix**: minimum and current Node versions; which OS are
    blocking at the cutover gate (CR-010).
 4. **Settling window N** and its reset rules (Phase 7).
-5. **`DEC-0XX` number** and recording in `decision-log.md` (Phase -1).
+5. **`DEC-026` recording location** (Phase -1): append the §12 block to `ROADMAP.md`'s
+   decision history or `CHANGELOG.md` (the existing DEC-016…DEC-025 convention) — not a
+   separate `decision-log.md`, which exists only per-project.
 6. **Zero-active-user assumption** confirmation (Phase 0) — if disproven, restore full
    compatibility machinery.
 7. **Branch/PR strategy**: single long-lived branch vs stacked PRs; squash vs merge to
@@ -603,7 +634,7 @@ a record not a re-decision; (c) "no users" justifies lighter rollback/compat mac
 Before starting:
 
 - [ ] Read `AGENTS.md`, `CLAUDE.md`, `CONTEXT-ROUTER.md`, `TESTING.md`.
-- [ ] Confirm `DEC-0XX` is recorded (Phase -1).
+- [ ] Confirm `DEC-026` is recorded in `ROADMAP.md`/`CHANGELOG.md` (Phase -1).
 - [ ] Run the current suite once to establish green.
 - [ ] Confirm the 89-file disposition matrix and behavior inventory are generated.
 - [ ] Record the baseline SHA and fingerprints (Phase 0).
