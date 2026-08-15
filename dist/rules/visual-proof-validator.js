@@ -16,7 +16,7 @@ function getVisualProofSeverity(severityMap, mode, def = "fail") {
     }
     return value === "warn" ? "WARN" : "FAIL";
 }
-function testVisualProofActivated(project, policy) {
+export function testVisualProofActivated(project, policy) {
     const activation = policy["activation"] ?? {};
     const requiredArtifacts = activation["required_artifacts"] ?? [];
     for (const relativePath of requiredArtifacts) {
@@ -48,7 +48,7 @@ function getVisualProofRelativePath(project, path) {
 function sortOrdinal(values) {
     return [...values].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 }
-function getVisualProofReviewInputDigest(project, policy) {
+export function getVisualProofReviewInputDigest(project, policy) {
     const parts = [];
     const freshness = policy["freshness"] ?? {};
     const textExtensions = (freshness["normalized_text_extensions"] ?? []).map((e) => e.toLowerCase());

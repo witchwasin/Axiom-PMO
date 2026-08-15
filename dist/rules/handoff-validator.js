@@ -25,7 +25,7 @@ function getHandoffMetadata(text) {
     }
     return meta;
 }
-function getSourceSnapshotDigest(projectText) {
+export function getSourceSnapshotDigest(projectText) {
     const rows = [
         ...getTableRowsAfterHeading(projectText, "^##\\s+Source Snapshot"),
         ...getTableRowsAfterHeading(projectText, "^##\\s+Source Inventory"),
@@ -35,7 +35,7 @@ function getSourceSnapshotDigest(projectText) {
     const lines = rows.map((row) => Object.entries(row).map(([k, v]) => `${k}=${v}`.trim()).join("|"));
     return getSha256Hex(sortOrdinal(lines).join("\n"));
 }
-function getReviewInputDigest(project, handoffPolicy) {
+export function getReviewInputDigest(project, handoffPolicy) {
     const freshness = handoffPolicy["semantic_review"]?.["freshness"];
     const files = freshness?.["review_input_files"] ?? [];
     if (files.length === 0)

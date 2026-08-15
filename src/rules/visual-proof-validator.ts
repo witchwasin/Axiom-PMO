@@ -22,7 +22,7 @@ function getVisualProofSeverity(severityMap: Record<string, unknown> | null | un
   return value === "warn" ? "WARN" : "FAIL";
 }
 
-function testVisualProofActivated(project: string, policy: Record<string, unknown>): boolean {
+export function testVisualProofActivated(project: string, policy: Record<string, unknown>): boolean {
   const activation = (policy["activation"] as Record<string, unknown>) ?? {};
   const requiredArtifacts = (activation["required_artifacts"] as string[]) ?? [];
   for (const relativePath of requiredArtifacts) {
@@ -59,7 +59,7 @@ function sortOrdinal(values: string[]): string[] {
   return [...values].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 }
 
-function getVisualProofReviewInputDigest(project: string, policy: Record<string, unknown>): string {
+export function getVisualProofReviewInputDigest(project: string, policy: Record<string, unknown>): string {
   const parts: string[] = [];
   const freshness = (policy["freshness"] as Record<string, unknown>) ?? {};
   const textExtensions = ((freshness["normalized_text_extensions"] as string[]) ?? []).map((e) => e.toLowerCase());

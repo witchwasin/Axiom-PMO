@@ -29,7 +29,7 @@ function getHandoffMetadata(text: string): Record<string, string> {
   return meta;
 }
 
-function getSourceSnapshotDigest(projectText: string): string | null {
+export function getSourceSnapshotDigest(projectText: string): string | null {
   const rows: TableRow[] = [
     ...getTableRowsAfterHeading(projectText, "^##\\s+Source Snapshot"),
     ...getTableRowsAfterHeading(projectText, "^##\\s+Source Inventory"),
@@ -39,7 +39,7 @@ function getSourceSnapshotDigest(projectText: string): string | null {
   return getSha256Hex(sortOrdinal(lines).join("\n"));
 }
 
-function getReviewInputDigest(project: string, handoffPolicy: Record<string, unknown>): string | null {
+export function getReviewInputDigest(project: string, handoffPolicy: Record<string, unknown>): string | null {
   const freshness = (handoffPolicy["semantic_review"] as Record<string, unknown>)?.["freshness"] as Record<string, unknown>;
   const files = (freshness?.["review_input_files"] as string[]) ?? [];
   if (files.length === 0) return null;

@@ -10,11 +10,11 @@ import { testPhysicalContainment } from "../core/path-containment.js";
 import { testGenericOwner } from "../core/owner-policy.js";
 import { getDecisionDecider } from "./decision-log.js";
 import { addResult } from "../core/result-writer.js";
-function getDesignInputCombinedDigest(inputs) {
+export function getDesignInputCombinedDigest(inputs) {
     const lines = inputs.map((i) => `${String(i["path"] ?? "").trim()}|${String(i["sha256"] ?? "").trim()}`);
     return getSha256Hex(sortOrdinal(lines).join("\n"));
 }
-function getDesignOutputSetDigest(outputRoot) {
+export function getDesignOutputSetDigest(outputRoot) {
     const lines = [];
     if (existsSync(outputRoot)) {
         const files = [];

@@ -14,12 +14,12 @@ import { addResult } from "../core/result-writer.js";
 import type { ResultAccumulator, ValidationRules } from "../core/context.js";
 import type { Gate } from "../core/types.js";
 
-function getDesignInputCombinedDigest(inputs: Array<Record<string, unknown>>): string {
+export function getDesignInputCombinedDigest(inputs: Array<Record<string, unknown>>): string {
   const lines = inputs.map((i) => `${String(i["path"] ?? "").trim()}|${String(i["sha256"] ?? "").trim()}`);
   return getSha256Hex(sortOrdinal(lines).join("\n"));
 }
 
-function getDesignOutputSetDigest(outputRoot: string): string {
+export function getDesignOutputSetDigest(outputRoot: string): string {
   const lines: string[] = [];
   if (existsSync(outputRoot)) {
     const files: string[] = [];
