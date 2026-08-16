@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { getExecutionFileDigest, readDecisionLog, resolveDecisionRecord, testDecisionAuthorityBinding } from "./execution-contract-schema.js";
+import { getGitHubOwnerRepo } from "./execution-contract-evidence.js";
 import { testGenericOwner } from "../core/owner-policy.js";
 import { getProjectDefaultMode, getDeliveryModeSignals } from "../core/mode-resolver.js";
 import { addResult } from "../core/result-writer.js";
@@ -24,6 +25,124 @@ function getEffectiveModeForVerification(projectPath) {
     if (deliverySignals.hasStrictTrigger)
         effectiveMode = "Strict";
     return effectiveMode;
+}
+function sha256Hex(data) {
+    return createHash("sha256").update(data).digest("hex").toLowerCase();
+}
+// Get-GitBlobBytes equivalent: the workflow file's GIT BLOB bytes at a
+// revision (e.g. "<head_sha>:<path>"), not the working-tree file -- the
+// digest pinned in policy is a property of the commit under verification, so
+// reading the stored object (cat-file blob, never `show`, which can apply
+// eol/smudge conversion) is deliberate. Returns null on any failure; callers
+// treat that as "could not be read", never as a pass.
+function gitBlobBytes(repoRoot, revision) {
+    const r = spawnSync("git", ["-C", repoRoot, "cat-file", "blob", revision], { encoding: null });
+    if (r.status !== 0)
+        return null;
+    return r.stdout;
+}
+// Test-ExternallyObservedReviewBinding equivalent: the bindings
+// docs/architecture/adversarial-review.md section 3.3 requires before an
+// externally-observed review means anything stronger than "a CI job on this
+// commit happened to succeed." The first version verified head_sha, status,
+// conclusion, the artifact digest, and the pinned workflow's content digest,
+// but never verified that the cited check_run_id was actually PRODUCED BY the
+// pinned workflow -- an unrelated successful check run on the same commit,
+// primed to print the review artifact's digest in its own output, passed
+// every check while the pinned workflow never ran. The fix resolves the check
+// run to the GitHub Actions workflow run that actually produced it (check run
+// -> check_suite.id -> workflow runs under that check suite) and requires ITS
+// path to be the pinned workflow path.
+export function testExternallyObservedReviewBinding(review, reviewPath, gitRepoRoot, reviewArtifactPolicy) {
+    const binding = reviewArtifactPolicy["externally_observed_binding"] ?? {};
+    if (!binding["pinned_workflow_digest"]) {
+        return { verified: false, reason: "no pinned_workflow_digest is configured in pmo-config/adversarial-review-policy.json -- an externally-observed review cannot be trusted for a required check until an organization pins its own review workflow's digest" };
+    }
+    const provenance = review["provenance"] ?? {};
+    const checkRunId = String(provenance["check_run_id"] ?? "");
+    if (!checkRunId.trim()) {
+        return { verified: false, reason: "provenance.tier is externally-observed but provenance.check_run_id is missing" };
+    }
+    const ghCheck = spawnSync("gh", ["--version"], { encoding: "utf8" });
+    if (ghCheck.status !== 0) {
+        return { verified: false, reason: "no GitHub API context available (gh CLI not found on PATH) -- cannot independently verify, so this is unverified rather than a pass" };
+    }
+    const remote = spawnSync("git", ["-C", gitRepoRoot, "remote", "get-url", "origin"], { encoding: "utf8" });
+    const remoteUrl = (remote.stdout ?? "").trim();
+    if (remote.status !== 0 || !remoteUrl) {
+        return { verified: false, reason: "could not resolve a git remote to query -- cannot independently verify" };
+    }
+    const ownerRepo = getGitHubOwnerRepo(remoteUrl);
+    if (!ownerRepo) {
+        return { verified: false, reason: "the git remote is not a recognizable GitHub URL -- cannot independently verify" };
+    }
+    const parsedId = Number.parseInt(checkRunId, 10);
+    if (Number.isNaN(parsedId)) {
+        return { verified: false, reason: `check_run_id '${checkRunId}' is not a valid integer` };
+    }
+    const runApi = spawnSync("gh", ["api", `repos/${ownerRepo}/check-runs/${parsedId}`], { encoding: "utf8" });
+    if (runApi.status !== 0) {
+        return { verified: false, reason: `the GitHub API query for check run ${parsedId} failed -- cannot independently verify (network, auth, or the run does not exist)` };
+    }
+    let run;
+    try {
+        run = JSON.parse(runApi.stdout ?? "");
+    }
+    catch {
+        return { verified: false, reason: `the GitHub API response for check run ${parsedId} could not be parsed` };
+    }
+    if (String(run["head_sha"] ?? "") !== String(review["head_sha"] ?? "")) {
+        return { verified: false, reason: `check run ${parsedId} belongs to commit ${run["head_sha"]}, not ${review["head_sha"]} -- cannot cite it as evidence for a different commit` };
+    }
+    if (String(run["status"] ?? "") !== "completed" || String(run["conclusion"] ?? "") !== "success") {
+        return { verified: false, reason: `check run ${parsedId} has not completed successfully (status: ${run["status"]}, conclusion: ${run["conclusion"]})` };
+    }
+    const workflowRelPath = String(binding["pinned_workflow_path"] ?? "");
+    const checkSuite = run["check_suite"] ?? {};
+    const checkSuiteId = String(checkSuite["id"] ?? "");
+    if (!checkSuiteId.trim()) {
+        return { verified: false, reason: `check run ${parsedId} carries no check_suite id -- cannot resolve which GitHub Actions workflow, if any, produced it, so it cannot be attributed to the pinned review workflow` };
+    }
+    const runsApi = spawnSync("gh", ["api", `repos/${ownerRepo}/actions/runs?check_suite_id=${checkSuiteId}`], { encoding: "utf8" });
+    if (runsApi.status !== 0) {
+        return { verified: false, reason: `the GitHub API query for workflow runs under check suite ${checkSuiteId} failed -- cannot independently verify` };
+    }
+    let runsResponse;
+    try {
+        runsResponse = JSON.parse(runsApi.stdout ?? "");
+    }
+    catch {
+        return { verified: false, reason: `the GitHub API response for workflow runs under check suite ${checkSuiteId} could not be parsed` };
+    }
+    // A workflow run's own `path` field can carry a trailing `@ref` (e.g.
+    // `.github/workflows/adversarial-review.yml@main`) -- a legitimate GitHub
+    // API value. Normalized away before comparison; this only makes the match
+    // more lenient about the suffix format, never about the path text itself.
+    const matchingWorkflowRuns = (runsResponse.workflow_runs ?? []).filter((r) => String(r["path"] ?? "").replace(/@.*$/, "") === workflowRelPath);
+    if (matchingWorkflowRuns.length === 0) {
+        return { verified: false, reason: `check run ${parsedId}'s check suite is not associated with any workflow run at the pinned path '${workflowRelPath}' -- this check run cannot be attributed to the pinned review workflow, whatever it is named or however successfully it completed` };
+    }
+    // Binding 1: the check run's own API-attested output must carry the digest
+    // of the review artifact's real bytes -- never the review file's own claim
+    // about its digest, which would be circular.
+    const realDigest = getExecutionFileDigest(reviewPath);
+    const output = run["output"] ?? {};
+    const outputText = `${String(output["summary"] ?? "")} ${String(output["text"] ?? "")}`;
+    if (!realDigest || !outputText.includes(realDigest)) {
+        return { verified: false, reason: "the check run's own API-attested output does not carry the real SHA-256 digest of EXECUTION-REVIEW.json's current bytes -- the artifact on disk cannot be tied to what the check run actually produced" };
+    }
+    // Binding 2: the pinned workflow file's content, AT THE COMMIT BEING
+    // VERIFIED, must match the digest an organization pinned in policy.
+    const headSha = String(review["head_sha"] ?? "");
+    const workflowBytes = gitBlobBytes(gitRepoRoot, `${headSha}:${workflowRelPath}`);
+    if (!workflowBytes) {
+        return { verified: false, reason: `the pinned review workflow '${workflowRelPath}' could not be read at commit ${headSha}` };
+    }
+    const workflowDigest = sha256Hex(workflowBytes);
+    if (workflowDigest !== String(binding["pinned_workflow_digest"] ?? "").toLowerCase()) {
+        return { verified: false, reason: `the review workflow '${workflowRelPath}' at commit ${headSha} does not match the digest pinned in policy -- the workflow was modified since it was pinned, so this run cannot be trusted as the reviewed one` };
+    }
+    return { verified: true, reason: null };
 }
 function readExecutionReview(path) {
     const out = { present: false, valid: false, document: null, digest: null, error: null };
@@ -91,8 +210,13 @@ export function testAdversarialReviewEvidence(acc, catalog, projectPath, contrac
             }
         }
         else if (tier === "externally-observed") {
-            // Pinned workflow binding: fails closed unless an org pins a workflow digest.
-            addResult(acc, catalog, "FAIL", "provenance.tier is externally-observed but could not be independently verified: no pinned_workflow_digest is configured in pmo-config/adversarial-review-policy.json -- an externally-observed review cannot be trusted for a required check until an organization pins its own review workflow's digest", { ruleId: "AREV-003", artifact: "EXECUTION-REVIEW.json", itemId: workItemId, field: "provenance" });
+            const binding = testExternallyObservedReviewBinding(doc, reviewPath, gitRepoRoot, policy);
+            if (binding.verified) {
+                addResult(acc, catalog, "PASS", "provenance.tier is externally-observed and all four bindings verified (check run, artifact digest, workflow digest, contract identity).", { ruleId: "AREV-003", artifact: "EXECUTION-REVIEW.json", itemId: workItemId });
+            }
+            else {
+                addResult(acc, catalog, "FAIL", `provenance.tier is externally-observed but could not be independently verified: ${binding.reason}`, { ruleId: "AREV-003", artifact: "EXECUTION-REVIEW.json", itemId: workItemId, field: "provenance" });
+            }
         }
         else {
             // artifact-observed: never satisfies alone; needs promotion.
