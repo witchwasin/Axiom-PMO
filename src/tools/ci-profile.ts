@@ -1,0 +1,124 @@
+// ci-profile classifier, ported from scripts/ci-profile.ps1. Risk-based CI
+// profile selection: fast | targeted | full, from a set of changed paths.
+
+export interface HostCatalog {
+  name: string;
+  runsOn: string;
+  shell: string;
+  exe: string;
+}
+
+const HOST_CATALOG: Record<string, HostCatalog> = {
+  "windows-ps51": { name: "windows-ps51", runsOn: "windows-2025", shell: "powershell", exe: "powershell.exe" },
+  "windows-ps7": { name: "windows-ps7", runsOn: "windows-2025", shell: "pwsh", exe: "pwsh" },
+  linux: { name: "linux", runsOn: "ubuntu-24.04", shell: "pwsh", exe: "pwsh" },
+  macos: { name: "macos", runsOn: "macos-15", shell: "pwsh", exe: "pwsh" },
+};
+const ALL_HOSTS = ["windows-ps51", "windows-ps7", "linux", "macos"];
+
+function normalizePath(path: string): string | null {
+  let p = path.trim();
+  if (!p) return null;
+  p = p.replace(/\\/g, "/");
+  p = p.replace(/^\.\//, "");
+  return p.replace(/\/+$/, "");
+}
+
+function addUnique(list: string[], value: string): void {
+  if (!list.includes(value)) list.push(value);
+}
+
+export interface CiProfileResult {
+  profile: "fast" | "targeted" | "full";
+  suite: string;
+  hosts: string;
+  reason: string;
+}
+
+export function resolveCiProfile(paths: string[]): CiProfileResult {
+  let level = 0;
+  const suites: string[] = [];
+  const hosts: string[] = [];
+  const reasons: string[] = [];
+
+  for (const raw of paths) {
+    const p = normalizePath(raw);
+    if (!p) continue;
+
+    if (p.startsWith(".github/workflows/") || p === "action.yml" ||
+        p.startsWith("scripts/lib/") ||
+        p === "scripts/run-all-checks.ps1" || p === "scripts/validate-project.ps1" ||
+        p === "scripts/ci-profile.ps1" || p === "scripts/run-ci-suite.ps1" ||
+        p.startsWith("src/") || p.startsWith("dist/") ||
+        p === "package.json" || p === "package-lock.json" || p.startsWith("tsconfig")) {
+      if (level < 2) level = 2;
+      addUnique(reasons, `${p} -> high-risk (workflow / shared-lib / runtime / CI control plane / Node interpreter)`);
+      continue;
+    }
+
+    if (p.startsWith("cli/") || p === "tests/helpers/cli-tests.mjs" || p === "tests/helpers/github-action-tests.mjs") {
+      if (level < 1) level = 1;
+      addUnique(suites, "cli");
+      addUnique(hosts, "linux");
+      addUnique(reasons, `${p} -> cli@linux`);
+      continue;
+    }
+    if (p.startsWith("pmo-config/") || p.startsWith("templates/")) {
+      if (level < 1) level = 1;
+      addUnique(suites, "config-mutation");
+      addUnique(hosts, "windows-ps51");
+      addUnique(hosts, "windows-ps7");
+      addUnique(reasons, `${p} -> config/template@windows`);
+      continue;
+    }
+    if (p.startsWith("scripts/")) {
+      if (level < 1) level = 1;
+      addUnique(suites, "doctor");
+      addUnique(hosts, "windows-ps51");
+      addUnique(hosts, "windows-ps7");
+      addUnique(reasons, `${p} -> scripts@windows`);
+      continue;
+    }
+    if (p.startsWith("tests/")) {
+      if (level < 1) level = 1;
+      addUnique(suites, "validation-fixtures");
+      addUnique(hosts, "windows-ps51");
+      addUnique(hosts, "windows-ps7");
+      addUnique(reasons, `${p} -> tests@windows`);
+      continue;
+    }
+    if (p.startsWith("examples/") || p.startsWith("demo/")) {
+      if (level < 1) level = 1;
+      addUnique(suites, "validation-fixtures");
+      addUnique(hosts, "linux");
+      addUnique(reasons, `${p} -> examples/demo@linux`);
+      continue;
+    }
+    if (p.startsWith(".claude/") || p.startsWith("skills/") || p.startsWith("hooks/")) {
+      if (level < 1) level = 1;
+      addUnique(suites, "plugin-drift");
+      addUnique(hosts, "linux");
+      addUnique(reasons, `${p} -> skills/hooks@linux`);
+      continue;
+    }
+
+    if (p.startsWith("docs/") || (!p.includes("/") && /\.md$/i.test(p))) {
+      addUnique(reasons, `${p} -> docs/report only (fast)`);
+      continue;
+    }
+
+    if (level < 1) level = 1;
+    addUnique(hosts, "linux");
+    addUnique(reasons, `${p} -> unclassified, targeted@linux (one level up)`);
+  }
+
+  const profile = level === 2 ? "full" : level === 1 ? "targeted" : "fast";
+  let hostList: string[];
+  let suiteList: string[];
+  if (profile === "full") { hostList = ALL_HOSTS; suiteList = []; }
+  else if (profile === "targeted") { hostList = [...new Set(hosts)]; suiteList = [...new Set(suites)]; }
+  else { hostList = ["linux"]; suiteList = []; }
+
+  const reason = reasons.length === 0 ? "no changed paths (default fast)" : [...new Set(reasons)].join("; ");
+  return { profile, suite: suiteList.join(","), hosts: hostList.join(","), reason };
+}
