@@ -6,7 +6,9 @@ import { createHash } from "node:crypto";
 const AXIOM_MARKER_BEGIN = "AXIOM-PMO:BEGIN";
 const AXIOM_MARKER_END = "AXIOM-PMO:END";
 // v1 -- Milestone 6.3. Frozen literal; never replace, only append on new versions.
-const KNOWN_BODY_DIGESTS = ["b3af36639b1077269108f6719c53630ecdf6c3c517f410589a599686194c626b"];
+// Exported so the packaging suite can assert membership and history the way
+// the PS original did with $script:AxiomKnownBodyDigests.
+export const KNOWN_BODY_DIGESTS = ["b3af36639b1077269108f6719c53630ecdf6c3c517f410589a599686194c626b"];
 // Canonical body, byte-for-byte identical to Get-AxiomCanonicalBody -Version 1.
 export function getAxiomCanonicalBody(version = "1") {
     if (version !== "1")
