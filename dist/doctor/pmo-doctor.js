@@ -5,6 +5,7 @@ import { readFileSync, existsSync, statSync, readdirSync } from "node:fs";
 import { join, dirname, basename } from "node:path";
 import { getMarkdownFiles, readMarkdownText, testMarkdownLocalLinkPath } from "../markdown/files.js";
 import { sortOrdinal } from "../core/ordinal-sort.js";
+import { testFrameworkCheckout, frameworkCheckoutFailureMessage } from "../core/framework-checkout.js";
 function loadJson(repo, rel) {
     const path = join(repo, rel);
     if (!existsSync(path))
@@ -20,6 +21,9 @@ function loadJson(repo, rel) {
     }
 }
 export function runPmoDoctor(repo, skillRootOverride = "", templateRootOverride = "") {
+    if (!testFrameworkCheckout(repo)) {
+        return { rows: [], pass: 0, warn: 0, fail: 1, frameworkCheckoutFailure: frameworkCheckoutFailureMessage(repo, "pmo-doctor") };
+    }
     const rows = [];
     let pass = 0, warn = 0, fail = 0;
     const add = (level, message, ruleId = "DOCTOR-000") => {
@@ -424,6 +428,10 @@ export function formatDoctorText(repo, result) {
     const lines = [];
     lines.push(`Axiom-PMO Framework Doctor: ${repo}`);
     lines.push("");
+    if (result.frameworkCheckoutFailure) {
+        lines.push(result.frameworkCheckoutFailure);
+        return lines.join("\n");
+    }
     for (const row of result.rows)
         lines.push(`[${row.level}] ${row.rule_id} ${row.message}`);
     lines.push("");

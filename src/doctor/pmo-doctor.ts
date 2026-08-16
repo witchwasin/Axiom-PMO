@@ -6,6 +6,7 @@ import { readFileSync, existsSync, statSync, readdirSync } from "node:fs";
 import { join, dirname, basename } from "node:path";
 import { getMarkdownFiles, readMarkdownText, testMarkdownLocalLinkPath } from "../markdown/files.js";
 import { sortOrdinal } from "../core/ordinal-sort.js";
+import { testFrameworkCheckout, frameworkCheckoutFailureMessage } from "../core/framework-checkout.js";
 
 interface DoctorRow { level: "PASS" | "WARN" | "FAIL"; rule_id: string; message: string; }
 
@@ -14,6 +15,7 @@ export interface DoctorResult {
   pass: number;
   warn: number;
   fail: number;
+  frameworkCheckoutFailure?: string;
 }
 
 function loadJson(repo: string, rel: string): Record<string, unknown> | null {
@@ -27,6 +29,9 @@ function loadJson(repo: string, rel: string): Record<string, unknown> | null {
 }
 
 export function runPmoDoctor(repo: string, skillRootOverride = "", templateRootOverride = ""): DoctorResult {
+  if (!testFrameworkCheckout(repo)) {
+    return { rows: [], pass: 0, warn: 0, fail: 1, frameworkCheckoutFailure: frameworkCheckoutFailureMessage(repo, "pmo-doctor") };
+  }
   const rows: DoctorRow[] = [];
   let pass = 0, warn = 0, fail = 0;
   const add = (level: "PASS" | "WARN" | "FAIL", message: string, ruleId = "DOCTOR-000") => {
@@ -364,6 +369,10 @@ export function formatDoctorText(repo: string, result: DoctorResult): string {
   const lines: string[] = [];
   lines.push(`Axiom-PMO Framework Doctor: ${repo}`);
   lines.push("");
+  if (result.frameworkCheckoutFailure) {
+    lines.push(result.frameworkCheckoutFailure);
+    return lines.join("\n");
+  }
   for (const row of result.rows) lines.push(`[${row.level}] ${row.rule_id} ${row.message}`);
   lines.push("");
   lines.push(`Summary: PASS=${result.pass} WARN=${result.warn} FAIL=${result.fail}`);
