@@ -1,19 +1,24 @@
 # Resume point — Phase 5 test porting
 
-**Updated:** 2026-08-16, after FreeBuFF AI's session (verified by Claude — see below)
+**Updated:** 2026-08-16, after execution-contract-tests.ps1 landed (verified by
+Claude — see below). **Correction included:** the previous version of this
+file claimed Phase 5 would be complete after execution-contract-tests.ps1.
+That was wrong — `adversarial-review-tests.ps1` (753 lines) was dropped from
+the "what's left" list by Claude's own mistake in an earlier edit of this
+file and was never assigned to anyone. It is still unported. See below.
 **Branch:** `feat/migrate-interpreter-to-node-ts`
-**Last commit:** `203b200` — "test(phase-5): port e2e suite (lite/standard/strict/handoff)"
+**Last commit:** `3f2d027` — "test(phase-5): port execution-contract tests (M5), finishing tests/ porting"
 **Working tree:** clean, nothing uncommitted, nothing pushed to origin.
 
-## Overall migration status: ~88% (21,368 / 24,181 lines)
+## Overall migration status: ~97% (23,428 / 24,181 lines)
 
 | Surface | Status |
 |---|---|
 | All validators (63 differential probe cases) | ✅ 100% — differential-green vs PowerShell |
 | All 13 orchestrators | ✅ 100% — ported, verified |
-| Tests porting | 🔶 6,823 / 9,636 lines (71%) |
+| Tests porting | 🔶 8,883 / 9,636 lines (92%) |
 
-### FreeBuFF AI session (verified by Claude, all claims checked and matched)
+### FreeBuFF AI sessions (verified by Claude, all claims checked and matched)
 
 | Commit | File | Assertions | PS reference |
 |---|---|---:|---|
@@ -23,26 +28,33 @@
 | `69afd27` | release-evidence-tests.ps1 | 26 | PASS=26 ✅ |
 | `81a2910` | scope-diff-tests.ps1 | 45 | PASS=45 ✅ |
 | `203b200` | e2e (lite/standard/strict/handoff) | 4 scenarios | 4/4 exit 0 ✅ |
+| `3f2d027` | execution-contract-tests.ps1 | 127 (73 cases) | PASS=127 ✅ |
 
-Independently rebuilt (`npx tsc`) and reran everything after the handoff: all 7
-probes green (63/63), full unit suite **109 pass / 0 fail / 1 pre-existing
-skip** — matches FreeBuFF's reported numbers exactly. One specific bug-fix
-claim (Strict e2e filler dropped a regex capture-group wrap on the escaped QA
-row, `$1` resolved empty, wiped the row) was checked directly in the `203b200`
-diff and is real, not just narrative.
+Independently rebuilt (`npx tsc`) and reran everything after both handoffs: all
+7 probes green (63/63) and the full unit suite matches exactly each time
+(109/0/1 after the first session, **182/0/1** after execution-contract landed).
+Two specific claims were spot-checked directly in the diffs, not just taken on
+narrative: the e2e Strict-filler regex capture-group fix (`203b200`), and the
+execution-contract port's use of the real in-process entrypoints rather than
+internal rule calls (`3f2d027`). Both real.
 
-One gap from that session: `RESUME-HERE.md` itself wasn't updated before
-pausing (FreeBuFF flagged this as a pending action). This edit is that update.
+Minor note (not a correctness issue): `3f2d027`'s commit message said "~2,900
+lines" for the port; actual is 3,335 (1,684 src + 1,651 compiled dist). The
+load-bearing numbers (127 assertions, 73 cases) were exact.
 
-## What's left — 2,060 lines, one file
+## What's left — 753 lines, one file (Claude's omission, now corrected)
 
 | File | Lines | Notes |
 |---|---:|---|
-| **`tests/helpers/execution-contract-tests.ps1`** | **2,060** | **Largest file in the whole migration** — bigger than everything ported in the FreeBuFF session combined. Do as its own dedicated session/block. EXEC-*/AREV-* rules already have goldens (Phase 0) and `execution-probe.js` (3 cases) already differentially verifies the core verify-execution-result path — this file goes much deeper (real subprocess execution, disposable git fixtures, adversarial cases per its own header comment) |
+| **`tests/helpers/adversarial-review-tests.ps1`** | **753** | AREV-001..007 already have goldens (Phase 0) and the adversarial-review-validator itself is ported + differentially verified (part of the 63 probe cases, from commit `f12097b`). This file is the same *shape* of gap execution-contract-tests.ps1 was: a deep behavior test (real subprocess execution, disposable git fixtures, adversarial cases against the AREV threat model) that goes well beyond what the goldens and the general validator probe cover. Same pattern as execution-contract.test.ts should apply directly. |
 
-Once this lands, tests/ porting is done and Phase 5 as a whole is complete —
-next would be the full Phase 6 gate (see "still-open questions" below for what
-has to be resolved first).
+Once this lands, tests/ porting is genuinely done (100%) and Phase 5 as a
+whole is complete — next would be the full Phase 6 gate (see "still-open
+questions" below for what has to be resolved first). **Do not declare Phase 5
+complete again without independently listing every file in `tests/helpers/`
+and `tests/e2e/` and confirming each has a corresponding `.test.ts` — that
+cross-check is what caught this omission and should be repeated before the
+next "done" claim.**
 
 ## How to continue (the pattern that's been working)
 
