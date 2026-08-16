@@ -106,3 +106,72 @@ else can run in parallel while N accrues:
 
 Nothing above shortens the wait for N=10 itself — it just means the wait is not
 idle.
+
+---
+
+### DEC-030 — Waive the N=10 settling-window gate; proceed to Phase 8 at N=1
+
+- **Status:** Approved
+- **Approved by:** Witchwasin K. (Human Owner)
+- **Date:** 2026-08-16
+
+**Decision:** Phase 7's N requirement (10, per DEC-029) is waived. Phase 8 proceeds
+with N=1 banked (`Fixed_plan/phase7/canary-log.md`, sha `0fda09e`), not 10.
+
+**How this was reached, not just that it was:** the Human Owner asked to skip the wait
+for N=10 to reach Phase 8. Before agreeing, this was clarified explicitly rather than
+assumed: was "skip N" (1) a further numeric reduction (still some settling window,
+just smaller) or (2) skipping the gate entirely and proceeding now? The Human Owner
+confirmed (2) explicitly, after DEC-029's own reasoning was restated to them directly
+— that N cannot be meaningfully reconstructed after Phase 8 removes
+`AXIOM_ROLLBACK_PWSH`, so this is not a deferral, it is forgoing that evidence
+permanently. Confirmed with that understood, not before it was raised a second time.
+
+**What this does not change:** CR-017 sign-off (DEC-031) and the Phase 9 second-
+reviewer gap (DEC-032) are separate requirements, addressed separately below — this
+decision is scoped to the N number only.
+
+---
+
+### DEC-031 — CR-017 sign-off
+
+- **Status:** Approved
+- **Approved by:** Witchwasin K. (Human Owner), as the named CR-017 reviewer (DEC-027)
+- **Date:** 2026-08-16
+
+**Decision:** the Human Owner reviewed `Fixed_plan/phase8/CR-017-review-material.md`
+(supply-chain and containment surface) and signed off. This is the actual review DEC-027
+required — not the compiled material itself, which was only ever evidence for this.
+
+**What was reviewed:** zero runtime dependencies; 23 dev-only packages from two
+publishers (Microsoft/TypeScript team, Node.js project), all MIT/Apache-2.0, zero
+lifecycle scripts found in any of them; `private: true`; committed lockfile with SRI on
+every entry; containment tests covering symlink refusal, path-escape refusal,
+install-root separation, read-only install, clean-room, case-sensitivity, and NTFS
+junctions specifically (including the ancestor-escape gap found and fixed the same day
+— see `Fixed_plan/phase8/CR-017-review-material.md` §5-6 for the full detail and the
+codebase-wide audit that found no further instances).
+
+---
+
+### DEC-032 — Waive Phase 9's "separate Human reviewer" requirement
+
+- **Status:** Approved
+- **Approved by:** Witchwasin K. (Human Owner)
+- **Date:** 2026-08-16
+
+**Decision:** `master-plan.md`'s Definition of Done line — "a separate Human reviewed
+the final diff" for the PowerShell deletion — is explicitly waived. This has been a
+known, flagged gap since `Fixed_plan/phase9/PLAN.md` was first written (DEC-027):
+this project has one Human Owner, not two, and the DoD line as written assumes a team
+structure this project doesn't have.
+
+**Why waived rather than worked around:** no external reviewer was sourced or asked to
+review the deletion diff. The Human Owner chose to formally accept that gap for this
+project rather than delay for one, or than have Claude (the same party that will write
+and execute the deletion) stand in as if it were an independent second reviewer, which
+it structurally cannot be.
+
+**What this means going forward:** the Phase 9 deletion diff gets exactly one reviewer
+— the Human Owner themself. This decision is the record of why that's considered
+acceptable for this project, so it doesn't read as an oversight later.
