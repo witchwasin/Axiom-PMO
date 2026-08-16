@@ -100,7 +100,7 @@ if ($resolvedParent -ne $project) {
 # raw input before Resolve-Path dereferences anything (a junction must be seen
 # as itself, not as its target). NTFS junctions carry the ReparsePoint
 # attribute exactly like symlinks, so one check covers both. Verified on a real
-# Windows host by src/probe/junction-probe.ts (CR-017-review-material §5).
+# Windows host by src/probe/junction-probe.ts (CR-017-review-material.md, section 5).
 $projectInput = Get-Item -LiteralPath $ProjectPath -Force -ErrorAction SilentlyContinue
 if ($projectInput -and ($projectInput.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
   Write-Host "[FAIL] SETUP-003 Project path is a symbolic link or reparse point."

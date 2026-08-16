@@ -140,7 +140,7 @@ foreach ($rootRelative in @("scripts", "tests")) {
   foreach ($file in (Get-ChildItem -LiteralPath $scanRoot -Recurse -File -Filter *.ps1)) {
     $bytes = [System.IO.File]::ReadAllBytes($file.FullName)
     if (@($bytes | Where-Object { $_ -gt 127 }).Count -gt 0) {
-      $relative = $file.FullName.Substring($repo.Length).TrimStart([char[]]@('/', '\\'))
+      $relative = $file.FullName.Substring($repo.Length).TrimStart([char[]]@('/', '\'))
       $nonAsciiPowerShell += $relative
     }
   }
