@@ -1,31 +1,48 @@
 # Resume point — Phase 5 test porting
 
-**Paused:** 2026-08-16, by user request ("พักก่อน... commit และ note ไว้ก่อน")
+**Updated:** 2026-08-16, after FreeBuFF AI's session (verified by Claude — see below)
 **Branch:** `feat/migrate-interpreter-to-node-ts`
-**Last commit:** `91382ad` — "test(phase-5): port clean-room tests, fix real stateful-probe flake"
+**Last commit:** `203b200` — "test(phase-5): port e2e suite (lite/standard/strict/handoff)"
 **Working tree:** clean, nothing uncommitted, nothing pushed to origin.
 
-## Overall migration status: ~77% (18,620 / 24,181 lines)
+## Overall migration status: ~88% (21,368 / 24,181 lines)
 
 | Surface | Status |
 |---|---|
 | All validators (63 differential probe cases) | ✅ 100% — differential-green vs PowerShell |
 | All 13 orchestrators | ✅ 100% — ported, verified |
-| Tests porting | 🔶 4,075 / 9,636 lines (42%) |
+| Tests porting | 🔶 6,823 / 9,636 lines (71%) |
 
-## What's left — 5,561 lines across 7 file groups
+### FreeBuFF AI session (verified by Claude, all claims checked and matched)
 
-In recommended order (smallest/most-tractable first, biggest last):
-
-| Order | File | Lines | Notes |
+| Commit | File | Assertions | PS reference |
 |---|---|---:|---|
-| 1 | `tests/helpers/plugin-package-tests.ps1` | 364 | Process/packaging test, similar shape to the already-ported plugin-install-spike |
-| 2 | `tests/helpers/hook-advisory-tests.ps1` | 437 | Tests the optional scope-advisory hook (separate from the main validator chain) |
-| 3 | `tests/helpers/visual-proof-tests.ps1` | 427 | VPROOF-001/002 have goldens already; this file goes deeper |
-| 4 | `tests/helpers/release-evidence-tests.ps1` | 448 | TEST-EVIDENCE-003 has a golden already; git-state manipulation |
-| 5 | `tests/helpers/scope-diff-tests.ps1` | 504 | scope-diff-validator already ported + probe-verified; should be fast |
-| 6 | `tests/e2e/*.ps1` (5 files: handoff, lite, standard, strict, lib/fill-project) | 568 | Stateful E2E — generator → fill → validate. Needs §8.6 fresh-tree care like setup-integration/clean-room did |
-| 7 | **`tests/helpers/execution-contract-tests.ps1`** | **2,060** | **Largest file in the whole migration.** Do this as its own dedicated session/block, not squeezed in — it alone is bigger than everything else on this list combined |
+| `feb6930` | plugin-package-tests.ps1 | 41 | PASS=41 ✅ |
+| `629d335` | hook-advisory-tests.ps1 | 59 | PASS=59 ✅ |
+| `4908675` | visual-proof-tests.ps1 | 12 | PASS=12 ✅ |
+| `69afd27` | release-evidence-tests.ps1 | 26 | PASS=26 ✅ |
+| `81a2910` | scope-diff-tests.ps1 | 45 | PASS=45 ✅ |
+| `203b200` | e2e (lite/standard/strict/handoff) | 4 scenarios | 4/4 exit 0 ✅ |
+
+Independently rebuilt (`npx tsc`) and reran everything after the handoff: all 7
+probes green (63/63), full unit suite **109 pass / 0 fail / 1 pre-existing
+skip** — matches FreeBuFF's reported numbers exactly. One specific bug-fix
+claim (Strict e2e filler dropped a regex capture-group wrap on the escaped QA
+row, `$1` resolved empty, wiped the row) was checked directly in the `203b200`
+diff and is real, not just narrative.
+
+One gap from that session: `RESUME-HERE.md` itself wasn't updated before
+pausing (FreeBuFF flagged this as a pending action). This edit is that update.
+
+## What's left — 2,060 lines, one file
+
+| File | Lines | Notes |
+|---|---:|---|
+| **`tests/helpers/execution-contract-tests.ps1`** | **2,060** | **Largest file in the whole migration** — bigger than everything ported in the FreeBuFF session combined. Do as its own dedicated session/block. EXEC-*/AREV-* rules already have goldens (Phase 0) and `execution-probe.js` (3 cases) already differentially verifies the core verify-execution-result path — this file goes much deeper (real subprocess execution, disposable git fixtures, adversarial cases per its own header comment) |
+
+Once this lands, tests/ porting is done and Phase 5 as a whole is complete —
+next would be the full Phase 6 gate (see "still-open questions" below for what
+has to be resolved first).
 
 ## How to continue (the pattern that's been working)
 
