@@ -26,6 +26,21 @@ function check(name, ok, detail = "") {
 function git(dir, ...args) {
     spawnSync("git", ["-C", dir, ...args], { encoding: "utf8" });
 }
+// Fixed commit date so two independently-created fixture repos (one for the
+// PS reference, one for the TS candidate) always produce byte-identical
+// commits -- and therefore identical base_sha -- regardless of how much
+// wall-clock time elapses between the two `git commit` calls. Without this,
+// a >=1s skew under load (a real risk in a long back-to-back probe/test run)
+// changes the commit hash even though the tree content is identical,
+// producing a false-negative "export: contract bytes identical" failure.
+const FIXTURE_COMMIT_ENV = {
+    ...process.env,
+    GIT_AUTHOR_DATE: "2026-01-01T00:00:00+00:00",
+    GIT_COMMITTER_DATE: "2026-01-01T00:00:00+00:00",
+};
+function gitCommit(dir, message) {
+    spawnSync("git", ["-C", dir, "commit", "-q", "-m", message], { encoding: "utf8", env: FIXTURE_COMMIT_ENV });
+}
 function write(dir, rel, content) {
     const full = join(dir, rel);
     mkdirSync(dirname(full), { recursive: true });
@@ -40,7 +55,7 @@ function newProjectFixture() {
     write(dir, "SCOPE.json", '{"schema_version":"1.0","project":"P99-EXEC","implementation_scope":{"include":["src/payments/**","tests/payments/**"],"exclude":["src/payments/generated/**"]}}');
     write(dir, "DELIVERY.md", "# DELIVERY - P99-EXEC\n\n## Work Items\n\n| ID | Mode | Feature / Deliverable | Requirement Ref | Design Ref | Acceptance Criteria | Test Checklist | Owner | Status |\n|---|---|---|---|---|---|---|---|---|\n| D-001 | Standard | Checkout flow | REQ-001 | DESIGN/FLOW.puml | Works | unit tests | Dev | To Do |\n");
     git(dir, "add", "-A");
-    git(dir, "commit", "-q", "-m", "base");
+    gitCommit(dir, "base");
     return dir;
 }
 function treeSnapshot(dir, exclude = []) {
