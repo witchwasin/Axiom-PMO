@@ -111,5 +111,18 @@ export function writeValidationOutput(format, envelope, project, requestedMode, 
     const s = envelope.summary;
     lines.push("");
     lines.push(`Summary: PASS=${s.pass} WARN=${s.warn} (${s.warn_blocking} blocking) FAIL=${s.fail}`);
+    // SCOPE-DIFF (M4.5) is opt-in: the envelope only carries scope_diff when
+    // the caller supplied base/head refs, exactly like the reference writer
+    // omits the block for every ordinary invocation.
+    const sd = envelope.scope_diff;
+    if (sd) {
+        lines.push("");
+        lines.push(`Scope-diff: ${sd.base_sha} -> ${sd.head_sha}, verdict=${sd.verdict}`);
+        lines.push(`  approved include: ${sd.approved_include.join(", ")}`);
+        if (sd.approved_exclude.length > 0) {
+            lines.push(`  approved exclude: ${sd.approved_exclude.join(", ")}`);
+        }
+        lines.push(`  in scope: ${sd.changed_in_scope.length}  out of scope: ${sd.changed_out_of_scope.length}  excluded: ${sd.changed_excluded.length}  exempt: ${sd.exempt.length}`);
+    }
     return lines.join("\n");
 }

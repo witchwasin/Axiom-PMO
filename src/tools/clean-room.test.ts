@@ -19,7 +19,7 @@ import assert from "node:assert/strict";
 import {
   mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, readdirSync, statSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
+import { tmpdir, platform } from "node:os";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { join, dirname, resolve } from "node:path";
@@ -185,6 +185,57 @@ test("clean-room: malformed marker, already-installed, and post-setup edits", ()
     assert.ok(!finalText.includes("AXIOM-PMO"), "scenario 10 -- the Axiom block is gone");
   } finally {
     rmSync(sandbox, { recursive: true, force: true });
+  }
+});
+
+test("clean-room: Node-only -- the rewired CLI needs zero PowerShell for a normal run", () => {
+  const sandbox = mkdtempSync(join(tmpdir(), "axiom-nopwsh-"));
+  const emptyPath = mkdtempSync(join(tmpdir(), "axiom-nopwsh-path-"));
+  try {
+    // Build an environment with PowerShell provably absent: AXIOM_PWSH and
+    // AXIOM_ROLLBACK_PWSH are removed entirely, and on POSIX PATH points at
+    // an empty directory so `pwsh` cannot be found by any lookup.
+    const env: NodeJS.ProcessEnv = { ...process.env };
+    delete env.AXIOM_PWSH;
+    delete env.AXIOM_ROLLBACK_PWSH;
+    if (platform() !== "win32") env.PATH = emptyPath;
+
+    const CLI = join(REPO_ROOT, "cli/axiom.mjs");
+
+    // Control: in this same environment the rollback path cannot run -- that
+    // is what makes the absence provable, not merely unused. (POSIX only: on
+    // Windows CreateProcess finds powershell.exe through the system directory
+    // whatever PATH says, so absence cannot be demonstrated there.)
+    if (platform() !== "win32") {
+      const rb = spawnSync(process.execPath, [CLI, "validate", "--project", "examples/LITE-BUGFIX", "--mode", "Lite", "--gate", "Scope"], {
+        encoding: "utf8", cwd: REPO_ROOT, env: { ...env, AXIOM_ROLLBACK_PWSH: "1" },
+      });
+      assert.equal(rb.status, 127,
+        `control: the rollback path cannot find PowerShell in this environment: exit=${rb.status} ${(rb.stderr ?? "").slice(0, 200)}`);
+    }
+
+    // Generate a real project with the rewired CLI in the no-PowerShell env,
+    // then validate it -- the whole normal run, PowerShell never consulted.
+    const gen = spawnSync(process.execPath, [
+      CLI, "init", "--code", "P98-NOPWSH", "--mode", "Lite", "--execution-path", "development_handoff",
+      "--research-mode", "off", "--research-provider", "none", "--research-depth", "standard",
+      "--ui-delivery", "not_applicable", "--output", sandbox, "--no-interactive",
+    ], { encoding: "utf8", cwd: REPO_ROOT, env });
+    assert.equal(gen.status, 0,
+      `axiom init runs without PowerShell: exit=${gen.status} ${(gen.stdout ?? "").slice(0, 300)}`);
+
+    const project = join(sandbox, "P98-NOPWSH");
+    const r = spawnSync(process.execPath, [CLI, "validate", "--project", project, "--mode", "Lite", "--gate", "Draft"], {
+      encoding: "utf8", cwd: REPO_ROOT, env,
+    });
+    const text = (r.stdout ?? "") + (r.stderr ?? "");
+    assert.equal(r.status, 0,
+      `a normal validation runs end to end with no PowerShell: exit=${r.status} ${text.slice(0, 400)}`);
+    assert.ok(text.includes("Summary: PASS="), `...and produces the real validation report: ${text.slice(0, 300)}`);
+    assert.ok(!text.includes("PowerShell was not found"), "...and never reports a missing host");
+  } finally {
+    rmSync(sandbox, { recursive: true, force: true });
+    rmSync(emptyPath, { recursive: true, force: true });
   }
 });
 

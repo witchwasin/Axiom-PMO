@@ -67,7 +67,14 @@ export function preparePublicRelease(repoRoot, runSuite) {
     else {
         notes.push("Working tree has uncommitted changes (expected during the overhaul).");
         out.push("Note: uncommitted changes present:");
-        for (const line of status.split("\n").slice(0, 20))
+        // The reference captures the child's stdout as PowerShell lines, which
+        // never include a trailing empty element after the final newline; the raw
+        // string here does, so drop it before printing (otherwise every dirty-tree
+        // run carries a stray "  " line the reference does not have).
+        const statusLines = status.split("\n");
+        if (statusLines.length > 0 && statusLines[statusLines.length - 1] === "")
+            statusLines.pop();
+        for (const line of statusLines.slice(0, 20))
             out.push(`  ${line}`);
     }
     if (runSuite) {

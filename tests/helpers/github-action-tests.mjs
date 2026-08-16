@@ -316,8 +316,11 @@ if (POWERSHELL_AVAILABLE) {
 
   {
     // A missing PowerShell host is an infrastructure failure, not a
-    // governance verdict -- report-only must not swallow it.
-    const r = runAction(["--project", "examples/STANDARD-FEATURE"], { AXIOM_PWSH: "/nonexistent/pwsh" });
+    // governance verdict -- report-only must not swallow it. This only
+    // happens on the rollback path (AXIOM_ROLLBACK_PWSH=1): the default
+    // in-process path never spawns PowerShell, so a broken AXIOM_PWSH is
+    // irrelevant there.
+    const r = runAction(["--project", "examples/STANDARD-FEATURE"], { AXIOM_ROLLBACK_PWSH: "1", AXIOM_PWSH: "/nonexistent/pwsh" });
     assert("missing PowerShell: wrapper exits 127 even in report-only mode", r.status === 127, `status=${r.status}`);
     const json = JSON.parse(readFileSync(r.jsonPath, "utf8"));
     assert("missing PowerShell: report still gets written with a FAIL row", json.results.some((row) => row.rule_id === "ACTION-PARSE-ERROR"));
@@ -358,7 +361,11 @@ if (POWERSHELL_AVAILABLE) {
     const jobSummaryPath = join(shimDir, "job-summary.md");
     writeFileSync(jobSummaryPath, "");
 
+    // This scenario is inherently rollback-path: a corrupted PowerShell host
+    // only exists on the spawn path. The default in-process path has no host
+    // to corrupt.
     const r = runAction(["--project", "examples/STANDARD-FEATURE"], {
+      AXIOM_ROLLBACK_PWSH: "1",
       AXIOM_PWSH: wrapperPath,
       GITHUB_STEP_SUMMARY: jobSummaryPath,
     });

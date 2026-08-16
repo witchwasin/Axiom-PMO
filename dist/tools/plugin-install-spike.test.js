@@ -11,11 +11,11 @@
 // port's user-facing tools are functions, not scripts, so this calls them
 // in-process with repoRoot pointed at the simulated install and projectPath
 // pointed at the user project -- proving the same framework-root/
-// project-root separation the PS spike proved, without depending on how
-// cli/axiom.mjs is eventually wired (still spawns pwsh today; rewiring it is
-// Phase 8 territory, out of scope here). The one exception is the Node CLI
-// resolution case, which does spawn cli/axiom.mjs as-is on purpose: that
-// tests current behavior, not the eventual rewired behavior.
+// project-root separation the PS spike proved. Since Phase 7 rewired
+// cli/axiom.mjs, the Node CLI cases at the end drive the REAL rewired CLI
+// (default in-process path) from the install location: they prove the actual
+// product install path runs the compiled dist/ engine with zero PowerShell
+// -- and, in the read-only case, from a non-writable install.
 //
 // The simulated install root deliberately contains a space and a
 // dot-directory in its path, matching a real install root
@@ -46,11 +46,12 @@ function newSimulatedPluginInstall(root) {
     // here as a failure rather than in a user's first install.
     const install = join(root, "marketplaces/axiom pmo/plugins/axiom-pmo");
     mkdirSync(install, { recursive: true });
-    // scripts/ is still needed here even though the in-process calls below
-    // don't use it: cli/axiom.mjs (tested separately, as-is, further down)
-    // still resolves its .ps1 targets relative to its own install location
-    // until the CLI is rewired (Phase 8).
-    for (const dir of ["pmo-config", "templates", "cli", "scripts"]) {
+    // What a plugin install carries for the Node-native tools: pmo-config,
+    // templates, and -- since the CLI rewire -- the compiled engine (dist/)
+    // plus cli/axiom.mjs itself. scripts/ is carried too: it keeps the
+    // rollback path (AXIOM_ROLLBACK_PWSH=1) functional from an install, and it
+    // is what the PS original's equivalent spike used.
+    for (const dir of ["pmo-config", "templates", "cli", "scripts", "dist"]) {
         cpSync(join(REPO_ROOT, dir), join(install, dir), { recursive: true });
     }
     return install;
@@ -145,10 +146,12 @@ test("plugin install spike: framework-root vs project-root separation", () => {
         const realVerify = runVerifyExecutionResult(install, project, resultPath, null, null, false);
         const realVerdict = String(realVerify.envelope["execution_verification"]["verdict"]);
         assert.equal(realVerdict, "pass", `a complete execution result verifies to a pass from the install root: ${JSON.stringify(realVerify.envelope["execution_verification"]).slice(0, 600)}`);
-        // ---- does the Node CLI resolve the same way? (tests current cli/axiom.mjs
-        // behavior as-is; it still spawns pwsh today, unaffected by this port.)
-        const cli = spawnSync("node", [join(install, "cli/axiom.mjs"), "validate", "--project", project, "--mode", "Standard"], {
-            encoding: "utf8", cwd: root,
+        // ---- does the REWIRED Node CLI resolve the same way? (Phase 7: the CLI
+        // runs the compiled dist/ engine in-process from its own install
+        // location; AXIOM_ROLLBACK_PWSH is forced unset so this exercises the
+        // default path, the one a plugin install would use.)
+        const cli = spawnSync(process.execPath, [join(install, "cli/axiom.mjs"), "validate", "--project", project, "--mode", "Standard"], {
+            encoding: "utf8", cwd: root, env: { ...process.env, AXIOM_ROLLBACK_PWSH: "" },
         });
         if (cli.error) {
             // Node itself unavailable in this environment is a legitimate skip,
@@ -156,7 +159,34 @@ test("plugin install spike: framework-root vs project-root separation", () => {
         }
         else {
             const cliText = (cli.stdout ?? "") + (cli.stderr ?? "");
-            assert.ok(/Summary: PASS=\d+/.test(cliText) || cliText.includes("P90-PLUGIN"), `the CLI resolves the framework from its own install location: exit=${cli.status} ${cliText.slice(0, 400)}`);
+            // This fixture is a real project with real Draft findings, so a
+            // verdict of 0 or 1 is correct -- what must NOT happen is an infra
+            // failure (127) or a usage error (64). The point is the rewired CLI
+            // resolved its engine from the install and produced a real report.
+            assert.ok(cli.status === 0 || cli.status === 1, `the rewired CLI runs a real validation from the install (not an infra/usage failure): exit=${cli.status} ${cliText.slice(0, 400)}`);
+            assert.ok(/Summary: PASS=\d+/.test(cliText) || cliText.includes("P90-PLUGIN"), `the rewired CLI resolves the framework from its own install location: exit=${cli.status} ${cliText.slice(0, 400)}`);
+        }
+        // ---- does the REWIRED Node CLI still work from a read-only install?
+        // (§5.3: same simulated install, filesystem made read-only, run through
+        // the real rewired CLI end to end.) Skipped on Windows, where ACL
+        // semantics differ from chmod (matches the PS original).
+        if (platform() !== "win32") {
+            chmodSync(install, 0o555);
+            for (const f of listFiles(install))
+                chmodSync(f, 0o444);
+            try {
+                const cliRo = spawnSync(process.execPath, [join(install, "cli/axiom.mjs"), "validate", "--project", project, "--mode", "Standard"], {
+                    encoding: "utf8", cwd: root, env: { ...process.env, AXIOM_ROLLBACK_PWSH: "" },
+                });
+                const cliRoText = (cliRo.stdout ?? "") + (cliRo.stderr ?? "");
+                assert.ok(cliRo.status === 0 || cliRo.status === 1, `the rewired CLI validates from a read-only install (not an infra/usage failure): exit=${cliRo.status} ${cliRoText.slice(0, 400)}`);
+                assert.ok(/Summary: PASS=\d+/.test(cliRoText), `...and produces a real validation report: ${cliRoText.slice(0, 300)}`);
+            }
+            finally {
+                chmodSync(install, 0o755);
+                for (const f of listFiles(install))
+                    chmodSync(f, 0o644);
+            }
         }
         // ---- does a read-only install still work? Last, since it changes
         // permissions on the tree the earlier cases used. Skipped on Windows,

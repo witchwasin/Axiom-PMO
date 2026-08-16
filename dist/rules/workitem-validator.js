@@ -61,7 +61,9 @@ export function testDeliveryWorkItems(acc, catalog, project, deliveryPath, gate,
                 addResult(acc, catalog, "FAIL", `${item["ID"]} has invalid Status: ${item["Status"]}`, { ruleId: "ENUM-001" });
             }
             if (!reviewStages.includes(item["Review Stage"] ?? "")) {
-                addResult(acc, catalog, "FAIL", `${item["ID"]} has invalid Review Stage: ${item["Review Stage"]}`, { ruleId: "ENUM-001" });
+                // A missing cell is an empty string in the reference's message, never
+                // the literal "undefined" a JS interpolation would produce.
+                addResult(acc, catalog, "FAIL", `${item["ID"]} has invalid Review Stage: ${item["Review Stage"] ?? ""}`, { ruleId: "ENUM-001" });
             }
             const strict = item["Strict Trigger"];
             if (strict && strict !== "none" && !strictTriggers.includes(strict)) {

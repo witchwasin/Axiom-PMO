@@ -33,3 +33,27 @@ export function runVerifyExecutionResult(repoRoot, projectPath, resultPath, gitR
     };
     return { envelope, exitCode };
 }
+// Text renderer for the verify entrypoint, transcribed from
+// verify-execution-result.ps1's Text branch so `axiom verify` (default
+// format) shows exactly the reference's report.
+export function formatVerifyText(envelope, resolvedResultPath) {
+    const verification = envelope["execution_verification"] ?? {};
+    const summary = envelope["summary"] ?? {};
+    const lines = [];
+    lines.push("Axiom-PMO Execution Contract Verification");
+    lines.push(`  project  : ${String(envelope["project"] ?? "")}`);
+    lines.push(`  result   : ${resolvedResultPath}`);
+    lines.push(`  contract : ${String(verification["contract_path"] ?? "")}`);
+    lines.push("");
+    for (const row of envelope["results"] ?? []) {
+        lines.push(`[${String(row["level"] ?? "")}] ${String(row["rule_id"] ?? "")} ${String(row["message"] ?? "")}`);
+        const suggestion = row["suggestion"];
+        if (suggestion !== null && suggestion !== undefined && String(suggestion).trim() !== "") {
+            lines.push(`    Fix: ${String(suggestion)}`);
+        }
+    }
+    lines.push("");
+    lines.push(`Verdict: ${String(verification["verdict"] ?? "")}`);
+    lines.push(`Summary: PASS=${summary["pass"] ?? 0} WARN=${summary["warn"] ?? 0} FAIL=${summary["fail"] ?? 0}`);
+    return lines.join("\n");
+}

@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 // Tests for cli/axiom.mjs.
 //
-// The CLI's entire job is to forward faithfully, so that is what is tested:
-// exit codes survive, arguments reach the script, PowerShell absence is
-// reported rather than swallowed, and no validation logic has crept into the
-// JavaScript.
+// The CLI runs the ported TypeScript engine in-process by default
+// (AXIOM_ROLLBACK_PWSH unset); AXIOM_ROLLBACK_PWSH=1 restores the original
+// spawn-pwsh forwarding. That is what is tested: exit codes survive, arguments
+// reach the right engine, PowerShell absence is reported rather than swallowed
+// on the rollback path, the default path needs no PowerShell at all, and no
+// validation logic has crept into the JavaScript.
 //
 //   node tests/helpers/cli-tests.mjs
 
@@ -34,7 +36,9 @@ function runCli(args, env = {}) {
   const result = spawnSync(process.execPath, [CLI, ...args], {
     cwd: REPO_ROOT,
     encoding: "utf8",
-    env: { ...process.env, ...env },
+    // Default to the in-process path deterministically; a rollback case
+    // overrides with AXIOM_ROLLBACK_PWSH: "1" via env.
+    env: { ...process.env, AXIOM_ROLLBACK_PWSH: "", ...env },
   });
   return {
     status: result.status,
@@ -90,12 +94,14 @@ console.log("");
   // Reported, not swallowed. A CLI that silently skipped validation when
   // PowerShell was absent would be worse than one that refuses to run.
   //
-  // The unreachable-host case is exercised through AXIOM_PWSH because it is
-  // the only technique that works on every platform. Emptying PATH hides
+  // These are rollback-path contracts: on the default in-process path a
+  // missing or broken PowerShell is irrelevant (doctor runs without it). The
+  // unreachable-host case is exercised through AXIOM_PWSH because it is the
+  // only technique that works on every platform. Emptying PATH hides
   // PowerShell on POSIX but NOT on Windows: CreateProcess searches the system
   // directory regardless of PATH, so powershell.exe is still found and the
   // assertion would be testing the harness rather than the CLI.
-  const badOverride = runCli(["doctor"], { AXIOM_PWSH: "/nonexistent/pwsh" });
+  const badOverride = runCli(["doctor"], { AXIOM_ROLLBACK_PWSH: "1", AXIOM_PWSH: "/nonexistent/pwsh" });
   assert("an unreachable PowerShell exits 127", badOverride.status === 127, `exit=${badOverride.status}`);
   assert("an unreachable PowerShell names what was wrong", badOverride.stderr.includes("/nonexistent/pwsh"));
   assert("an unreachable PowerShell names the remediation",
@@ -106,11 +112,17 @@ console.log("");
   if (process.platform === "win32") {
     console.log("[SKIP] empty-PATH host discovery -- CreateProcess finds powershell.exe in the system directory whatever PATH says");
   } else {
-    const noHost = runCli(["doctor"], { PATH: "/nonexistent-path-for-test", AXIOM_PWSH: "" });
+    const noHost = runCli(["doctor"], { AXIOM_ROLLBACK_PWSH: "1", PATH: "/nonexistent-path-for-test", AXIOM_PWSH: "" });
     assert("no PowerShell on PATH exits 127", noHost.status === 127, `exit=${noHost.status}`);
     assert("no PowerShell on PATH names the remediation",
       noHost.stderr.includes("aka.ms") || noHost.stderr.includes("install"));
   }
+
+  // The same commands succeed on the default path with PowerShell absent from
+  // the environment -- the in-process engine never probes for a host.
+  const tsNoHost = runCli(["doctor"], { PATH: "/nonexistent-path-for-test", AXIOM_PWSH: "" });
+  assert("the default path runs doctor with PowerShell absent", tsNoHost.status === 0, `exit=${tsNoHost.status}`);
+  assert("the default path produces the doctor report", tsNoHost.stdout.includes("Summary: PASS="), tsNoHost.stdout.slice(0, 120));
 }
 
 {
@@ -161,6 +173,17 @@ if (!POWERSHELL_AVAILABLE) {
     const result = runCli(testCase.args);
     assert(testCase.name, result.status === testCase.expected,
       `exit=${result.status} expected=${testCase.expected}`);
+  }
+
+  {
+    // The rollback toggle must be real, not a stub: with AXIOM_ROLLBACK_PWSH=1
+    // the same command runs against the PowerShell reference and produces the
+    // same result the pre-rewire CLI did.
+    const ts = runCli(["validate", "--project", "examples/STANDARD-FEATURE", "--gate", "Release", "--fail-on-warning"]);
+    const rb = runCli(["validate", "--project", "examples/STANDARD-FEATURE", "--gate", "Release", "--fail-on-warning"], { AXIOM_ROLLBACK_PWSH: "1" });
+    assert("rollback path validates a passing project", rb.status === 0, `exit=${rb.status}`);
+    assert("rollback path output matches the default path", rb.stdout === ts.stdout,
+      JSON.stringify(rb.stdout.slice(0, 80)) + " vs " + JSON.stringify(ts.stdout.slice(0, 80)));
   }
 
   {
