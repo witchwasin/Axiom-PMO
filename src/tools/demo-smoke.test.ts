@@ -10,8 +10,14 @@ import { resolvePwsh } from "../probe/pwsh-resolver.js";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-test("demo runs and its claims match output", () => {
-  const pwsh = resolvePwsh();
+test("demo runs and its claims match output", (t) => {
+  let pwsh: string;
+  try {
+    pwsh = resolvePwsh();
+  } catch {
+    t.skip("pwsh not available (set AXIOM_PWSH to run the demo smoke test)");
+    return;
+  }
   const started = Date.now();
   const r = spawnSync(pwsh, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", resolve(REPO_ROOT, "scripts/demo.ps1"), "-RepoPath", REPO_ROOT, "-NoPause", "-Plain"], { encoding: "utf8" });
   const elapsed = (Date.now() - started) / 1000;
