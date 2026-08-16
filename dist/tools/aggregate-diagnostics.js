@@ -9,6 +9,29 @@ import { runPortedChain } from "../probe/validate-chain.js";
 function sha256Hex(data) {
     return createHash("sha256").update(data, "utf8").digest("hex").toLowerCase();
 }
+// Pure privacy-boundary functions, hoisted to module scope (out of
+// aggregateDiagnostics' closure) and exported so they are directly unit
+// testable, matching how tests/helpers/learning-registry-tests.ps1
+// dot-sources scripts/aggregate-diagnostics.ps1 for these definitions.
+export function normalizeItemId(itemId, allowedPatterns) {
+    if (!itemId?.trim())
+        return null;
+    for (const pattern of allowedPatterns) {
+        if (new RegExp(pattern).test(itemId))
+            return itemId.replace(/\d+/g, "#");
+    }
+    return "other";
+}
+export function governedArtifactOrOther(artifact, allowlist) {
+    if (!artifact?.trim())
+        return null;
+    if (allowlist.includes(artifact))
+        return artifact;
+    return "other";
+}
+export function normalizeExecutionPath(ep, allowed) {
+    return allowed.includes(ep) ? ep : "unknown";
+}
 export function aggregateDiagnostics(repoRoot, projectPath, mode, gate, rebuildOnly, format) {
     const repo = resolve(repoRoot);
     const policyPath = join(repo, "pmo-config/learning-policy.json");
@@ -29,25 +52,6 @@ export function aggregateDiagnostics(repoRoot, projectPath, mode, gate, rebuildO
     }
     function getProjectHash(projectAbs, salt) {
         return sha256Hex(`${salt}|${projectAbs}`);
-    }
-    function normalizeItemId(itemId, allowedPatterns) {
-        if (!itemId?.trim())
-            return null;
-        for (const pattern of allowedPatterns) {
-            if (new RegExp(pattern).test(itemId))
-                return itemId.replace(/\d+/g, "#");
-        }
-        return "other";
-    }
-    function governedArtifactOrOther(artifact, allowlist) {
-        if (!artifact?.trim())
-            return null;
-        if (allowlist.includes(artifact))
-            return artifact;
-        return "other";
-    }
-    function normalizeExecutionPath(ep, allowed) {
-        return allowed.includes(ep) ? ep : "unknown";
     }
     if (!rebuildOnly) {
         if (!projectPath)

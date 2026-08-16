@@ -1,13 +1,32 @@
 // Ported from tests/helpers/doctor-markdown-tests.ps1.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync, statSync, copyFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getMarkdownFiles, readMarkdownText, testMarkdownLocalLinkPath } from "./files.js";
 import { runPmoDoctor, formatDoctorText } from "../doctor/pmo-doctor.js";
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+// Copies into an isolated temp dir rather than writing the integration
+// fixture into the real REPO_ROOT: Node's test runner runs test files
+// concurrently, and another suite (status.test.ts) does a non-atomic
+// directory copy of REPO_ROOT -- a file that appears and disappears in the
+// real repo root mid-run can race it.
+function copyDir(src, dest) {
+    for (const entry of readdirSync(src)) {
+        if (entry === ".git" || entry === "node_modules" || entry === "dist")
+            continue;
+        const s = join(src, entry);
+        const d = join(dest, entry);
+        if (statSync(s).isDirectory()) {
+            mkdirSync(d, { recursive: true });
+            copyDir(s, d);
+        }
+        else
+            copyFileSync(s, d);
+    }
+}
 test("markdown discovery, encoding, and local-link handling", () => {
     const workRoot = mkdtempSync(join(tmpdir(), "pmo-doctor-markdown-"));
     try {
@@ -45,18 +64,21 @@ test("markdown discovery, encoding, and local-link handling", () => {
     }
 });
 test("doctor reports an invalid Markdown link target without throwing", () => {
-    const integrationMarkdown = join(REPO_ROOT, `doctor-invalid-link-${Date.now()}-${Math.random().toString(16).slice(2)}.md`);
-    const invalidMarkdownTarget = "bad\x01path.md";
+    const workRoot = mkdtempSync(join(tmpdir(), "pmo-doctor-markdown-integration-"));
+    const tempRepo = join(workRoot, "repo");
     try {
-        writeFileSync(integrationMarkdown, `[invalid](${invalidMarkdownTarget})`, "utf8");
-        const result = runPmoDoctor(REPO_ROOT);
-        const text = formatDoctorText(REPO_ROOT, result);
-        const integrationName = integrationMarkdown.split("/").pop();
+        mkdirSync(tempRepo, { recursive: true });
+        copyDir(REPO_ROOT, tempRepo);
+        const invalidMarkdownTarget = "bad\x01path.md";
+        const integrationName = "doctor-invalid-link.md";
+        writeFileSync(join(tempRepo, integrationName), `[invalid](${invalidMarkdownTarget})`, "utf8");
+        const result = runPmoDoctor(tempRepo);
+        const text = formatDoctorText(tempRepo, result);
         assert.equal(result.fail, 0, "doctor reports an invalid Markdown target without failing");
         assert.ok(text.includes(`${integrationName} line 1 -> invalid local link target`), "doctor reports the specific broken-link message");
         assert.ok(!text.includes("Illegal characters in path"), "doctor emits no illegal-path exception");
     }
     finally {
-        rmSync(integrationMarkdown, { force: true });
+        rmSync(workRoot, { recursive: true, force: true });
     }
 });

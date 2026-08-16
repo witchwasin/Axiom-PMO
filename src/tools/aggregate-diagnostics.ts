@@ -12,6 +12,28 @@ function sha256Hex(data: string): string {
   return createHash("sha256").update(data, "utf8").digest("hex").toLowerCase();
 }
 
+// Pure privacy-boundary functions, hoisted to module scope (out of
+// aggregateDiagnostics' closure) and exported so they are directly unit
+// testable, matching how tests/helpers/learning-registry-tests.ps1
+// dot-sources scripts/aggregate-diagnostics.ps1 for these definitions.
+export function normalizeItemId(itemId: string, allowedPatterns: string[]): string | null {
+  if (!itemId?.trim()) return null;
+  for (const pattern of allowedPatterns) {
+    if (new RegExp(pattern).test(itemId)) return itemId.replace(/\d+/g, "#");
+  }
+  return "other";
+}
+
+export function governedArtifactOrOther(artifact: string, allowlist: string[]): string | null {
+  if (!artifact?.trim()) return null;
+  if (allowlist.includes(artifact)) return artifact;
+  return "other";
+}
+
+export function normalizeExecutionPath(ep: string, allowed: string[]): string {
+  return allowed.includes(ep) ? ep : "unknown";
+}
+
 export interface AggregateResult {
   output: string;
   exitCode: number;
@@ -46,24 +68,6 @@ export function aggregateDiagnostics(
 
   function getProjectHash(projectAbs: string, salt: string): string {
     return sha256Hex(`${salt}|${projectAbs}`);
-  }
-
-  function normalizeItemId(itemId: string, allowedPatterns: string[]): string | null {
-    if (!itemId?.trim()) return null;
-    for (const pattern of allowedPatterns) {
-      if (new RegExp(pattern).test(itemId)) return itemId.replace(/\d+/g, "#");
-    }
-    return "other";
-  }
-
-  function governedArtifactOrOther(artifact: string, allowlist: string[]): string | null {
-    if (!artifact?.trim()) return null;
-    if (allowlist.includes(artifact)) return artifact;
-    return "other";
-  }
-
-  function normalizeExecutionPath(ep: string, allowed: string[]): string {
-    return allowed.includes(ep) ? ep : "unknown";
   }
 
   if (!rebuildOnly) {
