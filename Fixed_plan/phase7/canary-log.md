@@ -19,3 +19,4 @@ artifact. No external state store.
 - N = 0. No qualifying CI runs yet; the counter accrues over real time.
 - Canary matrix: Node 24.18.0 and 22.x on windows-ps51 (powershell.exe
   rollback), windows-ps7, linux, and macos (PLAN.md §4).
+2026-08-16T15:47:25.941Z run clean N=1 sha=3b468ba node=v24.18.0 hosts=windows-ps51,windows-ps7,linux,macos
