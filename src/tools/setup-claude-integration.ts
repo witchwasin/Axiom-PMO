@@ -5,7 +5,7 @@
 import { existsSync, statSync, lstatSync, readdirSync } from "node:fs";
 import { join, resolve, basename } from "node:path";
 import { readTextFileState, writeTextFileAtomic, newAxiomBackup } from "../marker/marker-io.js";
-import { findAxiomBlock, testAxiomBlockOwnership, getAxiomCanonicalBody, setAxiomBlock, removeAxiomBlock } from "../marker/marker-block.js";
+import { findAxiomBlock, testAxiomBlockOwnership, getAxiomCanonicalBody, setAxiomBlock, removeAxiomBlock, newAxiomBlockText } from "../marker/marker-block.js";
 
 const EXIT_OK = 0;
 const EXIT_CONFLICT = 1;
@@ -74,7 +74,8 @@ export function setupClaudeIntegration(
     try {
       const backup = newAxiomBackup(targetPath);
       writeTextFileAtomic(targetPath, removal.text, state.hasBom);
-      return { output: `Removed the Axiom-PMO block from ${file}.\n  Backup: ${basename(backup)}\n`, exitCode: EXIT_OK };
+      const emptyNote = removal.text.trim() === "" ? `  ${file} is now empty. It is left in place rather than deleted -- this command\n  cannot tell a file it created from one that was already empty.\n` : "";
+      return { output: `Removed the Axiom-PMO block from ${file}.\n  Backup: ${basename(backup)}\n${emptyNote}`, exitCode: EXIT_OK };
     } catch (e) {
       return { output: `[FAIL] SETUP-007 Could not write ${file}.\n  ${(e as Error).message}\n`, exitCode: EXIT_CONFLICT };
     }
@@ -88,7 +89,8 @@ export function setupClaudeIntegration(
     return { output: `Already up to date -- ${file} is unchanged.\n`, exitCode: EXIT_OK };
   }
   if (dryRun) {
-    return { output: `Dry run -- nothing was written.\n  Would ${result.action === "inserted" ? "add" : "update"} the Axiom-PMO block in ${file}.\n  ${state.text.length} bytes -> ${result.text.length} bytes\n`, exitCode: EXIT_OK };
+    const blockPreview = newAxiomBlockText(body, "\n").split("\n").map((l) => `  | ${l}`).join("\n");
+    return { output: `Dry run -- nothing was written.\n  Would ${result.action === "inserted" ? "add" : "update"} the Axiom-PMO block in ${file}.\n  ${state.text.length} bytes -> ${result.text.length} bytes\n\n  --- block that would be written ---\n${blockPreview}\n  --- end ---\n`, exitCode: EXIT_OK };
   }
 
   let backup: string | null = null;
