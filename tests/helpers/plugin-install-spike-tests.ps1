@@ -91,14 +91,24 @@ function Invoke-Framework {
 
 function New-SimulatedPluginInstall {
   # Copies exactly what Milestone 6.0 section 7 says the plugin would carry --
-  # scripts, cli, pmo-config, templates, skills -- and nothing else. No .git,
-  # no tests, no examples. If a framework script needs something outside that
-  # list, this harness is where it shows up as a failure rather than in a
-  # user's first install.
+  # scripts, cli, pmo-config, templates, skills -- plus the compiled engine
+  # (dist/) and nothing else. No .git, no tests, no examples. If a framework
+  # script needs something outside that list, this harness is where it shows up
+  # as a failure rather than in a user's first install.
+  #
+  # dist/ joined the set with the Phase 7 CLI rewire: cli/axiom.mjs now runs the
+  # in-process Node engine and imports its compiled library from ../dist/, so a
+  # plugin install without dist/ cannot run the CLI at all (ERR_MODULE_NOT_FOUND
+  # on first command). The plugin root is the repository root (marketplace
+  # source "./", docs/architecture/claude-code-integration.md section 7) and
+  # dist/ is a committed artifact, so real installs carry it; the simulation
+  # must mirror that. This surfaced on the first qualifying canary run
+  # (Fixed_plan/phase7/canary-log.md), exactly the failure this harness exists
+  # to catch.
   param([string]$Root)
   $install = Join-Path $Root "marketplaces/axiom pmo/plugins/axiom-pmo"
   New-Item -ItemType Directory -Path $install -Force | Out-Null
-  foreach ($dir in @("scripts", "cli", "pmo-config", "templates")) {
+  foreach ($dir in @("scripts", "cli", "pmo-config", "templates", "dist")) {
     Copy-Item -LiteralPath (Join-Path $repo $dir) -Destination (Join-Path $install $dir) -Recurse -Force
   }
   # Skills land at <plugin-root>/skills/, which is where Claude Code's
