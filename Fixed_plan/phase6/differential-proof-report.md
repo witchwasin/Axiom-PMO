@@ -144,7 +144,7 @@ Coverage notes:
 | Component | Version |
 |---|---|
 | Node | v23.11.0 |
-| PowerShell (reference host, `AXIOM_PWSH`) | 7.6.4 (`/Users/arm/tools/pwsh/pwsh`, portable — not on PATH) |
+| PowerShell (reference host, `AXIOM_PWSH`) | 7.6.4 (`<pinned-pwsh-path>`, portable — not on PATH) |
 | git | 2.50.1 (Apple Git-155) |
 | OS | macOS 26.6.2 (Build 25G82), arm64 |
 
@@ -182,8 +182,8 @@ above asserts.
 | setup-claude-integration | SETUP-001/002 validation and the informational header/guidance lines missing (full rewrite) | transcribed the reference output faithfully |
 | update-source-snapshot | missing trailing newline (`Set-Content` appends one); timestamp was UTC `Z`, reference emits local-time `+HH:MM` | byte parity |
 | artifact-policy (file sets) | governed-file enumeration order differed (observable in PLACEHOLDER-001 lists) | per-directory case-insensitive sort, files before subdirectories — replicating `Get-ChildItem -Recurse -File` |
-| check-public-hygiene | allowlist Bearer pattern escaped wrong; ported dist files flagged as findings | allowlist + dist-skip, both sides now green |
-| RESUME-HERE.md | genuine local absolute paths (`/Users/arm/...`) flagged by the hygiene check | replaced with `<pinned-pwsh-path>` |
+| check-public-hygiene | allowlist auth-header token pattern escaped wrong; ported dist files flagged as findings | allowlist + dist-skip, both sides now green |
+| RESUME-HERE.md | genuine local absolute paths (`<local-home>/...`) flagged by the hygiene check | replaced with `<pinned-pwsh-path>` |
 
 Probe-side correction (not a tool delta): `tool-stateful-probe` originally let
 the PS reference resolve its own `-RepoRoot` (the checkout the script file
@@ -194,7 +194,7 @@ own clone.
 ### Full regression at archive time
 
 - All 10 probe binaries green (240 differential cases + doctor's 58 rows), run
-  with `AXIOM_PWSH=/Users/arm/tools/pwsh/pwsh` exported in the same command.
+  with `AXIOM_PWSH=<pinned-pwsh-path>` exported in the same command.
 - Full unit suite: **206 pass / 0 fail / 1 skip** (the explained live-`gh`
   skip), 207 tests, matching the pre-Phase-6 baseline exactly.
 

@@ -182,8 +182,13 @@ if (!POWERSHELL_AVAILABLE) {
     const ts = runCli(["validate", "--project", "examples/STANDARD-FEATURE", "--gate", "Release", "--fail-on-warning"]);
     const rb = runCli(["validate", "--project", "examples/STANDARD-FEATURE", "--gate", "Release", "--fail-on-warning"], { AXIOM_ROLLBACK_PWSH: "1" });
     assert("rollback path validates a passing project", rb.status === 0, `exit=${rb.status}`);
-    assert("rollback path output matches the default path", rb.stdout === ts.stdout,
-      JSON.stringify(rb.stdout.slice(0, 80)) + " vs " + JSON.stringify(ts.stdout.slice(0, 80)));
+    // Compare after normalizing line endings: powershell.exe 5.1 emits CRLF on
+    // Windows while the in-process engine emits LF, so a raw byte comparison
+    // would fail there on output that is semantically identical. The contract
+    // is same content, not same line-ending style.
+    const norm = (s) => s.replace(/\r\n/g, "\n");
+    assert("rollback path output matches the default path", norm(rb.stdout) === norm(ts.stdout),
+      JSON.stringify(norm(rb.stdout).slice(0, 80)) + " vs " + JSON.stringify(norm(ts.stdout).slice(0, 80)));
   }
 
   {
