@@ -20,3 +20,4 @@ artifact. No external state store.
 - Canary matrix: Node 24.18.0 and 22.x on windows-ps51 (powershell.exe
   rollback), windows-ps7, linux, and macos (PLAN.md §4).
 2026-08-16T15:47:25.941Z run clean N=1 sha=3b468ba node=v24.18.0 hosts=windows-ps51,windows-ps7,linux,macos
+2026-08-16T17:06:32.511Z RESET N=1->0 sha=6b132b0 changed=scripts/setup-claude-integration.ps1,src/tools/setup-claude-integration.ts,src/tools/setup-integration.test.ts,src/probe/junction-probe.ts
