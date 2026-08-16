@@ -2,7 +2,9 @@
 
 **Status:** PRE-AUTHORIZED IN PRINCIPLE by DEC-027 (`Fixed_plan/decision-log.md`,
 2026-08-16) — the go/no-go decision for this phase is already made. Still **not**
-executable: N=30 (`Fixed_plan/phase7/canary-log.md`) is not reached (currently 0), and
+executable: N=5 (`Fixed_plan/phase7/canary-log.md`; reduced from 30 by DEC-028) is not
+yet reached — check the log for the current count rather than trusting a number written
+here, and
 CR-017 sign-off (a real review, not just a named reviewer) has not happened. When both
 are true, report the evidence and request the CR-017 review specifically — do not
 re-ask whether to proceed with Phase 8 at all, and do not execute without that review
@@ -29,7 +31,8 @@ actually happening.
 ## Evidence this decision will be made from
 
 - `Fixed_plan/phase6/differential-proof-report.md` (240 differential cases)
-- `Fixed_plan/phase7/canary-log.md` (N=30 clean qualifying runs, zero resets)
+- `Fixed_plan/phase7/canary-log.md` (N=5 clean qualifying runs, zero resets — reduced
+  from 30 by DEC-028)
 
 ## Named security reviewer (CR-017)
 
