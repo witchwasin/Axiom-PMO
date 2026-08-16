@@ -602,3 +602,165 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: pwsh -NoProfile -ExecutionPolicy Bypass -File tests/helpers/ci-check-evidence-live-tests.ps1 -RepoPath .
+
+  # Phase 7 canary bookkeeping (Fixed_plan/phase7/PLAN.md §3). Every full-profile
+  # run recomputes the SHA-256 manifest over the validation surface (src/**/*.ts,
+  # scripts/**/*.ps1, pmo-config/*.json, Fixed_plan/phase0/compatibility-case-
+  # manifest.md, tests/golden/**) and diffs it against the committed
+  # Fixed_plan/phase7/canary-baseline.json via scripts/canary-baseline.mjs:
+  #
+  #   * clean + qualifying (push to main, the §4 definition) -> appends
+  #     "run clean N=..." to canary-log.md; the run counts toward N.
+  #   * clean + non-qualifying -> verified but not counted (no log line).
+  #   * any difference -> appends "N RESET: <files>" to canary-log.md, re-captures
+  #     the baseline at the new SHA, and fails the step so the drift is visible
+  #     (a real reset is not something to absorb silently). CI has no push
+  #     credentials, so the re-captured baseline + log are shipped as the
+  #     phase7-canary artifact for the maintainer to commit; the gate stays red
+  #     until that happens, which is the point -- a human owns the re-baseline.
+  canary-baseline:
+    needs: determine-profile
+    if: needs.determine-profile.outputs.profile == 'full'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24.18.0'
+          package-manager-cache: false
+
+      # --record computes the verdict, appends the run/reset line, re-captures
+      # the baseline on reset, and exits 1 on reset (making drift a red run).
+      - name: Canary baseline diff / reset / log
+        shell: bash
+        env:
+          CANARY_EVENT: ${{ github.event_name }}
+        run: node scripts/canary-baseline.mjs --record
+
+      # Ship the possibly-updated files even when the step above failed on a
+      # reset, so the maintainer can commit the re-captured baseline + log.
+      - name: Upload canary log and baseline
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: phase7-canary
+          path: |
+            Fixed_plan/phase7/canary-log.md
+            Fixed_plan/phase7/canary-baseline.json
+          if-no-files-found: error
+
+  # Phase 7 canary matrix (Fixed_plan/phase7/PLAN.md §4): the same 4-host set the
+  # full profile already runs, each on both the pinned Node (24.18.0) and the
+  # package.json engines floor (>=22.0.0 -> the oldest supported LTS of the 22.x
+  # line, 22.11.0). Each cell drives the real rewired CLI (cli/axiom.mjs) against
+  # a clean example project on its default in-process path. The two Windows cells
+  # additionally exercise AXIOM_ROLLBACK_PWSH=1 through the actual reference
+  # hosts -- powershell.exe 5.1 (windows-ps51) and pwsh 7 (windows-ps7) -- the
+  # only place that path gets exercised on Windows. Gated to push-to-main full
+  # runs, the §4 qualifying trigger; PRs use the existing fast/targeted/full jobs.
+  canary-matrix:
+    needs: determine-profile
+    if: needs.determine-profile.outputs.profile == 'full' && github.event_name == 'push'
+    runs-on: ${{ matrix.runsOn }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows-ps51
+            runsOn: windows-2025
+            node: '24.18.0'
+            rollbackHost: powershell.exe
+          - name: windows-ps51-node22
+            runsOn: windows-2025
+            node: '22.11.0'
+            rollbackHost: powershell.exe
+          - name: windows-ps7
+            runsOn: windows-2025
+            node: '24.18.0'
+            rollbackHost: pwsh
+          - name: windows-ps7-node22
+            runsOn: windows-2025
+            node: '22.11.0'
+            rollbackHost: pwsh
+          - name: linux
+            runsOn: ubuntu-24.04
+            node: '24.18.0'
+            rollbackHost: ''
+          - name: linux-node22
+            runsOn: ubuntu-24.04
+            node: '22.11.0'
+            rollbackHost: ''
+          - name: macos
+            runsOn: macos-15
+            node: '24.18.0'
+            rollbackHost: ''
+          - name: macos-node22
+            runsOn: macos-15
+            node: '22.11.0'
+            rollbackHost: ''
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+
+      # The canary's actual measure: the real CLI binary on its default in-process
+      # path must validate a clean project with zero FAIL rows and exit 0.
+      - name: Canary CLI exercise (${{ matrix.name }}), default in-process path
+        shell: bash
+        run: |
+          node -e '
+            const { spawnSync } = require("node:child_process");
+            const r = spawnSync(process.execPath,
+              ["cli/axiom.mjs", "validate", "--project", "examples/STANDARD-FEATURE", "--json"],
+              { encoding: "utf8" });
+            if (r.status !== 0) {
+              console.error("cli validate exited " + r.status + "\n--- stdout ---\n" + r.stdout + "\n--- stderr ---\n" + r.stderr);
+              process.exit(1);
+            }
+            const env = JSON.parse(r.stdout);
+            if (env.summary.fail !== 0 || env.summary.exit_code !== 0) {
+              console.error("unexpected summary on the default path: " + r.stdout);
+              process.exit(1);
+            }
+            console.log("default path OK: " + env.summary.pass + " pass, 0 fail, exit 0");
+          '
+
+      # Windows cells only: the pre-rewire spawn-pwsh path must still work on the
+      # real reference host, exactly as before the rewire (PLAN.md §1/§4).
+      - name: Canary CLI exercise (${{ matrix.name }}), rollback path (${{ matrix.rollbackHost }})
+        if: matrix.rollbackHost != ''
+        shell: bash
+        env:
+          AXIOM_ROLLBACK_PWSH: '1'
+          AXIOM_PWSH: ${{ matrix.rollbackHost }}
+        run: |
+          node -e '
+            const { spawnSync } = require("node:child_process");
+            const r = spawnSync(process.execPath,
+              ["cli/axiom.mjs", "validate", "--project", "examples/STANDARD-FEATURE", "--json"],
+              { encoding: "utf8" });
+            if (r.status !== 0) {
+              console.error("cli validate (rollback) exited " + r.status + "\n--- stdout ---\n" + r.stdout + "\n--- stderr ---\n" + r.stderr);
+              process.exit(1);
+            }
+            const env = JSON.parse(r.stdout);
+            if (env.summary.fail !== 0 || env.summary.exit_code !== 0) {
+              console.error("unexpected summary on the rollback path: " + r.stdout);
+              process.exit(1);
+            }
+            console.log("rollback path OK via " + process.env.AXIOM_PWSH + ": " + env.summary.pass + " pass, 0 fail, exit 0");
+          '

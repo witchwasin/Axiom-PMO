@@ -1,0 +1,21 @@
+# Phase 7 Canary Log
+
+Qualifying run: a push-to-main CI run of the full profile with
+AXIOM_ROLLBACK_PWSH unset (PLAN.md §4). N = consecutive clean qualifying
+runs; any validation-surface drift (canary-baseline.json mismatch) logs a
+RESET and restarts N at 0 (PLAN.md §3). Every qualifying run appends a line
+below; the appended lines are committed from the phase7-canary artifact by
+the maintainer -- this is a committed file, matching every other Phase 0-6
+artifact. No external state store.
+
+## 2026-08-16 — baseline captured, mechanism landed
+
+- `Fixed_plan/phase7/canary-baseline.json` records the SHA-256 of the
+  validation surface (`src/**/*.ts`, `scripts/**/*.ps1`, `pmo-config/*.json`,
+  `Fixed_plan/phase0/compatibility-case-manifest.md`, `tests/golden/**`) at
+  commit `34e201c` (367 files hashed).
+- The rewired CLI (`cli/axiom.mjs`, default in-process TS engine with
+  `AXIOM_ROLLBACK_PWSH` rollback) landed in the same commit.
+- N = 0. No qualifying CI runs yet; the counter accrues over real time.
+- Canary matrix: Node 24.18.0 and 22.x on windows-ps51 (powershell.exe
+  rollback), windows-ps7, linux, and macos (PLAN.md §4).
