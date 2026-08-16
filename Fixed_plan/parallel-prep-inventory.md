@@ -63,8 +63,11 @@ Compiled 2026-08-16 against `main` at `236a35e`.
 
 ## Phase 10 — documentation reconciliation prep
 
-Stale *active* PowerShell instructions, measured today (lines matching
-`powershell|pwsh|powershell.exe|.ps1`, case-insensitive):
+Stale *active* PowerShell instructions. Line-level detail below (superseding the
+count-only table this section originally had) so Phase 10, once authorized, is a
+line-number-in-hand edit pass, not a fresh search. Re-grep before acting if any time
+has passed — this is a snapshot, not a live view. Command used per file:
+`grep -inE "powershell|pwsh|powershell\.exe|\.ps1" <file>`.
 
 | File | Lines with PowerShell mentions |
 |---|---|
@@ -78,10 +81,112 @@ Stale *active* PowerShell instructions, measured today (lines matching
 | `hooks/hooks.json` | 0 (config only) |
 | `action.yml` | 5 |
 | `docs/guides/powershell-runtime.md` | 12 |
-| **Total** | **~171 lines across 10 files** |
+| **Total** | **171 lines across 10 files** |
 
-Preserved untouched per CR-021's reviewed allowlist (historical records keep
-their PowerShell mentions): `CHANGELOG.md`, release notes,
+### README.md (26 lines)
+
+- **L16-17**: version/license header line names "PowerShell reference implementation" —
+  rewrite once Node is unconditional.
+- **L140, 150, 164**: architecture diagram `[SYS] validate-project.ps1 -Gate ...` labels
+  in three gate-flow illustrations — retarget to the Node entrypoint or drop the
+  `[SYS]`/script-name framing entirely.
+- **L176**: prerequisites line ("Requires PowerShell...") — the CLI won't require it once
+  the rollback toggle is gone.
+- **L198-204**: an entire "Without Node, the same things through PowerShell" fallback
+  code block (4 commands) — this whole block's premise (Node is optional, PowerShell is
+  the fallback) inverts at cutover; either delete it or invert it to document
+  `AXIOM_ROLLBACK_PWSH` instead.
+- **L237-238, 247**: prose describing `cli/` as "convenience wrappers... call the
+  PowerShell reference implementation via `pwsh`" and "No local PowerShell install
+  required" — both describe pre-cutover behavior specifically.
+- **L348**: "deterministic PowerShell validator" in the governance-model prose.
+- **L478**: aside about "Markdown or PowerShell stops working" at headcount — check
+  whether this line's point still makes sense post-cutover or needs rewording.
+- **L502-505**: a `powershell -File ...` code block for doctor/tests/run-all-checks.
+- **L516**: CI matrix description naming "Windows PowerShell 5.1" as the min host.
+- **L530**: `cli/` tree description, "Thin Node wrapper over the PowerShell scripts."
+- **L626, 628**: two guide-index table rows linking `powershell-runtime.md` and
+  `powershell-portability.md` — the links themselves stay (CR-021), but check the
+  surrounding row label text for present-tense claims that go stale.
+- **L748**: changelog-adjacent prose, "no-op on PowerShell 7" — likely historical
+  (describes a past fix), check before touching.
+
+### TESTING.md (52 lines)
+
+Almost entirely `powershell -ExecutionPolicy Bypass -File ...` invocation examples and
+surrounding prose across every section (doctor, goldens, config-mutation, e2e, CLI
+regression): **L7-8, 13-14, 19-20, 25-26, 31-33, 36, 38, 40-41, 44-46, 50, 53, 55, 69,
+74-75, 92, 94-95, 98, 104, 107, 110, 114-115, 124-128, 131-132, 135, 143-150, 167-168,
+170**. This file's whole shape assumes PowerShell is the thing being invoked directly;
+Phase 10 here is less "delete a mention" and more "decide the file's post-cutover
+structure" (probably: Node command first, `AXIOM_ROLLBACK_PWSH=1` variant second) —
+flag to the Human Owner as a design question, not a mechanical edit, when Phase 10
+opens.
+
+### CONTRIBUTING.md (19 lines)
+
+- **L27-33**: an "Environment" prerequisites block explicitly listing PowerShell 7/5.1/
+  Linux-macOS-via-pwsh as supported hosts, "no build step and no runtime dependencies
+  beyond PowerShell."
+- **L38-42**: a `powershell -File ...` quickstart block (4 commands).
+- **L49-50, 88, 112, 128, 130, 132, 134, 155**: scattered prose references to specific
+  `.ps1` files as where rules/goldens live.
+
+### Makefile (24 lines)
+
+- **L3-9**: header comment block explaining `PWSH`/`make check PWSH=powershell` and the
+  CI host matrix.
+- **L11-12**: `PWSH ?= pwsh` / `PS := $(PWSH) ...` — the actual dispatch variables every
+  target below uses.
+- **L35, 38, 41, 44, 47, 50, 53, 56, 59, 62-63, 66-69, 84**: every target body (`demo`,
+  `doctor`, `golden`, `capture-golden`, `test`, `config-mutation-test`,
+  `diagnostics-contract-test`, `line-ending-test`, `handoff-test`, `e2e-*`, `check`)
+  invokes `$(PS) scripts/*.ps1` or `tests/**/*.ps1` directly. This is the file where
+  Phase 10 is least "delete text" and most "decide whether targets call `node
+  cli/axiom.mjs` instead" — a real design decision, flag it rather than mechanically
+  edit.
+
+### scripts/check.sh (10 lines)
+
+Whole-file: it exists specifically to find a PowerShell host and forward to
+`run-all-checks.ps1` (**L2, 4-5, 8-14, 21**). Once Node is unconditional this file's
+entire reason to exist changes — likely retarget to call `cli/axiom.mjs` directly, or
+retire it if the Makefile/CLI already covers its case.
+
+### clean-room/Dockerfile (13 lines)
+
+- **L15, 23, 27**: header comments describing PowerShell 5.1 as "the reference
+  platform" and prerequisites.
+- **L35, 58-68**: the actual image build — `ARG PWSH_VERSION`, arch detection, and the
+  curl/tar install of PowerShell itself. This is the largest actual *behavior* change
+  in Phase 10 (not just prose): the clean-room image installing PowerShell at all
+  becomes optional once Node is unconditional, though `AXIOM_ROLLBACK_PWSH` staying
+  available until Phase 9 argues for keeping it through Phase 8 at least.
+
+### hooks/scope-advisory.sh (10 lines)
+
+**L5, 9, 39-46, 48-49**: resolves a PowerShell host (`AXIOM_PWSH` / `pwsh` / `powershell`
+on `PATH`) and shells out to `hook-scope-advisory.ps1`, no-op if none found. Same shape
+as `scripts/check.sh` — becomes a design question (call the Node tool directly?) rather
+than a text edit.
+
+### action.yml (5 lines)
+
+- **L2**: the Action's own `description:` field names "PowerShell validator" — a
+  consumer-facing string, worth getting right rather than just deleting.
+- **L54, 84**: exit-code docs referencing "no PowerShell host found" as the 127 case.
+- **L109-110**: composite-run comment about runner images already shipping PowerShell.
+
+### docs/guides/powershell-runtime.md (12 lines)
+
+Whole-file, all 12 lines (**L1, 3-4, 10, 17, 23, 28, 32, 35, 40-42**): this file's sole
+purpose is explaining PowerShell host setup. Once `AXIOM_ROLLBACK_PWSH` is gone
+(post-Phase 9), the file likely retires entirely rather than getting edited line by
+line — flag as a whole-file decision, not a line-level one.
+
+### Preserved untouched (CR-021 reviewed allowlist)
+
+Historical records keep their PowerShell mentions as-is: `CHANGELOG.md`, release notes,
 `docs/architecture/powershell-portability.md`.
 
 ---
