@@ -11,7 +11,7 @@ import { resolveReference } from "../core/reference-resolver.js";
 import { testGenericOwner, getHandoffPolicySeverity } from "../core/owner-policy.js";
 import { getDecisionDecider } from "./decision-log.js";
 import { addResult } from "../core/result-writer.js";
-function getHeadingPattern(heading, level = 2) {
+export function getHeadingPattern(heading, level = 2) {
     return "^\\s*" + "#".repeat(level) + "\\s+" + heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*$";
 }
 function getHandoffMetadata(text) {

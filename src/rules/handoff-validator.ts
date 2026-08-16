@@ -15,7 +15,7 @@ import { addResult } from "../core/result-writer.js";
 import type { ResultAccumulator, ValidationRules } from "../core/context.js";
 import type { Mode, Gate } from "../core/types.js";
 
-function getHeadingPattern(heading: string, level = 2): string {
+export function getHeadingPattern(heading: string, level = 2): string {
   return "^\\s*" + "#".repeat(level) + "\\s+" + heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*$";
 }
 
