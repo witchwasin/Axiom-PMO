@@ -201,3 +201,54 @@ test("setup integration: hostile content cannot manufacture authority", () => {
         rmSync(sandbox, { recursive: true, force: true });
     }
 });
+test("setup integration: a reparse-point project root is refused (SETUP-003)", () => {
+    // CR-017-review-material §5: a junction or symlink AS the project root means
+    // AGENTS.md physically lives in the link target -- editing it touches a tree
+    // this command was not asked to change. Windows hosts cannot create symlinks
+    // without Developer Mode, so the NTFS-junction variant of this case runs on
+    // real Windows hosts via src/probe/junction-probe.ts; this local case locks
+    // the POSIX (symlink) side.
+    const sandbox = mkdtempSync(join(tmpdir(), "axiom-setup-"));
+    try {
+        const real = newProject(sandbox, "real-root", "# Real rules.\n");
+        const link = join(sandbox, "linked-root");
+        try {
+            symlinkSync(real, link, "dir");
+        }
+        catch {
+            console.log("[SKIP] symlink creation failed on this host; project-root reparse refusal not exercised here");
+            return;
+        }
+        const r = setupClaudeIntegration(link, false, false, false, "AGENTS.md");
+        assert.notEqual(r.exitCode, 0, "reparse-point root refused");
+        assert.ok(/SETUP-003/.test(r.output), "SETUP-003");
+        assert.ok(/Project path is a symbolic link or reparse point/.test(r.output), "names the project path");
+        assert.equal(getText(join(real, "AGENTS.md")), "# Real rules.\n", "pointed-at file untouched");
+    }
+    finally {
+        rmSync(sandbox, { recursive: true, force: true });
+    }
+});
+test("setup integration: a symlinked instruction file is refused (SETUP-003)", () => {
+    const sandbox = mkdtempSync(join(tmpdir(), "axiom-setup-"));
+    try {
+        const outside = newProject(sandbox, "outside-file", "# Somebody else's file\n");
+        // Project starts with NO AGENTS.md: the symlink must be the file, so the
+        // link path must not already exist (symlinkSync would EEXIST).
+        const p = newProject(sandbox, "file-symlink", null);
+        try {
+            symlinkSync(join(outside, "AGENTS.md"), join(p, "AGENTS.md"), "file");
+        }
+        catch {
+            console.log("[SKIP] symlink creation failed on this host; file-symlink refusal not exercised here");
+            return;
+        }
+        const r = setupClaudeIntegration(p, false, false, false, "AGENTS.md");
+        assert.notEqual(r.exitCode, 0, "symlinked file refused");
+        assert.ok(/SETUP-003/.test(r.output), "SETUP-003");
+        assert.equal(getText(join(outside, "AGENTS.md")), "# Somebody else's file\n", "target untouched");
+    }
+    finally {
+        rmSync(sandbox, { recursive: true, force: true });
+    }
+});

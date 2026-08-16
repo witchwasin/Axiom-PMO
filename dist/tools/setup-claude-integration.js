@@ -36,6 +36,24 @@ export function setupClaudeIntegration(projectPath, dryRun, uninstall, force, fi
             exitCode: EXIT_CONFLICT,
         };
     }
+    // ---- SETUP-003: a reparse-point project root points elsewhere -------------
+    // A junction or symlink AS the project root means AGENTS.md physically lives
+    // in the link target -- editing it touches a tree this command was not asked
+    // to change, the same escape the file-level check below refuses. lstat
+    // reports NTFS junctions as reparse points on Windows (junction-probe proves
+    // it), so this catches both symlinks and junctions. CR-017-review-material
+    // §5; verified on a real Windows host by src/probe/junction-probe.ts.
+    try {
+        if (lstatSync(project).isSymbolicLink()) {
+            return {
+                output: "[FAIL] SETUP-003 Project path is a symbolic link or reparse point.\n" +
+                    "  Refusing to follow it: the real project lies outside what this command was asked to change.\n" +
+                    "  Fix: point --project at the real directory, or replace the link with a regular directory.\n",
+                exitCode: EXIT_CONFLICT,
+            };
+        }
+    }
+    catch { }
     // ---- SETUP-003: a symlinked instruction file points elsewhere ------------
     if (existsSync(targetPath)) {
         try {

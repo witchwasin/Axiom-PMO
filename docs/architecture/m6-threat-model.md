@@ -66,12 +66,19 @@ followed, not resolved-and-continued.
 **Evidence.** `setup-integration-tests.ps1` asserts refusal *and* that the
 pointed-at file is byte-identical afterwards.
 
-**Residual.** Not exercised on Windows, where creating a symlink needs
-elevation and reparse-point semantics differ. The check reads
-`FileAttributes.ReparsePoint`, which is the Windows-native mechanism, so it is
-expected to hold — expected, not demonstrated.
+**Residual.** The check reads `FileAttributes.ReparsePoint` / Node's lstat
+reparse-point flag, which are the Windows-native mechanisms, now demonstrated
+on a real Windows host: `src/probe/junction-probe.ts` (canary-matrix Windows
+cells) creates an actual NTFS junction and asserts SETUP-003 refusal on both
+the reference and the port. The first real-Windows run found a genuine gap —
+both implementations only checked the instruction *file*, so a junctioned
+*project root* was not refused and setup wrote through it — now closed: a
+reparse-point project root is refused with SETUP-003 on both sides (probe 6/6
+PASS, plus POSIX symlink cases in `setup-integration.test.ts`). Windows file
+symlinks still need elevation to *create* (Developer Mode or admin), which is
+why the junction case, not the symlink case, is the CI-exercised one.
 
-**Non-blocking, with an untested platform.**
+**Non-blocking; the junction variant is now demonstrated, not assumed.**
 
 ### 3. Forged ownership — an unkeyed digest is not provenance
 

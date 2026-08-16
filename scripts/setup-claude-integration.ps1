@@ -94,6 +94,21 @@ if ($resolvedParent -ne $project) {
   exit $exitConflict
 }
 
+# A reparse-point PROJECT ROOT points elsewhere: AGENTS.md physically lives in
+# the link target, so editing it touches a tree this command was not asked to
+# change -- the same escape the file-level SETUP-003 below refuses. Check the
+# raw input before Resolve-Path dereferences anything (a junction must be seen
+# as itself, not as its target). NTFS junctions carry the ReparsePoint
+# attribute exactly like symlinks, so one check covers both. Verified on a real
+# Windows host by src/probe/junction-probe.ts (CR-017-review-material §5).
+$projectInput = Get-Item -LiteralPath $ProjectPath -Force -ErrorAction SilentlyContinue
+if ($projectInput -and ($projectInput.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+  Write-Host "[FAIL] SETUP-003 Project path is a symbolic link or reparse point."
+  Write-Host "  Refusing to follow it: the real project lies outside what this command was asked to change."
+  Write-Host "  Fix: point --project at the real directory, or replace the link with a regular directory."
+  exit $exitConflict
+}
+
 # A symlinked instruction file points somewhere this command was not asked to
 # modify. Following it would edit a file outside the project without saying so.
 if (Test-Path -LiteralPath $targetPath) {
