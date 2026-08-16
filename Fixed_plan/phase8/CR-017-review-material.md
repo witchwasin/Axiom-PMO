@@ -68,18 +68,31 @@ automatically.
 | Read-only / non-writable install still functions | `plugin-install-spike.test.ts` (`chmodSync` case) | ✅ |
 | Clean-room install touches only the one file it's supposed to (`AGENTS.md`), nothing else in a foreign repo | `clean-room.test.ts`, differentially probed by `tool-stateful-probe.js` | ✅ |
 | Case-sensitivity (path matching doesn't silently widen on case-insensitive filesystems) | `scope-diff.test.ts`, `execution-contract.test.ts` | ✅ |
-| **Windows NTFS junctions specifically** (a different reparse-point type than a symlink — `lstatSync(...).isSymbolicLink()` is not guaranteed to catch every junction the same way it catches a symlink) | `src/probe/junction-probe.ts` (runs on the canary-matrix Windows cells every qualifying push) + `setup-integration.test.ts` (POSIX symlink side) + project-root reparse check in `setup-claude-integration.ts` / `setup-claude-integration.ps1` | ✅ **Verified — and the verification found a real gap, now fixed.** First real-Windows run (`commit 236a35e`) proved `lstat` *does* report a junction as a reparse point, but both TS and PS only checked the *instruction file* — a **junctioned project root** was not refused (exit 0) and setup wrote through the junction into the target file. Both implementations now refuse a reparse-point project root with SETUP-003 (same rule, project-path subject), asserted by the probe (6/6 PASS on Windows) and the new POSIX unit cases. |
+| **Windows NTFS junctions specifically** (a different reparse-point type than a symlink) | `src/probe/junction-probe.ts` (3 cases, runs on the canary-matrix Windows cells every qualifying push) + `setup-integration.test.ts` (POSIX symlink side) + `findAncestorReparsePoint` in `src/core/path-containment.ts` / `Find-AncestorReparsePoint` in `scripts/lib/path-containment.ps1` | ✅ **Verified — and the verification found two real gaps, both now fixed.** (1) First real-Windows run (`236a35e`) proved `lstat` *does* report a junction as a reparse point, but both TS and PS only checked the *instruction file* — a junctioned project **root** was not refused. Fixed in `6b132b0`. (2) Auditing for the same bug class found the *fix itself* only checked the project directory's own lstat, not any **ancestor** of it — reproduced directly with a POSIX symlink one level above an otherwise-ordinary project directory: exit 0, block written through it. Fixed in `1a4764e` by comparing physical vs. lexical resolution from the leaf backward (tolerant of OS-level prefix aliases like macOS's `/tmp` → `/private/tmp`, which is exactly what every test fixture in this suite sits under — a naive realpath diff would have false-positived on ordinary usage). Both fixes verified by direct reproduction (bug reproduced first, then the fix confirmed to close it) on TS and PS, not test-suite output alone. |
 
-## 6. Open item for the actual review
+## 6. Codebase-wide audit for the same bug class (not just the one instance above)
 
-Item 5's junction gap is the one thing this compilation could not close by
-reading code — it needs to either be tested on a real Windows host (the
-`canary-matrix`'s `windows-ps51`/`windows-ps7` cells already run there; a
-junction-containment case could be added to `tool-stateful-probe.js` before
-Phase 8, if the Human Owner wants it closed rather than accepted as a known
-gap) or explicitly accepted as residual risk in the sign-off.
+Searched beyond the one file already known to have a finding: every `isSymbolicLink`/
+`lstatSync` use in `src/tools/`, `src/exec/` (TS) and every `ReparsePoint`/`LinkType` use
+in `scripts/*.ps1` (PS), plus a broader keyword sweep for `symlink`/`junction`/`reparse`
+across both trees. Result: no second instance of the final-component-only pattern.
+Everywhere else that does physical containment (`externalization-validator`,
+`design-provider-validator`, `research-validator`, both TS and PS) already uses the
+older, already-correct `testPhysicalContainment`/`Test-PhysicalContainment` helper, which
+resolves both sides via realpath and was never susceptible to this gap in the first
+place — confirmed by reading each call site, not just that the import exists. Stated
+plainly since a negative result is still a result: **the two fixes in item 5 close this
+gap class everywhere it currently exists in the codebase**, not just for the one
+entrypoint that happened to surface it first.
 
-## 7. Named reviewer
+## 7. Open item for the actual review
+
+None outstanding for the containment surface specifically — see item 5's two fixes and
+item 6's audit. The Human Owner's own review may still turn up items this compilation
+missed; this section exists to be filled in by that review, not to assert there is
+nothing to look for.
+
+## 8. Named reviewer
 
 Witchwasin K. (Human Owner) — named per DEC-027. This document is the input to
 that review, not a substitute for it.
