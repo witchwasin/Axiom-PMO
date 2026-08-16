@@ -51,7 +51,7 @@ export function checkPublicHygiene(repoPath) {
         ...spawnSync("git", ["-C", repo, "ls-files", "--others", "--exclude-from=.gitignore"], { encoding: "utf8" }).stdout.split("\n"),
     ].map((f) => f.trim()).filter(Boolean);
     const uniqueTracked = [...new Set(trackedFiles)];
-    const selfExcludedPaths = ["pmo-config/public-hygiene-allowlist.json", "scripts/check-public-hygiene.ps1", "src/tools/check-public-hygiene.ts", "dist/tools/check-public-hygiene.js"];
+    const selfExcludedPaths = ["pmo-config/public-hygiene-allowlist.json", "scripts/check-public-hygiene.ps1", "src/tools/check-public-hygiene.ts"];
     const checks = [
         { id: "OLD-NAME-001", pattern: "PMO-Template-Personal", regex: false, description: "old private product name" },
         { id: "LOCAL-PATH-001", pattern: "[A-Z]:\\\\Users\\\\", regex: true, description: "Windows local user path" },
@@ -74,6 +74,13 @@ export function checkPublicHygiene(repoPath) {
     for (const file of uniqueTracked) {
         const relativePath = toRepoPath(file);
         if (selfExcludedPaths.includes(relativePath))
+            continue;
+        // dist/ is the committed, generated bundle (DEC-026 §3). Its bytes are a
+        // compiled copy of src/ and necessarily repeat the same literal patterns
+        // (secret-token regexes, historical commit ids) this check exists to catch
+        // in *authored* files. Scanning generated output would report the same
+        // finding twice — once in src/, once in dist/ — with no new information.
+        if (relativePath.startsWith("dist/"))
             continue;
         const fullPath = join(repo, file);
         if (!existsSync(fullPath))
