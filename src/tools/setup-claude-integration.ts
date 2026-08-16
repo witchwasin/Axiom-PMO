@@ -10,6 +10,7 @@ import { existsSync, statSync, lstatSync, readdirSync } from "node:fs";
 import { join, resolve, basename, dirname } from "node:path";
 import { readTextFileState, writeTextFileAtomic, newAxiomBackup } from "../marker/marker-io.js";
 import { findAxiomBlock, testAxiomBlockOwnership, getAxiomCanonicalBody, setAxiomBlock, removeAxiomBlock, newAxiomBlockText } from "../marker/marker-block.js";
+import { findAncestorReparsePoint } from "../core/path-containment.js";
 
 const EXIT_OK = 0;
 const EXIT_CONFLICT = 1;
@@ -52,23 +53,25 @@ export function setupClaudeIntegration(
     };
   }
 
-  // ---- SETUP-003: a reparse-point project root points elsewhere -------------
-  // A junction or symlink AS the project root means AGENTS.md physically lives
-  // in the link target -- editing it touches a tree this command was not asked
-  // to change, the same escape the file-level check below refuses. lstat
-  // reports NTFS junctions as reparse points on Windows (junction-probe proves
-  // it), so this catches both symlinks and junctions. CR-017-review-material
-  // §5; verified on a real Windows host by src/probe/junction-probe.ts.
-  try {
-    if (lstatSync(project).isSymbolicLink()) {
-      return {
-        output: "[FAIL] SETUP-003 Project path is a symbolic link or reparse point.\n" +
-          "  Refusing to follow it: the real project lies outside what this command was asked to change.\n" +
-          "  Fix: point --project at the real directory, or replace the link with a regular directory.\n",
-        exitCode: EXIT_CONFLICT,
-      };
-    }
-  } catch {}
+  // ---- SETUP-003: a reparse point ANYWHERE in the project's ancestry --------
+  // Not just the project directory itself: an ancestor of it can be a
+  // junction/symlink too, redirecting the whole subtree AGENTS.md lives in
+  // without the leaf directory itself being a link. findAncestorReparsePoint
+  // walks the physical vs. lexical resolution from the leaf backward,
+  // tolerating a common OS-level prefix alias (macOS /var -> /private/var
+  // and friends, which every temp-dir fixture in this suite sits under) while
+  // still catching a redirect planted at any interior component. Subsumes the
+  // narrower project-itself-is-a-link case this replaced. CR-017-review-
+  // material.md section 5; verified on a real Windows host by
+  // src/probe/junction-probe.ts.
+  if (findAncestorReparsePoint(project)) {
+    return {
+      output: "[FAIL] SETUP-003 Project path is a symbolic link or reparse point.\n" +
+        "  Refusing to follow it: the real project lies outside what this command was asked to change.\n" +
+        "  Fix: point --project at the real directory, or replace the link with a regular directory.\n",
+      exitCode: EXIT_CONFLICT,
+    };
+  }
 
   // ---- SETUP-003: a symlinked instruction file points elsewhere ------------
   if (existsSync(targetPath)) {

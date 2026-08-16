@@ -32,3 +32,50 @@ export function testPhysicalContainment(path, root) {
         return true;
     return target.toLowerCase().startsWith((rootNorm + sep).toLowerCase());
 }
+// Finds a reparse point ANYWHERE in `path`'s own ancestry -- not just whether
+// `path` itself is a symlink/junction, but whether a directory somewhere
+// above it is, which redirects the whole subtree it contains. Comparing
+// physical-vs-lexical directly (realpathSync(path) !== resolve(path)) is
+// tempting but wrong: it false-positives on ordinary OS-level prefix aliases
+// that have nothing to do with an escape (e.g. /tmp -> /private/tmp on macOS,
+// or a mounted-volume alias) -- exactly the paths this project's own test
+// suite uses for every fixture. Those aliases only ever rewrite a LEADING
+// prefix, identically for every path under them; a planted symlink/junction
+// instead diverts one INTERIOR component to somewhere unrelated. So: compare
+// path components from the tail (leaf) backward. If they match all the way
+// until one side runs out, the only difference is a prefix alias -- safe. The
+// first point where a component actually differs is a real redirect.
+export function findAncestorReparsePoint(path) {
+    const lexical = resolve(path);
+    let physical;
+    try {
+        physical = realpathSync(path);
+    }
+    catch {
+        return null; // doesn't exist yet -- nothing to walk
+    }
+    const lexParts = lexical.split(sep).filter(Boolean);
+    const physParts = physical.split(sep).filter(Boolean);
+    let i = lexParts.length - 1;
+    let j = physParts.length - 1;
+    let matched = 0;
+    while (i >= 0 && j >= 0) {
+        const lexPart = lexParts[i];
+        const physPart = physParts[j];
+        if (lexPart.toLowerCase() !== physPart.toLowerCase())
+            break;
+        matched++;
+        i--;
+        j--;
+    }
+    if (i < 0 || j < 0)
+        return null; // one side exhausted first: prefix alias only, safe
+    // Trim `matched` trailing components off the lexical path's own STRING (via
+    // repeated dirname) rather than rejoining the split parts, so a Windows
+    // drive root (C:\) or UNC prefix reconstructs correctly instead of being
+    // silently dropped by the split/filter above.
+    let ancestor = lexical;
+    for (let k = 0; k < matched; k++)
+        ancestor = dirname(ancestor);
+    return ancestor;
+}

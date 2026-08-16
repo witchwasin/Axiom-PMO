@@ -69,3 +69,43 @@ function Test-PhysicalContainment {
   if ([string]::Equals($target, $root, [System.StringComparison]::OrdinalIgnoreCase)) { return $true }
   return $target.StartsWith($root + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)
 }
+
+# Finds a reparse point ANYWHERE in $Path's own ancestry -- not just whether
+# $Path itself is a symlink/junction, but whether a directory somewhere above
+# it is, which redirects the whole subtree it contains. A naive physical-vs-
+# lexical comparison false-positives on ordinary OS-level prefix aliases (for
+# example /tmp -> /private/tmp on macOS) that every temp-dir test fixture
+# sits under; those only ever rewrite a LEADING prefix identically for every
+# path beneath them, while a planted symlink/junction diverts one INTERIOR
+# component instead. Compare path components from the tail (leaf) backward:
+# matching all the way until one side runs out means the only difference is a
+# prefix alias (safe); the first component that actually differs is a real
+# redirect. Ported to src/core/path-containment.ts's findAncestorReparsePoint
+# -- keep both in lockstep.
+function Find-AncestorReparsePoint {
+  param([string]$Path)
+
+  $lexical = [System.IO.Path]::GetFullPath($Path)
+  $physical = Get-PhysicalTargetPath -Path $Path
+  if ($null -eq $physical) { return $null } # doesn't exist yet -- nothing to walk
+
+  $lexParts = @($lexical.TrimEnd([char]92, [char]47) -split '[\\/]' | Where-Object { $_ -ne '' })
+  $physParts = @($physical.TrimEnd([char]92, [char]47) -split '[\\/]' | Where-Object { $_ -ne '' })
+
+  $i = $lexParts.Count - 1
+  $j = $physParts.Count - 1
+  $matched = 0
+  while ($i -ge 0 -and $j -ge 0) {
+    if ($lexParts[$i].ToLowerInvariant() -ne $physParts[$j].ToLowerInvariant()) { break }
+    $matched++
+    $i--
+    $j--
+  }
+  if ($i -lt 0 -or $j -lt 0) { return $null } # one side exhausted first: prefix alias only, safe
+
+  $ancestor = $lexical
+  for ($k = 0; $k -lt $matched; $k++) {
+    $ancestor = Split-Path -Path $ancestor -Parent
+  }
+  return $ancestor
+}

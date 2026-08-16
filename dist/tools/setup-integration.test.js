@@ -229,6 +229,54 @@ test("setup integration: a reparse-point project root is refused (SETUP-003)", (
         rmSync(sandbox, { recursive: true, force: true });
     }
 });
+test("setup integration: a reparse point in an ANCESTOR of the project root is refused (SETUP-003)", () => {
+    // Found by direct reproduction while auditing for the same "final-component-
+    // only" gap class the project-root case above was fixed for: the check only
+    // ever inspected the project directory itself, never an ancestor. A symlink
+    // one level ABOVE the project directory -- the leaf itself being an ordinary
+    // real directory -- silently redirected reads/writes through it (verified:
+    // exit 0, block written into the link target) before this test's fix.
+    const sandbox = mkdtempSync(join(tmpdir(), "axiom-setup-"));
+    try {
+        const real = newProject(sandbox, "real-parent", null);
+        mkdirSync(join(real, "subdir"), { recursive: true });
+        writeFileSync(join(real, "subdir", "AGENTS.md"), "# Real rules.\n", "utf8");
+        const linkParent = join(sandbox, "linked-parent");
+        try {
+            symlinkSync(real, linkParent, "dir");
+        }
+        catch {
+            console.log("[SKIP] symlink creation failed on this host; ancestor reparse refusal not exercised here");
+            return;
+        }
+        // The project argument itself (".../linked-parent/subdir") is an ORDINARY
+        // real directory -- only its PARENT is the link.
+        const r = setupClaudeIntegration(join(linkParent, "subdir"), false, false, false, "AGENTS.md");
+        assert.notEqual(r.exitCode, 0, "ancestor reparse point refused");
+        assert.ok(/SETUP-003/.test(r.output), "SETUP-003");
+        assert.ok(/Project path is a symbolic link or reparse point/.test(r.output), "names the project path");
+        assert.equal(getText(join(real, "subdir", "AGENTS.md")), "# Real rules.\n", "pointed-at file untouched");
+    }
+    finally {
+        rmSync(sandbox, { recursive: true, force: true });
+    }
+});
+test("setup integration: an ordinary OS-level path alias (no planted link) is not a false positive", () => {
+    // findAncestorReparsePoint tolerates a common trailing-suffix match against
+    // a differing leading prefix (e.g. macOS's own /tmp -> /private/tmp), which
+    // is exactly what mkdtempSync(tmpdir()) sits under on macOS. If this ever
+    // regressed to a naive realpath-vs-lexical diff, EVERY test in this file
+    // would start failing SETUP-003 on an ordinary temp directory.
+    const sandbox = mkdtempSync(join(tmpdir(), "axiom-setup-"));
+    try {
+        const p = newProject(sandbox, "ordinary", null);
+        const r = setupClaudeIntegration(p, true, false, false, "AGENTS.md");
+        assert.ok(!/SETUP-003/.test(r.output), `no false-positive SETUP-003 on an ordinary temp-dir project: ${r.output}`);
+    }
+    finally {
+        rmSync(sandbox, { recursive: true, force: true });
+    }
+});
 test("setup integration: a symlinked instruction file is refused (SETUP-003)", () => {
     const sandbox = mkdtempSync(join(tmpdir(), "axiom-setup-"));
     try {

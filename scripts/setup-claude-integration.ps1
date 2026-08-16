@@ -61,6 +61,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 . (Join-Path $PSScriptRoot "lib/marker-block.ps1")
+. (Join-Path $PSScriptRoot "lib/path-containment.ps1")
 
 $exitOk = 0
 $exitConflict = 1
@@ -94,15 +95,17 @@ if ($resolvedParent -ne $project) {
   exit $exitConflict
 }
 
-# A reparse-point PROJECT ROOT points elsewhere: AGENTS.md physically lives in
-# the link target, so editing it touches a tree this command was not asked to
-# change -- the same escape the file-level SETUP-003 below refuses. Check the
-# raw input before Resolve-Path dereferences anything (a junction must be seen
-# as itself, not as its target). NTFS junctions carry the ReparsePoint
-# attribute exactly like symlinks, so one check covers both. Verified on a real
+# A reparse point ANYWHERE in the project's ancestry -- not just the project
+# directory itself, but an ancestor of it too, which redirects the whole
+# subtree AGENTS.md lives in without the leaf directory itself being a link.
+# Find-AncestorReparsePoint (lib/path-containment.ps1) walks the physical vs.
+# lexical resolution from the leaf backward, tolerating a common OS-level
+# prefix alias while still catching a redirect planted at any interior
+# component. Checked against the raw input, before Resolve-Path dereferences
+# anything -- the function does its own lexical/physical resolution. Subsumes
+# the narrower project-itself-is-a-link case this replaced. Verified on a real
 # Windows host by src/probe/junction-probe.ts (CR-017-review-material.md, section 5).
-$projectInput = Get-Item -LiteralPath $ProjectPath -Force -ErrorAction SilentlyContinue
-if ($projectInput -and ($projectInput.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+if (Find-AncestorReparsePoint -Path $ProjectPath) {
   Write-Host "[FAIL] SETUP-003 Project path is a symbolic link or reparse point."
   Write-Host "  Refusing to follow it: the real project lies outside what this command was asked to change."
   Write-Host "  Fix: point --project at the real directory, or replace the link with a regular directory."
