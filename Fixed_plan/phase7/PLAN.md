@@ -117,10 +117,9 @@ unchanged, and is only reached when `AXIOM_ROLLBACK_PWSH=1`.
 
 ## 6. N and exit
 
-- **N = 5** qualifying canary runs (§4) with zero resets (§3) and zero unexplained
-  deltas across all four surfaces (§5). Reduced from the original 30 by DEC-028
-  (`Fixed_plan/decision-log.md`) — the Human Owner explicitly accepted the reduced
-  confidence this trades away; see that entry for the reasoning and what was given up,
+- **N = 10** qualifying canary runs (§4) with zero resets (§3) and zero unexplained
+  deltas across all four surfaces (§5). Originally 30, reduced to 5 by DEC-028, revised
+  to 10 by DEC-029 (`Fixed_plan/decision-log.md`) — read DEC-029 for why 10 specifically,
   not just the number.
 - Record every run and every reset, append-only, in `Fixed_plan/phase7/canary-log.md`.
 - **A run counts toward N only if the whole qualifying workflow run is green, not
@@ -137,7 +136,7 @@ unchanged, and is only reached when `AXIOM_ROLLBACK_PWSH=1`.
   instead. This was applied in practice (commits `b43dc94`, `3b468ba`) before it was
   written here; this paragraph makes it the documented rule rather than tribal
   knowledge.
-- **Exit:** 5 consecutive clean qualifying runs. At that point Phase 7 is done and
+- **Exit:** 10 consecutive clean qualifying runs. At that point Phase 7 is done and
   archived — this does **not** auto-advance to Phase 8. Cutover is a separate,
   explicit human authorization (§7 of `master-plan.md`), made after reviewing this
   evidence, not triggered by reaching N.

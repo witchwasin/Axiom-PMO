@@ -72,3 +72,37 @@ confirmed 5 anyway with that understood, not before it was raised.
 **What this does not change:** Phase 8/9/10's other preconditions (CR-017
 sign-off, the Phase 9 "separate Human reviewer" gap, Phase 10 following Phase 9)
 are all still exactly as DEC-027 left them. Only the N number moved.
+
+---
+
+### DEC-029 — Revise N from 5 to 10; parallelize CR-017 prep against the wait instead of shrinking it further
+
+- **Status:** Approved
+- **Approved by:** Witchwasin K. (Human Owner)
+- **Date:** 2026-08-16
+
+**Decision:** N is revised from 5 (DEC-028) to **10**. Superseded before any run
+had actually landed at the N=5 setting, so this is a correction, not a rollback
+of something already relied on.
+
+**Why revised, not left at 5:** discussing DEC-028 further surfaced a real flaw
+in the "get it low now, raise it again after Phase 8" idea that prompted this
+review — N only means anything as a **pre-Phase-8** gate, because Phase 8
+removes `AXIOM_ROLLBACK_PWSH` and Phase 9 deletes the PowerShell reference N is
+measured against. Once Phase 8 happens there is nothing left to keep proving
+stability against by accumulating more of the same log lines; raising N again
+afterward would not recreate the protection retroactively. Since N can't be
+cheaply topped up later, 10 was chosen over 5 as a better one-time number,
+while still well short of the original 30.
+
+**What actually changes to avoid the Human Owner sitting and waiting for CI:**
+N does not block anything except the literal Phase 8 execution step. Everything
+else can run in parallel while N accrues:
+- CR-017 supply-chain/containment review prep begins now (Claude compiles the
+  material; the Human Owner's actual review still has to happen, and still
+  gates Phase 8 same as DEC-027 already established).
+- The Phase 9 "separate Human reviewer" gap can be discussed and decided now
+  too, ahead of when Phase 9 itself becomes relevant.
+
+Nothing above shortens the wait for N=10 itself — it just means the wait is not
+idle.
