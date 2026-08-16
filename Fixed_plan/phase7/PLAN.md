@@ -120,6 +120,20 @@ unchanged, and is only reached when `AXIOM_ROLLBACK_PWSH=1`.
 - **N = 30** qualifying canary runs (§4) with zero resets (§3) and zero unexplained
   deltas across all four surfaces (§5).
 - Record every run and every reset, append-only, in `Fixed_plan/phase7/canary-log.md`.
+- **A run counts toward N only if the whole qualifying workflow run is green, not
+  merely if `canary-baseline.mjs`'s own file-hash check is clean.** `canary-baseline.mjs`
+  only diffs the specific manifest paths (§3) — it has no visibility into whether the
+  other jobs in the same run (host matrix, hygiene, dogfood, `canary-matrix`) passed. A
+  real regression that doesn't happen to touch a manifest path (e.g. a CRLF/LF
+  comparison bug in `cli-tests.mjs`, discovered and fixed during the first two real
+  canary runs on 2026-08-16) would otherwise bank N on a run that was actually broken.
+  Concretely: if `canary-baseline.mjs --record` reports clean but the overall workflow
+  run's conclusion is not success, do **not** commit that run's `run clean N=...` line
+  from the `phase7-canary` artifact — treat it as superseded, matching the fix commit
+  that resolved the failure, and let the next fully-green qualifying run bank the count
+  instead. This was applied in practice (commits `b43dc94`, `3b468ba`) before it was
+  written here; this paragraph makes it the documented rule rather than tribal
+  knowledge.
 - **Exit:** 30 consecutive clean qualifying runs. At that point Phase 7 is done and
   archived — this does **not** auto-advance to Phase 8. Cutover is a separate,
   explicit human authorization (§7 of `master-plan.md`), made after reviewing this
