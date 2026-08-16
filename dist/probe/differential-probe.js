@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { runPortedChain } from "./validate-chain.js";
+import { resolvePwsh } from "./pwsh-resolver.js";
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 // Rules the ported chain is responsible for. Everything else PS emits
 // (HANDOFF-*, DPROV-002..007, VPROOF-*, TEST-DESIGN-*, SCOPE-DIFF-*, EXEC-*,
@@ -34,15 +35,6 @@ const PORTED_RULE_IDS = new Set([
     "HANDOFF-011", "HANDOFF-012", "HANDOFF-013", "HANDOFF-014",
     "TEST-DESIGN-001", "TEST-DESIGN-002",
 ]);
-function resolvePwsh() {
-    if (process.env.AXIOM_PWSH)
-        return process.env.AXIOM_PWSH;
-    const probe = spawnSync("pwsh", ["--version"], { encoding: "utf8" });
-    if (probe.status === 0)
-        return "pwsh";
-    // Local dev fallback (pwsh 7.6.4 installed outside PATH).
-    return "/Users/arm/tools/pwsh/pwsh";
-}
 function runReference(fixture, mode, gate) {
     const r = spawnSync(resolvePwsh(), ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", resolve(REPO_ROOT, "scripts/validate-project.ps1"),
         "-ProjectPath", fixture, "-Mode", mode, "-Gate", gate, "-Format", "Json"], { encoding: "utf8" });

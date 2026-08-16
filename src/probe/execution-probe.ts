@@ -10,9 +10,10 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { runVerifyExecutionResult } from "../exec/verify-execution-result.js";
+import { resolvePwsh } from "./pwsh-resolver.js";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const PWSH = process.env.AXIOM_PWSH ?? "/Users/arm/tools/pwsh/pwsh";
+const PWSH = resolvePwsh();
 
 function sha256(buf: Buffer | string): string {
   return createHash("sha256").update(buf).digest("hex").toLowerCase();

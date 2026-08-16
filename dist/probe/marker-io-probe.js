@@ -8,7 +8,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readTextFileState, writeTextFileAtomic, newAxiomBackup } from "../marker/marker-io.js";
 import { setAxiomBlock, removeAxiomBlock, getAxiomCanonicalBody } from "../marker/marker-block.js";
-const PWSH = process.env.AXIOM_PWSH ?? "/Users/arm/tools/pwsh/pwsh";
+import { resolvePwsh } from "./pwsh-resolver.js";
+const PWSH = resolvePwsh();
 let pass = 0;
 let fail = 0;
 function check(name, ok, detail = "") {

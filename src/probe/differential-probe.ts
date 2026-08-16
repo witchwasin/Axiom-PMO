@@ -7,6 +7,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { runPortedChain } from "./validate-chain.js";
+import { resolvePwsh } from "./pwsh-resolver.js";
 import type { Diagnostic } from "../core/types.js";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -41,14 +42,6 @@ const PORTED_RULE_IDS = new Set([
 
 interface ReferenceEnvelope {
   results: Diagnostic[];
-}
-
-function resolvePwsh(): string {
-  if (process.env.AXIOM_PWSH) return process.env.AXIOM_PWSH;
-  const probe = spawnSync("pwsh", ["--version"], { encoding: "utf8" });
-  if (probe.status === 0) return "pwsh";
-  // Local dev fallback (pwsh 7.6.4 installed outside PATH).
-  return "/Users/arm/tools/pwsh/pwsh";
 }
 
 function runReference(fixture: string, mode: string, gate: string): Diagnostic[] {

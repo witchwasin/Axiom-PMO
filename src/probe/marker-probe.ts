@@ -6,7 +6,7 @@
 import { spawnSync } from "node:child_process";
 import { getAxiomCanonicalBody, getAxiomBlockDigest, findAxiomBlock, newAxiomBlockText, setAxiomBlock, removeAxiomBlock, testAxiomBlockOwnership } from "../marker/marker-block.js";
 
-const PWSH = process.env.AXIOM_PWSH ?? "/Users/arm/tools/pwsh/pwsh";
+const PWSH = resolvePwsh();
 
 interface PsCase {
   name: string;
@@ -22,6 +22,7 @@ import { writeFileSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolvePwsh } from "./pwsh-resolver.js";
 
 const HARNESS = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "src", "probe", "marker-harness.ps1");
 

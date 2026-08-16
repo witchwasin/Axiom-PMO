@@ -4,7 +4,7 @@
 // the §8.6 fresh-tree methodology, not here.
 import { spawnSync } from "node:child_process";
 import { getAxiomCanonicalBody, getAxiomBlockDigest, findAxiomBlock, newAxiomBlockText, setAxiomBlock, removeAxiomBlock, testAxiomBlockOwnership } from "../marker/marker-block.js";
-const PWSH = process.env.AXIOM_PWSH ?? "/Users/arm/tools/pwsh/pwsh";
+const PWSH = resolvePwsh();
 // Run a PS function with a JSON hashtable of named args, using the harness
 // file (marker-harness.ps1) which decodes to a hashtable, splats it, and
 // lowercases the result keys for field-level comparison.
@@ -12,6 +12,7 @@ import { writeFileSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolvePwsh } from "./pwsh-resolver.js";
 const HARNESS = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "src", "probe", "marker-harness.ps1");
 function runPs(fn, args) {
     const argsPath = join(tmpdir(), `marker-args-${process.pid}-${Math.random().toString(36).slice(2)}.json`);

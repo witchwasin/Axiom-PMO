@@ -6,9 +6,10 @@ import { spawnSync } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runPmoDoctor } from "../doctor/pmo-doctor.js";
+import { resolvePwsh } from "./pwsh-resolver.js";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const PWSH = process.env.AXIOM_PWSH ?? "/Users/arm/tools/pwsh/pwsh";
+const PWSH = resolvePwsh();
 
 function runPsDoctor(): Array<{ level: string; rule_id: string }> {
   const r = spawnSync(PWSH, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/pmo-doctor.ps1", "-RepoPath", REPO_ROOT], { encoding: "utf8" });

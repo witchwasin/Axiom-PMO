@@ -13,7 +13,7 @@ GitHub-hosted Windows/Linux/macOS runners).
 | Git SHA (full) | `db259338d054df51b7379728b3558815c42a18c6` |
 | Git SHA (short) | `db25933` |
 | OS | macOS 26.6.2 (arm64) |
-| PowerShell | PowerShell 7.6.4 at `/Users/arm/tools/pwsh/pwsh` |
+| PowerShell | PowerShell 7.6.4 (via `AXIOM_PWSH`; not on PATH) |
 | Node | v23.11.0 |
 | Git | 2.50.1 (Apple Git-155) |
 | Locale / TZ | `LANG=C.UTF-8`, `TZ=+07` (UTC+07:00) |

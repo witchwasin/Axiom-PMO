@@ -10,9 +10,10 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { exportExecutionContract } from "../tools/export-execution-contract.js";
 import { runExecutionCommand } from "../tools/run-execution-command.js";
+import { resolvePwsh } from "./pwsh-resolver.js";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const PWSH = process.env.AXIOM_PWSH ?? "/Users/arm/tools/pwsh/pwsh";
+const PWSH = resolvePwsh();
 
 let pass = 0, fail = 0;
 function check(name: string, ok: boolean, detail = ""): void {
