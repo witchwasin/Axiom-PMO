@@ -63,7 +63,7 @@ const sandbox = freshDir("junction-probe-sandbox-");
 const realDir = freshDir("junction-probe-real-");
 let junctionCreated = false;
 try {
-    mkdirSync(realDir);
+    // mkdtempSync already created realDir; no mkdirSync here.
     writeFileSync(join(realDir, "AGENTS.md"), REAL_CONTENT);
     // fs.symlinkSync(type "junction") creates an NTFS junction on Windows
     // (IO_REPARSE_TAG_MOUNT_POINT) -- no elevation needed, unlike symlinks.
