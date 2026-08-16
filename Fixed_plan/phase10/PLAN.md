@@ -1,8 +1,10 @@
 # Phase 10 — Documentation reconciliation: reference checklist
 
-**Status:** DOCUMENTED FOR REFERENCE ONLY. Not authorized to execute. Logically follows
-Phase 9 (assumes PowerShell is actually gone from the active runtime) — do not run this
-early just because it looks mechanical.
+**Status:** PRE-AUTHORIZED IN PRINCIPLE by DEC-027 (`Fixed_plan/decision-log.md`,
+2026-08-16) — the go/no-go decision for this phase is already made. Still **not**
+executable: logically follows Phase 9 (assumes PowerShell is actually gone from the
+active runtime), which has not happened. Do not run this early just because it looks
+mechanical — its own exit criteria is false until Phase 9 is real.
 
 ## Files to update, per master-plan.md
 

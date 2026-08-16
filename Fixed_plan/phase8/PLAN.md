@@ -1,9 +1,12 @@
 # Phase 8 — Human-approved cutover: reference checklist
 
-**Status:** DOCUMENTED FOR REFERENCE ONLY. Not authorized to execute. Per
-`master-plan.md`, Phase 8 requires "separate Human authorization after reviewing Phase
-6/7 evidence" — reaching Phase 7's N=30 does not itself authorize this. Do not start any
-item below without an explicit go-ahead from the Human Owner at that time.
+**Status:** PRE-AUTHORIZED IN PRINCIPLE by DEC-027 (`Fixed_plan/decision-log.md`,
+2026-08-16) — the go/no-go decision for this phase is already made. Still **not**
+executable: N=30 (`Fixed_plan/phase7/canary-log.md`) is not reached (currently 0), and
+CR-017 sign-off (a real review, not just a named reviewer) has not happened. When both
+are true, report the evidence and request the CR-017 review specifically — do not
+re-ask whether to proceed with Phase 8 at all, and do not execute without that review
+actually happening.
 
 ## What "cutover" concretely does, when authorized
 
