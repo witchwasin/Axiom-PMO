@@ -764,3 +764,16 @@ jobs:
             }
             console.log("rollback path OK via " + process.env.AXIOM_PWSH + ": " + env.summary.pass + " pass, 0 fail, exit 0");
           '
+
+      # CR-017 containment (Fixed_plan/phase8/CR-017-review-material.md §5): the
+      # NTFS-junction case can only be exercised on a real Windows host. Windows
+      # cells create a real junction and prove SETUP-003 refuses it the same way
+      # it refuses a symlink -- on the in-process engine and the PS reference --
+      # and that the pointed-at file stays untouched. Non-Windows cells skip
+      # inside the probe itself.
+      - name: Canary containment exercise (${{ matrix.name }}), NTFS junction
+        if: runner.os == 'Windows'
+        shell: bash
+        env:
+          AXIOM_PWSH: ${{ matrix.rollbackHost }}
+        run: node dist/probe/junction-probe.js
