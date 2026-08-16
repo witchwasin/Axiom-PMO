@@ -73,7 +73,11 @@ export function aggregateDiagnostics(
   if (!rebuildOnly) {
     if (!projectPath) throw new Error("aggregate-diagnostics requires -ProjectPath unless -RebuildOnly is set.");
     const project = resolve(projectPath);
-    const envelope = { effective_mode: mode, gate, results: runPortedChain(repo, project, mode as "Lite" | "Standard" | "Strict", gate as "Draft" | "Scope" | "Design" | "Handoff" | "Release").diagnostics };
+    // The reference records the child validator's *effective* mode (mode-
+    // resolver escalation), never the requested one -- a strict-triggered
+    // project must be clustered as Strict even when aggregated at Standard.
+    const chain = runPortedChain(repo, project, mode as "Lite" | "Standard" | "Strict", gate as "Draft" | "Scope" | "Design" | "Handoff" | "Release");
+    const envelope = { effective_mode: chain.effectiveMode, gate, results: chain.diagnostics };
     if (!envelope.results) throw new Error(`aggregate-diagnostics: validate-project produced no parseable diagnostics for ${project}.`);
 
     const salt = getRepositorySalt();

@@ -4,6 +4,8 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync } from "node:fs";
 import { join, resolve, isAbsolute } from "node:path";
 import { runPortedChain } from "../probe/validate-chain.js";
+import { writeValidationOutput } from "../core/result-writer.js";
+import { DIAGNOSTICS_SCHEMA_VERSION } from "../core/types.js";
 function isoDate(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -76,12 +78,33 @@ export function newProject(repoRoot, projectCode, mode, executionPath, researchM
             .replace('"handoff_target": "<demo | pilot | production | internal>"', `"handoff_target": "${target}"`);
         psWrite(join(projectDir, "HANDOFF-REVIEW.json"), reviewText);
     }
+    // The reference runs validate-project.ps1 -Gate Draft as a child, so its
+    // Text report streams straight into the caller's stdout between "Draft
+    // validation:" and "Next actions:". The port must show the same report or
+    // `axiom init` would silently drop the first gate's verdict from the output.
     const draft = runPortedChain(repo, projectDir, mode, "Draft");
     const draftExitCode = draft.accumulator.fail > 0 ? 1 : 0;
+    const draftEnvelope = {
+        schema_version: DIAGNOSTICS_SCHEMA_VERSION,
+        project: projectDir,
+        requested_mode: mode,
+        effective_mode: draft.effectiveMode,
+        gate: "Draft",
+        summary: {
+            pass: draft.accumulator.pass,
+            warn: draft.accumulator.warn,
+            warn_blocking: draft.accumulator.warnBlocking,
+            fail: draft.accumulator.fail,
+            exit_code: draftExitCode,
+        },
+        results: draft.diagnostics,
+    };
+    const draftReport = writeValidationOutput("Text", draftEnvelope, projectDir, mode, draft.effectiveMode, "Draft");
     const lines = [
         `Created ${mode} project (${executionPath}): ${projectDir}`,
         "",
         "Draft validation:",
+        ...draftReport.split("\n"),
         "",
         "Next actions:",
         "1. Add source files under source/MOM, source/REQ, or source/Transcript.",

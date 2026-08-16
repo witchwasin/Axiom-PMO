@@ -48,7 +48,10 @@ export function buildPluginPackage(repoRoot, check) {
         if (problems.length > 0) {
             return {
                 output: "[FAIL] PLUGIN-PKG-002 The packaged skills mirror has drifted from .claude/skills/\n" +
-                    problems.map((p) => `        - ${p}`).join("\n") + "\n\nSummary: PASS=0 FAIL=1\n",
+                    problems.map((p) => `        - ${p}`).join("\n") + "\n\n" +
+                    "  Fix: run scripts/build-plugin-package.ps1 and commit the result.\n" +
+                    "  .claude/skills/ is the single source of truth; skills/ is generated.\n\n" +
+                    "Summary: PASS=0 FAIL=1\n",
                 exitCode: 1,
             };
         }

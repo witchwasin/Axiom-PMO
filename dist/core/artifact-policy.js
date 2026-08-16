@@ -42,10 +42,26 @@ function isUserSourcePath(relativePath) {
     return /(^|[\\/])(source|MOM|REQ|Transcript|Others)[\\/]/.test(relativePath);
 }
 const TEXT_EXTENSIONS = [".md", ".yaml", ".yml", ".puml", ".html"];
+// PowerShell's Get-ChildItem -Recurse -File emits each directory's files in
+// case-insensitive name order, then recurses into the subdirectories in the
+// same order. readdirSync returns the raw directory order, which differs per
+// host/filesystem, so we replicate the reference enumeration explicitly -- the
+// file order is observable in messages like PLACEHOLDER-001's file list.
+function psEnumOrder(a, b) {
+    const al = a.toLowerCase();
+    const bl = b.toLowerCase();
+    if (al < bl)
+        return -1;
+    if (al > bl)
+        return 1;
+    return a < b ? -1 : a > b ? 1 : 0;
+}
 export function getProjectFileSets(project) {
     const allProjectFiles = [];
     const walk = (dir) => {
-        for (const entry of readdirSync(dir)) {
+        const entries = readdirSync(dir).sort(psEnumOrder);
+        const subdirs = [];
+        for (const entry of entries) {
             const full = join(dir, entry);
             let st;
             try {
@@ -55,10 +71,12 @@ export function getProjectFileSets(project) {
                 continue;
             }
             if (st.isDirectory())
-                walk(full);
+                subdirs.push(full);
             else if (st.isFile())
                 allProjectFiles.push(full);
         }
+        for (const sub of subdirs)
+            walk(sub);
     };
     walk(project);
     const allTextFiles = allProjectFiles.filter((f) => TEXT_EXTENSIONS.some((e) => f.toLowerCase().endsWith(e)));

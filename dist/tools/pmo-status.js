@@ -1,6 +1,6 @@
 // `axiom status`, ported from scripts/pmo-status.ps1. Read-only report derived
 // from PROJECT.md + the validator's own output; never a second opinion.
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { importPmoConfig, getProjectOrchestrationDeclarations } from "../config/config-loader.js";
 import { getProjectExecutionPath } from "../core/execution-path-validator.js";
@@ -21,7 +21,11 @@ const STATUS_TO_GATE = {
 };
 export function runPmoStatus(repoRoot, projectPath, format) {
     const project = resolve(projectPath);
-    if (!existsSync(project) || !existsSync(join(project, "PROJECT.md"))) {
+    // The reference only rejects a missing *directory*; a directory without
+    // PROJECT.md is a real project in a failed state and the validator's own
+    // STRUCT-001 finding becomes the "next required" answer (governance_mode
+    // stays Standard, exit 0 -- status never fails a build).
+    if (!existsSync(project) || !statSync(project).isDirectory()) {
         return { output: `Project directory not found: ${projectPath}\n`, exitCode: 1 };
     }
     const rawStatus = getProjectStatusLine(project);
@@ -110,6 +114,10 @@ export function runPmoStatus(repoRoot, projectPath, format) {
             openGovernedChanges = -1;
         }
     }
+    // The reference runs validate-project.ps1 WITHOUT -Mode (defaults to
+    // Standard), so mode-resolver escalates to the project's real effective
+    // mode from DELIVERY.md/PROJECT.md. The chain does the same internally;
+    // runPortedChain reports the mode it enforced.
     const result = runPortedChain(repoRoot, project, "Standard", checkGate);
     const results = result.diagnostics;
     let nextFinding = null;
@@ -148,7 +156,7 @@ export function runPmoStatus(repoRoot, projectPath, format) {
         project,
         execution_path: displayPath,
         execution_path_declared: Boolean(declaredPath),
-        governance_mode: (result.accumulator.messages.length > 0 ? "Standard" : null),
+        governance_mode: result.effectiveMode,
         research_mode: researchMode,
         research_depth: researchDepth,
         research_provider: researchProvider,
@@ -170,7 +178,7 @@ export function runPmoStatus(repoRoot, projectPath, format) {
     lines.push("");
     const pathSuffix = declaredPath ? "" : " (default, not declared)";
     lines.push(`Execution Path:  ${displayPath}${pathSuffix}`);
-    lines.push(`Governance Mode: Standard`);
+    lines.push(`Governance Mode: ${result.effectiveMode}`);
     lines.push(`Research:        ${researchMode} (${researchDepth}, ${researchProvider}) - ${researchState}`);
     lines.push(`UI Delivery:     ${uiDelivery} - ${uiDeliveryState} (provider review: ${providerReviewState})`);
     lines.push(`Open Changes:    ${openGovernedChanges}`);

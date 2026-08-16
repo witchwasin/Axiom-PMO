@@ -23,7 +23,16 @@ export function updateSourceSnapshot(projectPath, dryRun) {
         return { output: `No PROJECT.md found: ${projectFile}\n`, exitCode: 1 };
     if (!existsSync(sourceRoot))
         return { output: `No source directory found: ${sourceRoot}\n`, exitCode: 1 };
-    const syncedAt = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+    // Reference format: [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssK",
+    // InvariantCulture) -- local time with the host's UTC offset (the
+    // InvariantCulture bit exists only to avoid a Buddhist year under a Thai
+    // culture). toISOString would emit Z, which is a different byte format.
+    const now = new Date();
+    const pad2 = (n) => String(n).padStart(2, "0");
+    const offMin = -now.getTimezoneOffset();
+    const sign = offMin >= 0 ? "+" : "-";
+    const offAbs = Math.abs(offMin);
+    const syncedAt = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}T${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}${sign}${pad2(Math.floor(offAbs / 60))}:${pad2(offAbs % 60)}`;
     const rows = [];
     const walk = (dir) => {
         for (const entry of readdirSync(dir)) {
@@ -56,6 +65,7 @@ export function updateSourceSnapshot(projectPath, dryRun) {
     if (dryRun)
         return { output: replacement + "\n", exitCode: 0 };
     copyFileSync(projectFile, projectFile + ".bak");
-    writeFileSync(projectFile, updated, "utf8");
+    // Set-Content appends a trailing newline after the value; replicate it.
+    writeFileSync(projectFile, updated + "\n", "utf8");
     return { output: `Updated Source Snapshot in ${projectFile}\nBackup written to ${projectFile}.bak\n`, exitCode: 0 };
 }

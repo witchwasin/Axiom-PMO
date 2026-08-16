@@ -10,7 +10,8 @@
         "reports/release-overhaul-report.md",
         "scripts/check-public-hygiene.ps1",
         "scripts/prepare-public-release.ps1",
-        "pmo-config/public-hygiene-allowlist.json"
+        "pmo-config/public-hygiene-allowlist.json",
+        "src/tools/check-public-hygiene.ts"
       ],
       "reason": "Intentional migration and public-release history reference."
     },
@@ -42,9 +43,59 @@
       "pattern": "/Users/[^/\\s]+",
       "paths": [
         "scripts/capture-plugin-load-evidence.ps1",
-        "pmo-config/public-hygiene-allowlist.json"
+        "pmo-config/public-hygiene-allowlist.json",
+        "src/tools/check-public-hygiene.ts"
       ],
       "reason": "The redaction patterns in the plugin-load evidence capture. This script exists to STRIP home-directory paths from a committed transcript, so it must name the shapes it strips -- the one place where writing the pattern is the fix rather than the defect (M6.4)."
+    },
+    {
+      "pattern": "~/Documents/",
+      "paths": [
+        "src/tools/check-public-hygiene.ts"
+      ],
+      "reason": "LOCAL-PATH-003: home Documents path literal in the ported hygiene check's rule catalog (src/tools/check-public-hygiene.ts)."
+    },
+    {
+      "pattern": "remediation/9plus",
+      "paths": [
+        "src/tools/check-public-hygiene.ts"
+      ],
+      "reason": "BRANCH-001: old remediation branch topology literal in the ported hygiene check's rule catalog (src/tools/check-public-hygiene.ts)."
+    },
+    {
+      "pattern": "hardening/0.5",
+      "paths": [
+        "src/tools/check-public-hygiene.ts"
+      ],
+      "reason": "BRANCH-002: old hardening branch topology literal in the ported hygiene check's rule catalog (src/tools/check-public-hygiene.ts)."
+    },
+    {
+      "pattern": "37c919b",
+      "paths": [
+        "src/tools/check-public-hygiene.ts"
+      ],
+      "reason": "COMMIT-001: old concrete commit id literal in the ported hygiene check's rule catalog (src/tools/check-public-hygiene.ts)."
+    },
+    {
+      "pattern": "8650f0f",
+      "paths": [
+        "src/tools/check-public-hygiene.ts"
+      ],
+      "reason": "COMMIT-002: old concrete commit id literal in the ported hygiene check's rule catalog (src/tools/check-public-hygiene.ts)."
+    },
+    {
+      "pattern": "BEGIN PRIVATE KEY",
+      "paths": [
+        "src/tools/check-public-hygiene.ts"
+      ],
+      "reason": "SECRET-005: private key marker literal in the ported hygiene check's rule catalog (src/tools/check-public-hygiene.ts)."
+    },
+    {
+      "pattern": "Bearer\\s+[A-Za-z0-9._~+/-]+=*",
+      "paths": [
+        "src/tools/check-public-hygiene.ts"
+      ],
+      "reason": "SECRET-006: Bearer token pattern literal in the ported hygiene check's rule catalog (src/tools/check-public-hygiene.ts)."
     }
   ]
 }

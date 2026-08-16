@@ -17,7 +17,9 @@ export function runAssessHandoff(repoRoot, projectPath, mode, format) {
     const failures = results.filter((r) => r.level === "FAIL");
     const warnings = results.filter((r) => r.level === "WARN");
     const deterministicFail = failures.length > 0;
-    const gateExitCode = failures.length > 0 ? 1 : warnings.some((w) => w.blocking) ? 2 : 0;
+    // The reference runs validate-project.ps1 WITHOUT -FailOnWarning, so a
+    // blocking WARN does not change the child's exit code: 1 iff any FAIL.
+    const gateExitCode = failures.length > 0 ? 1 : 0;
     const reviewPolicy = handoffPolicy["semantic_review"] ?? {};
     const reviewPath = join(project, String(reviewPolicy["artifact"]));
     const reviewPresent = existsSync(reviewPath);
@@ -200,6 +202,7 @@ export function runAssessHandoff(repoRoot, projectPath, mode, format) {
         verdict: overallVerdict,
         verdicts,
         verdict_reasons: verdictReasons,
+        verdict_states: "true = no recorded blocker; false = a recorded blocker; null = cannot be determined, see verdict_reasons",
         score: {
             raw: rawScore,
             awarded: score,

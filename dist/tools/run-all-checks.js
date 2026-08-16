@@ -13,7 +13,11 @@ export function runAllChecks(repoRoot, testChildScript) {
     function invokeCheck(name, args) {
         out.push(`[CHECK] ${name}`);
         const r = spawnSync(pwsh, ["-NoProfile", "-ExecutionPolicy", "Bypass", ...args], { encoding: "utf8" });
-        out.push(r.stdout ?? "");
+        // Only re-emit a child's actual output. The reference streams the child's
+        // stdout straight through, so a silent child contributes no line; pushing
+        // an empty string here would add a blank line the reference does not have.
+        if (r.stdout)
+            out.push(r.stdout);
         const exitCode = r.status ?? 1;
         if (exitCode !== 0) {
             out.push("");
@@ -30,7 +34,10 @@ export function runAllChecks(repoRoot, testChildScript) {
     out.push("");
     const psFile = (rel, args = []) => ["-File", join(repo, rel), ...args];
     if (testChildScript) {
-        const code = invokeCheck("fault-injection", psFile(resolve(testChildScript)));
+        // The reference resolves the child script to an absolute path (Resolve-Path)
+        // before running it; psFile would join() it onto the repo root again and
+        // double-prefix an already-absolute path.
+        const code = invokeCheck("fault-injection", ["-File", resolve(testChildScript)]);
         if (code !== 0)
             return { output: out.join("\n") + "\n", exitCode: code };
     }

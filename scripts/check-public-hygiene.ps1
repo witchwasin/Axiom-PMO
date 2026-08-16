@@ -97,6 +97,11 @@ $selfExcludedPaths = @(
   "pmo-config/public-hygiene-allowlist.json",
   "scripts/check-public-hygiene.ps1"
 )
+# dist/ is the committed, generated bundle (DEC-026 section 3). Its bytes are a
+# compiled copy of src/ and necessarily repeat the same literal patterns
+# (secret-token regexes, historical commit ids) this check exists to catch in
+# *authored* files. Scanning generated output would report the same finding
+# twice -- once in src/, once in dist/ -- with no new information.
 
 $checks = @(
   @{ Id = "OLD-NAME-001"; Pattern = "PMO-Template-Personal"; Regex = $false; Description = "old private product name" },
@@ -121,6 +126,7 @@ $problems = @()
 foreach ($file in $trackedFiles) {
   $relativePath = ConvertTo-RepoPath $file
   if ($selfExcludedPaths -contains $relativePath) { continue }
+  if ($relativePath.StartsWith("dist/")) { continue }
   $fullPath = Join-Path $repo $file
   if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) { continue }
   if (-not (Test-TextFile $fullPath)) { continue }

@@ -14,7 +14,10 @@ export interface DemoResult {
 
 function writeRule(text: string): string {
   const bar = "=".repeat(74);
-  return `\n${bar}\n${text}\n${bar}\n\n`;
+  // One trailing newline only: the caller joins output lines with "\n", so a
+  // second one here would print a blank line the reference's Write-Host ""
+  // (exactly one) does not.
+  return `\n${bar}\n${text}\n${bar}\n`;
 }
 
 export function runDemo(repoRoot: string, plain: boolean, noPause: boolean): DemoResult {
@@ -30,7 +33,10 @@ export function runDemo(repoRoot: string, plain: boolean, noPause: boolean): Dem
 
   function invokeChild(script: string, scriptArgs: string[]): number {
     const r = spawnSync(pwsh, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(repo, script), ...scriptArgs], { encoding: "utf8" });
-    out.push(r.stdout ?? "");
+    // trimEnd so the following out.push("") contributes exactly the one blank
+    // line the reference's Write-Host "" emits after a child; a raw push would
+    // double-count the child's own trailing newline.
+    if (r.stdout && r.stdout.trim() !== "") out.push(r.stdout.trimEnd());
     if (r.stderr) out.push(r.stderr);
     return r.status ?? 1;
   }
@@ -55,11 +61,18 @@ export function runDemo(repoRoot: string, plain: boolean, noPause: boolean): Dem
   out.push("  HANDOFF-004  The shared schema every other item reads from is");
   out.push("               scheduled last. Two engineers would spend day one");
   out.push("               building against a table that does not exist yet.");
+  out.push("");
   out.push("  HANDOFF-012  The scan flow needs the rear camera and nobody decided");
-  out.push("               how the page is served.");
+  out.push("               how the page is served. A browser will not open a");
+  out.push("               camera over plain HTTP, so this build works on the");
+  out.push("               developer laptop and fails on the demo tablet.");
+  out.push("");
   out.push("  HANDOFF-011  A data element the author marked sensitive has no");
   out.push("               classification decision attached.");
-  out.push("  HANDOFF-007  An acceptance case has no seed data.");
+  out.push("");
+  out.push("  HANDOFF-007  An acceptance case has no seed data, so it cannot be");
+  out.push("               reached from the demo dataset.");
+  out.push("");
   out.push("  HANDOFF-003  A work item is owned by 'Dev Team'.");
   out.push("");
   out.push("None of these are style violations. Each one costs days.");
@@ -81,6 +94,7 @@ export function runDemo(repoRoot: string, plain: boolean, noPause: boolean): Dem
   out.push("");
   out.push("Docs: docs/concepts/handoff-readiness.md");
   out.push("Rules: docs/rules/");
+  out.push("");
 
   if (brokenExit === 0) {
     out.push("DEMO SELF-CHECK FAILED: the broken project was expected to fail the gate.");

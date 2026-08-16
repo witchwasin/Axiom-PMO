@@ -41,18 +41,25 @@ export function preparePublicRelease(repoRoot, runSuite) {
         catch { }
     }
     const allVersions = [versionText, changelogVersion, ...configVersions, ...(pluginVersion ? [pluginVersion] : [])];
-    const distinctVersions = [...new Set(allVersions)];
+    // The reference sorts its distinct-version and config lists, so the drift
+    // report line order is stable regardless of config file ordering.
+    const distinctVersions = [...new Set(allVersions)].sort();
     if (distinctVersions.length === 1) {
         out.push(`OK: all version fields = ${versionText} (VERSION, CHANGELOG, ${configVersions.length} config file(s), plugin manifest)`);
     }
     else {
-        problems.push(`Version drift: VERSION=${versionText} CHANGELOG=${changelogVersion} PLUGIN=${pluginVersion} CONFIG=${[...new Set(configVersions)].join(",")}`);
+        problems.push(`Version drift: VERSION=${versionText} CHANGELOG=${changelogVersion} PLUGIN=${pluginVersion} CONFIG=${[...new Set(configVersions)].sort().join(",")}`);
         out.push(`FAIL: version drift (${distinctVersions.join(" / ")})`);
     }
     section("Public hygiene");
     const hygiene = checkPublicHygiene(repo);
     if (hygiene.exitCode !== 0)
         problems.push(`Public hygiene check failed (exit ${hygiene.exitCode})`);
+    // The reference runs the hygiene check as a child whose report streams into
+    // its own stdout; a port that swallowed that report would silently hide the
+    // check it is reporting on. trimEnd so the join below contributes exactly the
+    // one blank line the reference's trailing Write-Host "" produces.
+    out.push(hygiene.output.trimEnd());
     section("Working tree");
     const status = spawnSync("git", ["-C", repo, "-c", "core.excludesFile=", "status", "--porcelain"], { encoding: "utf8" }).stdout ?? "";
     if (!status.trim())

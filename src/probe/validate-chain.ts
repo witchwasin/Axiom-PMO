@@ -27,6 +27,8 @@ import { testHandoffReadiness, testEarlyTestDesign } from "../rules/handoff-vali
 export interface ChainResult {
   diagnostics: Diagnostic[];
   accumulator: ResultAccumulator;
+  /** The mode the chain actually enforced after MODE-001..003 escalation. */
+  effectiveMode: Mode;
 }
 
 export function runPortedChain(
@@ -106,5 +108,5 @@ export function runPortedChain(
   testSensitiveFilenames(acc, catalog, fileSets.allProjectFiles, project);
   testLinks(acc, catalog, fileSets.governedFiles, fileSets.userSourceFiles, gate);
 
-  return { diagnostics: acc.messages, accumulator: acc };
+  return { diagnostics: acc.messages, accumulator: acc, effectiveMode };
 }

@@ -63,5 +63,5 @@ export function runPortedChain(repoRoot, project, mode, gate) {
     testDesignSystemTokens(acc, catalog, project, gate);
     testSensitiveFilenames(acc, catalog, fileSets.allProjectFiles, project);
     testLinks(acc, catalog, fileSets.governedFiles, fileSets.userSourceFiles, gate);
-    return { diagnostics: acc.messages, accumulator: acc };
+    return { diagnostics: acc.messages, accumulator: acc, effectiveMode };
 }
