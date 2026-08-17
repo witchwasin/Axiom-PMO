@@ -1,0 +1,236 @@
+{
+  "rows": [
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-STRUCT"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-EXAMPLE"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-EXAMPLE"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-EXAMPLE"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-EXAMPLE"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-001"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-SKILL-001"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "TABLE-001"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-003"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-003"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-003"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-005"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-006"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-007"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-008"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-009"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-013"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-014"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "PERMISSION-000"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "PERMISSION-001"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "PERMISSION-003"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "PERMISSION-004"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "PERMISSION-005"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "PERMISSION-002"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "PERMISSION-002"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "PERMISSION-006"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-HOOK"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "PERMISSION-007"
+    },
+    {
+      "level": "PASS",
+      "rule_id": "DOCTOR-000"
+    }
+  ]
+}
