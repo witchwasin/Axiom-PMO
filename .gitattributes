@@ -11,6 +11,7 @@
 *.jpg  binary
 *.jpeg binary
 *.gif  binary
+*.svg  binary
 
 # ==========================
 # Text files — enable proper diff

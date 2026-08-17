@@ -63,7 +63,12 @@ export function testExternallyObservedReviewBinding(review, reviewPath, gitRepoR
     if (!checkRunId.trim()) {
         return { verified: false, reason: "provenance.tier is externally-observed but provenance.check_run_id is missing" };
     }
-    const ghCheck = spawnSync("gh", ["--version"], { encoding: "utf8" });
+    // On Windows a gh distribution can be a .cmd/.bat shim (the CI stub below
+    // is one), and child_process.spawn cannot launch .cmd/.bat without a shell;
+    // real gh.exe is unaffected. The args are framework-controlled API paths,
+    // never user input, so cmd-quoting is safe. POSIX behavior is unchanged.
+    const ghSpawn = { encoding: "utf8", shell: process.platform === "win32" };
+    const ghCheck = spawnSync("gh", ["--version"], ghSpawn);
     if (ghCheck.status !== 0) {
         return { verified: false, reason: "no GitHub API context available (gh CLI not found on PATH) -- cannot independently verify, so this is unverified rather than a pass" };
     }
@@ -80,7 +85,7 @@ export function testExternallyObservedReviewBinding(review, reviewPath, gitRepoR
     if (Number.isNaN(parsedId)) {
         return { verified: false, reason: `check_run_id '${checkRunId}' is not a valid integer` };
     }
-    const runApi = spawnSync("gh", ["api", `repos/${ownerRepo}/check-runs/${parsedId}`], { encoding: "utf8" });
+    const runApi = spawnSync("gh", ["api", `repos/${ownerRepo}/check-runs/${parsedId}`], ghSpawn);
     if (runApi.status !== 0) {
         return { verified: false, reason: `the GitHub API query for check run ${parsedId} failed -- cannot independently verify (network, auth, or the run does not exist)` };
     }
@@ -103,7 +108,7 @@ export function testExternallyObservedReviewBinding(review, reviewPath, gitRepoR
     if (!checkSuiteId.trim()) {
         return { verified: false, reason: `check run ${parsedId} carries no check_suite id -- cannot resolve which GitHub Actions workflow, if any, produced it, so it cannot be attributed to the pinned review workflow` };
     }
-    const runsApi = spawnSync("gh", ["api", `repos/${ownerRepo}/actions/runs?check_suite_id=${checkSuiteId}`], { encoding: "utf8" });
+    const runsApi = spawnSync("gh", ["api", `repos/${ownerRepo}/actions/runs?check_suite_id=${checkSuiteId}`], ghSpawn);
     if (runsApi.status !== 0) {
         return { verified: false, reason: `the GitHub API query for workflow runs under check suite ${checkSuiteId} failed -- cannot independently verify` };
     }

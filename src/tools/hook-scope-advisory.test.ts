@@ -56,10 +56,14 @@ function newPayload(project: string, filePath: string, tool = "Edit"): string {
 }
 
 function invokeShim(payload: string, env: Record<string, string>): { exitCode: number; text: string } {
-  // /bin/sh by absolute path: the no-PowerShell case below narrows PATH
-  // deliberately, and resolving the shell through PATH would then fail to
-  // launch the shim at all -- testing the harness rather than the hook.
-  const r = spawnSync("/bin/sh", [SHIM_PATH], {
+  // `sh` resolved through PATH rather than /bin/sh by absolute path: the
+  // no-PowerShell case below narrows PATH deliberately, but spawnSync
+  // resolves the executable itself from the parent's environment, and that
+  // case's fakeBin symlinks `sh` in -- so the shim still launches while the
+  // child's own PATH makes node look missing, which is exactly the case the
+  // test wants. On Windows hosts /bin/sh does not exist; Git Bash's sh.exe
+  // (in the runner's PATH) runs the same POSIX shim.
+  const r = spawnSync("sh", [SHIM_PATH], {
     input: payload,
     encoding: "utf8",
     env: { ...process.env, ...env },

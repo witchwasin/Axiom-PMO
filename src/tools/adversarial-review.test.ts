@@ -656,7 +656,11 @@ test("externally-observed: workflow attribution enforced via a stubbed gh", () =
         rmSync(stubGhPath, { force: true });
         writeExecFile(stubBinDir, "gh-logic.mjs", `
 import { readFileSync } from "node:fs";
-const path = process.argv[2] ?? "";
+// The validator invokes gh with (api, <endpoint>); under cmd the endpoint is
+// the second arg after the script path (argv[2] is "api"), so find it by
+// prefix rather than by position -- same contract as the bash stub's "$2"
+// expresses, without the off-by-one the node stub had.
+const path = (process.argv.slice(2).find((a) => a.startsWith("repos/")) ?? "");
 const head = ${JSON.stringify(id.head)};
 const digest = ${JSON.stringify(digest)};
 const suiteId = ${JSON.stringify(checkSuiteId)};
