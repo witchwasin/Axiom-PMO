@@ -1,17 +1,22 @@
-// Differential probe for verify-execution-result: run PS reference and TS
-// candidate on the same disposable git fixture (replicating the Phase 0
-// capture-exec-golden.ps1 / capture-arev-golden.ps1 fixture machinery), and
-// compare the EXEC-*/AREV-* diagnostic rows.
+// Regression probe for verify-execution-result: build a disposable git
+// fixture using the (already differentially-proven, Milestone 5) TS
+// export-execution-contract / run-execution-command functions, then compare
+// the TS candidate's EXEC-*/AREV-* diagnostic rows against a golden fixture
+// frozen from the PowerShell reference's verify-execution-result.ps1 output
+// on this exact fixture-construction path (Phase 9: the reference no longer
+// exists to compare against live).
+import { readFileSync, writeFileSync, mkdirSync, rmSync, mkdtempSync, readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, mkdtempSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { runVerifyExecutionResult } from "../exec/verify-execution-result.js";
-import { resolvePwsh } from "./pwsh-resolver.js";
+import { exportExecutionContract } from "../tools/export-execution-contract.js";
+import { runExecutionCommand } from "../tools/run-execution-command.js";
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const PWSH = resolvePwsh();
+const FIXTURE = resolve(REPO_ROOT, "tests/golden/probes/execution-probe.json");
+const golden = JSON.parse(readFileSync(FIXTURE, "utf8"));
 function sha256(buf) {
     return createHash("sha256").update(buf).digest("hex").toLowerCase();
 }
@@ -44,17 +49,14 @@ function newFixture() {
     return dir;
 }
 function exportContract(dir, grant) {
-    const r = spawnSync(PWSH, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(REPO_ROOT, "scripts/export-execution-contract.ps1"),
-        "-ProjectPath", dir, "-WorkItemId", "D-001", "-Force", ...(grant ? ["-Grant", grant] : [])], { encoding: "utf8" });
-    if (r.status !== 0)
-        throw new Error(`export failed: ${r.stderr}`);
+    const r = exportExecutionContract(REPO_ROOT, dir, "D-001", null, null, grant, true);
+    if (r.exitCode !== 0)
+        throw new Error(`export failed: ${r.output}`);
 }
 function runRecord(dir) {
-    const r = spawnSync(PWSH, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(REPO_ROOT, "scripts/run-execution-command.ps1"),
-        "-ProjectPath", dir, "-WorkItemId", "D-001", "-Name", "unit tests", "-Command", "echo ok"], { encoding: "utf8" });
-    if (r.status !== 0)
-        throw new Error(`run failed: ${r.stderr}`);
-    return "";
+    const r = runExecutionCommand(dir, "D-001", "unit tests", "echo ok");
+    if (r.exitCode !== 0)
+        throw new Error(`run failed: ${r.output}`);
 }
 function writeResult(dir, contractDigest, baseSha, headSha, runRecordPath, recordDigest) {
     write(dir, "decision-log.md", `# Decision Log\n\n| Date | Decision ID | Topic | Options Presented | User Choice | Rationale | Source Ref | Impact |\n|---|---|---|---|---|---|---|---|\n| 2026-07-31 | DEC-100 | Accept unit tests evidence for D-001 | accept / require CI | accept | reviewed the artifact by hand. axiom-authority: type=test-evidence-accepted; work_item=D-001; contract=${contractDigest}; test=unit tests; evidence=${recordDigest} | none | test evidence accepted |\n`);
@@ -66,20 +68,12 @@ function writeResult(dir, contractDigest, baseSha, headSha, runRecordPath, recor
     };
     write(dir, ".execution/D-001/EXECUTION-RESULT.json", JSON.stringify(result));
 }
-function psVerify(dir) {
-    const r = spawnSync(PWSH, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(REPO_ROOT, "scripts/verify-execution-result.ps1"),
-        "-ProjectPath", dir, "-ResultPath", join(dir, ".execution/D-001/EXECUTION-RESULT.json"), "-Format", "Json"], { encoding: "utf8" });
-    if (!r.stdout.trim())
-        throw new Error(`ps verify no output: ${r.stderr}`);
-    const env = JSON.parse(r.stdout);
-    return { rows: env.results };
-}
 const EXEC_AREV = /^(EXEC|AREV)-/;
 let pass = 0;
 let fail = 0;
 function compareCase(name, dir, setup) {
     setup(dir);
-    const ref = psVerify(dir).rows.filter((r) => EXEC_AREV.test(r.rule_id));
+    const ref = golden[name] ?? [];
     const cand = runVerifyExecutionResult(REPO_ROOT, dir, join(dir, ".execution/D-001/EXECUTION-RESULT.json"), null, null, false)
         .envelope.results;
     const candFiltered = cand.filter((r) => EXEC_AREV.test(r.rule_id));
@@ -92,8 +86,8 @@ function compareCase(name, dir, setup) {
     else {
         fail++;
         console.log(`[FAIL] ${name}`);
-        console.log(`  ref  (${ref.length}): ${refKey.slice(0, 400)}`);
-        console.log(`  cand (${candFiltered.length}): ${candKey.slice(0, 400)}`);
+        console.log(`  golden (${ref.length}): ${refKey.slice(0, 400)}`);
+        console.log(`  cand   (${candFiltered.length}): ${candKey.slice(0, 400)}`);
     }
 }
 // Case 1: clean run verifies (pass, no EXEC/AREV FAIL)

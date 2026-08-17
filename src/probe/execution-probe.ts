@@ -1,19 +1,24 @@
-// Differential probe for verify-execution-result: run PS reference and TS
-// candidate on the same disposable git fixture (replicating the Phase 0
-// capture-exec-golden.ps1 / capture-arev-golden.ps1 fixture machinery), and
-// compare the EXEC-*/AREV-* diagnostic rows.
+// Regression probe for verify-execution-result: build a disposable git
+// fixture using the (already differentially-proven, Milestone 5) TS
+// export-execution-contract / run-execution-command functions, then compare
+// the TS candidate's EXEC-*/AREV-* diagnostic rows against a golden fixture
+// frozen from the PowerShell reference's verify-execution-result.ps1 output
+// on this exact fixture-construction path (Phase 9: the reference no longer
+// exists to compare against live).
 
+import { readFileSync, writeFileSync, mkdirSync, rmSync, mkdtempSync, readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, mkdtempSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { runVerifyExecutionResult } from "../exec/verify-execution-result.js";
-import { resolvePwsh } from "./pwsh-resolver.js";
+import { exportExecutionContract } from "../tools/export-execution-contract.js";
+import { runExecutionCommand } from "../tools/run-execution-command.js";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const PWSH = resolvePwsh();
+const FIXTURE = resolve(REPO_ROOT, "tests/golden/probes/execution-probe.json");
+const golden = JSON.parse(readFileSync(FIXTURE, "utf8")) as Record<string, Array<{ level: string; rule_id: string; message: string }>>;
 
 function sha256(buf: Buffer | string): string {
   return createHash("sha256").update(buf).digest("hex").toLowerCase();
@@ -52,16 +57,13 @@ function newFixture(): string {
 }
 
 function exportContract(dir: string, grant: string): void {
-  const r = spawnSync(PWSH, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(REPO_ROOT, "scripts/export-execution-contract.ps1"),
-    "-ProjectPath", dir, "-WorkItemId", "D-001", "-Force", ...(grant ? ["-Grant", grant] : [])], { encoding: "utf8" });
-  if (r.status !== 0) throw new Error(`export failed: ${r.stderr}`);
+  const r = exportExecutionContract(REPO_ROOT, dir, "D-001", null, null, grant, true);
+  if (r.exitCode !== 0) throw new Error(`export failed: ${r.output}`);
 }
 
-function runRecord(dir: string): string {
-  const r = spawnSync(PWSH, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(REPO_ROOT, "scripts/run-execution-command.ps1"),
-    "-ProjectPath", dir, "-WorkItemId", "D-001", "-Name", "unit tests", "-Command", "echo ok"], { encoding: "utf8" });
-  if (r.status !== 0) throw new Error(`run failed: ${r.stderr}`);
-  return "";
+function runRecord(dir: string): void {
+  const r = runExecutionCommand(dir, "D-001", "unit tests", "echo ok");
+  if (r.exitCode !== 0) throw new Error(`run failed: ${r.output}`);
 }
 
 function writeResult(dir: string, contractDigest: string, baseSha: string, headSha: string, runRecordPath: string, recordDigest: string): void {
@@ -75,21 +77,13 @@ function writeResult(dir: string, contractDigest: string, baseSha: string, headS
   write(dir, ".execution/D-001/EXECUTION-RESULT.json", JSON.stringify(result));
 }
 
-function psVerify(dir: string): { rows: Array<{ level: string; rule_id: string; message: string }> } {
-  const r = spawnSync(PWSH, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(REPO_ROOT, "scripts/verify-execution-result.ps1"),
-    "-ProjectPath", dir, "-ResultPath", join(dir, ".execution/D-001/EXECUTION-RESULT.json"), "-Format", "Json"], { encoding: "utf8" });
-  if (!r.stdout.trim()) throw new Error(`ps verify no output: ${r.stderr}`);
-  const env = JSON.parse(r.stdout);
-  return { rows: env.results };
-}
-
 const EXEC_AREV = /^(EXEC|AREV)-/;
 let pass = 0;
 let fail = 0;
 
 function compareCase(name: string, dir: string, setup: (d: string) => void): void {
   setup(dir);
-  const ref = psVerify(dir).rows.filter((r) => EXEC_AREV.test(r.rule_id));
+  const ref = golden[name] ?? [];
   const cand = runVerifyExecutionResult(REPO_ROOT, dir, join(dir, ".execution/D-001/EXECUTION-RESULT.json"), null, null, false)
     .envelope.results as Array<{ level: string; rule_id: string; message: string }>;
   const candFiltered = cand.filter((r) => EXEC_AREV.test(r.rule_id));
@@ -102,8 +96,8 @@ function compareCase(name: string, dir: string, setup: (d: string) => void): voi
   } else {
     fail++;
     console.log(`[FAIL] ${name}`);
-    console.log(`  ref  (${ref.length}): ${refKey.slice(0, 400)}`);
-    console.log(`  cand (${candFiltered.length}): ${candKey.slice(0, 400)}`);
+    console.log(`  golden (${ref.length}): ${refKey.slice(0, 400)}`);
+    console.log(`  cand   (${candFiltered.length}): ${candKey.slice(0, 400)}`);
   }
 }
 
