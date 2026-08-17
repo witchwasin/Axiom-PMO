@@ -2,17 +2,18 @@
 //
 // The deterministic tools live in tool-probe.ts. This probe covers the tools
 // that WRITE files, using the §8.6 fresh-tree methodology from stateful-probe:
-// the reference and the candidate each operate on their own freshly-created
-// tree, and the probe compares the resulting bytes, exit codes, and output.
-// A nondeterministic field (salt, run_id, timestamp, backup stamp) is
-// normalized out of the comparison, never skipped.
+// the candidate operates on its own freshly-created tree, and the probe
+// compares the resulting bytes, exit codes, and output against a golden
+// fixture frozen from the PowerShell reference (Phase 9: the reference no
+// longer exists to compare against live). A nondeterministic field (salt,
+// run_id, timestamp, backup stamp) is normalized out of the comparison, never
+// skipped -- unchanged from before conversion.
 
-import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync, rmSync, mkdtempSync, existsSync, readdirSync, statSync, cpSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolvePwsh } from "./pwsh-resolver.js";
 import { getCanonicalGoldenText, getGoldenDiffReport } from "../output/canonical-normalizer.js";
 import { setupClaudeIntegration } from "../tools/setup-claude-integration.js";
 import { newProject } from "../tools/new-project.js";
@@ -20,21 +21,20 @@ import { updateSourceSnapshot } from "../tools/update-source-snapshot.js";
 import { aggregateDiagnostics } from "../tools/aggregate-diagnostics.js";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const PWSH = resolvePwsh();
+const FIXTURE = resolve(REPO_ROOT, "tests/golden/probes/tool-stateful-probe.json");
+const golden = JSON.parse(readFileSync(FIXTURE, "utf8")) as {
+  setup_branches: Record<string, { stdout_normalized: string; exitCode: number }>;
+  new_project: Record<string, { code: string; stdout_normalized: string; exitCode: number; tree_normalized: Record<string, string> }>;
+  update_source_snapshot: { stdout_normalized: string; exitCode: number; project_md_ts_scrubbed: string; project_md_bak: string };
+  aggregate_diagnostics: { exitCode: number; registry_canonical: string | null; event_count: number; governed_events_sorted: unknown[] };
+  clean_room: { stdout_normalized: string; exitCode: number; changed_files: string[]; agents_md: string };
+};
 
 let pass = 0;
 let fail = 0;
 function check(name: string, ok: boolean, detail = ""): void {
   if (ok) { pass++; console.log(`[PASS] ${name}`); }
   else { fail++; console.log(`[FAIL] ${name}${detail ? " -- " + detail : ""}`); }
-}
-
-function runPs(script: string, args: string[]): { stdout: string; stderr: string; exitCode: number } {
-  const r = spawnSync(PWSH, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(REPO_ROOT, script), ...args], {
-    encoding: "utf8",
-    env: { ...process.env, AXIOM_PWSH: PWSH },
-  });
-  return { stdout: r.stdout ?? "", stderr: r.stderr ?? "", exitCode: r.status ?? 1 };
 }
 
 const DATE_RE = /\d{4}-\d{2}-\d{2}/g;
@@ -87,83 +87,71 @@ function treeBytes(root: string, excludeSubstrings: string[] = []): Record<strin
 
 // ---------------------------------------------------------------------------
 // setup-claude-integration: output + exit parity across the operational
-// branches (file bytes already proven by setup-probe.ts).
+// branches (file bytes already proven by setup-probe.ts), against a golden
+// fixture frozen from the PS reference. Preconditions that used to be built
+// via the PS reference (so both sides started from byte-identical trees) are
+// now built with the TS install itself -- setup-probe.ts already proved TS
+// install output is byte-identical to the reference's.
 // ---------------------------------------------------------------------------
-  const psSetup = (dir: string, extra: string[] = []): { stdout: string; stderr: string; exitCode: number } => {
-    const r = runPs("scripts/setup-claude-integration.ps1", ["-ProjectPath", dir, ...extra]);
-    return r;
-  };
   const normSetup = (s: string, root: string) =>
     getCanonicalGoldenText(s).replaceAll(root, "<TREE>").replace(STAMP_RE, "<STAMP>");
   const agentsSeed = (d: string) => writeFileSync(join(d, "AGENTS.md"), "# User rules\n\nBe careful.\n");
+  const tsInstall = (d: string) => setupClaudeIntegration(d, false, false, false, "AGENTS.md");
 
   interface Branch {
     label: string;
-    // Build the same pre-state on a directory, using the reference for the
-    // install steps so both sides start from byte-identical trees.
     prepare: (d: string) => void;
-    // The branch under test: PS script args vs the candidate function call.
-    psExtra: string[];
     tsRun: (d: string) => { output: string; exitCode: number };
   }
   const branches: Branch[] = [
     {
       label: "install-fresh",
       prepare: agentsSeed,
-      psExtra: [],
       tsRun: (d) => setupClaudeIntegration(d, false, false, false, "AGENTS.md"),
     },
     {
       label: "reinstall-unchanged",
-      prepare: (d) => { agentsSeed(d); psSetup(d); },
-      psExtra: [],
+      prepare: (d) => { agentsSeed(d); tsInstall(d); },
       tsRun: (d) => setupClaudeIntegration(d, false, false, false, "AGENTS.md"),
     },
     {
       label: "dry-run",
       prepare: agentsSeed,
-      psExtra: ["-DryRun"],
       tsRun: (d) => setupClaudeIntegration(d, true, false, false, "AGENTS.md"),
     },
     {
       label: "uninstall",
-      prepare: (d) => { agentsSeed(d); psSetup(d); },
-      psExtra: ["-Uninstall"],
+      prepare: (d) => { agentsSeed(d); tsInstall(d); },
       tsRun: (d) => setupClaudeIntegration(d, false, true, false, "AGENTS.md"),
     },
     {
       label: "uninstall-no-file",
       prepare: (d) => { agentsSeed(d); rmSync(join(d, "AGENTS.md"), { force: true }); },
-      psExtra: ["-Uninstall"],
       tsRun: (d) => setupClaudeIntegration(d, false, true, false, "AGENTS.md"),
     },
     {
       label: "blocked-hand-edited-uninstall",
       prepare: (d) => {
         agentsSeed(d);
-        psSetup(d);
+        tsInstall(d);
         const p = join(d, "AGENTS.md");
         writeFileSync(p, readFileSync(p, "utf8").replace("You may not approve", "You CAN approve"));
       },
-      psExtra: ["-Uninstall"],
       tsRun: (d) => setupClaudeIntegration(d, false, true, false, "AGENTS.md"),
     },
   ];
 
   for (const b of branches) {
-    const psDir = mkdtempSync(join(tmpdir(), "tool-stateful-setup-"));
     const tsDir = mkdtempSync(join(tmpdir(), "tool-stateful-setup-"));
     try {
-      b.prepare(psDir);
       b.prepare(tsDir);
-      const ref = psSetup(psDir, b.psExtra);
+      const ref = golden.setup_branches[b.label];
+      if (!ref) throw new Error(`no golden fixture for setup branch: ${b.label}`);
       const cand = b.tsRun(tsDir);
-      const refN = normSetup(ref.stdout, psDir);
       const candN = normSetup(cand.output, tsDir);
-      check(`setup ${b.label}: output`, refN === candN, refN === candN ? "" : getGoldenDiffReport(refN, candN).join(" | "));
-      check(`setup ${b.label}: exit`, (ref.exitCode ?? 1) === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
+      check(`setup ${b.label}: output`, ref.stdout_normalized === candN, ref.stdout_normalized === candN ? "" : getGoldenDiffReport(ref.stdout_normalized, candN).join(" | "));
+      check(`setup ${b.label}: exit`, ref.exitCode === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
     } finally {
-      rmSync(psDir, { recursive: true, force: true });
       rmSync(tsDir, { recursive: true, force: true });
     }
   }
@@ -187,16 +175,11 @@ function treeBytes(root: string, excludeSubstrings: string[] = []): Record<strin
     },
   ];
   for (const c of configs) {
-    const psRoot = mkdtempSync(join(tmpdir(), "tool-stateful-np-"));
     const tsRoot = mkdtempSync(join(tmpdir(), "tool-stateful-np-"));
     try {
       const code = "P99-" + c.label.slice(0, 3).toUpperCase();
-      const psArgs = ["-ProjectCode", code, "-Mode", c.args.mode, "-ExecutionPath", c.args.executionPath, "-ResearchMode", c.args.researchMode,
-        "-ResearchDepth", c.args.researchDepth, "-ResearchProvider", c.args.researchProvider, "-UiDelivery", c.args.uiDelivery,
-        "-StrictTrigger", c.args.strictTrigger, "-ModeReason", c.args.modeReason, "-ModeApprovedBy", c.args.modeApprovedBy,
-        "-OutputRoot", psRoot];
-      if (c.args.includeHandoff) psArgs.push("-IncludeHandoff", "-Target", c.args.target, "-HorizonDays", String(c.args.horizonDays));
-      const ref = runPs("scripts/new-project.ps1", psArgs);
+      const ref = golden.new_project[c.label];
+      if (!ref) throw new Error(`no golden fixture for new-project config: ${c.label}`);
 
       const cand = newProject(REPO_ROOT, code, c.args.mode, c.args.executionPath, c.args.researchMode, c.args.researchDepth,
         c.args.researchProvider, c.args.uiDelivery, c.args.strictTrigger, c.args.modeReason, c.args.modeApprovedBy,
@@ -204,12 +187,10 @@ function treeBytes(root: string, excludeSubstrings: string[] = []): Record<strin
 
       const norm = (s: string, root: string) =>
         getCanonicalGoldenText(s).replaceAll(root, "<TREE>").replace(join(root, code), "<TREE>").replace(DATE_RE, "<DATE>");
-      const refN = norm(ref.stdout, psRoot);
       const candN = norm(cand.output, tsRoot);
-      check(`new-project ${c.label}: stdout`, refN === candN, refN === candN ? "" : getGoldenDiffReport(refN, candN).join(" | "));
-      check(`new-project ${c.label}: exit`, (ref.exitCode ?? 1) === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
+      check(`new-project ${c.label}: stdout`, ref.stdout_normalized === candN, ref.stdout_normalized === candN ? "" : getGoldenDiffReport(ref.stdout_normalized, candN).join(" | "));
+      check(`new-project ${c.label}: exit`, ref.exitCode === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
 
-      const psTree = treeBytes(join(psRoot, code));
       const tsTree = treeBytes(join(tsRoot, code));
       const normBytes = (t: Record<string, string>) => {
         const out: Record<string, string> = {};
@@ -224,7 +205,7 @@ function treeBytes(root: string, excludeSubstrings: string[] = []): Record<strin
         }
         return out;
       };
-      const psN = normBytes(psTree);
+      const psN = ref.tree_normalized;
       const tsN = normBytes(tsTree);
       const sameFiles = JSON.stringify(Object.keys(psN).sort()) === JSON.stringify(Object.keys(tsN).sort());
       check(`new-project ${c.label}: file set identical`, sameFiles,
@@ -236,7 +217,6 @@ function treeBytes(root: string, excludeSubstrings: string[] = []): Record<strin
       check(`new-project ${c.label}: bytes identical (modulo dates)`, sameFiles && diffs.length === 0,
         `differing files: ${diffs.join(", ")}`);
     } finally {
-      rmSync(psRoot, { recursive: true, force: true });
       rmSync(tsRoot, { recursive: true, force: true });
     }
   }
@@ -262,26 +242,22 @@ function treeBytes(root: string, excludeSubstrings: string[] = []): Record<strin
       "x", "",
     ].join("\n"));
   };
-  const psDir = mkdtempSync(join(tmpdir(), "tool-stateful-uss-"));
   const tsDir = mkdtempSync(join(tmpdir(), "tool-stateful-uss-"));
   try {
-    fixture(psDir);
     fixture(tsDir);
-    const ref = runPs("scripts/update-source-snapshot.ps1", ["-ProjectPath", psDir]);
+    const ref = golden.update_source_snapshot;
     const cand = updateSourceSnapshot(tsDir, false);
     const norm = (s: string, root: string) => getCanonicalGoldenText(s).replaceAll(root, "<TREE>").replace(TS_RE, "<TS>");
-    check("update-source-snapshot write: output", norm(ref.stdout, psDir) === norm(cand.output, tsDir),
-      getGoldenDiffReport(norm(ref.stdout, psDir), norm(cand.output, tsDir)).join(" | "));
-    check("update-source-snapshot write: exit", (ref.exitCode ?? 1) === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
-    const psProj = readFileSync(join(psDir, "PROJECT.md"), "utf8").replace(TS_RE, "<TS>");
+    const candOutN = norm(cand.output, tsDir);
+    check("update-source-snapshot write: output", ref.stdout_normalized === candOutN,
+      getGoldenDiffReport(ref.stdout_normalized, candOutN).join(" | "));
+    check("update-source-snapshot write: exit", ref.exitCode === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
     const tsProj = readFileSync(join(tsDir, "PROJECT.md"), "utf8").replace(TS_RE, "<TS>");
-    check("update-source-snapshot write: PROJECT.md identical (modulo timestamp)", psProj === tsProj,
-      getGoldenDiffReport(psProj, tsProj).join(" | "));
-    const psBak = readFileSync(join(psDir, "PROJECT.md.bak"), "utf8");
+    check("update-source-snapshot write: PROJECT.md identical (modulo timestamp)", ref.project_md_ts_scrubbed === tsProj,
+      getGoldenDiffReport(ref.project_md_ts_scrubbed, tsProj).join(" | "));
     const tsBak = readFileSync(join(tsDir, "PROJECT.md.bak"), "utf8");
-    check("update-source-snapshot write: backup is the pre-image on both sides", psBak === tsBak);
+    check("update-source-snapshot write: backup is the pre-image on both sides", ref.project_md_bak === tsBak);
   } finally {
-    rmSync(psDir, { recursive: true, force: true });
     rmSync(tsDir, { recursive: true, force: true });
   }
 }
@@ -329,26 +305,19 @@ function treeBytes(root: string, excludeSubstrings: string[] = []): Record<strin
     git("commit", "-q", "-m", "base");
     return dir;
   };
-  const A = clone("aggregate-ps");
   const B = clone("aggregate-ts");
   const fixture = fixtureRepo();
   try {
-    const fixA = join(A, "fixture");
     const fixB = join(B, "fixture");
-    cpSync(fixture, fixA, { recursive: true });
     cpSync(fixture, fixB, { recursive: true });
 
-    // RepoRoot is explicit on both sides: the PS script's default resolves to
-    // the checkout the script file lives in (the shared local tree), which
-    // would mix reference events into the workspace's own .axiom dir.
-    const ref = runPs("scripts/aggregate-diagnostics.ps1", ["-ProjectPath", fixA, "-RepoRoot", A, "-Mode", "Standard", "-Gate", "Draft", "-Format", "Json"]);
+    const ref = golden.aggregate_diagnostics;
     const cand = aggregateDiagnostics(B, fixB, "Standard", "Draft", false, "Json");
-    check("aggregate-diagnostics: exit", (ref.exitCode ?? 1) === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
+    check("aggregate-diagnostics: exit", ref.exitCode === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
 
-    const refCanon = jsonCanonical(ref.stdout, ["generated_at", "first_seen", "last_seen"]);
     const candCanon = jsonCanonical(cand.output, ["generated_at", "first_seen", "last_seen"]);
-    check("aggregate-diagnostics: registry identical (modulo timestamps)", refCanon === candCanon && refCanon !== null,
-      refCanon === candCanon ? "" : `ref=${refCanon} cand=${candCanon}`);
+    check("aggregate-diagnostics: registry identical (modulo timestamps)", ref.registry_canonical === candCanon && ref.registry_canonical !== null,
+      ref.registry_canonical === candCanon ? "" : `ref=${ref.registry_canonical} cand=${candCanon}`);
 
     // Event files: identical governed fields, same count, and the same
     // commit_hash (the fixture repo's fixed-date commit) on both sides.
@@ -363,19 +332,16 @@ function treeBytes(root: string, excludeSubstrings: string[] = []): Record<strin
       }
       return events;
     };
-    const evA = eventsOf(A);
     const evB = eventsOf(B);
-    check("aggregate-diagnostics: event counts equal", evA.length === evB.length, `ps=${evA.length} ts=${evB.length}`);
+    check("aggregate-diagnostics: event counts equal", ref.event_count === evB.length, `ps=${ref.event_count} ts=${evB.length}`);
     const governed = (e: Record<string, unknown>) => deepSortKeys({
       rule_id: e["rule_id"], level: e["level"], blocking: e["blocking"], mode: e["mode"], gate: e["gate"],
       execution_path: e["execution_path"], artifact: e["artifact"], item_id: e["item_id"], commit_hash: e["commit_hash"],
     });
-    const keysA = evA.map(governed).sort((x, y) => JSON.stringify(x).localeCompare(JSON.stringify(y)));
     const keysB = evB.map(governed).sort((x, y) => JSON.stringify(x).localeCompare(JSON.stringify(y)));
-    check("aggregate-diagnostics: event governed fields identical", JSON.stringify(keysA) === JSON.stringify(keysB),
-      `ps=${JSON.stringify(keysA)} ts=${JSON.stringify(keysB)}`);
+    check("aggregate-diagnostics: event governed fields identical", JSON.stringify(ref.governed_events_sorted) === JSON.stringify(keysB),
+      `ps=${JSON.stringify(ref.governed_events_sorted)} ts=${JSON.stringify(keysB)}`);
   } finally {
-    rmSync(A, { recursive: true, force: true });
     rmSync(B, { recursive: true, force: true });
     rmSync(fixture, { recursive: true, force: true });
   }
@@ -400,30 +366,24 @@ function treeBytes(root: string, excludeSubstrings: string[] = []): Record<strin
       writeFileSync(full, content);
     }
   };
-  const psDir = mkdtempSync(join(tmpdir(), "tool-stateful-cr-"));
   const tsDir = mkdtempSync(join(tmpdir(), "tool-stateful-cr-"));
   try {
-    build(psDir);
     build(tsDir);
-    const beforePs = treeBytes(psDir, [".axiom-backup-"]);
     const beforeTs = treeBytes(tsDir, [".axiom-backup-"]);
-    const ref = runPs("scripts/setup-claude-integration.ps1", ["-ProjectPath", psDir]);
+    const ref = golden.clean_room;
     const cand = setupClaudeIntegration(tsDir, false, false, false, "AGENTS.md");
     const norm = (s: string, root: string) => getCanonicalGoldenText(s).replaceAll(root, "<TREE>").replace(STAMP_RE, "<STAMP>");
-    check("clean-room install: output", norm(ref.stdout, psDir) === norm(cand.output, tsDir),
-      getGoldenDiffReport(norm(ref.stdout, psDir), norm(cand.output, tsDir)).join(" | "));
-    check("clean-room install: exit", (ref.exitCode ?? 1) === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
-    const afterPs = treeBytes(psDir, [".axiom-backup-"]);
+    const candOutN = norm(cand.output, tsDir);
+    check("clean-room install: output", ref.stdout_normalized === candOutN,
+      getGoldenDiffReport(ref.stdout_normalized, candOutN).join(" | "));
+    check("clean-room install: exit", ref.exitCode === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
     const afterTs = treeBytes(tsDir, [".axiom-backup-"]);
-    const changedPs = Object.keys(afterPs).filter((k) => !beforePs[k] || beforePs[k] !== afterPs[k]);
     const changedTs = Object.keys(afterTs).filter((k) => !beforeTs[k] || beforeTs[k] !== afterTs[k]);
-    check("clean-room: PS touches only AGENTS.md", JSON.stringify(changedPs.sort()) === JSON.stringify(["AGENTS.md"]), `changed: ${changedPs.join(",")}`);
+    check("clean-room: PS touches only AGENTS.md", JSON.stringify(ref.changed_files) === JSON.stringify(["AGENTS.md"]), `changed: ${ref.changed_files.join(",")}`);
     check("clean-room: TS touches only AGENTS.md", JSON.stringify(changedTs.sort()) === JSON.stringify(["AGENTS.md"]), `changed: ${changedTs.join(",")}`);
-    const psAgents = readFileSync(join(psDir, "AGENTS.md"), "utf8");
     const tsAgents = readFileSync(join(tsDir, "AGENTS.md"), "utf8");
-    check("clean-room: resulting AGENTS.md bytes identical", psAgents === tsAgents, `${psAgents.length} vs ${tsAgents.length}`);
+    check("clean-room: resulting AGENTS.md bytes identical", ref.agents_md === tsAgents, `${ref.agents_md.length} vs ${tsAgents.length}`);
   } finally {
-    rmSync(psDir, { recursive: true, force: true });
     rmSync(tsDir, { recursive: true, force: true });
   }
 }
