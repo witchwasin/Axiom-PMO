@@ -4,6 +4,8 @@ import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { checkPublicHygiene } from "./check-public-hygiene.js";
+import { runPmoDoctor } from "../doctor/pmo-doctor.js";
+import { runValidationFixtures } from "./validation-fixtures.js";
 export function preparePublicRelease(repoRoot, runSuite) {
     const repo = resolve(repoRoot);
     const releaseVersion = readFileSync(join(repo, "VERSION"), "utf8").trim();
@@ -78,19 +80,23 @@ export function preparePublicRelease(repoRoot, runSuite) {
             out.push(`  ${line}`);
     }
     if (runSuite) {
+        // Phase 9: doctor and fixtures call their ported functions in-process
+        // instead of spawning scripts/pmo-doctor.ps1 and
+        // scripts/run-validation-tests.ps1 -VerifyGolden (the reference for
+        // both is gone). example-goldens (tests/golden/capture-examples.ps1) is
+        // dropped entirely per master-plan.md's Phase 9 exit criteria, same as
+        // run-all-checks.ts's own "example-golden" check -- its coverage is
+        // carried forward by differential-probe.ts and validation-fixtures.ts.
         section("Check suite");
-        const suite = [
-            { n: "doctor", f: "scripts/pmo-doctor.ps1", a: [] },
-            { n: "fixtures", f: "scripts/run-validation-tests.ps1", a: ["-RepoPath", repo, "-VerifyGolden"] },
-            { n: "example-goldens", f: "tests/golden/capture-examples.ps1", a: ["-Verify"] },
-        ];
-        for (const s of suite) {
-            const r = spawnSync(process.env.AXIOM_PWSH ?? "pwsh", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(repo, s.f), ...s.a], { encoding: "utf8" });
-            const code = r.status ?? 1;
-            if (code !== 0)
-                problems.push(`Check '${s.n}' failed (exit ${code})`);
-            out.push(`${s.n}: exit ${code}`);
-        }
+        const doctorResult = runPmoDoctor(repo);
+        const doctorCode = doctorResult.fail > 0 ? 1 : 0;
+        if (doctorCode !== 0)
+            problems.push(`Check 'doctor' failed (exit ${doctorCode})`);
+        out.push(`doctor: exit ${doctorCode}`);
+        const fixturesResult = runValidationFixtures(repo, true);
+        if (fixturesResult.exitCode !== 0)
+            problems.push(`Check 'fixtures' failed (exit ${fixturesResult.exitCode})`);
+        out.push(`fixtures: exit ${fixturesResult.exitCode}`);
     }
     section("Verdict");
     if (problems.length > 0) {
