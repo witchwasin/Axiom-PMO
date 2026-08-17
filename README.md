@@ -173,7 +173,7 @@ Scope, Design, risk, or Release approval.
 
 ## Quick start
 
-Requires Node.js 18+ (the engine and the CLI run in-process; there is no other
+Requires Node.js 22+ (the engine and the CLI run in-process; there is no other
 runtime to install).
 
 ```bash

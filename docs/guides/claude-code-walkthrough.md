@@ -15,7 +15,7 @@ not a replacement for your developers.
 
 You need:
 
-- **Node.js 18+** — the engine and the `axiom` CLI run entirely in-process
+- **Node.js 22+** — the engine and the `axiom` CLI run entirely in-process
 - **Claude Code** with the `claude plugin` command (`claude plugin list`)
 - **git**
 - **A scratch git repository you do not mind changing.** Do not use real work

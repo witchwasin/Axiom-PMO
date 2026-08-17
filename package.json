@@ -4,13 +4,17 @@
   "private": true,
   "description": "Axiom-PMO governance validation engine (Node.js/TypeScript)",
   "type": "module",
+  "bin": {
+    "axiom": "./cli/axiom.mjs"
+  },
   "engines": {
     "node": ">=22.0.0"
   },
   "scripts": {
     "build": "tsc",
     "clean": "node scripts/clean-dist.mjs",
-    "test": "node --test dist/tests/",
+    "pretest": "npm run build",
+    "test": "node --test \"dist/**/*.test.js\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {},

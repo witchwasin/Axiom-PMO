@@ -1,7 +1,7 @@
 # Tutorial: Your First Project
 
 This walks through creating and validating a project with Axiom-PMO. It assumes
-Node.js 18+ is available.
+Node.js 22+ is available.
 
 ## 1. Generate a skeleton
 

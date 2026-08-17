@@ -24,7 +24,7 @@ most important contribution rule follows from that.
 
 ## Development environment
 
-- **Node.js 18+.** The entire engine — validators, rules, tools, doctor — runs
+- **Node.js 22+.** The entire engine — validators, rules, tools, doctor — runs
   in-process. TypeScript in `src/` compiles to `dist/`; there are no runtime
 dependencies (dev-only packages are listed in `package.json`).
 - Optional: `make` for the convenience targets. Lint is not enforced by CI.

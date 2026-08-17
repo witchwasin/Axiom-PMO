@@ -37,7 +37,7 @@ Axiom-PMO verified handoff
 | | |
 |---|---|
 | Claude Code | any version with `claude plugin` (verified against the CLI shipped alongside this work) |
-| Node.js 18+ | the engine and the `axiom` CLI run entirely in-process |
+| Node.js 22+ | the engine and the `axiom` CLI run entirely in-process |
 
 ## Install the plugin
 
