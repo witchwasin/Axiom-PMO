@@ -1,6 +1,6 @@
 {
-  "git_sha": "b063f7e7ec2969141f93cc08d9d36c2fcb196b9a",
-  "captured_at": "2026-08-17T17:55:29.883Z",
+  "git_sha": "9b99cb157967306d5158259f864fb9a0b6533501",
+  "captured_at": "2026-08-17T18:04:12.044Z",
   "files": {
     ".ci/canary/compatibility-case-manifest.md": "5c11c706fcf48d8c1294d30d769fb5f897ca4f3be1d10a254b57bc8653fc4125",
     "pmo-config/adversarial-review-policy.json": "0f40c385c966643a025b32cc13aac90f0804973a101f7c5f348a94881a03b39b",
@@ -59,7 +59,7 @@
     "src/probe/differential-probe.ts": "91f57f88bb70199113c72b898639d2f0c327073276a5f5082b145e157ac861f7",
     "src/probe/doctor-probe.ts": "6da7795d7aa452476e49f4bd7476f8d9981ffbecf18bbedca4c512aeb7aaa47c",
     "src/probe/execution-probe.ts": "5e12c3d8f33402c7492996e010530bd964c322d2f88f708de3ccad94f4d35ae0",
-    "src/probe/junction-probe.ts": "d1191e413e47364b1d6d02a2a2ffd5513c425fa3ff5a6aaaded4b7819b0330c8",
+    "src/probe/junction-probe.ts": "bd0b30b98d6f9976e3b8eb7e7e55ccd03b006d9f3ab19c9b7439ddd28bdda61e",
     "src/probe/m2-m3.test.ts": "f2094de9b775d691e74b2723a2c8744fbf1ccedb681f3accebe5397913663483",
     "src/probe/m4-m6.test.ts": "cccf7849aec1e7fe89b4e93f647d10de37b47c9738b64171841149c3bc8e839a",
     "src/probe/marker-io-probe.ts": "56f93ac23cae9b193359439d70ad45b85ccd5f4d9d40a31208d8977f6a4be58e",
