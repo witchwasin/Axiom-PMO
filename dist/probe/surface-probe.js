@@ -14,17 +14,23 @@
 // axiom-report.json is the reference validator's own JSON (path-normalized)
 // and that its exit semantics follow the diagnostics contract (report-only
 // softens a governance verdict, never an infrastructure failure).
-import { spawnSync } from "node:child_process";
+//
+// Phase 9: every runPs() call below used to spawn the PS reference live; it
+// now looks up a golden fixture frozen from that reference instead (the
+// reference no longer exists to compare against live). Call sites that used
+// identical (script, args) pairs share one fixture entry, same as they
+// shared one live PS process before conversion.
 import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, mkdtempSync, readdirSync, statSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolvePwsh } from "./pwsh-resolver.js";
 import { getCanonicalGoldenText, getGoldenDiffReport } from "../output/canonical-normalizer.js";
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const PWSH = resolvePwsh();
 const CLI = join(REPO_ROOT, "cli/axiom.mjs");
 const ACTION = join(REPO_ROOT, "scripts/github-action/run-action.mjs");
+const FIXTURE = resolve(REPO_ROOT, "tests/golden/probes/surface-probe.json");
+const golden = JSON.parse(readFileSync(FIXTURE, "utf8"));
 let pass = 0;
 let fail = 0;
 function check(name, ok, detail = "") {
@@ -37,18 +43,17 @@ function check(name, ok, detail = "") {
         console.log(`[FAIL] ${name}${detail ? " -- " + detail : ""}`);
     }
 }
-function runPs(script, args) {
-    const r = spawnSync(PWSH, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(REPO_ROOT, script), ...args], {
-        encoding: "utf8",
-        env: { ...process.env, AXIOM_PWSH: PWSH },
-    });
-    return { stdout: r.stdout ?? "", stderr: r.stderr ?? "", exitCode: r.status ?? 1 };
+function goldenCase(label) {
+    const c = golden.cases[label];
+    if (!c)
+        throw new Error(`no golden fixture case: ${label}`);
+    return c;
 }
 function runCli(args, opts = {}) {
     const r = spawnSync(process.execPath, [CLI, ...args], {
         encoding: "utf8",
         cwd: opts.cwd ?? REPO_ROOT,
-        env: { ...process.env, AXIOM_PWSH: PWSH, ...opts.env },
+        env: { ...process.env, ...opts.env },
     });
     return { stdout: r.stdout ?? "", stderr: r.stderr ?? "", exitCode: r.status ?? 1 };
 }
@@ -56,7 +61,7 @@ function runAction(args, opts = {}) {
     const r = spawnSync(process.execPath, [ACTION, ...args], {
         encoding: "utf8",
         cwd: opts.cwd ?? REPO_ROOT,
-        env: { ...process.env, AXIOM_PWSH: PWSH, ...opts.env },
+        env: { ...process.env, ...opts.env },
     });
     return { stdout: r.stdout ?? "", stderr: r.stderr ?? "", exitCode: r.status ?? 1 };
 }
@@ -89,16 +94,16 @@ const DATE_RE = /\d{4}-\d{2}-\d{2}/g;
 {
     const passing = "tests/fixtures/generated-project-draft";
     const failing = "tests/fixtures/invalid-placeholder-release";
-    for (const [label, project, gate] of [
-        ["pass-draft", passing, "Draft"],
-        ["fail-release", failing, "Release"],
+    for (const [label, project, gate, textFixture, jsonFixture] of [
+        ["pass-draft", passing, "Draft", "validate-text-pass-draft", "validate-json-pass-draft"],
+        ["fail-release", failing, "Release", "validate-text-fail-release", "validate-json-fail-release"],
     ]) {
         const cli = runCli(["validate", "--project", project, "--mode", "Standard", "--gate", gate]);
-        const ref = runPs("scripts/validate-project.ps1", ["-ProjectPath", project, "-Mode", "Standard", "-Gate", gate]);
+        const ref = goldenCase(textFixture);
         check(`cli validate text ${label}: stdout identical`, cli.stdout === ref.stdout, getGoldenDiffReport(cli.stdout, ref.stdout).join(" | "));
         check(`cli validate text ${label}: exit identical`, cli.exitCode === ref.exitCode, `cli=${cli.exitCode} ref=${ref.exitCode}`);
         const cliJ = runCli(["validate", "--project", project, "--mode", "Standard", "--gate", gate, "--json"]);
-        const refJ = runPs("scripts/validate-project.ps1", ["-ProjectPath", project, "-Mode", "Standard", "-Gate", gate, "-Format", "Json"]);
+        const refJ = goldenCase(jsonFixture);
         check(`cli validate json ${label}: exit identical`, cliJ.exitCode === refJ.exitCode, `cli=${cliJ.exitCode} ref=${refJ.exitCode}`);
         const norm = (t) => jsonCanonical(t.replaceAll(resolve(project), "<TREE>"), ["project"]);
         const cliN = norm(cliJ.stdout);
@@ -112,12 +117,12 @@ const DATE_RE = /\d{4}-\d{2}-\d{2}/g;
 {
     const project = "examples/STANDARD-FEATURE";
     const cli = runCli(["status", "--project", project]);
-    const ref = runPs("scripts/pmo-status.ps1", ["-ProjectPath", project]);
+    const ref = goldenCase("status-text");
     const norm = (t) => getCanonicalGoldenText(t).replaceAll(resolve(project), "<TREE>");
     check("cli status text: stdout identical (path-normalized)", norm(cli.stdout) === norm(ref.stdout), getGoldenDiffReport(norm(cli.stdout), norm(ref.stdout)).join(" | "));
     check("cli status text: exit identical", cli.exitCode === ref.exitCode, `cli=${cli.exitCode} ref=${ref.exitCode}`);
     const cliJ = runCli(["status", "--project", project, "--json"]);
-    const refJ = runPs("scripts/pmo-status.ps1", ["-ProjectPath", project, "-Format", "Json"]);
+    const refJ = goldenCase("status-json");
     check("cli status json: exit identical", cliJ.exitCode === refJ.exitCode, `cli=${cliJ.exitCode} ref=${refJ.exitCode}`);
     const normJ = (t) => jsonCanonical(t.replaceAll(resolve(project), "<TREE>"), ["project"]);
     check("cli status json: payload identical (path-normalized)", normJ(cliJ.stdout) === normJ(refJ.stdout) && normJ(cliJ.stdout) !== null, `cli=${normJ(cliJ.stdout)} ref=${normJ(refJ.stdout)}`);
@@ -129,8 +134,8 @@ const DATE_RE = /\d{4}-\d{2}-\d{2}/g;
 {
     const project = "examples/HANDOFF-DEMO";
     const cli = runCli(["handoff", "--project", project, "--mode", "Standard", "--json"]);
-    const refGate = runPs("scripts/validate-project.ps1", ["-ProjectPath", project, "-Mode", "Standard", "-Gate", "Handoff", "-Format", "Json"]);
-    const refAssess = runPs("scripts/assess-handoff.ps1", ["-ProjectPath", project, "-Mode", "Standard", "-Format", "Json"]);
+    const refGate = goldenCase("handoff-gate-json");
+    const refAssess = goldenCase("handoff-assess-json");
     check("cli handoff --json: exit is the gate's exit", cli.exitCode === refGate.exitCode, `cli=${cli.exitCode} gate=${refGate.exitCode}`);
     let env = null;
     try {
@@ -150,16 +155,13 @@ const DATE_RE = /\d{4}-\d{2}-\d{2}/g;
 // ---------------------------------------------------------------------------
 {
     const cliRoot = mkdtempSync(join(tmpdir(), "surface-cli-init-"));
-    const refRoot = mkdtempSync(join(tmpdir(), "surface-ref-init-"));
     try {
         const args = ["init", "--code", "P99-CLI", "--mode", "Standard", "--execution-path", "development_handoff",
             "--research-mode", "off", "--research-provider", "none", "--research-depth", "standard",
             "--ui-delivery", "not_applicable", "--output", cliRoot, "--handoff", "--target", "demo", "--horizon-days", "14"];
         const cli = runCli(args);
-        const ref = runPs("scripts/new-project.ps1", ["-ProjectCode", "P99-CLI", "-Mode", "Standard", "-ExecutionPath", "development_handoff",
-            "-ResearchMode", "off", "-ResearchProvider", "none", "-ResearchDepth", "standard", "-UiDelivery", "not_applicable",
-            "-OutputRoot", refRoot, "-IncludeHandoff", "-Target", "demo", "-HorizonDays", "14"]);
-        check("cli init: exit identical", cli.exitCode === ref.exitCode, `cli=${cli.exitCode} ref=${ref.exitCode}`);
+        const refTree = golden.init_tree;
+        check("cli init: exit identical", cli.exitCode === golden.init_exit_code, `cli=${cli.exitCode} ref=${golden.init_exit_code}`);
         const treeBytes = (root) => {
             const out = {};
             const walk = (d) => {
@@ -176,7 +178,6 @@ const DATE_RE = /\d{4}-\d{2}-\d{2}/g;
             return out;
         };
         const cliTree = treeBytes(join(cliRoot, "P99-CLI"));
-        const refTree = treeBytes(join(refRoot, "P99-CLI"));
         const sameFiles = JSON.stringify(Object.keys(cliTree).sort()) === JSON.stringify(Object.keys(refTree).sort());
         check("cli init: file set identical", sameFiles, `cli=[${Object.keys(cliTree).sort().join(",")}] ref=[${Object.keys(refTree).sort().join(",")}]`);
         const diffs = [];
@@ -190,7 +191,6 @@ const DATE_RE = /\d{4}-\d{2}-\d{2}/g;
     }
     finally {
         rmSync(cliRoot, { recursive: true, force: true });
-        rmSync(refRoot, { recursive: true, force: true });
     }
 }
 // ---------------------------------------------------------------------------
@@ -200,7 +200,7 @@ const DATE_RE = /\d{4}-\d{2}-\d{2}/g;
 // ---------------------------------------------------------------------------
 {
     const cliTs = runCli(["status", "--project", "examples/STANDARD-FEATURE"], { env: { AXIOM_PWSH: "/nonexistent/axiom/pwsh" } });
-    const refTs = runPs("scripts/pmo-status.ps1", ["-ProjectPath", resolve("examples/STANDARD-FEATURE")]);
+    const refTs = goldenCase("status-text-abspath");
     check("cli ignores AXIOM_PWSH entirely (no rollback path left to use it)", cliTs.exitCode === refTs.exitCode && cliTs.stdout === refTs.stdout, `exit=${cliTs.exitCode} ref=${refTs.exitCode}`);
 }
 // ---------------------------------------------------------------------------
@@ -212,7 +212,7 @@ const DATE_RE = /\d{4}-\d{2}-\d{2}/g;
     const args = ["validate", "--project", project, "--mode", "Standard", "--gate", "Draft"];
     const ts = runCli(args);
     const withStaleToggle = runCli(args, { env: { AXIOM_ROLLBACK_PWSH: "1" } });
-    const ref = runPs("scripts/validate-project.ps1", ["-ProjectPath", project, "-Mode", "Standard", "-Gate", "Draft"]);
+    const ref = goldenCase("validate-text-pass-draft");
     check("cli matches reference regardless of AXIOM_ROLLBACK_PWSH", withStaleToggle.stdout === ref.stdout && withStaleToggle.exitCode === ref.exitCode, getGoldenDiffReport(withStaleToggle.stdout, ref.stdout).join(" | "));
     check("AXIOM_ROLLBACK_PWSH=1 produces byte-identical output to it being unset", withStaleToggle.stdout === ts.stdout && withStaleToggle.exitCode === ts.exitCode, getGoldenDiffReport(withStaleToggle.stdout, ts.stdout).join(" | "));
 }
@@ -223,7 +223,7 @@ const DATE_RE = /\d{4}-\d{2}-\d{2}/g;
 {
     const failing = resolve("tests/fixtures/invalid-placeholder-release");
     const passing = resolve("tests/fixtures/generated-project-draft");
-    const runActionCase = (label, project, gate, enforce, expectExit) => {
+    const runActionCase = (label, project, gate, enforce, expectExit, refFixture) => {
         const wd = mkdtempSync(join(tmpdir(), "surface-action-"));
         const jsonPath = join(wd, "axiom-report.json");
         const mdPath = join(wd, "axiom-report.md");
@@ -236,7 +236,7 @@ const DATE_RE = /\d{4}-\d{2}-\d{2}/g;
             check(`action ${label}: report md written`, existsSync(mdPath));
             if (existsSync(jsonPath)) {
                 const report = JSON.parse(readFileSync(jsonPath, "utf8"));
-                const ref = runPs("scripts/validate-project.ps1", ["-ProjectPath", project, "-Mode", "Standard", "-Gate", gate, "-Format", "Json"]);
+                const ref = goldenCase(refFixture);
                 const norm = (t) => jsonCanonical(t.replaceAll(project, "<TREE>"), ["project"]);
                 const embedded = norm(JSON.stringify(report["results"]));
                 const refResults = norm(JSON.stringify(JSON.parse(ref.stdout)["results"]));
@@ -251,9 +251,9 @@ const DATE_RE = /\d{4}-\d{2}-\d{2}/g;
             rmSync(wd, { recursive: true, force: true });
         }
     };
-    runActionCase("failing-report-only", failing, "Release", false, 0);
-    runActionCase("failing-enforce", failing, "Release", true, 1);
-    runActionCase("passing-enforce", passing, "Draft", true, 0);
+    runActionCase("failing-report-only", failing, "Release", false, 0, "validate-json-fail-release");
+    runActionCase("failing-enforce", failing, "Release", true, 1, "validate-json-fail-release");
+    runActionCase("passing-enforce", passing, "Draft", true, 0, "validate-json-pass-draft");
 }
 console.log(`\nSummary: PASS=${pass} FAIL=${fail}`);
 if (fail > 0)
