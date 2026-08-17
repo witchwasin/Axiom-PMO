@@ -204,3 +204,120 @@ This section was archived after the above was run and confirmed. Re-running
 `npx tsc && for p in dist/probe/*.js; do node $p; done` plus
 `node --test dist/**/*.test.js` must reproduce the numbers above; the
 comparator hashes pin the exact probe binaries those numbers came from.
+
+---
+
+## §3 — Phase 8 cutover: final re-verification (CR-009), 2026-08-17
+
+CR-009's concern is specific: "final delivered tree ≠ proven tree." Everything
+in §1-§2 proved the ported engine against the reference on commits that were
+never going to ship as the default. Phase 8 (`71c4b6d`, `b85dd22`, `901035d`;
+DEC-030/031) makes the Node engine the CLI's unconditional path — so this
+section re-runs the proof one more time, at the exact commit that ships, not a
+commit descended from what was proven.
+
+### What changed since §2, and why each needed its own re-check rather than
+### being assumed still covered
+
+- **`71c4b6d`** — removed `AXIOM_ROLLBACK_PWSH` from `cli/axiom.mjs` entirely
+  (was 1210 lines, now 985). No behavior change to the surviving path — every
+  command still calls the same differentially-proven `ts()` closures §2
+  already checked — but the *selection logic* around it is gone, and that is
+  exactly the kind of change that needs its own regression, not an assumption
+  that "the engine didn't change so nothing did." Real, live-Windows-verified:
+  all 8 `canary-matrix` cells green, including the two that also ran the
+  now-single CLI exercise step. Downstream test infrastructure that had
+  rollback-specific assertions (`surface-probe.ts`, `cli-tests.mjs`,
+  `github-action-tests.mjs`, `clean-room.test.ts`,
+  `plugin-install-spike.test.ts`) updated to match reality instead of being
+  left asserting a mechanism that no longer exists — see `71c4b6d`'s own
+  message for the full account, including two scenarios honestly removed
+  (not force-fit) because the exact failure mode they tested can no longer
+  occur post-cutover.
+- **While auditing the ancestor-junction fix that landed just before Phase 8
+  (`1a4764e`)**, direct reproduction (not just code review) found the new
+  SETUP-003 check only inspected the project directory's own `lstat`, never
+  an ancestor — a real, live containment bypass, fixed in both TS and PS with
+  a leaf-backward physical/lexical comparison that's tolerant of OS-level
+  prefix aliases (verified not to false-positive on the very temp-dir pattern
+  this whole test suite uses).
+- **`b85dd22`** — version bump (2.1.0 → 2.2.0) across `VERSION`,
+  `CHANGELOG.md`, `package.json`, `.claude-plugin/plugin.json`, and all 15
+  `pmo-config/*.json` files (12 found by a first pass, 3 more — BOM-carrying
+  files a naive check silently skipped — found by actually running
+  `prepare-public-release.ps1`'s own consistency check rather than trusting
+  the first sweep was complete). Surfaced one real regression:
+  `artifact-hash.test.ts` hardcoded `pmo-config/policy.json`'s SHA-256, which
+  changed with the file's content — fixed by recomputing via
+  `Get-ArtifactSha256` (the PS reference function itself) and confirming the
+  new value matched exactly before updating the fixture, not by trusting
+  whatever Node emitted.
+- **`901035d`** — a real, pre-existing porting gap in `run-all-checks.ts`,
+  found only by finally running `node cli/axiom.mjs check` end to end (no
+  prior verification round in this whole migration had exercised that
+  specific orchestrator command as a whole): its `cli` and `github-action`
+  checks were spawning `pwsh` for two `.mjs` files instead of `node`, exactly
+  the reverse of what `scripts/run-all-checks.ps1` does (`& $node.Source
+  ...`). This was not something Phase 8 introduced — the file's own header
+  comment already said "not yet ported" — it had simply never been exercised
+  end to end before. Fixed; `axiom check` now completes all ~35 checks with
+  exit 0.
+
+### Full regression at the final cutover commit (`901035d`)
+
+- All 11 probe binaries green (junction-probe added since §2; correctly SKIPs
+  off-Windows, 14/14 PASS confirmed on a real Windows host via `canary-matrix`
+  earlier in Phase 7/8's own work) — comparator hashes below.
+- Full unit suite: **212 pass / 0 fail / 0 skipped**.
+- `tests/helpers/cli-tests.mjs`: **46/46** (previously partially gated behind
+  PowerShell availability — now unconditional, a real coverage increase, not
+  just a rename).
+- `tests/helpers/github-action-tests.mjs`: **58/58** (same fix, same effect).
+- `node cli/axiom.mjs check` (the full orchestrator, all ~35 checks): exit 0,
+  "All Axiom-PMO framework checks completed."
+- Real hosts, not just this machine: `901035d`'s own CI run — see
+  `gh run view` for the exact run — green on `pmo-checks-{windows,linux,
+  macos}-pwsh7` and all 8 `canary-matrix` cells (4 hosts × 2 Node versions).
+  The only red job is `canary-baseline`'s own RESET, which is correct,
+  expected behavior (Phase 8 touched the canary manifest surface) and not a
+  regression — N was already waived by DEC-030 before this work began.
+
+### Comparator hashes (SHA-256 of the built probe binaries at archive time)
+
+| Comparator | SHA-256 |
+|---|---|
+| `dist/probe/tool-probe.js` | `7f49a215eed7dcc551f2fe74df53665d4b32632137b64177f8b23661a7526462` |
+| `dist/probe/tool-stateful-probe.js` | `41533bbc6f2097bb7145cecfef56456be9c3cbed1d15c3109ef749b7c2a27bbe` |
+| `dist/probe/surface-probe.js` | `e431fe4b73bd7a5e700804fcc84c0fb2a7422e0ee68b9e3d4692881f64531e16` |
+| `dist/probe/differential-probe.js` | `32b11365ea4ba023b51149735c660120b1419807bc4855f644cc5bdcefa11acf` |
+| `dist/probe/execution-probe.js` | `11bff101666716161c37da87f1182292b3f77586faf930e0e522bdb5b39fdaa3` |
+| `dist/probe/marker-probe.js` | `70db03afe0235492168fd9339e702049cc53247b85741a8f2fb5eeb3f079a279` |
+| `dist/probe/marker-io-probe.js` | `fcdc22fe2ab37ce2745d7f52ad15e3b7b5a18ba733567357963987c9444cc043` |
+| `dist/probe/setup-probe.js` | `02811a380ca1265d6d9c0a316ec0cfa5e7be3fe05de09d4f1e346b6654b8a10d` |
+| `dist/probe/stateful-probe.js` | `b30fa9f6458d5370fdc63c4efa6929c60e10e1d4a7332a19282fb34cc7c9f5a9` |
+| `dist/probe/doctor-probe.js` | `4a99ff67c6ebc4b32358a5d841ab6aa3bf5d1bcfc4c87c53d6e86a19b7eb909f` |
+| `dist/probe/junction-probe.js` | `2bdc615738d9e48a3ae46107b5beb19129ca90f813e71515463bfabe07a57ee1` |
+
+### Host versions at archive time
+
+| Component | Version |
+|---|---|
+| Node | v23.11.0 |
+| PowerShell (reference host, `AXIOM_PWSH`) | 7.6.4 (`<pinned-pwsh-path>`, portable — not on PATH) |
+| git | 2.50.1 (Apple Git-155) |
+| OS | macOS 26.6.2 (Build 25G82), arm64 |
+
+### What this section does and does not establish
+
+Establishes: the exact tree that ships as Axiom-PMO 2.2.0 (`901035d`) passes
+every differential case §1-§2 already proved, plus the full local and
+CI-verified regression above, with the CLI's rollback path removed and the
+version identity consistent everywhere it's declared. Two real bugs found
+during this specific re-verification pass (the ancestor-escape containment
+gap, the run-all-checks node/pwsh mix-up) are exactly what CR-009's "re-run
+after cutover, don't assume" concern exists to catch — both were caught here,
+not shipped silently.
+
+Does not establish: that Phase 9 (PowerShell deletion) or Phase 10
+(documentation reconciliation) are ready — both remain separately gated per
+DEC-027/030/031/032 and `Fixed_plan/phase9/PLAN.md`'s still-open items.
