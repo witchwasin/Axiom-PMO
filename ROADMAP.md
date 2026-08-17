@@ -1,14 +1,23 @@
 # Axiom-PMO Productization Roadmap
 
 Status: roadmap of record
-Current tagged release: 1.3.0 (git tag `v1.3.0`). Current framework version:
-1.4.0 (`VERSION` file). Milestone 6 merged to `main` 2026-08-01; Milestone
-5.5 merged to `main` 2026-08-02;
-Milestones 7, 8.0, 8.1, and 9 merged to `main` 2026-08-03 (commit `1235034`).
-None of Milestones 7-9 is part of the `v1.3.0` tag. The `v1.3.0` tag was
-authorized separately by the Human Owner on 2026-08-02. GitHub Release notes,
-marketplace publication, npm publication, and any further tag remain separate
-decisions and have not occurred.
+Current tagged release: 2.2.0 (git tag `v2.2.0`, matches `HEAD` on `main`).
+Current framework version: 2.2.0 (`VERSION` file). Milestone 6 merged to
+`main` 2026-08-01; Milestone 5.5 merged to `main` 2026-08-02; Milestones 7,
+8.0, 8.1, and 9 merged to `main` 2026-08-03 (commit `1235034`); Milestone 10
+closed 2026-08-11 (`DEC-022`, commit `b7d6a64`). The `v1.3.0` tag (2026-08-02)
+predates Milestones 7-9; tags `v1.5.0` (2026-08-11) through `v2.2.0`
+(2026-08-17) have since been cut by the Human Owner and each supersedes it.
+GitHub Release notes, marketplace publication, and npm publication remain
+separate decisions and have not occurred.
+
+This roadmap's Milestone table tracks the product only. A separate,
+later-authorized workstream -- the PowerShell-to-Node/TypeScript interpreter
+migration (`DEC-026`..`DEC-034`) -- is tracked in `Fixed_plan/master-plan.md`
+and its per-phase `Fixed_plan/phaseN/PLAN.md` files, not in this document. It
+ran 2026-08-15 through 2026-08-17, deleted the PowerShell reference
+implementation entirely (92 files), and is what `v2.2.0` ships; see
+`CHANGELOG.md`'s `2.2.0` entry for the summary.
 
 **Minimum publishable baseline: `f10b608`.** Two post-closure production
 defects were found by CI after the Milestone 7-9 merge and fixed on `main`
@@ -19,7 +28,7 @@ so `1309cb6` itself was never confirmed green on all hosts by real CI
 (full errata in `CHANGELOG.md`). A release candidate must therefore be
 built from `f10b608` or later, never from `1235034`, `4ae5f35`, or
 `1309cb6`, none of which are publishable across the supported hosts.
-Last updated: 2026-08-11
+Last updated: 2026-08-17
 
 Axiom-PMO is moving from an open-source governance framework into a developer
 workflow tool for AI-assisted software delivery.

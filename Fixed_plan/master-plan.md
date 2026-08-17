@@ -1,7 +1,12 @@
 # Axiom-PMO — Interpreter Migration Master Plan (v3)
 
-**Branch:** `feat/migrate-interpreter-to-node-ts`
-**Status:** PLANNING — no implementation has started. This document is the executable handoff.
+**Branch:** `feat/migrate-interpreter-to-node-ts` (merged to `main`)
+**Status:** COMPLETE — all 10 phases executed and closed 2026-08-17. The PowerShell
+reference is deleted, the Node/TypeScript engine is `cli/axiom.mjs`'s unconditional
+path, and the result is tagged `v2.2.0`. This document is retained as the executable
+historical record of how the migration was planned and run, not as an open plan; see
+§10 for the Definition of Done evidence and `Fixed_plan/decision-log.md`
+(`DEC-026`..`DEC-034`) for the approval trail.
 **Supersedes:** `master-plan.md` v2 (commit `5270008`), which closed F1–F10 and CR-001–CR-021
 and was adjudicated by Claude Opus 5 in `Fixed_plan/Claude-Review-v2.md`. This v3 closes
 G1–G4 plus the two adjudication tightenings from that round. The response log and the three
@@ -521,30 +526,74 @@ PowerShell; historical records intact.
 
 ## 10. Definition of Done (Codex's revised list, adopted)
 
-The migration is complete only when all of the following are true:
+The migration is complete only when all of the following are true. Checked 2026-08-17
+against the evidence cited on each line; an unchecked box means no supporting evidence
+was found, not that it was skipped.
 
-- [ ] A named Human Owner authorized and recorded migration, compatibility, build,
-      support, cutover, and deletion decisions.
-- [ ] Every `.ps1` has a reviewed disposition; every live caller has a replacement or
-      approved retirement.
+- [x] A named Human Owner authorized and recorded migration, compatibility, build,
+      support, cutover, and deletion decisions. (`Fixed_plan/decision-log.md`,
+      `DEC-026`..`DEC-034`, all approved by Witchwasin K.)
+- [x] Every `.ps1` has a reviewed disposition; every live caller has a replacement or
+      approved retirement. (`Fixed_plan/phase0/disposition-matrix.md` and
+      `tests-disposition.md`; the 92-file Phase 9 deletion list in
+      `Fixed_plan/phase9/PLAN.md`, each with a named Node replacement.)
 - [ ] The Node library uses explicit per-run state and passes sequential/concurrent
-      isolation tests.
-- [ ] The Node CLI, Action, plugin, hooks, maintainer tools, generator, execution tools,
+      isolation tests. **Partial:** `ValidationContext` (`src/core/context.ts`, CR-012)
+      gives per-run state architecturally, and Phase 0's
+      `Fixed_plan/phase0/dependency-graph.md` closed CR-012's dependency-graph half — but
+      no dedicated sequential/concurrent isolation test was found under `src/` or
+      `tests/`. Left unchecked rather than inferred from the architecture alone.
+- [x] The Node CLI, Action, plugin, hooks, maintainer tools, generator, execution tools,
       release tools, and test runner all work without PowerShell.
-- [ ] Candidate-only tests run where PowerShell is unavailable or deliberately poisoned.
-- [ ] The full compatibility-case manifest passes with zero unexplained skips and zero
-      unapproved differences.
-- [ ] JSON output validates against `diagnostics-schema.json` and the assessment schema.
-- [ ] Config mutation proves the same policy files remain load-bearing.
-- [ ] All intentional deltas are listed with before/after behavior and a `DEC-###`.
-- [ ] Runtime/infrastructure failures cannot be softened by Action report-only mode.
-- [ ] The supported Node/OS matrix passes on the exact final SHA.
-- [ ] Clean-room CLI, `uses: ./`, and read-only/non-checkout plugin tests pass.
-- [ ] Rollback to the baseline SHA has been exercised and has a named owner.
-- [ ] A named Human security reviewer has signed off on the supply-chain and containment
-      surface (CR-017) before Phase 8 cutover.
+      (`Fixed_plan/phase6/differential-proof-report.md` §3-§4: full regression 219 pass /
+      0 fail / 0 skipped at the deletion commit `dfb6f8b`.)
+- [x] Candidate-only tests run where PowerShell is unavailable or deliberately poisoned.
+      (`src/tools/clean-room.test.ts`'s PowerShell-provably-absent case, confirmed
+      passing with `pwsh` absent from `PATH` — `differential-proof-report.md` §4.)
+- [x] The full compatibility-case manifest passes with zero unexplained skips and zero
+      unapproved differences. (`differential-proof-report.md` §2: 240/240 cases PASS,
+      "Skips — all explained, zero unexplained".)
+- [x] JSON output validates against `diagnostics-schema.json` and the assessment schema.
+      (`src/output/diagnostics-contract.test.ts`.)
+- [x] Config mutation proves the same policy files remain load-bearing.
+      (`src/tools/config-mutation.test.ts`.)
+- [x] All intentional deltas are listed with before/after behavior and a `DEC-###`.
+      (`differential-proof-report.md` §2 "Deltas found by the differential and fixed";
+      §3-§4 record each further delta found during cutover and deletion
+      re-verification.)
+- [x] Runtime/infrastructure failures cannot be softened by Action report-only mode.
+      (`tests/helpers/github-action-tests.mjs`: a missing PowerShell host "exits 127 even
+      in report-only mode" — the same `EXIT_NO_POWERSHELL` path in `cli/axiom.mjs` still
+      governs any infra failure post-cutover.)
+- [x] The supported Node/OS matrix passes on the exact final SHA. (CI green on `main` at
+      the tagged `v2.2.0` commit, and at the Phase 8/9 cutover/deletion commits
+      `901035d`/`dfb6f8b` before it — confirmed via `gh run list`, 2026-08-17.)
+- [x] Clean-room CLI, `uses: ./`, and read-only/non-checkout plugin tests pass.
+      (`clean-room.test.ts`, `plugin-install-spike.test.ts`, and the `dogfood-*` jobs in
+      `.github/workflows/pmo-checks.yml`, all green post-cutover.)
+- [x] Rollback to the baseline SHA has been exercised and has a named owner.
+      (Rollback-specific assertions existed in `surface-probe.ts`, `cli-tests.mjs`,
+      `github-action-tests.mjs`, `clean-room.test.ts`, and `plugin-install-spike.test.ts`
+      through Phase 7/8, before `71c4b6d` retired `AXIOM_ROLLBACK_PWSH` at cutover; owner
+      Witchwasin K. — `Fixed_plan/phase7/PLAN.md`: "a human decides whether to set the
+      rollback toggle after seeing a real failure".)
+- [x] A named Human security reviewer has signed off on the supply-chain and containment
+      surface (CR-017) before Phase 8 cutover. (`DEC-031`: Witchwasin K., named reviewer
+      per `DEC-027`, reviewed `Fixed_plan/phase8/CR-017-review-material.md` and signed
+      off 2026-08-16.)
 - [ ] A named Human authorized final deletion; a separate Human reviewed the final diff.
-- [ ] No active runtime surface invokes PowerShell; historical records remain intact.
+      **Half satisfied, half formally waived, not achieved:** `DEC-033` records Witchwasin
+      K.'s authorization to proceed. The "a separate Human reviewed the final diff" half
+      is explicitly waived by `DEC-032` — this is a solo-maintainer project with one
+      Human Owner, not two, and the Owner chose to accept that gap rather than have
+      Claude stand in as a second reviewer it structurally cannot be. Left unchecked
+      because the line as written was not met; the waiver is the record of why that is
+      accepted.
+- [x] No active runtime surface invokes PowerShell; historical records remain intact.
+      (`Fixed_plan/phase9/PLAN.md` and `phase10/PLAN.md` exit criteria met;
+      `node cli/axiom.mjs doctor` 57/57 PASS; the remaining `pwsh`/`powershell`
+      references in the tree are historical comments, CI profile/host labels, or the
+      differential harness's own comparison narrative — not live invocations.)
 
 ---
 
