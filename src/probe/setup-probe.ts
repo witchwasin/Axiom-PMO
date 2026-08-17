@@ -1,16 +1,18 @@
 // §8.6 fresh-tree probe for setup-claude-integration: install + uninstall via
-// PS reference vs TS candidate on separate temp trees, compare file bytes.
+// the TS candidate on a temp tree; the one case (install) that used to also
+// drive the PS reference now compares against a golden fixture frozen from
+// that reference instead (Phase 9: the reference no longer exists to compare
+// against live).
 
-import { spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync, mkdirSync, rmSync, mkdtempSync } from "node:fs";
+import { readFileSync, writeFileSync, rmSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { setupClaudeIntegration } from "../tools/setup-claude-integration.js";
-import { resolvePwsh } from "./pwsh-resolver.js";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const PWSH = resolvePwsh();
+const FIXTURE = resolve(REPO_ROOT, "tests/golden/probes/setup-probe.json");
+const golden = JSON.parse(readFileSync(FIXTURE, "utf8")) as { installed_agents_md: string };
 
 let pass = 0, fail = 0;
 function check(name: string, ok: boolean, detail = ""): void {
@@ -26,26 +28,15 @@ function writeAgents(dir: string, content: string): void {
   writeFileSync(join(dir, "AGENTS.md"), content);
 }
 
-function psSetup(dir: string, action: "install" | "remove", force = false): void {
-  const args = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(REPO_ROOT, "scripts/setup-claude-integration.ps1"),
-    "-ProjectPath", dir, ...(action === "remove" ? ["-Uninstall"] : []), ...(force ? ["-Force"] : [])];
-  const r = spawnSync(PWSH, args, { encoding: "utf8" });
-  if (r.status !== 0) throw new Error(`ps setup ${action} failed: ${r.stderr}`);
-}
-
-// Case 1: install on fresh file → identical bytes
+// Case 1: install on fresh file → identical bytes to golden
 {
-  const psTree = freshTree();
   const tsTree = freshTree();
   try {
-    writeAgents(psTree, "# User rules\n\nBe careful.\n");
     writeAgents(tsTree, "# User rules\n\nBe careful.\n");
-    psSetup(psTree, "install");
     setupClaudeIntegration(tsTree, false, false, false, "AGENTS.md");
-    const ps = readFileSync(join(psTree, "AGENTS.md"), "utf8");
     const ts = readFileSync(join(tsTree, "AGENTS.md"), "utf8");
-    check("install: bytes identical", ps === ts, `${ps.length} vs ${ts.length}`);
-  } finally { rmSync(psTree, { recursive: true, force: true }); rmSync(tsTree, { recursive: true, force: true }); }
+    check("install: bytes identical", golden.installed_agents_md === ts, `${golden.installed_agents_md.length} vs ${ts.length}`);
+  } finally { rmSync(tsTree, { recursive: true, force: true }); }
 }
 
 // Case 2: uninstall round-trips to original
