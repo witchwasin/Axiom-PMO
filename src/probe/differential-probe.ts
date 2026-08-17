@@ -1,16 +1,19 @@
-// Differential probe: run the PowerShell reference (validate-project.ps1) and
-// the ported TS chain on the same fixture, filter both to the ported rule-ID
-// set, and canonical-compare. This is the "differentially green" gate from
-// master-plan v3 §9 Phase 2-4, applied per-module without a full orchestrator.
+// Regression probe: run the ported TS chain on each fixture, filter to the
+// ported rule-ID set, and canonical-compare against a golden fixture frozen
+// from the PowerShell reference (validate-project.ps1) on the same cases
+// (Phase 9: the reference no longer exists to compare against live). This
+// is the "differentially green" gate from master-plan v3 §9 Phase 2-4,
+// applied per-module without a full orchestrator.
 
-import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { runPortedChain } from "./validate-chain.js";
-import { resolvePwsh } from "./pwsh-resolver.js";
 import type { Diagnostic } from "../core/types.js";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const FIXTURE = resolve(REPO_ROOT, "tests/golden/probes/differential-probe.json");
+const golden = JSON.parse(readFileSync(FIXTURE, "utf8")) as Record<string, Diagnostic[]>;
 
 // Rules the ported chain is responsible for. Everything else PS emits
 // (HANDOFF-*, DPROV-002..007, VPROOF-*, TEST-DESIGN-*, SCOPE-DIFF-*, EXEC-*,
@@ -39,29 +42,6 @@ const PORTED_RULE_IDS = new Set([
   "HANDOFF-011", "HANDOFF-012", "HANDOFF-013", "HANDOFF-014",
   "TEST-DESIGN-001", "TEST-DESIGN-002",
 ]);
-
-interface ReferenceEnvelope {
-  results: Diagnostic[];
-}
-
-function runReference(fixture: string, mode: string, gate: string): Diagnostic[] {
-  const r = spawnSync(
-    resolvePwsh(),
-    ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", resolve(REPO_ROOT, "scripts/validate-project.ps1"),
-      "-ProjectPath", fixture, "-Mode", mode, "-Gate", gate, "-Format", "Json"],
-    { encoding: "utf8" },
-  );
-  // Exit 1 (a FAIL) and 2 (blocking WARN under -FailOnWarning) are normal
-  // validation verdicts, not reference errors. Parse stdout regardless.
-  if (r.status !== 0 && r.status !== 1 && r.status !== 2) {
-    throw new Error(`reference crashed with exit ${r.status}: ${r.stderr}`);
-  }
-  if (!r.stdout || r.stdout.trim() === "") {
-    throw new Error(`reference produced no JSON output (exit ${r.status})`);
-  }
-  const env = JSON.parse(r.stdout) as ReferenceEnvelope;
-  return env.results;
-}
 
 function filter(rows: Diagnostic[]): Diagnostic[] {
   return rows.filter((r) => PORTED_RULE_IDS.has(r.rule_id));
@@ -127,10 +107,12 @@ function main(): void {
   let totalFail = 0;
   for (const c of CASES) {
     const fixtureAbs = resolve(REPO_ROOT, c.fixture);
+    const caseKey = `${c.fixture}@${c.mode}/${c.gate}`;
     let refRows: Diagnostic[];
     let candRows: Diagnostic[];
     try {
-      refRows = filter(runReference(fixtureAbs, c.mode, c.gate));
+      if (!(caseKey in golden)) throw new Error(`no golden fixture for ${caseKey}`);
+      refRows = filter(golden[caseKey]!);
       candRows = filter(runPortedChain(REPO_ROOT, fixtureAbs, c.mode as "Lite" | "Standard" | "Strict", c.gate as "Draft" | "Scope" | "Design" | "Handoff" | "Release").diagnostics);
     } catch (e) {
       console.log(`[SKIP] ${c.fixture} @ ${c.mode}/${c.gate}: ${(e as Error).message}`);
