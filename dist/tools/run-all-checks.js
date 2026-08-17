@@ -10,9 +10,18 @@ export function runAllChecks(repoRoot, testChildScript) {
     const pwsh = resolvePwsh();
     const out = [];
     const executedChecks = [];
-    function invokeCheck(name, args) {
+    // Reference: Invoke-Check takes a scriptblock, so each check picks its own
+    // interpreter. The PS side of that flexibility is `pwsh -File`; the two
+    // Node checks below use `& $node.Source ...` directly (run-all-checks.ps1
+    // lines ~131-138), not pwsh. Bug found by actually running `axiom check`
+    // end to end for the first time post-cutover: this port had collapsed both
+    // cases onto a single hardcoded pwsh spawn, so the cli/github-action checks
+    // -- .mjs files -- were being handed to PowerShell as a bare positional
+    // argument instead of to node. exe is explicit per call now, matching the
+    // reference's per-check interpreter choice instead of assuming one.
+    function invokeCheck(name, exe, args) {
         out.push(`[CHECK] ${name}`);
-        const r = spawnSync(pwsh, ["-NoProfile", "-ExecutionPolicy", "Bypass", ...args], { encoding: "utf8" });
+        const r = spawnSync(exe, args, { encoding: "utf8" });
         // Only re-emit a child's actual output. The reference streams the child's
         // stdout straight through, so a silent child contributes no line; pushing
         // an empty string here would add a blank line the reference does not have.
@@ -30,6 +39,12 @@ export function runAllChecks(repoRoot, testChildScript) {
         out.push(`[PASS] ${name}`);
         return 0;
     }
+    // Every check below except the two Node ones spawns the PS reference the
+    // same way; this keeps that call shape in one place instead of repeating
+    // pwsh's fixed flags at every one of the ~30 call sites.
+    function invokePsCheck(name, args) {
+        return invokeCheck(name, pwsh, ["-NoProfile", "-ExecutionPolicy", "Bypass", ...args]);
+    }
     out.push(`Running Axiom-PMO framework checks for ${repo}`);
     out.push("");
     const psFile = (rel, args = []) => ["-File", join(repo, rel), ...args];
@@ -37,7 +52,7 @@ export function runAllChecks(repoRoot, testChildScript) {
         // The reference resolves the child script to an absolute path (Resolve-Path)
         // before running it; psFile would join() it onto the repo root again and
         // double-prefix an already-absolute path.
-        const code = invokeCheck("fault-injection", ["-File", resolve(testChildScript)]);
+        const code = invokePsCheck("fault-injection", ["-File", resolve(testChildScript)]);
         if (code !== 0)
             return { output: out.join("\n") + "\n", exitCode: code };
     }
@@ -77,17 +92,19 @@ export function runAllChecks(repoRoot, testChildScript) {
         ["e2e-handoff", psFile("tests/e2e/handoff.ps1", ["-RepoPath", repo])],
     ];
     for (const [name, args] of checks) {
-        const code = invokeCheck(name, args);
+        const code = invokePsCheck(name, args);
         if (code !== 0)
             return { output: out.join("\n") + "\n", exitCode: code };
     }
-    // Node checks (CLI + github-action)
+    // Node checks (CLI + github-action) -- run via node directly, matching the
+    // reference's `& $node.Source ...` (run-all-checks.ps1 lines ~131-138), not
+    // via pwsh. This is the exact gap the bug above described.
     const nodeProbe = spawnSync("node", ["--version"], { encoding: "utf8" });
     if (nodeProbe.status === 0) {
-        const cliCode = invokeCheck("cli", [join(repo, "tests/helpers/cli-tests.mjs")]);
+        const cliCode = invokeCheck("cli", "node", [join(repo, "tests/helpers/cli-tests.mjs")]);
         if (cliCode !== 0)
             return { output: out.join("\n") + "\n", exitCode: cliCode };
-        const gaCode = invokeCheck("github-action", [join(repo, "tests/helpers/github-action-tests.mjs")]);
+        const gaCode = invokeCheck("github-action", "node", [join(repo, "tests/helpers/github-action-tests.mjs")]);
         if (gaCode !== 0)
             return { output: out.join("\n") + "\n", exitCode: gaCode };
     }
