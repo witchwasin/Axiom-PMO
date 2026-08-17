@@ -47,10 +47,11 @@ function newSimulatedPluginInstall(root) {
     const install = join(root, "marketplaces/axiom pmo/plugins/axiom-pmo");
     mkdirSync(install, { recursive: true });
     // What a plugin install carries for the Node-native tools: pmo-config,
-    // templates, and -- since the CLI rewire -- the compiled engine (dist/)
-    // plus cli/axiom.mjs itself. scripts/ is carried too: it keeps the
-    // rollback path (AXIOM_ROLLBACK_PWSH=1) functional from an install, and it
-    // is what the PS original's equivalent spike used.
+    // templates, and the compiled engine (dist/) plus cli/axiom.mjs itself.
+    // scripts/ is still carried even though the Phase 8 cutover (DEC-030/031)
+    // means cli/axiom.mjs no longer reads it for anything -- the files still
+    // exist on disk (Phase 9 territory, not decided yet) and this is what the
+    // PS original's equivalent spike used.
     for (const dir of ["pmo-config", "templates", "cli", "scripts", "dist"]) {
         cpSync(join(REPO_ROOT, dir), join(install, dir), { recursive: true });
     }
@@ -146,12 +147,11 @@ test("plugin install spike: framework-root vs project-root separation", () => {
         const realVerify = runVerifyExecutionResult(install, project, resultPath, null, null, false);
         const realVerdict = String(realVerify.envelope["execution_verification"]["verdict"]);
         assert.equal(realVerdict, "pass", `a complete execution result verifies to a pass from the install root: ${JSON.stringify(realVerify.envelope["execution_verification"]).slice(0, 600)}`);
-        // ---- does the REWIRED Node CLI resolve the same way? (Phase 7: the CLI
-        // runs the compiled dist/ engine in-process from its own install
-        // location; AXIOM_ROLLBACK_PWSH is forced unset so this exercises the
-        // default path, the one a plugin install would use.)
+        // ---- does the Node CLI resolve the same way? (the CLI runs the compiled
+        // dist/ engine in-process from its own install location -- this is now
+        // its only path, post-Phase-8 cutover.)
         const cli = spawnSync(process.execPath, [join(install, "cli/axiom.mjs"), "validate", "--project", project, "--mode", "Standard"], {
-            encoding: "utf8", cwd: root, env: { ...process.env, AXIOM_ROLLBACK_PWSH: "" },
+            encoding: "utf8", cwd: root,
         });
         if (cli.error) {
             // Node itself unavailable in this environment is a legitimate skip,
@@ -176,10 +176,10 @@ test("plugin install spike: framework-root vs project-root separation", () => {
                 chmodSync(f, 0o444);
             try {
                 const cliRo = spawnSync(process.execPath, [join(install, "cli/axiom.mjs"), "validate", "--project", project, "--mode", "Standard"], {
-                    encoding: "utf8", cwd: root, env: { ...process.env, AXIOM_ROLLBACK_PWSH: "" },
+                    encoding: "utf8", cwd: root,
                 });
                 const cliRoText = (cliRo.stdout ?? "") + (cliRo.stderr ?? "");
-                assert.ok(cliRo.status === 0 || cliRo.status === 1, `the rewired CLI validates from a read-only install (not an infra/usage failure): exit=${cliRo.status} ${cliRoText.slice(0, 400)}`);
+                assert.ok(cliRo.status === 0 || cliRo.status === 1, `the CLI validates from a read-only install (not an infra/usage failure): exit=${cliRo.status} ${cliRoText.slice(0, 400)}`);
                 assert.ok(/Summary: PASS=\d+/.test(cliRoText), `...and produces a real validation report: ${cliRoText.slice(0, 300)}`);
             }
             finally {

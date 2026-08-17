@@ -207,10 +207,9 @@ function main() {
     scopeDiffRefs = resolveScopeDiffRefs(options);
     // PowerShell parameter syntax (-Name), not this file's own --kebab-case
     // argv convention: cli/axiom.mjs's `validate` command recognises these
-    // three as validate-project.ps1's own parameters and honours them on
-    // both paths (in-process by default, forwarded to the .ps1 under
-    // AXIOM_ROLLBACK_PWSH=1) -- see buildValidate in cli/axiom.mjs -- so they
-    // have to already be in the form validate-project.ps1 itself expects.
+    // three as validate-project.ps1's own parameter names (historical, from
+    // when the CLI could forward them there) -- see buildValidate in
+    // cli/axiom.mjs -- so they have to already be in that form.
     cliArgs.push(
       "-ScopeDiffBase", scopeDiffRefs.base,
       "-ScopeDiffHead", scopeDiffRefs.head,

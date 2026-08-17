@@ -1,13 +1,13 @@
-// Phase 6+7 -- final-tree differential gate, CLI + GitHub Action surface.
+// Phase 6+7+8 -- final-tree differential gate, CLI + GitHub Action surface.
 //
-// Phase 7 rewired cli/axiom.mjs: the default path calls the ported TS engine
-// in-process; AXIOM_ROLLBACK_PWSH=1 restores the original spawn-pwsh
-// behavior. The compatibility contract is byte-level either way: for a given
-// verb/args the CLI must produce the exact stdout, stderr, and exit code the
-// underlying .ps1 produces when invoked directly. This probe is the rewire's
-// regression check: every default-path case below compares the in-process
-// output against the direct reference script, and dedicated rollback cases
-// prove the toggle still runs the old path identically.
+// Phase 7 rewired cli/axiom.mjs to call the ported TS engine in-process, with
+// an AXIOM_ROLLBACK_PWSH=1 toggle to fall back to spawning the reference
+// .ps1. Phase 8 (DEC-030/031) removed that toggle entirely -- the CLI now
+// only ever runs the in-process engine, unconditionally. This probe's job is
+// unchanged in spirit: every case below compares the CLI's in-process output
+// against the direct reference script, byte for byte. The dedicated rollback-
+// specific cases that used to prove the toggle worked were removed along with
+// the toggle itself.
 //
 // The Action (scripts/github-action/run-action.mjs) is a presentation wrapper
 // around the CLI; its contract is that the validator payload it embeds in
@@ -44,14 +44,11 @@ function runPs(script, args) {
     });
     return { stdout: r.stdout ?? "", stderr: r.stderr ?? "", exitCode: r.status ?? 1 };
 }
-// The default (in-process) path is what every case below is really about, so
-// runCli forces AXIOM_ROLLBACK_PWSH to empty unless the caller explicitly
-// sets it (the rollback cases below pass env: { AXIOM_ROLLBACK_PWSH: "1" }).
 function runCli(args, opts = {}) {
     const r = spawnSync(process.execPath, [CLI, ...args], {
         encoding: "utf8",
         cwd: opts.cwd ?? REPO_ROOT,
-        env: { ...process.env, AXIOM_PWSH: PWSH, AXIOM_ROLLBACK_PWSH: "", ...opts.env },
+        env: { ...process.env, AXIOM_PWSH: PWSH, ...opts.env },
     });
     return { stdout: r.stdout ?? "", stderr: r.stderr ?? "", exitCode: r.status ?? 1 };
 }
@@ -59,7 +56,7 @@ function runAction(args, opts = {}) {
     const r = spawnSync(process.execPath, [ACTION, ...args], {
         encoding: "utf8",
         cwd: opts.cwd ?? REPO_ROOT,
-        env: { ...process.env, AXIOM_PWSH: PWSH, AXIOM_ROLLBACK_PWSH: "", ...opts.env },
+        env: { ...process.env, AXIOM_PWSH: PWSH, ...opts.env },
     });
     return { stdout: r.stdout ?? "", stderr: r.stderr ?? "", exitCode: r.status ?? 1 };
 }
@@ -197,35 +194,27 @@ const DATE_RE = /\d{4}-\d{2}-\d{2}/g;
     }
 }
 // ---------------------------------------------------------------------------
-// CLI host failure (rollback path only): an unusable AXIOM_PWSH must exit 127
-// with the remediation message. On the default in-process path AXIOM_PWSH is
-// not even consulted -- status runs without PowerShell -- which is itself
-// asserted just below.
+// AXIOM_PWSH is never consulted post-cutover: the CLI has no PowerShell path
+// left to point it at, so an unusable value must have zero effect -- status
+// runs the in-process engine exactly as if the variable were unset.
 // ---------------------------------------------------------------------------
 {
-    const cli = runCli(["status", "--project", "examples/STANDARD-FEATURE"], { env: { AXIOM_ROLLBACK_PWSH: "1", AXIOM_PWSH: "/nonexistent/axiom/pwsh" } });
-    check("cli missing host (rollback): exit 127", cli.exitCode === 127, `exit=${cli.exitCode}`);
-    check("cli missing host (rollback): remediation message", cli.stderr.includes("does not exist"), cli.stderr.slice(0, 200));
-    // The same unusable AXIOM_PWSH is ignored on the default path: the
-    // in-process engine does not spawn or even probe for PowerShell.
     const cliTs = runCli(["status", "--project", "examples/STANDARD-FEATURE"], { env: { AXIOM_PWSH: "/nonexistent/axiom/pwsh" } });
     const refTs = runPs("scripts/pmo-status.ps1", ["-ProjectPath", resolve("examples/STANDARD-FEATURE")]);
-    check("cli ignores AXIOM_PWSH on the default path", cliTs.exitCode === refTs.exitCode && cliTs.stdout === refTs.stdout, `exit=${cliTs.exitCode} ref=${refTs.exitCode}`);
+    check("cli ignores AXIOM_PWSH entirely (no rollback path left to use it)", cliTs.exitCode === refTs.exitCode && cliTs.stdout === refTs.stdout, `exit=${cliTs.exitCode} ref=${refTs.exitCode}`);
 }
 // ---------------------------------------------------------------------------
-// Rollback parity: with AXIOM_ROLLBACK_PWSH=1 the CLI must produce exactly the
-// pre-rewire bytes (spawn the .ps1), identical to both the direct script and
-// the default in-process path.
+// AXIOM_ROLLBACK_PWSH=1 is inert post-cutover: setting it must change nothing
+// -- the CLI still runs the in-process engine and matches the reference.
 // ---------------------------------------------------------------------------
 {
     const project = "tests/fixtures/generated-project-draft";
     const args = ["validate", "--project", project, "--mode", "Standard", "--gate", "Draft"];
     const ts = runCli(args);
-    const rb = runCli(args, { env: { AXIOM_ROLLBACK_PWSH: "1" } });
+    const withStaleToggle = runCli(args, { env: { AXIOM_ROLLBACK_PWSH: "1" } });
     const ref = runPs("scripts/validate-project.ps1", ["-ProjectPath", project, "-Mode", "Standard", "-Gate", "Draft"]);
-    check("rollback path: stdout identical to direct script", rb.stdout === ref.stdout, getGoldenDiffReport(rb.stdout, ref.stdout).join(" | "));
-    check("rollback path: exit identical to direct script", rb.exitCode === ref.exitCode, `rb=${rb.exitCode} ref=${ref.exitCode}`);
-    check("rollback path: identical to the default in-process path", rb.stdout === ts.stdout && rb.exitCode === ts.exitCode, getGoldenDiffReport(rb.stdout, ts.stdout).join(" | "));
+    check("cli matches reference regardless of AXIOM_ROLLBACK_PWSH", withStaleToggle.stdout === ref.stdout && withStaleToggle.exitCode === ref.exitCode, getGoldenDiffReport(withStaleToggle.stdout, ref.stdout).join(" | "));
+    check("AXIOM_ROLLBACK_PWSH=1 produces byte-identical output to it being unset", withStaleToggle.stdout === ts.stdout && withStaleToggle.exitCode === ts.exitCode, getGoldenDiffReport(withStaleToggle.stdout, ts.stdout).join(" | "));
 }
 // ---------------------------------------------------------------------------
 // GitHub Action: report-only softens a governance verdict; enforce=true

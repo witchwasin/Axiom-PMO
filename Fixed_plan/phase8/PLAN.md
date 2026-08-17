@@ -1,14 +1,8 @@
 # Phase 8 — Human-approved cutover: reference checklist
 
-**Status:** PRE-AUTHORIZED IN PRINCIPLE by DEC-027 (`Fixed_plan/decision-log.md`,
-2026-08-16) — the go/no-go decision for this phase is already made. Still **not**
-executable: N=10 (`Fixed_plan/phase7/canary-log.md`; 30 → 5 by DEC-028 → 10 by DEC-029)
-is not yet reached — check the log for the current count rather than trusting a number
-written here, and
-CR-017 sign-off (a real review, not just a named reviewer) has not happened. When both
-are true, report the evidence and request the CR-017 review specifically — do not
-re-ask whether to proceed with Phase 8 at all, and do not execute without that review
-actually happening.
+**Status:** EXECUTING. N=10 was waived by DEC-030 (proceeding at N=1, banked at
+`0fda09e`); CR-017 sign-off was actually given by the Human Owner, DEC-031. Both
+recorded in `Fixed_plan/decision-log.md`, 2026-08-16.
 
 ## What "cutover" concretely does, when authorized
 

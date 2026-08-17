@@ -2,31 +2,24 @@
 // Axiom-PMO thin CLI.
 //
 // This file contains ZERO validation logic and must keep containing zero. The
-// PowerShell scripts under scripts/ are the reference implementation; the
-// TypeScript engine under src/ (compiled to dist/) is the ported, differentially
-// proven equivalent. This file only:
-//   1. decides which engine to run
-//   2. maps a friendly verb to that engine's arguments
-//   3. preserves stdout, stderr, and the exit code
+// TypeScript engine under src/ (compiled to dist/) is the differentially-proven
+// engine (Phase 6/7); the PowerShell scripts under scripts/ were the original
+// reference implementation the port was proven against and remain on disk for
+// now (Phase 9 territory), but this CLI no longer knows how to invoke them --
+// Phase 8 (DEC-030/031, master-plan.md) made the Node path unconditional. This
+// file only:
+//   1. maps a friendly verb to the engine's arguments
+//   2. preserves stdout, stderr, and the exit code
 //
-// Engine selection (Phase 7 canary):
-//   * AXIOM_ROLLBACK_PWSH unset (default) -> call the proven TS engine
-//     in-process (dist/). This is the canary path Phase 7 measures.
-//   * AXIOM_ROLLBACK_PWSH=1 -> spawn pwsh and run the reference .ps1, exactly
-//     as this CLI did before the rewire. Instantly reversible, one env var.
-//   * No automatic silent fallback. A crash in the in-process engine surfaces
-//     as a visible infrastructure failure (exit 127), never a transparent
-//     retry via pwsh -- that would hide exactly the drift this canary exists
-//     to catch. A human decides whether to set the rollback toggle.
+// No automatic fallback of any kind: a crash in the engine surfaces as a
+// visible infrastructure failure (exit 127), never silently retried or masked.
 //
 // Exit codes follow the diagnostics contract (docs/reference/diagnostics-contract.md):
 //   0   pass
 //   1   at least one FAIL
 //   2   -FailOnWarning and at least one blocking WARN
-//   127 no PowerShell host found (rollback mode) or in-process engine failure
-//       (this file's own failure, not the validator's)
+//   127 in-process engine failure (this file's own failure, not the validator's)
 
-import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
@@ -57,72 +50,6 @@ import { runAllChecks } from "../dist/tools/run-all-checks.js";
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const EXIT_NO_POWERSHELL = 127;
 const EXIT_USAGE = 64;
-
-// Phase 7 rollback toggle: exactly "1" selects the pre-rewire spawn-pwsh
-// behavior. Anything else (including unset) is the default in-process path.
-const ROLLBACK_PWSH = process.env.AXIOM_ROLLBACK_PWSH === "1";
-
-// Order matters: pwsh (PowerShell 7, the documented minimum for macOS and
-// Linux) is preferred over Windows PowerShell 5.1. AXIOM_PWSH overrides both,
-// for pinned CI images and unusual installs -- the same variable
-// scripts/lib/pwsh-host.ps1 honours, so the CLI and the scripts agree. Only
-// reached when AXIOM_ROLLBACK_PWSH=1.
-//
-// M3.5 host-selection contract: the PowerShell helper additionally prefers the
-// *current* host, because re-entering the same pwsh/5.1 keeps JSON depth,
-// encoding, and regex behaviour stable. That step has no analogue here -- this
-// CLI is a Node process, not a PowerShell one, so there is no current host to
-// re-enter. What must stay identical (and does) is: AXIOM_PWSH wins, the PATH
-// fallback order (pwsh, powershell, powershell.exe) matches, and a missing
-// host exits 127.
-const HOST_CANDIDATES = ["pwsh", "powershell", "powershell.exe"];
-
-function findPowerShell() {
-  const override = process.env.AXIOM_PWSH;
-  if (override) {
-    // An override is a promise the user made. Check it rather than failing
-    // later with an opaque ENOENT from spawn.
-    if (isAbsolute(override) && !existsSync(override)) {
-      // Same remediation as a missing host: the reader's problem is identical
-      // ("nothing here can run PowerShell"), so the answer should be too.
-      return {
-        error: `AXIOM_PWSH points at a file that does not exist: ${override}\n\n${powerShellMissingMessage()}`,
-      };
-    }
-    return { exe: override };
-  }
-
-  for (const candidate of HOST_CANDIDATES) {
-    // `-NoProfile -Command $true` is the cheapest thing that proves the binary
-    // exists and can execute a command. Checking PATH by hand would have to
-    // reimplement PATHEXT resolution on Windows.
-    const probe = spawnSync(candidate, ["-NoProfile", "-Command", "$true"], {
-      stdio: "ignore",
-      shell: false,
-    });
-    if (!probe.error && probe.status === 0) {
-      return { exe: candidate };
-    }
-  }
-  return { error: null };
-}
-
-function powerShellMissingMessage() {
-  return [
-    "PowerShell was not found on PATH.",
-    "",
-    "The PowerShell reference scripts are only needed in rollback mode (AXIOM_ROLLBACK_PWSH=1);",
-    "the default in-process engine does not need them.",
-    "",
-    "  macOS     brew install --cask powershell",
-    "  Linux     https://learn.microsoft.com/powershell/scripting/install/install-ubuntu",
-    "  Windows   PowerShell 5.1 ships with the OS; PowerShell 7: winget install Microsoft.PowerShell",
-    "",
-    "Or point AXIOM_PWSH at an existing PowerShell executable:",
-    "",
-    "  AXIOM_PWSH=/opt/microsoft/powershell/7/pwsh AXIOM_ROLLBACK_PWSH=1 node cli/axiom.mjs check",
-  ].join("\n");
-}
 
 // --- argument helpers -------------------------------------------------------
 
@@ -200,9 +127,8 @@ function resolveProjectPath(value) {
 class UsageError extends Error {}
 
 // Runs one step through the in-process TS engine. step.ts() returns
-// { output, exitCode } -- the complete stdout and exit code the equivalent
-// .ps1 reference invocation would produce. A throw here is an infrastructure
-// failure: it surfaces visibly (exit 127) and is NEVER retried via pwsh.
+// { output, exitCode } -- the complete stdout and exit code. A throw here is
+// an infrastructure failure: it surfaces visibly (exit 127), never masked.
 function runTsStep(step) {
   try {
     const r = step.ts();
@@ -212,11 +138,8 @@ function runTsStep(step) {
       return { stdout: "", status: EXIT_USAGE, usageMessage: e.message };
     }
     const msg = e instanceof Error ? e.message : String(e);
-    process.stderr.write(`Axiom-PMO internal error in the in-process engine: ${msg}\n`);
-    process.stderr.write(
-      "This is an infrastructure failure, not a governance verdict. To run the same command against the\n" +
-        "PowerShell reference instead, set AXIOM_ROLLBACK_PWSH=1 -- the CLI will not retry on its own.\n",
-    );
+    process.stderr.write(`Axiom-PMO internal error: ${msg}\n`);
+    process.stderr.write("This is an infrastructure failure, not a governance verdict.\n");
     return { stdout: "", status: EXIT_NO_POWERSHELL };
   }
 }
@@ -437,11 +360,11 @@ async function runInteractiveInit(rl, existing) {
 
 // --- commands ---------------------------------------------------------------
 
-// Every command builds a plan with two shapes:
-//   * { script, scriptArgs }          -> the rollback path (spawn pwsh), and
-//   * { ts: () => ({output, exitCode}) } -> the default path (in-process).
-// `build` keeps producing both; `main` picks one by ROLLBACK_PWSH. `steps`
-// (handoff) carries both shapes per step.
+// Every command builds a plan shaped { ts: () => ({output, exitCode}) };
+// `steps` (handoff) carries one per step. `takePs*` parsing (PowerShell-style
+// -Name flags) still matters here even post-cutover: the GitHub Action
+// forwards validate-project.ps1's own parameter names through this CLI, so
+// the in-process path still has to recognise them.
 
 function buildDemo(args) {
   const tsRest = [...args];
@@ -449,8 +372,6 @@ function buildDemo(args) {
   const noPause = takePsFlag(plain.rest, "NoPause");
   const unknownRest = noPause.rest;
   return {
-    script: "scripts/demo.ps1",
-    scriptArgs: ["-RepoPath", REPO_ROOT, ...args],
     ts: () => {
       if (unknownRest.length > 0) throw new UsageError(`demo: unrecognised option(s): ${unknownRest.join(" ")}`);
       return runDemo(REPO_ROOT, plain.present, noPause.present);
@@ -463,8 +384,6 @@ function buildCheck(args) {
   const child = takePsOption(tsRest, "TestChildScript");
   const unknownRest = child.rest;
   return {
-    script: "scripts/run-all-checks.ps1",
-    scriptArgs: ["-RepoPath", REPO_ROOT, ...args],
     ts: () => {
       if (unknownRest.length > 0) throw new UsageError(`check: unrecognised option(s): ${unknownRest.join(" ")}`);
       return runAllChecks(REPO_ROOT, child.value ?? "");
@@ -474,8 +393,6 @@ function buildCheck(args) {
 
 function buildDoctor(args) {
   return {
-    script: "scripts/pmo-doctor.ps1",
-    scriptArgs: ["-RepoPath", REPO_ROOT, ...args],
     ts: () => {
       if (args.length > 0) throw new UsageError(`doctor: unrecognised option(s): ${args.join(" ")}`);
       const result = runPmoDoctor(REPO_ROOT);
@@ -523,13 +440,7 @@ function buildValidate(args) {
   }
   const resolvedFormat = json.present ? "Json" : fmt.value === "Json" ? "Json" : "Text";
 
-  const scriptArgs = ["-ProjectPath", projectPath, "-Mode", resolvedMode, "-Gate", resolvedGate];
-  if (json.present) scriptArgs.push("-Format", "Json");
-  if (failOnWarning.present) scriptArgs.push("-FailOnWarning");
-
   return {
-    script: "scripts/validate-project.ps1",
-    scriptArgs: [...scriptArgs, ...rest],
     ts: () => {
       if (unknownRest.length > 0) throw new UsageError(`validate: unrecognised option(s): ${unknownRest.join(" ")}`);
       return runValidateTs(projectPath, resolvedMode, resolvedGate, failOnWarning.present, resolvedFormat, {
@@ -580,12 +491,6 @@ function buildHandoff(args) {
       {
         key: "gate",
         label: "Handoff gate",
-        script: "scripts/validate-project.ps1",
-        scriptArgs: [
-          "-ProjectPath", projectPath, "-Mode", resolvedMode, "-Gate", "Handoff",
-          ...(json.present ? ["-Format", "Json"] : []),
-          ...rest,
-        ],
         ts: () => {
           if (unknownRest.length > 0) throw new UsageError(`handoff: unrecognised option(s): ${unknownRest.join(" ")}`);
           return runValidateTs(projectPath, resolvedMode, "Handoff", false, resolvedFormat, {
@@ -598,11 +503,6 @@ function buildHandoff(args) {
       {
         key: "assessment",
         label: "Readiness assessment",
-        script: "scripts/assess-handoff.ps1",
-        scriptArgs: [
-          "-ProjectPath", projectPath, "-Mode", resolvedMode,
-          ...(json.present ? ["-Format", "Json"] : []),
-        ],
         ts: () => runAssessHandoff(REPO_ROOT, projectPath, resolvedMode, resolvedFormat),
         // The assessment reports on the gate's findings; it is not a second
         // verdict. The gate's exit code is the one that propagates.
@@ -646,15 +546,7 @@ function buildExport(args) {
   const gitRepo = takePsOption(tsRest, "GitRepoRoot");
   const unknownRest = gitRepo.rest;
 
-  const scriptArgs = ["-ProjectPath", projectPath, "-WorkItemId", workItem.value];
-  if (grant.value) scriptArgs.push("-Grant", grant.value);
-  if (output.value) scriptArgs.push("-OutputPath", output.value);
-  if (format.value) scriptArgs.push("-Format", format.value);
-  if (force.present) scriptArgs.push("-Force");
-
   return {
-    script: "scripts/export-execution-contract.ps1",
-    scriptArgs: [...scriptArgs, ...rest],
     ts: () => {
       if (unknownRest.length > 0) throw new UsageError(`export: unrecognised option(s): ${unknownRest.join(" ")}`);
       // -Format is accepted by the reference script but unused (kept for
@@ -696,19 +588,7 @@ function buildSetup(args) {
     ? (isAbsolute(project.value) ? project.value : resolve(process.cwd(), project.value))
     : process.cwd();
 
-  const scriptArgs = ["-ProjectPath", projectPath];
-  // takeFlag returns `.present`, not `.value`. Reading `.value` here silently
-  // forwarded none of these switches: setup still installed (the default
-  // path), so it looked like it worked, and --uninstall quietly reported
-  // "already up to date" instead of removing anything.
-  if (file.value) { scriptArgs.push("-File", file.value); }
-  if (dryRun.present) { scriptArgs.push("-DryRun"); }
-  if (uninstall.present) { scriptArgs.push("-Uninstall"); }
-  if (force.present) { scriptArgs.push("-Force"); }
-
   return {
-    script: "scripts/setup-claude-integration.ps1",
-    scriptArgs: [...scriptArgs, ...rest],
     ts: () => {
       if (rest.length > 0) throw new UsageError(`setup: unrecognised option(s): ${rest.join(" ")}`);
       return setupClaudeIntegration(projectPath, dryRun.present, uninstall.present, force.present, file.value === "CLAUDE.md" ? "CLAUDE.md" : "AGENTS.md");
@@ -752,18 +632,7 @@ function buildVerify(args) {
   const gitRepo = takePsOption(tsRest, "GitRepoRoot");
   const unknownRest = gitRepo.rest;
 
-  const scriptArgs = ["-ProjectPath", projectPath, "-ResultPath", resultPath];
-  if (contract.value) {
-    const contractPath = isAbsolute(contract.value) ? contract.value : resolve(process.cwd(), contract.value);
-    scriptArgs.push("-ContractPath", contractPath);
-  }
-  if (json.present) scriptArgs.push("-Format", "Json");
-  if (failOnWarning.present) scriptArgs.push("-FailOnWarning");
-  if (preflight.present) scriptArgs.push("-Preflight");
-
   return {
-    script: "scripts/verify-execution-result.ps1",
-    scriptArgs: [...scriptArgs, ...rest],
     ts: () => {
       if (unknownRest.length > 0) throw new UsageError(`verify: unrecognised option(s): ${unknownRest.join(" ")}`);
       const contractPath = contract.value
@@ -809,12 +678,7 @@ function buildRun(args) {
   const contract = takePsOption(tsRest, "ContractPath");
   const unknownRest = contract.rest;
 
-  const scriptArgs = ["-ProjectPath", projectPath, "-WorkItemId", workItem.value, "-Name", name.value, "-Command", command.value];
-  if (cwd.value) scriptArgs.push("-WorkingDirectory", cwd.value);
-
   return {
-    script: "scripts/run-execution-command.ps1",
-    scriptArgs: [...scriptArgs, ...rest],
     ts: () => {
       if (unknownRest.length > 0) throw new UsageError(`run: unrecognised option(s): ${unknownRest.join(" ")}`);
       return runExecutionCommand(projectPath, workItem.value, name.value, command.value, cwd.value ?? ".", contract.value ?? null);
@@ -892,23 +756,7 @@ async function buildInit(args) {
     return { usageError: "init requires --code <PROJECT-CODE>" };
   }
 
-  const scriptArgs = ["-ProjectCode", resolvedCode, "-Mode", resolvedMode ?? "Standard"];
-  if (resolvedExecutionPath) scriptArgs.push("-ExecutionPath", resolvedExecutionPath);
-  if (resolvedResearchMode) scriptArgs.push("-ResearchMode", resolvedResearchMode);
-  if (resolvedResearchDepth) scriptArgs.push("-ResearchDepth", resolvedResearchDepth);
-  if (resolvedResearchProvider) scriptArgs.push("-ResearchProvider", resolvedResearchProvider);
-  if (resolvedUiDelivery) scriptArgs.push("-UiDelivery", resolvedUiDelivery);
-  if (strictTrigger) scriptArgs.push("-StrictTrigger", strictTrigger);
-  if (modeReason) scriptArgs.push("-ModeReason", modeReason);
-  if (modeApprovedBy) scriptArgs.push("-ModeApprovedBy", modeApprovedBy);
-  if (output.value) scriptArgs.push("-OutputRoot", output.value);
-  if (handoff.present) scriptArgs.push("-IncludeHandoff");
-  if (target.value) scriptArgs.push("-Target", target.value);
-  if (horizon.value) scriptArgs.push("-HorizonDays", horizon.value);
-
   return {
-    script: "scripts/new-project.ps1",
-    scriptArgs: [...scriptArgs, ...rest],
     ts: () => {
       if (rest.length > 0) throw new UsageError(`init: unrecognised option(s): ${rest.join(" ")}`);
       // Absent flags fall back to new-project.ps1's own parameter defaults so
@@ -947,12 +795,7 @@ function buildStatus(args) {
   }
   const resolvedFormat = json.present ? "Json" : fmt.value === "Json" ? "Json" : "Text";
 
-  const scriptArgs = ["-ProjectPath", projectPath];
-  if (json.present) scriptArgs.push("-Format", "Json");
-
   return {
-    script: "scripts/pmo-status.ps1",
-    scriptArgs: [...scriptArgs, ...rest],
     ts: () => {
       if (unknownRest.length > 0) throw new UsageError(`status: unrecognised option(s): ${unknownRest.join(" ")}`);
       return runPmoStatus(REPO_ROOT, projectPath, resolvedFormat);
@@ -1028,54 +871,9 @@ const COMMANDS = {
 
 // --- execution --------------------------------------------------------------
 
-// Capture a child's stdout instead of inheriting it. Used only in JSON mode,
-// where the output has to be parsed and merged rather than streamed.
-function captureScript(exe, script, scriptArgs) {
-  const scriptPath = join(REPO_ROOT, script);
-  if (!existsSync(scriptPath)) {
-    return { status: 1, stdout: "", error: `Script not found: ${scriptPath}` };
-  }
-  const result = spawnSync(exe, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, ...scriptArgs], {
-    encoding: "utf8",
-    shell: false,
-  });
-  if (result.error) {
-    return { status: EXIT_NO_POWERSHELL, stdout: "", error: result.error.message };
-  }
-  // Child stderr is forwarded as-is: swallowing a PowerShell error to keep the
-  // JSON clean would hide the reason the JSON is wrong.
-  if (result.stderr) process.stderr.write(result.stderr);
-  return { status: result.status === null ? 1 : result.status, stdout: result.stdout ?? "" };
-}
-
-function runScript(exe, script, scriptArgs) {
-  const scriptPath = join(REPO_ROOT, script);
-  if (!existsSync(scriptPath)) {
-    process.stderr.write(`Script not found: ${scriptPath}\n`);
-    return 1;
-  }
-  // stdio inherit: the child writes straight to the real terminal, so colour,
-  // interleaving, and progress all behave as if the script were run directly.
-  const result = spawnSync(exe, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, ...scriptArgs], {
-    stdio: "inherit",
-    shell: false,
-  });
-  if (result.error) {
-    process.stderr.write(`Failed to run PowerShell: ${result.error.message}\n`);
-    return EXIT_NO_POWERSHELL;
-  }
-  // A child killed by a signal has no exit status. Report it as a failure
-  // rather than silently succeeding on `status === null`.
-  if (result.status === null) {
-    process.stderr.write(`PowerShell terminated by signal ${result.signal}\n`);
-    return 1;
-  }
-  return result.status;
-}
-
 function printUsage() {
   const lines = [
-    "Axiom-PMO CLI -- runs the ported TypeScript engine in-process by default.",
+    "Axiom-PMO CLI -- runs the ported TypeScript engine in-process.",
     "",
     "Usage: node cli/axiom.mjs <command> [options]",
     "",
@@ -1096,9 +894,7 @@ function printUsage() {
     "  node cli/axiom.mjs validate --project examples/STANDARD-FEATURE --gate Release --fail-on-warning",
     "  node cli/axiom.mjs setup claude --project . --dry-run",
     "",
-    "AXIOM_ROLLBACK_PWSH=1 runs the same command against the PowerShell reference",
-    "scripts instead; unrecognised options are forwarded to them only in that mode.",
-    "Exit codes come from the engine: 0 pass, 1 fail, 2 blocking warning.",
+    "Exit codes: 0 pass, 1 fail, 2 blocking warning, 127 infrastructure failure.",
   );
   process.stdout.write(lines.join("\n") + "\n");
 }
@@ -1130,33 +926,17 @@ async function main() {
     return EXIT_USAGE;
   }
 
-  // PowerShell is only looked up in rollback mode. The default in-process path
-  // must not even probe for a host: a normal run needs zero PowerShell.
-  let host = null;
-  if (ROLLBACK_PWSH) {
-    host = findPowerShell();
-    if (!host.exe) {
-      process.stderr.write((host.error ?? powerShellMissingMessage()) + "\n");
-      return EXIT_NO_POWERSHELL;
-    }
-  }
-
-  const steps = plan.steps ?? [{ script: plan.script, scriptArgs: plan.scriptArgs, ts: plan.ts }];
+  const steps = plan.steps ?? [{ ts: plan.ts }];
   let firstFailure = 0;
 
   if (plan.json) {
     const envelope = { schema_version: "1.1" };
     for (const step of steps) {
       if (firstFailure !== 0 && !step.alwaysRun) break;
-      let result;
-      if (step.ts && !ROLLBACK_PWSH) {
-        result = runTsStep(step);
-        if (result.usageMessage) {
-          process.stderr.write(`${result.usageMessage}\n`);
-          return EXIT_USAGE;
-        }
-      } else {
-        result = captureScript(host.exe, step.script, step.scriptArgs);
+      const result = runTsStep(step);
+      if (result.usageMessage) {
+        process.stderr.write(`${result.usageMessage}\n`);
+        return EXIT_USAGE;
       }
       if (result.error) process.stderr.write(`${result.error}\n`);
       try {
@@ -1180,18 +960,13 @@ async function main() {
     if (step.label && steps.length > 1) {
       process.stdout.write(`\n--- ${step.label} ---\n`);
     }
-    let code;
-    if (step.ts && !ROLLBACK_PWSH) {
-      const result = runTsStep(step);
-      if (result.usageMessage) {
-        process.stderr.write(`${result.usageMessage}\n`);
-        return EXIT_USAGE;
-      }
-      if (result.stdout) process.stdout.write(result.stdout);
-      code = result.status;
-    } else {
-      code = runScript(host.exe, step.script, step.scriptArgs);
+    const result = runTsStep(step);
+    if (result.usageMessage) {
+      process.stderr.write(`${result.usageMessage}\n`);
+      return EXIT_USAGE;
     }
+    if (result.stdout) process.stdout.write(result.stdout);
+    const code = result.status;
     if (!step.ignoreExitCode && code !== 0 && firstFailure === 0) {
       firstFailure = code;
     }

@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 // Tests for cli/axiom.mjs.
 //
-// The CLI runs the ported TypeScript engine in-process by default
-// (AXIOM_ROLLBACK_PWSH unset); AXIOM_ROLLBACK_PWSH=1 restores the original
-// spawn-pwsh forwarding. That is what is tested: exit codes survive, arguments
-// reach the right engine, PowerShell absence is reported rather than swallowed
-// on the rollback path, the default path needs no PowerShell at all, and no
-// validation logic has crept into the JavaScript.
+// Phase 8 (DEC-030/031) removed the AXIOM_ROLLBACK_PWSH toggle entirely --
+// the CLI now only ever runs the ported TypeScript engine in-process, and
+// needs no PowerShell host for anything. That is what is tested: exit codes
+// survive, arguments reach the engine, AXIOM_PWSH/AXIOM_ROLLBACK_PWSH are
+// inert leftover environment variables with zero effect, and no validation
+// logic has crept into the JavaScript. Every case here runs unconditionally
+// now -- none of it depends on whether a PowerShell host happens to exist on
+// the machine running the tests.
 //
 //   node tests/helpers/cli-tests.mjs
 
@@ -36,9 +38,7 @@ function runCli(args, env = {}) {
   const result = spawnSync(process.execPath, [CLI, ...args], {
     cwd: REPO_ROOT,
     encoding: "utf8",
-    // Default to the in-process path deterministically; a rollback case
-    // overrides with AXIOM_ROLLBACK_PWSH: "1" via env.
-    env: { ...process.env, AXIOM_ROLLBACK_PWSH: "", ...env },
+    env: { ...process.env, ...env },
   });
   return {
     status: result.status,
@@ -47,21 +47,7 @@ function runCli(args, env = {}) {
   };
 }
 
-// Is a PowerShell host reachable? Several assertions only mean something when
-// one is; the rest run everywhere.
-function hasPowerShell() {
-  if (process.env.AXIOM_PWSH) return true;
-  for (const candidate of ["pwsh", "powershell", "powershell.exe"]) {
-    const probe = spawnSync(candidate, ["-NoProfile", "-Command", "$true"], { stdio: "ignore" });
-    if (!probe.error && probe.status === 0) return true;
-  }
-  return false;
-}
-
-const POWERSHELL_AVAILABLE = hasPowerShell();
-
 console.log(`Axiom-PMO CLI Tests: ${REPO_ROOT}`);
-console.log(`PowerShell available: ${POWERSHELL_AVAILABLE}`);
 console.log("");
 
 // --- Behaviour that does not need PowerShell --------------------------------
@@ -91,38 +77,18 @@ console.log("");
 }
 
 {
-  // Reported, not swallowed. A CLI that silently skipped validation when
-  // PowerShell was absent would be worse than one that refuses to run.
-  //
-  // These are rollback-path contracts: on the default in-process path a
-  // missing or broken PowerShell is irrelevant (doctor runs without it). The
-  // unreachable-host case is exercised through AXIOM_PWSH because it is the
-  // only technique that works on every platform. Emptying PATH hides
-  // PowerShell on POSIX but NOT on Windows: CreateProcess searches the system
-  // directory regardless of PATH, so powershell.exe is still found and the
-  // assertion would be testing the harness rather than the CLI.
-  const badOverride = runCli(["doctor"], { AXIOM_ROLLBACK_PWSH: "1", AXIOM_PWSH: "/nonexistent/pwsh" });
-  assert("an unreachable PowerShell exits 127", badOverride.status === 127, `exit=${badOverride.status}`);
-  assert("an unreachable PowerShell names what was wrong", badOverride.stderr.includes("/nonexistent/pwsh"));
-  assert("an unreachable PowerShell names the remediation",
-    badOverride.stderr.includes("aka.ms") || badOverride.stderr.includes("install"));
-  assert("an unreachable PowerShell mentions the AXIOM_PWSH escape hatch",
-    badOverride.stderr.includes("AXIOM_PWSH"));
+  // AXIOM_PWSH and AXIOM_ROLLBACK_PWSH are inert leftover environment
+  // variables post-cutover: there is no PowerShell lookup left for either to
+  // affect. Setting both to garbage (a nonexistent path, an empty PATH) must
+  // change nothing -- the CLI runs doctor the same as if neither were set.
+  const garbageEnv = runCli(["doctor"], { AXIOM_ROLLBACK_PWSH: "1", AXIOM_PWSH: "/nonexistent/pwsh", PATH: "/nonexistent-path-for-test" });
+  assert("AXIOM_PWSH/AXIOM_ROLLBACK_PWSH garbage has no effect", garbageEnv.status === 0, `exit=${garbageEnv.status}`);
+  assert("doctor still produces its report with garbage PowerShell env vars", garbageEnv.stdout.includes("Summary: PASS="), garbageEnv.stdout.slice(0, 120));
 
-  if (process.platform === "win32") {
-    console.log("[SKIP] empty-PATH host discovery -- CreateProcess finds powershell.exe in the system directory whatever PATH says");
-  } else {
-    const noHost = runCli(["doctor"], { AXIOM_ROLLBACK_PWSH: "1", PATH: "/nonexistent-path-for-test", AXIOM_PWSH: "" });
-    assert("no PowerShell on PATH exits 127", noHost.status === 127, `exit=${noHost.status}`);
-    assert("no PowerShell on PATH names the remediation",
-      noHost.stderr.includes("aka.ms") || noHost.stderr.includes("install"));
-  }
-
-  // The same commands succeed on the default path with PowerShell absent from
-  // the environment -- the in-process engine never probes for a host.
-  const tsNoHost = runCli(["doctor"], { PATH: "/nonexistent-path-for-test", AXIOM_PWSH: "" });
-  assert("the default path runs doctor with PowerShell absent", tsNoHost.status === 0, `exit=${tsNoHost.status}`);
-  assert("the default path produces the doctor report", tsNoHost.stdout.includes("Summary: PASS="), tsNoHost.stdout.slice(0, 120));
+  const clean = runCli(["doctor"]);
+  assert("doctor runs the same with or without those variables set",
+    clean.status === garbageEnv.status && clean.stdout === garbageEnv.stdout,
+    `clean.status=${clean.status} garbageEnv.status=${garbageEnv.status}`);
 }
 
 {
@@ -143,25 +109,20 @@ console.log("");
 }
 
 {
-  // Path handling is where a "works on my machine" CLI usually breaks. Assert
-  // the pieces that differ across platforms rather than claiming the whole
-  // thing is verified on Windows from a macOS run.
+  // Path handling is where a "works on my machine" CLI usually breaks.
   const source = readFileSync(CLI, "utf8");
   assert("CLI builds paths with node:path rather than string concatenation",
     source.includes('from "node:path"') && !source.includes('REPO_ROOT + "/'));
-  assert("CLI spawns without a shell, so paths with spaces survive",
-    source.includes("shell: false"));
-  assert("CLI probes powershell.exe as well as pwsh",
-    source.includes("powershell.exe"));
+  // Post-cutover the CLI spawns no child process at all in its normal flow --
+  // everything runs in-process, so there is no PowerShell host probing or
+  // shell-spawning code left to assert properties of.
+  assert("CLI no longer spawns PowerShell at all", !source.includes("powershell.exe") && !source.includes("findPowerShell"));
 }
 
-// --- Behaviour that needs PowerShell ----------------------------------------
+// --- Exit-code propagation, JSON output, setup round-trip -------------------
+// None of this needs PowerShell post-cutover; it all runs unconditionally.
 
-if (!POWERSHELL_AVAILABLE) {
-  console.log("");
-  console.log("SKIPPED: exit-code propagation tests require a PowerShell host.");
-  console.log("         Install pwsh or set AXIOM_PWSH to run them.");
-} else {
+{
   const cases = [
     { name: "a passing project propagates 0", args: ["validate", "--project", "examples/STANDARD-FEATURE", "--gate", "Release", "--fail-on-warning"], expected: 0 },
     { name: "a failing project propagates 1", args: ["validate", "--project", "tests/fixtures/invalid-no-source-ref", "--gate", "Release"], expected: 1 },
@@ -173,22 +134,6 @@ if (!POWERSHELL_AVAILABLE) {
     const result = runCli(testCase.args);
     assert(testCase.name, result.status === testCase.expected,
       `exit=${result.status} expected=${testCase.expected}`);
-  }
-
-  {
-    // The rollback toggle must be real, not a stub: with AXIOM_ROLLBACK_PWSH=1
-    // the same command runs against the PowerShell reference and produces the
-    // same result the pre-rewire CLI did.
-    const ts = runCli(["validate", "--project", "examples/STANDARD-FEATURE", "--gate", "Release", "--fail-on-warning"]);
-    const rb = runCli(["validate", "--project", "examples/STANDARD-FEATURE", "--gate", "Release", "--fail-on-warning"], { AXIOM_ROLLBACK_PWSH: "1" });
-    assert("rollback path validates a passing project", rb.status === 0, `exit=${rb.status}`);
-    // Compare after normalizing line endings: powershell.exe 5.1 emits CRLF on
-    // Windows while the in-process engine emits LF, so a raw byte comparison
-    // would fail there on output that is semantically identical. The contract
-    // is same content, not same line-ending style.
-    const norm = (s) => s.replace(/\r\n/g, "\n");
-    assert("rollback path output matches the default path", norm(rb.stdout) === norm(ts.stdout),
-      JSON.stringify(norm(rb.stdout).slice(0, 80)) + " vs " + JSON.stringify(norm(ts.stdout).slice(0, 80)));
   }
 
   {

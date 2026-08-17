@@ -2,10 +2,14 @@
 // Tests for the GitHub Action wrapper (scripts/github-action/*.mjs).
 //
 // Two layers, matching the M4 implementation plan's required test list:
-//   1. Unit tests on the pure rendering/annotation functions -- no
-//      PowerShell needed, run everywhere.
-//   2. Integration tests that spawn run-action.mjs against real fixtures --
-//      need a PowerShell host, skipped (loudly) when one is not on PATH.
+//   1. Unit tests on the pure rendering/annotation functions.
+//   2. Integration tests that spawn run-action.mjs (which spawns
+//      cli/axiom.mjs) against real fixtures.
+// Post-cutover (Phase 8, DEC-030/031) neither layer needs PowerShell for
+// anything -- both run unconditionally now. Two scenarios that specifically
+// simulated a corrupted/missing PowerShell *host* (only reachable through the
+// AXIOM_ROLLBACK_PWSH spawn path) were removed along with that path -- see
+// the note where they used to be, below.
 //
 //   node tests/helpers/github-action-tests.mjs
 
@@ -34,19 +38,8 @@ function assert(name, condition, detail = "") {
   }
 }
 
-function hasPowerShell() {
-  if (process.env.AXIOM_PWSH) return true;
-  for (const candidate of ["pwsh", "powershell", "powershell.exe"]) {
-    const probe = spawnSync(candidate, ["-NoProfile", "-Command", "$true"], { stdio: "ignore" });
-    if (!probe.error && probe.status === 0) return true;
-  }
-  return false;
-}
-
-const POWERSHELL_AVAILABLE = hasPowerShell();
 
 console.log(`Axiom-PMO GitHub Action Tests: ${REPO_ROOT}`);
-console.log(`PowerShell available: ${POWERSHELL_AVAILABLE}`);
 console.log("");
 
 // --- Unit tests: emit-annotations.mjs ---------------------------------------
@@ -269,7 +262,7 @@ function cleanupFixture(fixture) {
   try { rmSync(fixture.dir, { recursive: true, force: true }); } catch { /* best effort */ }
 }
 
-if (POWERSHELL_AVAILABLE) {
+{
   {
     const r = runAction(["--project", "examples/STANDARD-FEATURE", "--mode", "Standard", "--gate", "Release"]);
     assert("passing Release gate: wrapper exits 0", r.status === 0, `status=${r.status}`);
@@ -314,84 +307,25 @@ if (POWERSHELL_AVAILABLE) {
     cleanup(rNoFailOnWarning.outDir);
   }
 
-  {
-    // A missing PowerShell host is an infrastructure failure, not a
-    // governance verdict -- report-only must not swallow it. This only
-    // happens on the rollback path (AXIOM_ROLLBACK_PWSH=1): the default
-    // in-process path never spawns PowerShell, so a broken AXIOM_PWSH is
-    // irrelevant there.
-    const r = runAction(["--project", "examples/STANDARD-FEATURE"], { AXIOM_ROLLBACK_PWSH: "1", AXIOM_PWSH: "/nonexistent/pwsh" });
-    assert("missing PowerShell: wrapper exits 127 even in report-only mode", r.status === 127, `status=${r.status}`);
-    const json = JSON.parse(readFileSync(r.jsonPath, "utf8"));
-    assert("missing PowerShell: report still gets written with a FAIL row", json.results.some((row) => row.rule_id === "ACTION-PARSE-ERROR"));
-    cleanup(r.outDir);
-  }
-
-  {
-    // Simulate a PowerShell host that runs but emits garbage instead of JSON
-    // (e.g. a corrupted profile writing to stdout). The wrapper must still
-    // produce a useful, non-crashing failure report rather than throwing --
-    // and, per Independent AI Reviewer's privacy review, must never copy that garbage into any
-    // persisted output. A malformed-stdout scenario is exactly the case where
-    // the garbage could be a leaked token, connection string, or local path
-    // from a corrupted profile/wrapper/dependency -- so the "garbage" here is
-    // a fake secret marker, not an arbitrary string, and this test asserts
-    // the marker reaches nowhere it could be uploaded as an artifact.
-    //
-    // AXIOM_PWSH is spawned directly by axiom.mjs -- not through a shell --
-    // so the shim has to be something the OS can execute on its own: a
-    // shebang script on POSIX, a .cmd file on Windows (Node's child_process
-    // auto-wraps .cmd/.bat through cmd.exe on win32; a bare extensionless
-    // "shebang" file is not executable there at all).
-    const SECRET_MARKER = "ghp_FAKE_SECRET_FOR_TEST";
-    const GARBAGE = `not json at all: token=${SECRET_MARKER}`;
-    const shimDir = mkdtempSync(join(tmpdir(), "axiom-fake-pwsh-"));
-    let wrapperPath;
-    if (process.platform === "win32") {
-      wrapperPath = join(shimDir, "fake-pwsh.cmd");
-      writeFileSync(wrapperPath, `@echo off\r\necho ${GARBAGE}\r\n`);
-    } else {
-      wrapperPath = join(shimDir, "fake-pwsh");
-      writeFileSync(wrapperPath, `#!/bin/sh\nprintf '%s' '${GARBAGE}'\n`);
-      chmodSync(wrapperPath, 0o755);
-    }
-
-    // Exercise the real Job Summary path too (normally a no-op in this test
-    // harness, since GITHUB_STEP_SUMMARY is unset outside real Actions runs).
-    const jobSummaryPath = join(shimDir, "job-summary.md");
-    writeFileSync(jobSummaryPath, "");
-
-    // This scenario is inherently rollback-path: a corrupted PowerShell host
-    // only exists on the spawn path. The default in-process path has no host
-    // to corrupt.
-    const r = runAction(["--project", "examples/STANDARD-FEATURE"], {
-      AXIOM_ROLLBACK_PWSH: "1",
-      AXIOM_PWSH: wrapperPath,
-      GITHUB_STEP_SUMMARY: jobSummaryPath,
-    });
-    assert("malformed JSON from validator: wrapper does not crash", r.status !== null);
-    assert("malformed JSON: report files still exist", existsSync(r.jsonPath) && existsSync(r.mdPath));
-    const jsonText = readFileSync(r.jsonPath, "utf8");
-    const mdText = readFileSync(r.mdPath, "utf8");
-    const jobSummaryText = readFileSync(jobSummaryPath, "utf8");
-    const json = JSON.parse(jsonText);
-    assert("malformed JSON: synthetic FAIL row is present", json.results.some((row) => row.rule_id === "ACTION-PARSE-ERROR"));
-
-    // Independent AI Reviewer's blocking privacy finding: no raw stdout content in any persisted
-    // surface, ever -- confirmed via the field never existing, and via a
-    // direct secret-marker scan of every artifact this Action writes.
-    assert("malformed JSON: no raw_stdout_preview field exists at all", json.action.raw_stdout_preview === undefined);
-    assert("malformed JSON: action.parse_error is true", json.action.parse_error === true);
-    assert("malformed JSON: action.stdout_present is a boolean", typeof json.action.stdout_present === "boolean");
-    assert("malformed JSON: action.stdout_length is a number", typeof json.action.stdout_length === "number");
-    assert("secret marker does not appear in the JSON report", !jsonText.includes(SECRET_MARKER));
-    assert("secret marker does not appear in the Markdown report", !mdText.includes(SECRET_MARKER));
-    assert("secret marker does not appear in stdout (annotations)", !r.stdout.includes(SECRET_MARKER));
-    assert("secret marker does not appear in the Job Summary", !jobSummaryText.includes(SECRET_MARKER));
-
-    cleanup(r.outDir);
-    rmSync(shimDir, { recursive: true, force: true });
-  }
+  // Two scenarios removed here by the Phase 8 cutover (DEC-030/031), not
+  // silently dropped: "missing PowerShell host exits 127 even in report-only
+  // mode" and "a corrupted PowerShell host's garbage stdout doesn't leak
+  // secrets and doesn't crash the wrapper." Both specifically exercised the
+  // AXIOM_ROLLBACK_PWSH=1 spawn path -- faking a broken/corrupted `pwsh` via
+  // AXIOM_PWSH had no effect on the default path even before the toggle was
+  // removed, since the in-process engine never read that variable. With the
+  // rollback path gone entirely, there is no external host left to fake as
+  // missing or corrupted; cli/axiom.mjs spawns nothing during validation. The
+  // underlying guarantee these tests protected -- an uncaught engine
+  // exception is a visible EXIT_NO_POWERSHELL/127 infra failure, never
+  // silently softened -- is still enforced by runTsStep in cli/axiom.mjs and
+  // is exercised indirectly by every other case in this file (none of them
+  // trip that path, which is itself consistent with the engine not throwing
+  // on any real input here). Constructing an equivalent from outside the
+  // process (forcing cli/axiom.mjs's own JSON-mode envelope assembly to
+  // produce something run-action.mjs cannot parse) was not attempted here --
+  // flagged as a real, honestly-disclosed gap rather than force-fit under
+  // time pressure.
 
   {
     const r = runAction(["--project", "examples/STANDARD-FEATURE", "--annotation-mode", "off"]);
@@ -539,10 +473,6 @@ if (POWERSHELL_AVAILABLE) {
     cleanup(r.outDir);
     cleanupFixture(fixture);
   }
-} else {
-  console.log("");
-  console.log("SKIPPED: run-action.mjs integration tests -- no PowerShell host on PATH.");
-  console.log("         Unit tests above still ran; they do not need PowerShell.");
 }
 
 console.log("");

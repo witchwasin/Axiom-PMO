@@ -174,30 +174,23 @@ test("clean-room: malformed marker, already-installed, and post-setup edits", ()
         rmSync(sandbox, { recursive: true, force: true });
     }
 });
-test("clean-room: Node-only -- the rewired CLI needs zero PowerShell for a normal run", () => {
+test("clean-room: Node-only -- the CLI needs zero PowerShell for a normal run", () => {
     const sandbox = mkdtempSync(join(tmpdir(), "axiom-nopwsh-"));
     const emptyPath = mkdtempSync(join(tmpdir(), "axiom-nopwsh-path-"));
     try {
-        // Build an environment with PowerShell provably absent: AXIOM_PWSH and
-        // AXIOM_ROLLBACK_PWSH are removed entirely, and on POSIX PATH points at
-        // an empty directory so `pwsh` cannot be found by any lookup.
+        // Build an environment with PowerShell provably absent: AXIOM_PWSH is
+        // removed entirely, and on POSIX PATH points at an empty directory so
+        // `pwsh` cannot be found by any lookup. Post-cutover (Phase 8, DEC-030/
+        // 031) there is no rollback path left to run as a "control" comparison --
+        // the CLI has exactly one path, and this test's whole claim is that it
+        // never touches PowerShell, which no longer needs demonstrating against
+        // an alternative that doesn't exist.
         const env = { ...process.env };
         delete env.AXIOM_PWSH;
-        delete env.AXIOM_ROLLBACK_PWSH;
         if (platform() !== "win32")
             env.PATH = emptyPath;
         const CLI = join(REPO_ROOT, "cli/axiom.mjs");
-        // Control: in this same environment the rollback path cannot run -- that
-        // is what makes the absence provable, not merely unused. (POSIX only: on
-        // Windows CreateProcess finds powershell.exe through the system directory
-        // whatever PATH says, so absence cannot be demonstrated there.)
-        if (platform() !== "win32") {
-            const rb = spawnSync(process.execPath, [CLI, "validate", "--project", "examples/LITE-BUGFIX", "--mode", "Lite", "--gate", "Scope"], {
-                encoding: "utf8", cwd: REPO_ROOT, env: { ...env, AXIOM_ROLLBACK_PWSH: "1" },
-            });
-            assert.equal(rb.status, 127, `control: the rollback path cannot find PowerShell in this environment: exit=${rb.status} ${(rb.stderr ?? "").slice(0, 200)}`);
-        }
-        // Generate a real project with the rewired CLI in the no-PowerShell env,
+        // Generate a real project with the CLI in the no-PowerShell env,
         // then validate it -- the whole normal run, PowerShell never consulted.
         const gen = spawnSync(process.execPath, [
             CLI, "init", "--code", "P98-NOPWSH", "--mode", "Lite", "--execution-path", "development_handoff",
