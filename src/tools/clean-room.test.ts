@@ -253,10 +253,25 @@ function pathWithoutPowerShell(): string {
 // unset, but absent -- while every other real tool (git, sh, node) stays
 // available, matching what a real post-deletion checkout is (scripts/*.ps1
 // no longer exist to spawn even if something tried).
-test("clean-room: axiom check and axiom demo run correctly with PowerShell provably absent", { timeout: 120_000 }, () => {
+//
+// `axiom check`'s own "unit-tests" step runs every dist/**/*.test.js file --
+// including this one -- so spawning it from inside a test here would spawn a
+// second `axiom check`, whose own unit-tests step would spawn a third, and so
+// on. AXIOM_CLEAN_ROOM_NESTED breaks that at exactly one level: the spawned
+// child sees it set and skips this one test immediately (real reproduction,
+// not a guess: an earlier version without this guard passed on macOS/Windows
+// but failed under Linux CI specifically, where the recursive spawn chain hit
+// a resource limit the other two hosts happened not to).
+test("clean-room: axiom check and axiom demo run correctly with PowerShell provably absent", { timeout: 120_000 }, (t) => {
+  if (process.env.AXIOM_CLEAN_ROOM_NESTED) {
+    t.skip("running inside a nested axiom check spawned by this very test -- see comment above");
+    return;
+  }
+
   const env: NodeJS.ProcessEnv = { ...process.env };
   delete env.AXIOM_PWSH;
   env.PATH = pathWithoutPowerShell();
+  env.AXIOM_CLEAN_ROOM_NESTED = "1";
 
   const CLI = join(REPO_ROOT, "cli/axiom.mjs");
 
