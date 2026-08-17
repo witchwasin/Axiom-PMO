@@ -1,7 +1,7 @@
 // CHANGE-REQUESTS.json validation (CHANGE-001/002/003), ported from
 // scripts/lib/change-control-validator.ps1.
 import { readFileSync, existsSync, statSync } from "node:fs";
-import { join, resolve, isAbsolute } from "node:path";
+import { join, resolve, isAbsolute, sep } from "node:path";
 import { createHash } from "node:crypto";
 import { testGenericOwner } from "../core/owner-policy.js";
 import { getDecisionDecider } from "./decision-log.js";
@@ -17,7 +17,7 @@ function testCurrentDigestReference(project, reference, executionContract) {
         return false;
     const full = resolve(join(project, relative));
     const root = resolve(project);
-    if (!full.startsWith(root + "/") || !existsSync(full) || !statSync(full).isFile())
+    if (!full.startsWith(root + sep) || !existsSync(full) || !statSync(full).isFile())
         return false;
     if (!/^[a-fA-F0-9]{64}$/.test(claimed))
         return false;
@@ -84,7 +84,7 @@ export function testChangeControlRegistry(acc, catalog, project, gate, orchestra
             }
             const candidate = resolve(join(project, rel));
             const root = resolve(project);
-            if (!candidate.startsWith(root + "/") || !existsSync(candidate))
+            if (!candidate.startsWith(root + sep) || !existsSync(candidate))
                 structureProblems.push(`${id} artifact ref`);
         }
         if (testGenericOwner(String(change.owner ?? ""), ownerPolicy))

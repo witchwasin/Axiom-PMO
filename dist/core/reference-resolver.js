@@ -1,6 +1,6 @@
 // Typed reference resolver, ported from scripts/lib/reference-resolver.ps1.
 import { existsSync, statSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { resolve, join, sep } from "node:path";
 function getReferenceType(value, config) {
     if (!value)
         return null;
@@ -57,7 +57,7 @@ export function resolveReference(value, config, projectRoot, decisionIds = null,
                 try {
                     const rootFull = resolve(projectRoot);
                     const resolvedFull = resolve(join(projectRoot, filePath));
-                    if (resolvedFull !== rootFull && !resolvedFull.startsWith(rootFull + "/")) {
+                    if (resolvedFull !== rootFull && !resolvedFull.startsWith(rootFull + sep)) {
                         result.pathEscaped = true;
                     }
                     else {

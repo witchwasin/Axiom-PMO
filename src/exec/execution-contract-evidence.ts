@@ -3,7 +3,7 @@
 // defaults to Verified=false on any ambiguity.
 
 import { readFileSync, existsSync } from "node:fs";
-import { join, resolve, isAbsolute } from "node:path";
+import { join, resolve, isAbsolute, sep } from "node:path";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import type { TestEvidenceEntry } from "./execution-contract-schema.js";
@@ -24,7 +24,7 @@ function isContained(projectPath: string, relPath: string): { ok: boolean; full?
   }
   const rootFull = resolve(projectPath);
   const resolvedFull = resolve(join(projectPath, relPath));
-  if (resolvedFull !== rootFull && !resolvedFull.startsWith(rootFull + "/")) {
+  if (resolvedFull !== rootFull && !resolvedFull.startsWith(rootFull + sep)) {
     return { ok: false, reason: `path '${relPath}' escapes the project root -- containment breach` };
   }
   if (!existsSync(resolvedFull)) {

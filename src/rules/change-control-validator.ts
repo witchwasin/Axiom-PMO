@@ -2,7 +2,7 @@
 // scripts/lib/change-control-validator.ps1.
 
 import { readFileSync, existsSync, statSync } from "node:fs";
-import { join, resolve, isAbsolute } from "node:path";
+import { join, resolve, isAbsolute, sep } from "node:path";
 import { createHash } from "node:crypto";
 import { testGenericOwner } from "../core/owner-policy.js";
 import { getDecisionDecider } from "./decision-log.js";
@@ -44,7 +44,7 @@ function testCurrentDigestReference(
   if (executionContract && !/^\.execution\/[^/]+\/EXECUTION-CONTRACT\.json$/.test(relative.replace(/\\/g, "/"))) return false;
   const full = resolve(join(project, relative));
   const root = resolve(project);
-  if (!full.startsWith(root + "/") || !existsSync(full) || !statSync(full).isFile()) return false;
+  if (!full.startsWith(root + sep) || !existsSync(full) || !statSync(full).isFile()) return false;
   if (!/^[a-fA-F0-9]{64}$/.test(claimed)) return false;
   return createHash("sha256").update(readFileSync(full)).digest("hex").toLowerCase() === claimed.toLowerCase();
 }
@@ -117,7 +117,7 @@ export function testChangeControlRegistry(
       }
       const candidate = resolve(join(project, rel));
       const root = resolve(project);
-      if (!candidate.startsWith(root + "/") || !existsSync(candidate)) structureProblems.push(`${id} artifact ref`);
+      if (!candidate.startsWith(root + sep) || !existsSync(candidate)) structureProblems.push(`${id} artifact ref`);
     }
 
     if (testGenericOwner(String(change.owner ?? ""), ownerPolicy)) authorityProblems.push(`${id} owner`);

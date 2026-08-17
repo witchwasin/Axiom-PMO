@@ -201,8 +201,13 @@ export function runValidationFixtures(repoRoot, verifyGolden, goldenMasterDir) {
         // The JSON envelope embeds the resolved absolute project path, which
         // differs by checkout location -- stripped to the same "<REPO_ROOT>"
         // placeholder the committed golden masters already use, so golden text
-        // captured on one machine verifies correctly on any other.
-        const rawOutput = `${r.output.trimEnd().split(repo).join("<REPO_ROOT>")}\nEXIT_CODE=${r.exitCode}`;
+        // captured on one machine verifies correctly on any other. On Windows,
+        // repo's own backslashes appear doubled inside the JSON-escaped string
+        // (`D:\\a\\...`), a distinct literal from the raw path (`D:\a\...`) that
+        // never matches a plain split/join -- both forms are stripped, exactly
+        // like the reference's own repoJsonEscaped handling.
+        const repoJsonEscaped = repo.split("\\").join("\\\\");
+        const rawOutput = `${r.output.trimEnd().split(repoJsonEscaped).join("<REPO_ROOT>").split(repo).join("<REPO_ROOT>")}\nEXIT_CODE=${r.exitCode}`;
         if (verifyGolden) {
             const goldenFile = join(goldenDir, `${c.Name}.txt`);
             if (!existsSync(goldenFile)) {

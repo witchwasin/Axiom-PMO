@@ -3,7 +3,7 @@
 // (JSON + .sha256 sidecar). Verified by §8.6 fresh-tree methodology.
 import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
-import { join, resolve, isAbsolute, relative } from "node:path";
+import { join, resolve, isAbsolute, relative, sep } from "node:path";
 import { createHash } from "node:crypto";
 import { randomUUID } from "node:crypto";
 import { readExecutionContract } from "../exec/execution-contract-schema.js";
@@ -31,7 +31,7 @@ export function runExecutionCommand(projectPath, workItemId, name, command, work
         return { output: `RUN FAILED: -WorkingDirectory must be relative to the project, not absolute: ${workingDirectory}\n`, exitCode: 1 };
     }
     const cwdFull = resolve(join(project, workingDirectory));
-    if (cwdFull !== rootFull && !cwdFull.startsWith(rootFull + "/")) {
+    if (cwdFull !== rootFull && !cwdFull.startsWith(rootFull + sep)) {
         return { output: `RUN FAILED: -WorkingDirectory escapes the project root: ${workingDirectory}\n`, exitCode: 1 };
     }
     if (!existsSync(cwdFull))

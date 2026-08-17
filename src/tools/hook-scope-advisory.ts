@@ -3,7 +3,7 @@
 // degrades to silence on any failure.
 
 import { readFileSync, existsSync } from "node:fs";
-import { join, resolve, isAbsolute } from "node:path";
+import { join, resolve, isAbsolute, sep } from "node:path";
 import { readScopeDeclaration, readScopeDiffPolicy, resolveScopeVerdict, convertToScopeGlobRegex } from "../rules/scope-diff-matcher.js";
 
 export interface AdvisoryResult {
@@ -53,8 +53,16 @@ export function hookScopeAdvisory(projectPath: string | null, payloadText: strin
       try {
         const full = resolve(isAbsolute(candidate) ? candidate : join(resolvedProject, candidate));
         const projectFull = resolve(resolvedProject);
-        const normalisedProject = projectFull.replace(/[/\\]+$/, "") + "/";
-        if (full.startsWith(normalisedProject)) {
+        const normalisedProject = projectFull.replace(/[/\\]+$/, "") + sep;
+        // Windows paths are case-insensitive and can arrive with mixed
+        // separators, so a case-sensitive raw startsWith reports an in-project
+        // file as "outside the project" and silently says nothing about it --
+        // the reference's own comment says this is exactly what CI caught on
+        // windows-pwsh7 and nowhere else, before this port existed.
+        const inProject = process.platform === "win32"
+          ? full.toLowerCase().startsWith(normalisedProject.toLowerCase())
+          : full.startsWith(normalisedProject);
+        if (inProject) {
           relative = full.substring(normalisedProject.length);
         } else {
           continue; // outside project — nothing to say
