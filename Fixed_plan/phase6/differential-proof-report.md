@@ -321,3 +321,220 @@ not shipped silently.
 Does not establish: that Phase 9 (PowerShell deletion) or Phase 10
 (documentation reconciliation) are ready — both remain separately gated per
 DEC-027/030/031/032 and `Fixed_plan/phase9/PLAN.md`'s still-open items.
+
+---
+
+## §4 — Phase 9: PowerShell reference deleted, final re-verification, 2026-08-17
+
+master-plan.md's own Phase 9 exit criteria requires this explicitly: "re-run
+the final-tree proof after deletion changes land... this is a new proof
+pass" — §1-§3 proved the ported engine matched a reference that still
+existed on disk. This section proves the repo works correctly with that
+reference **not present at all**, not merely unused.
+
+### What Phase 9 did, across its full arc (not just the deletion commit)
+
+- Converted all 11 probes from live PS-comparison to golden-fixture
+  regression (`tests/golden/probes/*.json`, captured from the reference
+  before deletion, `differential-probe.ts` through `tool-stateful-probe.ts`).
+  `junction-probe.ts` dropped its PS-comparison half entirely — pure TS-side
+  security assertions, since there is no reference left to compare against.
+- Ported `scripts/run-validation-tests.ps1` in full
+  (`src/tools/validation-fixtures.ts`) — the 161-case positive/negative
+  fixture matrix with byte-exact canonical comparison against the 156
+  committed golden masters. This had never existed as a Node port before
+  Phase 9; building it found a real, previously-undiscovered bug (see below).
+- Redesigned `run-all-checks.ts`: the ~20 checks that each spawned one
+  `tests/helpers/*.ps1` file collapsed into one run of the Node unit suite;
+  `pmo-doctor`, the four example-project gates, and `plugin-skills-drift`
+  call their ported functions in-process; `example-golden`
+  (`tests/golden/capture-examples.ps1`) dropped entirely, its coverage
+  carried forward by `differential-probe.ts` and `validation-fixtures.ts`.
+- Fixed `hooks/scope-advisory.sh` (the actual shipped Claude Code plugin
+  hook, not `scripts/*.ps1`) to spawn Node against a new
+  `hook-scope-advisory-cli.ts` instead of `pwsh` against the script this
+  phase deletes — found only by auditing for every remaining live
+  `resolvePwsh`/`AXIOM_PWSH` call site before starting the deletion, not by
+  assumption.
+- Rewrote `.github/workflows/pmo-checks.yml` and built two new CLI wrappers
+  (`ci-profile-cli.ts`, `run-ci-suite-cli.ts`) neither of which had existed
+  as full ports before — the workflow directly invoked `pwsh`/`scripts/*.ps1`
+  in `determine-profile`, `fast-checks`, `targeted-checks`, all three
+  full-profile host jobs, and `dogfood-ci-check-evidence`, none of which
+  were in the original file-deletion scope but all of which would have
+  broken CI on the next push. Job ids for the three full-profile host jobs
+  (`pmo-checks-windows-pwsh7` etc.) were kept unchanged despite no longer
+  running PowerShell — branch protection's required-status-checks
+  references them by name, a GitHub repository setting this session cannot
+  see or edit, and renaming was not something to risk as a side effect of a
+  code change. Recorded as DEC-034 (`Fixed_plan/decision-log.md`), asked and
+  confirmed explicitly before starting, given this is live CI/CD
+  infrastructure that cannot be fully verified without an actual
+  push-triggered run.
+- Deleted `scripts/*.ps1` (60), `tests/helpers/*.ps1` + `tests/e2e/*.ps1`
+  (29), `src/probe/marker-harness.ps1`, `src/probe/pwsh-resolver.ts`, and
+  the orphaned `dist/probe/pwsh-resolver.js` — 92 files. Kept
+  `Fixed_plan/phase0/capture-*.ps1` (7 files) as historical record, per the
+  approved plan.
+
+### Real bugs found by this phase's own verification work, each fixed and
+### confirmed against the reference (or, once deleted, against the actual
+### committed behavior) before moving on
+
+- **`runPortedChain` called `testProjectSourceSection` unconditionally**;
+  the reference (`validate-project.ps1`) only calls it `if ($projectText)`,
+  defaulting four downstream fields to empty otherwise. A project with no
+  `PROJECT.md` at all got spurious `TASK-001`/`SOURCE-001`/`SOURCE-002`/
+  `APPROVAL-001` findings the reference never produces. Found by
+  `validation-fixtures.ts`'s own new coverage — this exact input shape
+  (a completely absent `PROJECT.md`) had never been exercised by
+  `differential-probe.ts`'s smaller case list or any unit test before.
+- **Six hardcoded `"/"` path-separator bugs** across
+  `change-control-validator.ts` (two sites), `run-execution-command.ts`,
+  `reference-resolver.ts`, `execution-contract-evidence.ts`, and
+  `hook-scope-advisory.ts` — each built a containment check as
+  `full.startsWith(root + "/")`, where `root` comes from Node's own
+  `path.resolve()`, which returns backslash-separated paths on Windows. The
+  hardcoded `"/"` can never match there, so the check always reported an
+  in-project file as outside it. Every reference used
+  `[System.IO.Path]::DirectorySeparatorChar` for exactly this reason; the TS
+  ports had silently dropped that platform-adaptivity. Invisible on this
+  (macOS) development machine, where `/` happens to be the native separator
+  — found only by the first real Windows CI run, with a visible symptom
+  (`examples/OPTIONAL-TRACKS`'s `CHANGE-001` failing outright on Windows).
+  `hook-scope-advisory.ts` additionally needed the reference's Windows-only
+  case-insensitive comparison; its own comment records that this exact bug
+  class had already been found and fixed once in the PS original, and the
+  TS port had silently regressed that fix.
+- **`canonical-normalizer.ts`'s backslash-folding step folded every lone
+  backslash**, not the JSON-escaped pair a Windows path separator actually
+  arrives as inside a JSON string value — so `<REPO_ROOT>\\tests\\x`
+  canonicalized to `<REPO_ROOT>//tests//x`, which could never match a
+  POSIX-captured golden master. The reference's `golden-normalizer.ps1` does
+  a literal two-character `.Replace('\\', '/')`; the TS port now matches it
+  exactly (`/\\\\/g`, not `/\\/g`), verified against the pinned reference
+  before it was gone.
+- **Three further Windows-only unit-test portability gaps**, all invisible
+  until Phase 9's `run-all-checks` redesign made the Node unit suite run on
+  every CI host leg for the first time (the host legs previously ran
+  `tests/helpers/*.ps1` instead): an SVG golden fixture whose digest was the
+  LF-blob hash while an unmarked `.gitattributes` let Windows checkouts
+  convert it to CRLF; a `gh` stub argv off-by-one plus a `spawnSync("gh")`
+  call that cannot launch a `.cmd` shim on Windows without a shell; and a
+  hook-shim test that hardcoded `/bin/sh` instead of resolving `sh` through
+  `PATH`.
+- **`pmo-config/validation-rules.json`'s `SOURCE-002` suggestion text was
+  updated** to stop pointing at a deleted `.ps1` path, but two of its golden
+  `.txt` files were not re-captured to match — caught by this session's own
+  independent re-verification (`node cli/axiom.mjs check`, not a visual
+  diff read) immediately before the deletion commit, fixed, re-verified
+  clean.
+- **The clean-room "PowerShell provably absent" test went through two real
+  Linux-only failures before landing.** First: it recursively spawned
+  `axiom check`, whose own "unit-tests" step runs every `dist/**/*.test.js`
+  file — including that same test — so each spawn triggered another. Fixed
+  with an env-var guard (`AXIOM_CLEAN_ROOM_NESTED`) that makes the spawned
+  child's own copy of the test skip immediately instead of recursing
+  (`38fa07b`). That fix did not resolve the actual Linux CI failure — same
+  symptom, unchanged, proven by re-running rather than assumed fixed. The
+  real cause, read from the CI log: the test's original design also scrubbed
+  `PATH` to make `pwsh`/`powershell` physically unresolvable, by dropping
+  any `PATH` directory that resolved one of those binaries. On Linux CI,
+  `pwsh` is installed into `/usr/bin` — the same directory as `git` and
+  other tools the unit suite legitimately shells out to — so removing that
+  whole directory broke those tools, for a reason that had nothing to do
+  with PowerShell. It only ever passed on Windows/macOS because `pwsh`/
+  `pwsh.exe` live in their own dedicated directories there, sharing nothing
+  else needed. Stepping back further: `PATH`-scrubbing only matters if some
+  code path still searches `PATH` for `pwsh` as a fallback when
+  `AXIOM_PWSH` is unset — that was `pwsh-resolver.ts`'s job, and it no
+  longer exists (grep confirms zero remaining `resolvePwsh`/`pwsh-resolver`
+  references anywhere in `src/`). `AXIOM_PWSH` unset already exercises
+  every code path that could reach for PowerShell, because there is no code
+  left that would search `PATH` if it were — the stronger claim was solving
+  a problem the deletion had already solved a different way. `333b1da`
+  drops the `PATH`-scrubbing entirely, matching the existing "Node-only"
+  test's simpler approach.
+
+### Full regression at the deletion commit (`dfb6f8b`) and its immediate
+### follow-ups (`98e7c13`, `56b5099`, `38fa07b`, `333b1da`, `ff56d18`)
+
+- `npx tsc`: clean.
+- Full unit suite: **219 pass / 0 fail / 0 skipped** (212 at Phase 8 + the
+  `ci-profile-cli` tests + the new clean-room PowerShell-absent proof below).
+- All 11 probe binaries green with `pwsh` confirmed absent from `PATH`
+  (`which pwsh` → not found, not merely `AXIOM_PWSH` unset): differential
+  38, doctor 58-row multiset match, execution 3, marker 16, marker-io 6,
+  setup 4, stateful 6, surface 38, tool 92 (93 minus the intentionally
+  dropped `golden` suite case), tool-stateful 37, junction SKIP=1 on macOS
+  (14/14 PASS previously confirmed on real Windows CI, unchanged by this
+  phase's TS-only conversion).
+- `node cli/axiom.mjs check` (the full orchestrator): exit 0, "All
+  Axiom-PMO framework checks completed," with `AXIOM_PWSH` unset.
+- New committed proof, not just a terminal check this session ran once:
+  `clean-room.test.ts`'s "axiom check and axiom demo run correctly with
+  PowerShell provably absent" test runs both commands with `AXIOM_PWSH`
+  unset and asserts they complete successfully — the master-plan.md
+  distinction between "PowerShell not invoked" and "PowerShell not present"
+  now has a permanent regression test, not an ad-hoc verification that
+  expires when the session ends. It does not additionally scrub `PATH`, for
+  the reason above: with `pwsh-resolver.ts` deleted, no code path exists
+  that would consult `PATH` for PowerShell in the first place, so
+  `AXIOM_PWSH` unset already exercises every reachable path.
+- Real hosts, not just this machine: `dfb6f8b`'s own CI run
+  (`gh run view 32027460744`) green on `pmo-checks-{windows,linux,
+  macos}-pwsh7`, both dogfood jobs, and all 8 `canary-matrix` cells. The
+  only red job was `canary-baseline`'s own RESET — correct, expected
+  behavior given this commit touched the entire validation surface, not a
+  regression, caught up in `98e7c13` with N still waived per DEC-030.
+  `56b5099` (the clean-room test addition) then surfaced the two real bugs
+  above on its own Linux CI runs, in sequence — not a silent pass followed
+  by a gap discovered later, but exactly the kind of real-host failure this
+  project's CI matrix exists to catch, each one read from the actual log
+  and re-verified after the fix rather than assumed resolved. `333b1da`
+  (`gh run view 32029330682`) is the first green run on all three hosts;
+  `ff56d18` is the routine canary catch-up its own surface change required.
+
+### Comparator hashes (SHA-256 of the built probe binaries at archive time)
+
+| Comparator | SHA-256 |
+|---|---|
+| `dist/probe/tool-probe.js` | `4ac35a9888054c8944a1beec2ee40aa0d672894528ce9b38e9591d5ff4e3db47` |
+| `dist/probe/tool-stateful-probe.js` | `2f75355f7b5c4ecd4feb94873387c6e6c0d458c96ffb221eb0f398b13c5d26b0` |
+| `dist/probe/surface-probe.js` | `1ec3a21bb9dfd4acaf10c7d3ced3e6b6c8bbe7aab29848e2d8cb800a0eadb25a` |
+| `dist/probe/differential-probe.js` | `4dda0df78ddea31185dbccfbcaf5defb6bbfed7a2251f158877f4eb5798fe569` |
+| `dist/probe/execution-probe.js` | `4e0908c69d348dcf5d457b4a538bc6a94f592bcca7b84f1587f3f180cfab7bc5` |
+| `dist/probe/marker-probe.js` | `10302812ac84d46316e2e03c986c6262e913dd386db2dec46dd7bdb2f05a703c` |
+| `dist/probe/marker-io-probe.js` | `41e4399202188f50299f49453a9ac79937ed95f3e7c3365bc86f5e358e881717` |
+| `dist/probe/setup-probe.js` | `7c72fa20172541ed55109d47730cfe0a4662b707dc09e1ee1a5bade0c53e8143` |
+| `dist/probe/stateful-probe.js` | `baa6e78e694b70d22306c86e2cfbcf3d7faf7ff3b36bbcc41fc71f6cb9df293f` |
+| `dist/probe/doctor-probe.js` | `0a4e50ed2ffaa069280cef19f84d43c45f8588da4aa4dcf37cfe171e16ce322e` |
+| `dist/probe/junction-probe.js` | `11a7f2582bc42486a24430f8fa5771a335f33062529cb1f558c7d3d6024cac02` |
+
+### Host versions at archive time
+
+| Component | Version |
+|---|---|
+| Node | v23.11.0 |
+| PowerShell | not present — `which pwsh` reports not found; the reference implementation this proof used to run against no longer exists on disk |
+| git | 2.50.1 (Apple Git-155) |
+| OS | macOS 26.6.2 (Build 25G82), arm64 |
+
+### What this section does and does not establish
+
+Establishes: the tree at `ff56d18` — with the entire PowerShell reference
+implementation deleted — passes the full local and CI-verified regression
+above, on real Windows, macOS, and Linux hosts, with PowerShell genuinely
+absent rather than merely unused. Every bug this phase's own verification
+work found (ten distinct issues across the arc, listed above) was caught by
+real reproduction — a failing local run, a real Windows CI log, or this
+session's own independent re-check before committing — and fixed against the
+reference before that reference was gone, never guessed at or shipped
+silently.
+
+Does not establish: that Phase 10 (documentation reconciliation) is
+underway. `README.md`/`TESTING.md`/`CONTRIBUTING.md` and other
+consumer-facing docs still reference PowerShell by design — deferred to
+Phase 10, not touched here, per `AGENTS.md`'s own scope boundary and this
+phase's plan. `Fixed_plan/phase9/PLAN.md` records this phase's own
+completion status.
