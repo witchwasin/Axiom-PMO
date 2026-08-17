@@ -1,8 +1,8 @@
 {
   "name": "axiom-pmo",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "private": true,
-  "description": "Axiom-PMO governance validation interpreter (Node.js/TypeScript migration target)",
+  "description": "Axiom-PMO governance validation engine (Node.js/TypeScript)",
   "type": "module",
   "engines": {
     "node": ">=22.0.0"

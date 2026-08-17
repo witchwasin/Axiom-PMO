@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.2.0 - 2026-08-17
+
+The Node/TypeScript engine (ported from the PowerShell reference across
+Phases 0-7, differentially proven byte-identical, canary-verified on real
+Windows/Linux/macOS hosts) is now the CLI's only execution path. No governance
+behavior changes: every command produces the exact stdout, stderr, and exit
+code it always has -- this releases what Phase 6/7's proof already
+established, not new logic. The `AXIOM_ROLLBACK_PWSH` toggle introduced during
+the canary window is removed; `cli/axiom.mjs` no longer spawns PowerShell for
+anything. The PowerShell reference scripts under `scripts/` remain on disk
+unchanged (a separate, later decision, tracked in `Fixed_plan/phase9/`) and
+are no longer invoked by the CLI or the GitHub Action.
+
+### Changed
+
+- `cli/axiom.mjs`: the in-process TypeScript engine is unconditional; no
+  environment variable selects an alternate path anymore.
+- `action.yml`: no longer describes PowerShell as the execution engine.
+- Not a breaking change for consumers: inputs, outputs, and exit-code
+  semantics are unchanged from 2.1.0.
+
 ## 2.1.0 - 2026-08-15
 
 Three optional governed tracks reach the validator, and CI stops paying for the

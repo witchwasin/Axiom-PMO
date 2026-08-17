@@ -1,5 +1,5 @@
 name: "Axiom-PMO Governance Check"
-description: "Verify a project's requirements, scope, evidence, and release authority with Axiom-PMO's PowerShell validator."
+description: "Verify a project's requirements, scope, evidence, and release authority with Axiom-PMO's Node.js governance engine."
 author: "Axiom-PMO"
 branding:
   icon: "shield"
@@ -51,8 +51,8 @@ inputs:
       first-time install cannot break a pull request nobody has configured
       yet. Set to true once your team has reviewed a few report-only runs
       and wants the check to actually block. This default does not soften an
-      infrastructure failure (for example, no PowerShell host found): that
-      always fails the step regardless of this setting.
+      infrastructure failure (a crash in the engine itself, not a governance
+      verdict): that always fails the step regardless of this setting.
     required: false
     default: "false"
   enable-scope-diff:
@@ -81,7 +81,7 @@ inputs:
 
 outputs:
   exit-code:
-    description: "The underlying validator's exit code (0 pass, 1 fail, 2 blocking warning, 127 no PowerShell host)."
+    description: "The underlying validator's exit code (0 pass, 1 fail, 2 blocking warning, 127 infrastructure failure)."
     value: ${{ steps.run.outputs.exit-code }}
   outcome:
     description: "success, failure, warning, or runtime-missing."
@@ -105,11 +105,6 @@ runs:
         node-version: "24.18.0"
         package-manager-cache: false
 
-    # GitHub-hosted Ubuntu, Windows, and macOS runner images all ship
-    # PowerShell 7 (pwsh) already, and Windows additionally ships Windows
-    # PowerShell 5.1. Nothing here installs a PowerShell runtime -- the
-    # consumer's runner already has one, which is the whole point of running
-    # this as an Action instead of a local script.
     - name: Run Axiom-PMO governance check
       id: run
       shell: bash
