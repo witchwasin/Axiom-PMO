@@ -1,6 +1,6 @@
 {
-  "git_sha": "dfb6f8b8909b79341fded22930e8e6cc72591037",
-  "captured_at": "2026-08-17T12:01:33.476Z",
+  "git_sha": "333b1dace9b26fa5a978a04892b13ae7c0497666",
+  "captured_at": "2026-08-17T12:23:29.437Z",
   "files": {
     "Fixed_plan/phase0/compatibility-case-manifest.md": "8bea95306b5c929050e3f113de40f28bde3a0b0fbaf302d1c5d55077373b42a7",
     "pmo-config/adversarial-review-policy.json": "10bb2d5fee798c11da5961fc1834557d91db735265450db781438544b0074719",
@@ -98,7 +98,7 @@
     "src/tools/ci-profile-cli.ts": "93e95e5966eb99e839a03bc4b81d255143eb1de84244d05d655d5eed4feb9df6",
     "src/tools/ci-profile.test.ts": "ac62bca09aa7a0501cb660f409af00bd12b6ea12dc1cef16912e8f0d6059ea15",
     "src/tools/ci-profile.ts": "cb147a08657aa8957186b93f1b406f353892b2cf1b850abc92473b7e7b179ab8",
-    "src/tools/clean-room.test.ts": "b235a0e12da433bea63ab218af7f6954825254f23f0253aec9607ec87f73399f",
+    "src/tools/clean-room.test.ts": "973982c16c1d527342828f8b0a389b735ecc1310815b07ec16a7dfab7e11c6b3",
     "src/tools/config-mutation.test.ts": "25906a67568dad57c63d2044bc9a1c6eb15a3e5a97f02993b19055ed6d123669",
     "src/tools/demo-smoke.test.ts": "ecbb4f8e534010cab9fe258f71a2a257fd4633bd44d0e6e0d6464ce28062fda8",
     "src/tools/demo.ts": "c89619b81db4b4fdf72526ea7997c922fc9456a2bb17c98c130ea4d1191e3083",
