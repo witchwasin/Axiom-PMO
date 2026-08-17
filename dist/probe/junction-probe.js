@@ -13,21 +13,23 @@
 // the same class of escape the symlink case exists to refuse.
 //
 // This probe runs only on Windows (junctions exist only on NTFS). It drives
-// BOTH the TS port (in-process) and the PS reference (subprocess) against a
-// junctioned project root and asserts the SETUP-003 refusal plus that the
-// pointed-at file is untouched -- the exact same assertions the symlink case
-// makes. Non-Windows hosts print a skip and exit 0.
+// the TS port (in-process) against a junctioned project root and asserts the
+// SETUP-003 refusal plus that the pointed-at file is untouched -- the exact
+// same assertions the symlink case makes. Non-Windows hosts print a skip and
+// exit 0.
+//
+// Phase 9: this originally also drove the PS reference (subprocess) through
+// the identical assertions, to prove TS/PS equivalence during migration. With
+// scripts/setup-claude-integration.ps1 deleted there is no reference left to
+// compare against, so those checks are gone -- this is now a pure TS-side
+// security assertion, not a comparison.
 //
 // Wired into pmo-checks.yml's canary-matrix Windows cells so it runs on a real
 // Windows host on every qualifying push (the one place junctions can be made).
-import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, rmSync, lstatSync, statSync, symlinkSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { setupClaudeIntegration } from "../tools/setup-claude-integration.js";
-import { resolvePwsh } from "./pwsh-resolver.js";
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 let pass = 0, fail = 0, skip = 0;
 function check(name, ok, detail = "") {
     if (ok) {
@@ -44,17 +46,8 @@ if (process.platform !== "win32") {
     console.log("\nSummary: PASS=0 FAIL=0 SKIP=1");
     process.exit(0);
 }
-const PWSH = resolvePwsh();
 function freshDir(prefix) {
     return mkdtempSync(join(tmpdir(), prefix));
-}
-function psSetup(projectPath) {
-    const r = spawnSync(PWSH, [
-        "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
-        join(REPO_ROOT, "scripts/setup-claude-integration.ps1"),
-        "-ProjectPath", projectPath,
-    ], { encoding: "utf8" });
-    return { status: r.status, text: `${r.stdout ?? ""}${r.stderr ?? ""}` };
 }
 const REAL_CONTENT = "# Real rules.\n";
 // sandbox holds ONLY the junction; realDir is the junction target. Kept
@@ -80,10 +73,6 @@ try {
     const ts = setupClaudeIntegration(junction, false, false, false, "AGENTS.md");
     check("TS refuses a junctioned project root (SETUP-003)", ts.exitCode !== 0 && ts.output.includes("SETUP-003"), `exit=${ts.exitCode} ${ts.output.split("\n")[0] ?? ""}`);
     check("TS: the pointed-at file is untouched", readFileSync(join(realDir, "AGENTS.md"), "utf8") === REAL_CONTENT, readFileSync(join(realDir, "AGENTS.md"), "utf8").slice(0, 60));
-    // ---- PS reference (subprocess) ---------------------------------------
-    const ps = psSetup(junction);
-    check("reference refuses a junctioned project root (SETUP-003)", ps.status !== 0 && ps.text.includes("SETUP-003"), `exit=${ps.status} ${(ps.text.split("\n")[0] ?? "").trim()}`);
-    check("reference: the pointed-at file is untouched", readFileSync(join(realDir, "AGENTS.md"), "utf8") === REAL_CONTENT, readFileSync(join(realDir, "AGENTS.md"), "utf8").slice(0, 60));
 }
 finally {
     if (junctionCreated) {
@@ -128,9 +117,6 @@ finally {
         const ts = setupClaudeIntegration(project, false, false, false, "AGENTS.md");
         check("TS refuses a project root with a junctioned ANCESTOR (SETUP-003)", ts.exitCode !== 0 && ts.output.includes("SETUP-003"), `exit=${ts.exitCode} ${ts.output.split("\n")[0] ?? ""}`);
         check("TS (ancestor case): the pointed-at file is untouched", readFileSync(join(realSubdir, "AGENTS.md"), "utf8") === REAL_CONTENT, readFileSync(join(realSubdir, "AGENTS.md"), "utf8").slice(0, 60));
-        const ps = psSetup(project);
-        check("reference refuses a project root with a junctioned ANCESTOR (SETUP-003)", ps.status !== 0 && ps.text.includes("SETUP-003"), `exit=${ps.status} ${(ps.text.split("\n")[0] ?? "").trim()}`);
-        check("reference (ancestor case): the pointed-at file is untouched", readFileSync(join(realSubdir, "AGENTS.md"), "utf8") === REAL_CONTENT, readFileSync(join(realSubdir, "AGENTS.md"), "utf8").slice(0, 60));
     }
     finally {
         if (ancestorJunctionCreated) {
@@ -167,9 +153,6 @@ finally {
         const ts = setupClaudeIntegration(junction, false, false, false, "AGENTS.md");
         check("TS refuses a junctioned project root even with no AGENTS.md yet (SETUP-003)", ts.exitCode !== 0 && ts.output.includes("SETUP-003"), `exit=${ts.exitCode} ${ts.output.split("\n")[0] ?? ""}`);
         check("TS (empty-target case): nothing was created through the junction", !existsSync(join(emptyRealDir, "AGENTS.md")), "AGENTS.md was created through the junction despite the refusal");
-        const ps = psSetup(junction);
-        check("reference refuses a junctioned project root even with no AGENTS.md yet (SETUP-003)", ps.status !== 0 && ps.text.includes("SETUP-003"), `exit=${ps.status} ${(ps.text.split("\n")[0] ?? "").trim()}`);
-        check("reference (empty-target case): nothing was created through the junction", !existsSync(join(emptyRealDir, "AGENTS.md")), "AGENTS.md was created through the junction despite the refusal");
     }
     finally {
         if (emptyJunctionCreated) {
