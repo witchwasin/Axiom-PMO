@@ -36,7 +36,7 @@ Return risk status, required artifacts, missing evidence, and policy deviations.
 Human approval is required for scope, design where applicable, release, mode escalation, and production-sensitive decisions.
 
 ## Validation Command
-`powershell -NoProfile -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1`
+`node cli/axiom.mjs doctor`
 
 ## Prohibited Actions
 Do not downgrade Strict triggers silently, fabricate decision evidence, hardcode artifact matrices, log every minor AI action, or approve on behalf of a human.

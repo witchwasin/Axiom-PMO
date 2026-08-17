@@ -1,72 +1,59 @@
 # Axiom-PMO convenience targets.
 #
-# These wrap the PowerShell reference implementation; they do not reimplement any
-# validation logic. PWSH defaults to `pwsh` (PowerShell 7), the recommended
-# portable runtime. On Windows PowerShell 5.1, override it:
-#   make check PWSH=powershell
-#
-# CI verifies Windows PowerShell 5.1 (reference) and Windows PowerShell 7
-# (required), with Ubuntu and macOS PowerShell 7 as non-blocking smoke legs.
+# These wrap the Node implementation; they do not reimplement any validation
+# logic. Phase 9: the PowerShell reference was deleted, so every target runs
+# the Node CLI (cli/axiom.mjs) or the Node test runner directly.
 
-PWSH ?= pwsh
-PS := $(PWSH) -NoProfile -ExecutionPolicy Bypass -File
 NODE ?= node
 
-.PHONY: demo doctor validate test golden mutation contract eol assess handoff e2e cli check clean-room help
+.PHONY: demo doctor validate test mutation contract eol assess handoff e2e cli check clean-room help
 
 help:
 	@echo "Targets:"
 	@echo "  demo      Three-minute proof: a broken handoff, then a fixed one"
 	@echo "  check     Everything below, in order"
 	@echo "  doctor    Framework health"
-	@echo "  test      Validation fixtures"
-	@echo "  validate  Validation fixtures + golden master"
-	@echo "  golden    Example golden outputs"
+	@echo "  test      Full Node unit-test suite"
+	@echo "  validate  Validation fixtures against the committed golden masters"
 	@echo "  mutation  Config-is-source-of-truth tests"
 	@echo "  contract  Structured diagnostics contract tests"
 	@echo "  eol       Line-ending (CRLF vs LF) regression tests"
 	@echo "  assess    Handoff readiness assessment tests"
 	@echo "  handoff   Handoff gate on the worked example"
 	@echo "  e2e       Generator-to-gate end-to-end runs"
-	@echo "  cli       Thin CLI tests (requires Node.js)"
+	@echo "  cli       Thin CLI tests"
 	@echo "  clean-room  Build the clean-room walkthrough container (see clean-room/)"
 
 demo:
-	$(PS) scripts/demo.ps1
+	$(NODE) cli/axiom.mjs demo
 
 doctor:
-	$(PS) scripts/pmo-doctor.ps1
+	$(NODE) cli/axiom.mjs doctor
 
 validate:
-	$(PS) scripts/run-validation-tests.ps1 -RepoPath . -VerifyGolden
+	$(NODE) dist/tools/run-ci-suite-cli.js -Suite validation-fixtures -RepoPath .
 
 test:
-	$(PS) scripts/run-validation-tests.ps1 -RepoPath .
-
-golden:
-	$(PS) tests/golden/capture-examples.ps1 -Verify
+	$(NODE) --test $$(find dist -name '*.test.js' | sort)
 
 mutation:
-	$(PS) tests/helpers/config-mutation-tests.ps1 -RepoPath .
+	$(NODE) --test dist/tools/config-mutation.test.js
 
 contract:
-	$(PS) tests/helpers/diagnostics-contract-tests.ps1 -RepoPath .
+	$(NODE) --test dist/output/diagnostics-contract.test.js
 
 eol:
-	$(PS) tests/helpers/line-ending-tests.ps1 -RepoPath .
+	$(NODE) --test dist/output/line-ending.test.js
 
 assess:
-	$(PS) tests/helpers/handoff-assessment-tests.ps1 -RepoPath .
+	$(NODE) --test dist/tools/assess-handoff.test.js
 
 handoff:
-	$(PS) scripts/validate-project.ps1 -ProjectPath examples/HANDOFF-DEMO -Mode Standard -Gate Handoff -FailOnWarning
-	$(PS) scripts/assess-handoff.ps1 -ProjectPath examples/HANDOFF-DEMO -Mode Standard
+	$(NODE) cli/axiom.mjs validate --project examples/HANDOFF-DEMO --mode Standard --gate Handoff --fail-on-warning
+	$(NODE) cli/axiom.mjs handoff --project examples/HANDOFF-DEMO --mode Standard
 
 e2e:
-	$(PS) tests/e2e/lite.ps1 -RepoPath .
-	$(PS) tests/e2e/standard.ps1 -RepoPath .
-	$(PS) tests/e2e/strict.ps1 -RepoPath .
-	$(PS) tests/e2e/handoff.ps1 -RepoPath .
+	$(NODE) --test dist/tools/e2e.test.js
 
 cli:
 	$(NODE) tests/helpers/cli-tests.mjs
@@ -81,4 +68,4 @@ clean-room:
 	@echo "Run it:  $(CONTAINER) run --rm -it axiom-cleanroom:$(PREREQS)"
 
 check:
-	$(PS) scripts/run-all-checks.ps1 -RepoPath .
+	$(NODE) cli/axiom.mjs check

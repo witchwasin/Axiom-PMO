@@ -124,7 +124,7 @@ function compareOutputs(name, ref, cand) {
     // named parameter directly.
     const ciCases = [
         { label: "mixed", key: "ci-mixed", paths: ["src/core/context.ts", "docs/foo.md", "tests/a.test.ts"] },
-        { label: "high-risk validator", key: "ci-high-risk-validator", paths: ["scripts/validate-project.ps1"] },
+        { label: "high-risk validator", key: "ci-high-risk-validator", paths: ["src/tools/run-all-checks.ts"] },
         { label: "empty (default fast)", key: "ci-empty", paths: [] },
         { label: "cli + example", key: "ci-cli-example", paths: ["cli/axiom.mjs", "examples/x"] },
         { label: "windows backslash path", key: "ci-windows-backslash", paths: ["src\\core\\context.ts"] },
@@ -342,7 +342,6 @@ function advisoryProject(optIn) {
 function pluginTree(desync) {
     const dir = mkdtempSync(join(tmpdir(), "tool-probe-plugin-"));
     cpSync(join(REPO_ROOT, ".claude/skills"), join(dir, ".claude/skills"), { recursive: true });
-    cpSync(join(REPO_ROOT, "scripts/build-plugin-package.ps1"), join(dir, "scripts/build-plugin-package.ps1"));
     cpSync(join(REPO_ROOT, ".claude/skills"), join(dir, "skills"), { recursive: true });
     if (desync) {
         // Modify one mirrored file so the mirror no longer matches the source.
@@ -475,7 +474,10 @@ function treeSnapshot(root, sub) {
 // run-ci-suite: -ResolveOnly mapping (host prefix normalized) + unknown suite.
 // ---------------------------------------------------------------------------
 {
-    const suites = ["doctor", "hygiene", "golden", "validation-fixtures", "config-mutation", "line-ending", "plugin-drift", "cli", "github-action", "all"];
+    // "golden" is intentionally absent: tests/golden/capture-examples.ps1 was
+    // retired with the reference (Phase 9), its coverage carried by
+    // differential-probe.ts and validation-fixtures.ts.
+    const suites = ["doctor", "hygiene", "validation-fixtures", "config-mutation", "line-ending", "plugin-drift", "cli", "github-action", "all"];
     for (const suite of suites) {
         const ref = goldenCase(`run-ci-suite-${suite}`);
         const cand = resolveCiSuite(REPO_ROOT, suite);

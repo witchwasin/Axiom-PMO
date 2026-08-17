@@ -229,7 +229,7 @@ export function testRunnerExitEvidence(entry: TestEvidenceEntry, projectPath: st
   const result: EvidenceResult = { verified: false, reason: null, evidenceDigest: null };
   const relPath = String(entry.raw["run_record_path"] ?? "");
   if (!relPath.trim()) {
-    result.reason = "no run_record_path -- a runner-exit-record must point at the sealed file scripts/run-execution-command.ps1 produced, not describe its own command/exit_code inline";
+    result.reason = "no run_record_path -- a runner-exit-record must point at the sealed file `axiom run` produced, not describe its own command/exit_code inline";
     return result;
   }
 
@@ -245,7 +245,7 @@ export function testRunnerExitEvidence(entry: TestEvidenceEntry, projectPath: st
   const sidecarText = readFileSync(sidecarFull, "utf8").trim().toLowerCase();
   const actualDigest = sha256Hex(readFileSync(recordFull));
   if (sidecarText !== actualDigest) {
-    result.reason = "the run record's contents do not match its sealed digest -- it was modified after scripts/run-execution-command.ps1 wrote it";
+    result.reason = "the run record's contents do not match its sealed digest -- it was modified after `axiom run` sealed it";
     return result;
   }
 

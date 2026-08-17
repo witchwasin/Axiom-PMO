@@ -51,7 +51,7 @@ export function checkPublicHygiene(repoPath) {
         ...spawnSync("git", ["-C", repo, "ls-files", "--others", "--exclude-from=.gitignore"], { encoding: "utf8" }).stdout.split("\n"),
     ].map((f) => f.trim()).filter(Boolean);
     const uniqueTracked = [...new Set(trackedFiles)];
-    const selfExcludedPaths = ["pmo-config/public-hygiene-allowlist.json", "scripts/check-public-hygiene.ps1", "src/tools/check-public-hygiene.ts"];
+    const selfExcludedPaths = ["pmo-config/public-hygiene-allowlist.json", "src/tools/check-public-hygiene.ts"];
     const checks = [
         { id: "OLD-NAME-001", pattern: "PMO-Template-Personal", regex: false, description: "old private product name" },
         { id: "LOCAL-PATH-001", pattern: "[A-Z]:\\\\Users\\\\", regex: true, description: "Windows local user path" },

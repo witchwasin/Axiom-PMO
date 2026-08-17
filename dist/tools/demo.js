@@ -47,7 +47,7 @@ export function runDemo(repoRoot, plain, noPause) {
     out.push("Axiom-PMO 1.0 could run.");
     out.push("");
     out.push("One of them cannot actually be built on Monday morning.");
-    out.push(writeRule("1/3  demo/broken-project  --  scripts/validate-project.ps1 -Gate Handoff"));
+    out.push(writeRule("1/3  demo/broken-project  --  cli/axiom.mjs validate -Gate Handoff"));
     const brokenExit = invokeGate(broken);
     out.push("");
     out.push(`Exit code: ${brokenExit}`);

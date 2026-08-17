@@ -150,7 +150,7 @@ export function runPmoStatus(repoRoot, projectPath, format) {
     if (!nextAction && nextFinding)
         nextAction = `Automated: resolve blocking diagnostic ${nextFinding.rule_id} before ${checkGate}`;
     if (!nextAction && checkGate)
-        nextAction = `Automated: run validate-project.ps1 at the ${checkGate} gate`;
+        nextAction = `Automated: run cli/axiom.mjs validate at the ${checkGate} gate`;
     const statusResult = {
         schema_version: "1.1",
         project,

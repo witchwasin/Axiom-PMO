@@ -153,7 +153,7 @@
 "artifact": null,
 "item_id": null,
 "field": null,
-"suggestion": "Run scripts/update-source-snapshot.ps1 to regenerate the Source Snapshot table from the files in source/.",
+"suggestion": "Update the Source Snapshot table in PROJECT.md to match the files in source/.",
 "documentation_url": null
 },
 {

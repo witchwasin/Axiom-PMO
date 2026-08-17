@@ -21,17 +21,17 @@
       "exitCode": 1
     },
     "status-text": {
-      "stdout": "Axiom-PMO Project Status: <REPO_ROOT>/examples/STANDARD-FEATURE\n\nExecution Path:  development_handoff (default, not declared)\nGovernance Mode: Standard\nResearch:        off (standard, none) - off\nUI Delivery:     legacy - not_applicable (provider review: missing)\nOpen Changes:    0\nCurrent Gate:    Release\nNext action:     Automated: run validate-project.ps1 at the Release gate\n\nNext required:   No blocking findings at the Release gate.\n",
+      "stdout": "Axiom-PMO Project Status: <REPO_ROOT>/examples/STANDARD-FEATURE\n\nExecution Path:  development_handoff (default, not declared)\nGovernance Mode: Standard\nResearch:        off (standard, none) - off\nUI Delivery:     legacy - not_applicable (provider review: missing)\nOpen Changes:    0\nCurrent Gate:    Release\nNext action:     Automated: run cli/axiom.mjs validate at the Release gate\n\nNext required:   No blocking findings at the Release gate.\n",
       "stderr": "",
       "exitCode": 0
     },
     "status-json": {
-      "stdout": "{\n  \"schema_version\": \"1.1\",\n  \"project\": \"<REPO_ROOT>/examples/STANDARD-FEATURE\",\n  \"execution_path\": \"development_handoff\",\n  \"execution_path_declared\": false,\n  \"governance_mode\": \"Standard\",\n  \"research_mode\": \"off\",\n  \"research_depth\": \"standard\",\n  \"research_provider\": \"none\",\n  \"research_state\": \"off\",\n  \"ui_delivery\": \"legacy\",\n  \"ui_delivery_state\": \"not_applicable\",\n  \"provider_review_state\": \"missing\",\n  \"open_governed_changes\": 0,\n  \"current_gate\": \"Release\",\n  \"checked_gate\": \"Release\",\n  \"next_action\": \"Automated: run validate-project.ps1 at the Release gate\",\n  \"next_required\": null\n}\n",
+      "stdout": "{\n  \"schema_version\": \"1.1\",\n  \"project\": \"<REPO_ROOT>/examples/STANDARD-FEATURE\",\n  \"execution_path\": \"development_handoff\",\n  \"execution_path_declared\": false,\n  \"governance_mode\": \"Standard\",\n  \"research_mode\": \"off\",\n  \"research_depth\": \"standard\",\n  \"research_provider\": \"none\",\n  \"research_state\": \"off\",\n  \"ui_delivery\": \"legacy\",\n  \"ui_delivery_state\": \"not_applicable\",\n  \"provider_review_state\": \"missing\",\n  \"open_governed_changes\": 0,\n  \"current_gate\": \"Release\",\n  \"checked_gate\": \"Release\",\n  \"next_action\": \"Automated: run cli/axiom.mjs validate at the Release gate\",\n  \"next_required\": null\n}\n",
       "stderr": "",
       "exitCode": 0
     },
     "status-text-abspath": {
-      "stdout": "Axiom-PMO Project Status: <REPO_ROOT>/examples/STANDARD-FEATURE\n\nExecution Path:  development_handoff (default, not declared)\nGovernance Mode: Standard\nResearch:        off (standard, none) - off\nUI Delivery:     legacy - not_applicable (provider review: missing)\nOpen Changes:    0\nCurrent Gate:    Release\nNext action:     Automated: run validate-project.ps1 at the Release gate\n\nNext required:   No blocking findings at the Release gate.\n",
+      "stdout": "Axiom-PMO Project Status: <REPO_ROOT>/examples/STANDARD-FEATURE\n\nExecution Path:  development_handoff (default, not declared)\nGovernance Mode: Standard\nResearch:        off (standard, none) - off\nUI Delivery:     legacy - not_applicable (provider review: missing)\nOpen Changes:    0\nCurrent Gate:    Release\nNext action:     Automated: run cli/axiom.mjs validate at the Release gate\n\nNext required:   No blocking findings at the Release gate.\n",
       "stderr": "",
       "exitCode": 0
     },

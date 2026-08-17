@@ -214,10 +214,6 @@
     },
     {
       "level": "PASS",
-      "rule_id": "PERMISSION-002"
-    },
-    {
-      "level": "PASS",
       "rule_id": "PERMISSION-006"
     },
     {

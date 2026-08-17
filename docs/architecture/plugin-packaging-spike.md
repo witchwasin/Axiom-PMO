@@ -21,7 +21,7 @@ adjacent to the one that matters. So the two halves are kept apart throughout.
 | | Question | How it was answered |
 |---|---|---|
 | **A** | What does a Claude Code plugin actually support? | Primary source: a real installed marketplace on this machine |
-| **B** | Does *this framework* survive being installed like one? | Empirically: [`tests/helpers/plugin-install-spike-tests.ps1`](../../tests/helpers/plugin-install-spike-tests.ps1), 15 cases |
+| **B** | Does *this framework* survive being installed like one? | Empirically: [`src/tools/plugin-install-spike.test.ts`](../../src/tools/plugin-install-spike.test.ts), 15 cases |
 
 Neither half answers the other. B does not prove Claude Code will load us; A
 does not prove our PowerShell runs from an install root.
@@ -73,7 +73,7 @@ Stated so a later reader does not mistake inference for evidence.
 
 ## 3. Half B — does the framework survive a plugin install?
 
-[`tests/helpers/plugin-install-spike-tests.ps1`](../../tests/helpers/plugin-install-spike-tests.ps1)
+[`src/tools/plugin-install-spike.test.ts`](../../src/tools/plugin-install-spike.test.ts)
 builds a simulated install and runs the real scripts as real child processes.
 The install root is **not a git repository**, is **not the working directory**,
 and its path deliberately **contains a space** — a real install root

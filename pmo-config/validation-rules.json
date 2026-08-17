@@ -28,7 +28,7 @@
     "SOURCE-002": {
       "severity": "warn",
       "description": "Source Snapshot is missing or does not show sync time.",
-      "suggestion": "Run scripts/update-source-snapshot.ps1 to regenerate the Source Snapshot table from the files in source/."
+      "suggestion": "Update the Source Snapshot table in PROJECT.md to match the files in source/."
     },
     "SOURCE-003": {
       "severity": "fail",

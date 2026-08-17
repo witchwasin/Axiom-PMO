@@ -66,7 +66,7 @@ export function checkPublicHygiene(repoPath: string): HygieneResult {
   ].map((f) => f.trim()).filter(Boolean);
   const uniqueTracked = [...new Set(trackedFiles)];
 
-  const selfExcludedPaths = ["pmo-config/public-hygiene-allowlist.json", "scripts/check-public-hygiene.ps1", "src/tools/check-public-hygiene.ts"];
+  const selfExcludedPaths = ["pmo-config/public-hygiene-allowlist.json", "src/tools/check-public-hygiene.ts"];
 
   const checks: HygieneCheck[] = [
     { id: "OLD-NAME-001", pattern: "PMO-Template-Personal", regex: false, description: "old private product name" },

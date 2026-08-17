@@ -108,14 +108,13 @@ export function newProject(repoRoot, projectCode, mode, executionPath, researchM
         "",
         "Next actions:",
         "1. Add source files under source/MOM, source/REQ, or source/Transcript.",
-        `2. Run scripts/update-source-snapshot.ps1 -ProjectPath ${projectDir} after adding sources.`,
+        `2. Record the source snapshot in PROJECT.md after adding sources.`,
         "3. Replace remaining draft placeholders before Scope/Release gates.",
     ];
     if (includeHandoff) {
         lines.push("4. Fill HANDOFF.md and DESIGN/BUILD-SPEC.md, then record the review:");
-        lines.push(`   scripts/handoff-digest.ps1 -ProjectPath ${projectDir}   (records BOTH digests in HANDOFF-REVIEW.json)`);
-        lines.push(`   scripts/validate-project.ps1 -ProjectPath ${projectDir} -Mode ${mode} -Gate Handoff`);
-        lines.push(`   scripts/assess-handoff.ps1 -ProjectPath ${projectDir} -Mode ${mode}`);
+        lines.push(`   node cli/axiom.mjs validate --project ${projectDir} --mode ${mode} --gate Handoff`);
+        lines.push(`   node cli/axiom.mjs handoff --project ${projectDir} --mode ${mode}`);
     }
     return { output: lines.join("\n") + "\n", exitCode: draftExitCode };
 }

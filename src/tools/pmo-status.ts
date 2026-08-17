@@ -149,7 +149,7 @@ export function runPmoStatus(repoRoot: string, projectPath: string, format: "Tex
   }
   if (!nextAction && openGovernedChanges > 0) nextAction = `Human: resolve ${openGovernedChanges} open governed change(s) before the next gate`;
   if (!nextAction && nextFinding) nextAction = `Automated: resolve blocking diagnostic ${nextFinding.rule_id} before ${checkGate}`;
-  if (!nextAction && checkGate) nextAction = `Automated: run validate-project.ps1 at the ${checkGate} gate`;
+  if (!nextAction && checkGate) nextAction = `Automated: run cli/axiom.mjs validate at the ${checkGate} gate`;
 
   const statusResult: StatusResult = {
     schema_version: "1.1",

@@ -688,12 +688,11 @@ jobs:
   # full profile already runs, each on both the pinned Node (24.18.0) and the
   # package.json engines floor (>=22.0.0 -> the oldest supported LTS of the 22.x
   # line, 22.11.0). Each cell drives the CLI (cli/axiom.mjs) against a clean
-  # example project. `rollbackHost` (Windows cells only) no longer feeds a CLI
-  # toggle -- Phase 8 (DEC-030/031) removed AXIOM_ROLLBACK_PWSH entirely -- it
-  # now only pins which real reference host (powershell.exe 5.1 / pwsh 7) the
-  # NTFS-junction containment probe spawns directly, below. Gated to push-to-main
-  # full runs, the §4 qualifying trigger; PRs use the existing fast/targeted/full
-  # jobs.
+  # example project. Phase 8 (DEC-030/031) removed AXIOM_ROLLBACK_PWSH entirely
+  # and Phase 9 deleted the PowerShell reference, so the Windows cells now exist
+  # only for the NTFS-junction containment probe (below) and the host-matrix
+  # legs. Gated to push-to-main full runs, the §4 qualifying trigger; PRs use
+  # the existing fast/targeted/full jobs.
   canary-matrix:
     needs: determine-profile
     if: needs.determine-profile.outputs.profile == 'full' && github.event_name == 'push'
@@ -706,35 +705,27 @@ jobs:
           - name: windows-ps51
             runsOn: windows-2025
             node: '24.18.0'
-            rollbackHost: powershell.exe
           - name: windows-ps51-node22
             runsOn: windows-2025
             node: '22.11.0'
-            rollbackHost: powershell.exe
           - name: windows-ps7
             runsOn: windows-2025
             node: '24.18.0'
-            rollbackHost: pwsh
           - name: windows-ps7-node22
             runsOn: windows-2025
             node: '22.11.0'
-            rollbackHost: pwsh
           - name: linux
             runsOn: ubuntu-24.04
             node: '24.18.0'
-            rollbackHost: ''
           - name: linux-node22
             runsOn: ubuntu-24.04
             node: '22.11.0'
-            rollbackHost: ''
           - name: macos
             runsOn: macos-15
             node: '24.18.0'
-            rollbackHost: ''
           - name: macos-node22
             runsOn: macos-15
             node: '22.11.0'
-            rollbackHost: ''
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -748,12 +739,7 @@ jobs:
           package-manager-cache: false
 
       # The canary's actual measure: the real CLI binary must validate a clean
-      # project with zero FAIL rows and exit 0. (Pre-Phase-8 this step also ran
-      # a second time per Windows cell with AXIOM_ROLLBACK_PWSH=1 to exercise
-      # the rollback path against a real reference host; that toggle no longer
-      # exists post-cutover (DEC-030/031), so there is nothing left to give
-      # that second run a distinct meaning from this one -- removed rather than
-      # kept as a pointless duplicate.)
+      # project with zero FAIL rows and exit 0.
       - name: Canary CLI exercise (${{ matrix.name }})
         shell: bash
         run: |
@@ -777,12 +763,10 @@ jobs:
       # CR-017 containment (Fixed_plan/phase8/CR-017-review-material.md §5): the
       # NTFS-junction case can only be exercised on a real Windows host. Windows
       # cells create a real junction and prove SETUP-003 refuses it the same way
-      # it refuses a symlink -- on the in-process engine and the PS reference --
-      # and that the pointed-at file stays untouched. Non-Windows cells skip
-      # inside the probe itself.
+      # it refuses a symlink, and that the pointed-at file stays untouched.
+      # Phase 9: with the PS reference deleted this is a pure TS-side assertion
+      # (no AXIOM_PWSH consumed). Non-Windows cells skip inside the probe itself.
       - name: Canary containment exercise (${{ matrix.name }}), NTFS junction
         if: runner.os == 'Windows'
         shell: bash
-        env:
-          AXIOM_PWSH: ${{ matrix.rollbackHost }}
         run: node dist/probe/junction-probe.js

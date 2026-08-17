@@ -49,11 +49,13 @@ export function runPmoDoctor(repo, skillRootOverride = "", templateRootOverride 
         else
             add("FAIL", `Missing ${rel}`, "DOCTOR-STRUCT");
     };
+    // Phase 9: the PowerShell reference was deleted; the structure audit now
+    // checks the Node implementation that replaced it.
     for (const f of ["AGENTS.md", "CLAUDE.md", "VERSION", "CHANGELOG.md", "README.md", "TESTING.md", "SECURITY.md", "MIGRATION.md", "CONTEXT-ROUTER.md",
         "pmo-config/context-map.json", "pmo-config/policy.json", "pmo-config/skill-manifest.json", "pmo-config/validation-rules.json",
         "pmo-config/artifact-policy.json", "pmo-config/reference-types.json", "pmo-config/orchestration-policy.json",
-        "scripts/validate-project.ps1", "scripts/pmo-doctor.ps1", "scripts/run-validation-tests.ps1", "scripts/run-all-checks.ps1",
-        "scripts/new-project.ps1", "scripts/update-source-snapshot.ps1", "scripts/measure-context.ps1"]) {
+        "cli/axiom.mjs", "src/probe/validate-chain.ts", "src/tools/run-all-checks.ts", "src/tools/validation-fixtures.ts",
+        "src/tools/new-project.ts", "src/tools/update-source-snapshot.ts", "src/tools/measure-context.ts"]) {
         requireFile(f);
     }
     for (const name of ["PROJECT.md", "DELIVERY.md", "RELEASE.md", "RAID-log.md", "decision-log.md", "RTM.json", "WIREFRAME.md"]) {
@@ -205,21 +207,33 @@ export function runPmoDoctor(repo, skillRootOverride = "", templateRootOverride 
         add("PASS", `All pmo-config/*.json carry a supported schema_version (${supportedSchemaVersion})`, "DOCTOR-006");
     else
         add("FAIL", `Config schema_version problems: ${schemaVersionProblems.join("; ")}`, "DOCTOR-006");
-    // DOCTOR-007 rule catalog reconciliation
-    const emitterFiles = [join(repo, "scripts/validate-project.ps1"), join(repo, "scripts/pmo-doctor.ps1")];
-    const libDir = join(repo, "scripts/lib");
-    if (existsSync(libDir) && statSync(libDir).isDirectory()) {
-        for (const f of readdirSync(libDir)) {
-            if (f.endsWith(".ps1"))
-                emitterFiles.push(join(libDir, f));
+    // DOCTOR-007 rule catalog reconciliation (Phase 9: scans the Node
+    // validators that replaced the deleted scripts, same contract).
+    const walkTs = (dir) => {
+        const out = [];
+        for (const entry of readdirSync(dir)) {
+            const full = join(dir, entry);
+            if (statSync(full).isDirectory())
+                out.push(...walkTs(full));
+            else if (entry.endsWith(".ts") && !entry.endsWith(".test.ts"))
+                out.push(full);
         }
-    }
+        return out;
+    };
+    const emitterFiles = [];
+    const srcDir = join(repo, "src");
+    if (existsSync(srcDir) && statSync(srcDir).isDirectory())
+        emitterFiles.push(...walkTs(srcDir));
     const emittedRuleIds = new Set();
     for (const file of emitterFiles) {
         if (!existsSync(file))
             continue;
         for (const line of readFileSync(file, "utf8").split(/\r?\n/)) {
-            if (!/Add-Result|Test-ReviewRow|\$RuleId\s*=/.test(line))
+            // Emission forms used by the Node validators: addResult(...),
+            // add("...", "...", ruleIdLiteral) (pmo-doctor), .add(...)
+            // accumulators, testReviewRow(..., ruleIdLiteral, ...), ruleId:/
+            // rule_id: result objects, and ruleId = quoted-default assignments.
+            if (!/addResult|\badd\(|\.add\(|testReviewRow|ruleId:|rule_id:|ruleId\s*=/.test(line))
                 continue;
             for (const m of line.matchAll(/"([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)"/g))
                 emittedRuleIds.add(m[1]);
@@ -229,7 +243,7 @@ export function runPmoDoctor(repo, skillRootOverride = "", templateRootOverride 
     const missingFromCatalog = [...emittedRuleIds].filter((id) => !catalogRuleIds.includes(id)).sort();
     const deadCatalogEntries = catalogRuleIds.filter((id) => !emittedRuleIds.has(id)).sort();
     if (missingFromCatalog.length === 0 && deadCatalogEntries.length === 0)
-        add("PASS", "Validation rule catalog matches the rule ids emitted by the scripts", "DOCTOR-007");
+        add("PASS", "Validation rule catalog matches the rule ids emitted by the Node validators", "DOCTOR-007");
     else {
         if (missingFromCatalog.length > 0)
             add("FAIL", `Rule ids emitted but missing from validation-rules.json: ${missingFromCatalog.join(", ")}`, "DOCTOR-007");
@@ -332,14 +346,12 @@ export function runPmoDoctor(repo, skillRootOverride = "", templateRootOverride 
             add("PASS", ".claude/settings.json disables bypass permissions mode", "PERMISSION-005");
         else
             add("FAIL", ".claude/settings.json should disable bypass permissions mode", "PERMISSION-005");
-        if (/scripts\/pmo-doctor\.ps1/.test(allowText))
-            add("PASS", ".claude/settings.json allows the framework doctor command", "PERMISSION-002");
+        // Phase 9: the framework CLI (node cli/axiom.mjs) is the single command
+        // the reference scripts used to be allowed individually.
+        if (/node cli\/axiom\.mjs/.test(allowText))
+            add("PASS", ".claude/settings.json allows the axiom CLI", "PERMISSION-002");
         else
-            add("FAIL", ".claude/settings.json does not allow scripts/pmo-doctor.ps1", "PERMISSION-002");
-        if (/scripts\/run-validation-tests\.ps1/.test(allowText))
-            add("PASS", ".claude/settings.json allows the validation fixture test command", "PERMISSION-002");
-        else
-            add("FAIL", ".claude/settings.json does not allow scripts/run-validation-tests.ps1", "PERMISSION-002");
+            add("FAIL", ".claude/settings.json does not allow node cli/axiom.mjs", "PERMISSION-002");
         if (/\bWebSearch\b/.test(allowText))
             add("FAIL", ".claude/settings.json allows WebSearch without approval", "PERMISSION-006");
         else if (/\bWebSearch\b/.test(askText))

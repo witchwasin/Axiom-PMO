@@ -127,9 +127,9 @@ Review covered all of these plus the three remediation commits that followed
 
 If you read only three files, read these, in this order:
 
-1. **[`scripts/lib/marker-block.ps1`](../../scripts/lib/marker-block.ps1)** —
+1. **[`src/marker/marker-block.ts`](../../src/marker/marker-block.ts)** —
    the only code in the milestone that writes to a file the user owns.
-2. **[`scripts/hook-scope-advisory.ps1`](../../scripts/hook-scope-advisory.ps1)** —
+2. **[`src/tools/hook-scope-advisory.ts`](../../src/tools/hook-scope-advisory.ts)** —
    the only code that runs inside the user's editing loop.
 3. **[`docs/architecture/m6-threat-model.md`](../architecture/m6-threat-model.md)** —
    seventeen threats with mitigation, evidence, and residual risk. Four were
@@ -141,12 +141,12 @@ Ranked by what they can damage.
 
 | File | Lines | Why it matters |
 |---|---:|---|
-| [`scripts/lib/marker-block.ps1`](../../scripts/lib/marker-block.ps1) | 371 | Reads, edits and removes content in the user's `AGENTS.md` |
-| [`scripts/setup-claude-integration.ps1`](../../scripts/setup-claude-integration.ps1) | 304 | Path containment, symlink refusal, backup, orchestration |
-| [`scripts/hook-scope-advisory.ps1`](../../scripts/hook-scope-advisory.ps1) | 163 | Runs on every Write/Edit when enabled; parses untrusted payloads |
+| [`src/marker/marker-block.ts`](../../src/marker/marker-block.ts) | 371 | Reads, edits and removes content in the user's `AGENTS.md` |
+| [`src/tools/setup-claude-integration.ts`](../../src/tools/setup-claude-integration.ts) | 304 | Path containment, symlink refusal, backup, orchestration |
+| [`src/tools/hook-scope-advisory.ts`](../../src/tools/hook-scope-advisory.ts) | 163 | Runs on every Write/Edit when enabled; parses untrusted payloads |
 | [`hooks/scope-advisory.sh`](../../hooks/scope-advisory.sh) | 41 | Shell, runs on every Write/Edit even when disabled |
-| [`scripts/lib/framework-checkout.ps1`](../../scripts/lib/framework-checkout.ps1) | 86 | Decides maintainer-vs-user tooling |
-| [`scripts/build-plugin-package.ps1`](../../scripts/build-plugin-package.ps1) | 117 | Generates packaged content; a drift here ships wrong guidance |
+| [`src/core/framework-checkout.ts`](../../src/core/framework-checkout.ts) | 86 | Decides maintainer-vs-user tooling |
+| [`src/tools/build-plugin-package.ts`](../../src/tools/build-plugin-package.ts) | 117 | Generates packaged content; a drift here ships wrong guidance |
 
 ### Specific things worth your eyes
 
@@ -212,11 +212,11 @@ Ranked by what they can damage.
 
 | Suite | Cases | Covers |
 |---|---:|---|
-| [`plugin-install-spike-tests.ps1`](../../tests/helpers/plugin-install-spike-tests.ps1) | 17 | Framework runs from a non-checkout, non-cwd, read-only install root |
-| [`plugin-package-tests.ps1`](../../tests/helpers/plugin-package-tests.ps1) | 38 | Manifests, mirror completeness, four drift directions, `FRAMEWORK-001`, **canonical-body digest registry** |
-| [`setup-integration-tests.ps1`](../../tests/helpers/setup-integration-tests.ps1) | 122 | Malformed markers, hand edits, CRLF, BOM, symlink, read-only, traversal, backup collision, forged blocks, **correctly forged digest**, **byte preservation across ten file shapes** |
-| [`clean-room-tests.ps1`](../../tests/helpers/clean-room-tests.ps1) | 61 | Ten repository shapes, fingerprinted; governance assertions |
-| [`hook-advisory-tests.ps1`](../../tests/helpers/hook-advisory-tests.ps1) | 46 | Off by default, no decision, never breaks a tool call |
+| [`src/tools/plugin-install-spike.test.ts`](../../src/tools/plugin-install-spike.test.ts) | 17 | Framework runs from a non-checkout, non-cwd, read-only install root |
+| [`src/tools/plugin-package.test.ts`](../../src/tools/plugin-package.test.ts) | 38 | Manifests, mirror completeness, four drift directions, `FRAMEWORK-001`, **canonical-body digest registry** |
+| [`src/tools/setup-integration.test.ts`](../../src/tools/setup-integration.test.ts) | 122 | Malformed markers, hand edits, CRLF, BOM, symlink, read-only, traversal, backup collision, forged blocks, **correctly forged digest**, **byte preservation across ten file shapes** |
+| [`src/tools/clean-room.test.ts`](../../src/tools/clean-room.test.ts) | 61 | Ten repository shapes, fingerprinted; governance assertions |
+| [`src/tools/hook-scope-advisory.test.ts`](../../src/tools/hook-scope-advisory.test.ts) | 46 | Off by default, no decision, never breaks a tool call |
 | `cli-tests.mjs` | 50 | Includes 8 new `setup` cases |
 
 CI found two Windows defects the maintainer's machine could not: the advisory

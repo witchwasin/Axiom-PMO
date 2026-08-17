@@ -23,10 +23,10 @@ test("fast: docs and top-level markdown", () => {
 test("targeted: known code areas", () => {
   assertProfile(["cli/axiom.mjs"], "targeted", "cli", "linux");
   assertProfile(["tests/helpers/cli-tests.mjs"], "targeted", "cli", "linux");
-  assertProfile(["scripts/pmo-doctor.ps1"], "targeted", "doctor", "windows-ps51,windows-ps7");
+  assertProfile(["hooks/scope-advisory.sh"], "targeted", "plugin-drift", "linux");
   assertProfile(["pmo-config/policy.json"], "targeted", "config-mutation", "windows-ps51,windows-ps7");
   assertProfile(["templates/PROJECT.md"], "targeted", "config-mutation", "windows-ps51,windows-ps7");
-  assertProfile(["tests/helpers/line-ending-tests.ps1"], "targeted", "validation-fixtures", "windows-ps51,windows-ps7");
+  assertProfile(["tests/fixtures/invalid-broken-link/PROJECT.md"], "targeted", "validation-fixtures", "windows-ps51,windows-ps7");
   assertProfile(["examples/STANDARD-FEATURE/PROJECT.md"], "targeted", "validation-fixtures", "linux");
   assertProfile([".claude/skills/pmo-governance/SKILL.md"], "targeted", "plugin-drift", "linux");
   assertProfile(["VERSION"], "targeted", "", "linux");
@@ -36,11 +36,13 @@ test("full: high-risk and runtime surfaces", () => {
   const full = "windows-ps51,windows-ps7,linux,macos";
   assertProfile([".github/workflows/pmo-checks.yml"], "full", "", full);
   assertProfile(["action.yml"], "full", "", full);
-  assertProfile(["scripts/lib/golden-normalizer.ps1"], "full", "", full);
-  assertProfile(["scripts/run-all-checks.ps1"], "full", "", full);
-  assertProfile(["scripts/validate-project.ps1"], "full", "", full);
-  assertProfile(["scripts/ci-profile.ps1"], "full", "", full);
-  assertProfile(["scripts/run-ci-suite.ps1"], "full", "", full);
+  // Phase 9: the PowerShell reference is deleted; the ports live under src/
+  // and dist/ and classify as full through the interpreter branch below.
+  assertProfile(["src/output/canonical-normalizer.ts"], "full", "", full);
+  assertProfile(["src/tools/run-all-checks.ts"], "full", "", full);
+  assertProfile(["src/exec/execution-contract-validator.ts"], "full", "", full);
+  assertProfile(["src/tools/ci-profile.ts"], "full", "", full);
+  assertProfile(["src/tools/run-ci-suite.ts"], "full", "", full);
   // Node interpreter surfaces (CR-010)
   assertProfile(["src/core/context.ts"], "full", "", full);
   assertProfile(["dist/core/context.js"], "full", "", full);
@@ -48,11 +50,11 @@ test("full: high-risk and runtime surfaces", () => {
 });
 
 test("union: highest risk wins", () => {
-  assertProfile(["docs/a.md", "scripts/lib/x.ps1"], "full", "", "windows-ps51,windows-ps7,linux,macos");
-  const mixed = resolveCiProfile(["cli/axiom.mjs", "scripts/pmo-doctor.ps1"]);
-  assert.equal(mixed.profile, "targeted");
-  assert.equal(mixed.suite, "cli,doctor");
-  assert.equal(mixed.hosts, "linux,windows-ps51,windows-ps7");
+  assertProfile(["docs/a.md", "src/output/canonical-normalizer.ts"], "full", "", "windows-ps51,windows-ps7,linux,macos");
+  const mixed = resolveCiProfile(["cli/axiom.mjs", "src/doctor/pmo-doctor.ts"]);
+  assert.equal(mixed.profile, "full");
+  assert.equal(mixed.suite, "");
+  assert.equal(mixed.hosts, "windows-ps51,windows-ps7,linux,macos");
 });
 
 test("run-ci-suite whitelist maps known and rejects unknown", () => {

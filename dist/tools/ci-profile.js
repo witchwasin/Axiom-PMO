@@ -29,9 +29,8 @@ export function resolveCiProfile(paths) {
         if (!p)
             continue;
         if (p.startsWith(".github/workflows/") || p === "action.yml" ||
-            p.startsWith("scripts/lib/") ||
-            p === "scripts/run-all-checks.ps1" || p === "scripts/validate-project.ps1" ||
-            p === "scripts/ci-profile.ps1" || p === "scripts/run-ci-suite.ps1" ||
+            // Phase 9: the PowerShell reference is gone; its ports live under src/
+            // and dist/, already covered by the startsWith branches below.
             p.startsWith("src/") || p.startsWith("dist/") ||
             p === "package.json" || p === "package-lock.json" || p.startsWith("tsconfig")) {
             if (level < 2)
@@ -57,12 +56,12 @@ export function resolveCiProfile(paths) {
             continue;
         }
         if (p.startsWith("scripts/")) {
-            if (level < 1)
-                level = 1;
-            addUnique(suites, "doctor");
-            addUnique(hosts, "windows-ps51");
-            addUnique(hosts, "windows-ps7");
-            addUnique(reasons, `${p} -> scripts@windows`);
+            // Phase 9: the PowerShell reference is gone; what remains under scripts/
+            // is CI tooling (check.sh/check.cmd wrappers, canary-baseline.mjs,
+            // github-action/run-action.mjs) -- control plane, full profile.
+            if (level < 2)
+                level = 2;
+            addUnique(reasons, `${p} -> high-risk (CI control plane / runtime)`);
             continue;
         }
         if (p.startsWith("tests/")) {
