@@ -6,18 +6,18 @@
 // orchestrators/tools in src/tools/ that were ported in Phase 5 but never
 // differentially exercised against their own PowerShell entrypoint.
 //
-// Same discipline as differential-probe: direct reference (pwsh -File the
-// real script) vs direct candidate (the ported TS function, in-process) on
-// identical fixtures. Never both sides through one dispatcher. Outputs are
-// compared canonically (golden normalizer), or as parsed JSON when the two
-// sides legitimately emit JSON (key order is not a contract for a JSON
+// Same discipline as differential-probe: direct candidate (the ported TS
+// function, in-process) compared against a golden fixture frozen from the
+// direct reference (pwsh -File the real script) on identical fixtures
+// (Phase 9: the reference no longer exists to compare against live). Outputs
+// are compared canonically (golden normalizer), or as parsed JSON when the
+// two sides legitimately emit JSON (key order is not a contract for a JSON
 // consumer), or byte-for-byte where the reference itself is deterministic.
-import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync, rmSync, mkdtempSync, cpSync, existsSync, readdirSync, statSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolvePwsh } from "./pwsh-resolver.js";
 import { getCanonicalGoldenText, getGoldenDiffReport } from "../output/canonical-normalizer.js";
 import { runPmoStatus } from "../tools/pmo-status.js";
 import { runAssessHandoff } from "../tools/assess-handoff.js";
@@ -33,7 +33,47 @@ import { preparePublicRelease } from "../tools/prepare-public-release.js";
 import { designProviderDigest, handoffDigest, visualProofDigest } from "../tools/digest-tools.js";
 import { updateSourceSnapshot } from "../tools/update-source-snapshot.js";
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const PWSH = resolvePwsh();
+const FIXTURE = resolve(REPO_ROOT, "tests/golden/probes/tool-probe.json");
+// The fixture was captured on the machine that ran the capture; any
+// REPO_ROOT-rooted absolute path it embeds (validate-project.ps1 and
+// friends print the resolved project path in their own banners) was baked
+// in as a "<REPO_ROOT>" token rather than that machine's literal checkout
+// path -- otherwise this probe would only pass on the exact machine that
+// captured it, and would leak that machine's local path into a committed
+// file besides (caught by this repo's own check-public-hygiene
+// LOCAL-PATH-002 rule). Substituted back to this machine's real REPO_ROOT
+// at load time. A handful of run-ci-suite cases also carry a "<LOCAL_PATH>"
+// token in place of the capture machine's resolved pwsh host executable;
+// that token is never substituted back because the probe's own comparison
+// for those cases already discards the first (host executable) token
+// before comparing, so what it says has never mattered.
+const REPO_TOKEN = "<REPO_ROOT>";
+function detokenize(s) {
+    return s.split(REPO_TOKEN).join(REPO_ROOT);
+}
+const rawGolden = JSON.parse(readFileSync(FIXTURE, "utf8"));
+const golden = {
+    cases: Object.fromEntries(Object.entries(rawGolden.cases).map(([k, v]) => [k, {
+            ...v,
+            stdout: v.stdout !== undefined ? detokenize(v.stdout) : undefined,
+            stdout_normalized: v.stdout_normalized !== undefined ? detokenize(v.stdout_normalized) : undefined,
+        }])),
+};
+function goldenCase(key) {
+    const c = golden.cases[key];
+    if (!c || c.stdout === undefined)
+        throw new Error(`no golden fixture case: ${key}`);
+    return { stdout: c.stdout, stderr: "", exitCode: c.exitCode ?? 1 };
+}
+// For cases whose comparison text was normalized (temp-dir path replaced with
+// <TREE>) at capture time -- the candidate's own output must be normalized
+// the same way before comparing against these.
+function goldenNormalized(key) {
+    const c = golden.cases[key];
+    if (!c || c.stdout_normalized === undefined)
+        throw new Error(`no golden normalized case: ${key}`);
+    return { stdout_normalized: c.stdout_normalized, exitCode: c.exitCode ?? 1 };
+}
 let pass = 0;
 let fail = 0;
 function check(name, ok, detail = "") {
@@ -46,17 +86,6 @@ function check(name, ok, detail = "") {
         console.log(`[FAIL] ${name}${detail ? " -- " + detail : ""}`);
     }
 }
-function runPs(script, args, extraEnv = {}) {
-    const r = spawnSync(PWSH, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(REPO_ROOT, script), ...args], {
-        encoding: "utf8",
-        env: { ...process.env, AXIOM_PWSH: PWSH, ...extraEnv },
-    });
-    return { stdout: r.stdout ?? "", stderr: r.stderr ?? "", exitCode: r.status ?? 1 };
-}
-// pwsh 7.6 paints Format-Table headers with ANSI even when stdout is
-// redirected. The colour is presentation, not content; strip it on the
-// reference side only.
-const stripAnsi = (s) => s.replace(/\x1b\[[0-9;]*m/g, "");
 function deepSortKeys(v) {
     if (Array.isArray(v))
         return v.map(deepSortKeys);
@@ -94,27 +123,14 @@ function compareOutputs(name, ref, cand) {
     // the reference's own documented alternative. Single-path cases use the
     // named parameter directly.
     const ciCases = [
-        { label: "mixed", paths: ["src/core/context.ts", "docs/foo.md", "tests/a.test.ts"] },
-        { label: "high-risk validator", paths: ["scripts/validate-project.ps1"] },
-        { label: "empty (default fast)", paths: [] },
-        { label: "cli + example", paths: ["cli/axiom.mjs", "examples/x"] },
-        { label: "windows backslash path", paths: ["src\\core\\context.ts"] },
+        { label: "mixed", key: "ci-mixed", paths: ["src/core/context.ts", "docs/foo.md", "tests/a.test.ts"] },
+        { label: "high-risk validator", key: "ci-high-risk-validator", paths: ["scripts/validate-project.ps1"] },
+        { label: "empty (default fast)", key: "ci-empty", paths: [] },
+        { label: "cli + example", key: "ci-cli-example", paths: ["cli/axiom.mjs", "examples/x"] },
+        { label: "windows backslash path", key: "ci-windows-backslash", paths: ["src\\core\\context.ts"] },
     ];
     for (const c of ciCases) {
-        let ref;
-        if (c.paths.length === 0) {
-            ref = runPs("scripts/ci-profile.ps1", []);
-        }
-        else if (c.paths.length === 1) {
-            ref = runPs("scripts/ci-profile.ps1", ["-ChangedPaths", c.paths[0]]);
-        }
-        else {
-            const dir = mkdtempSync(join(tmpdir(), "tool-probe-ci-"));
-            const pf = join(dir, "paths.txt");
-            writeFileSync(pf, c.paths.join("\n") + "\n");
-            ref = runPs("scripts/ci-profile.ps1", ["-ChangedPathsPath", pf]);
-            rmSync(dir, { recursive: true, force: true });
-        }
+        const ref = goldenCase(c.key);
         const cand = resolveCiProfile(c.paths);
         const candJson = JSON.stringify(cand);
         const refJson = jsonCanonical(ref.stdout);
@@ -127,12 +143,12 @@ function compareOutputs(name, ref, cand) {
 // ---------------------------------------------------------------------------
 {
     const fixtures = [
-        { label: "standard", path: join(REPO_ROOT, "examples/STANDARD-FEATURE") },
-        { label: "strict-escalation", path: join(REPO_ROOT, "examples/STRICT-HIGH-RISK") },
-        { label: "handoff-demo", path: join(REPO_ROOT, "examples/HANDOFF-DEMO") },
+        { label: "standard", key: "status-standard-json", path: join(REPO_ROOT, "examples/STANDARD-FEATURE") },
+        { label: "strict-escalation", key: "status-strict-escalation-json", path: join(REPO_ROOT, "examples/STRICT-HIGH-RISK") },
+        { label: "handoff-demo", key: "status-handoff-demo-json", path: join(REPO_ROOT, "examples/HANDOFF-DEMO") },
     ];
     for (const f of fixtures) {
-        const ref = runPs("scripts/pmo-status.ps1", ["-ProjectPath", f.path, "-Format", "Json"]);
+        const ref = goldenCase(f.key);
         const cand = runPmoStatus(REPO_ROOT, f.path, "Json");
         const refCanon = jsonCanonical(ref.stdout);
         const candCanon = jsonCanonical(cand.output);
@@ -143,7 +159,7 @@ function compareOutputs(name, ref, cand) {
     // sides print the same absolute fixture path).
     {
         const path = join(REPO_ROOT, "examples/HANDOFF-DEMO");
-        const ref = runPs("scripts/pmo-status.ps1", ["-ProjectPath", path]);
+        const ref = goldenCase("status-handoff-demo-text");
         const cand = runPmoStatus(REPO_ROOT, path, "Text");
         const refCanon = getCanonicalGoldenText(ref.stdout);
         const candCanon = getCanonicalGoldenText(cand.output);
@@ -155,12 +171,12 @@ function compareOutputs(name, ref, cand) {
     {
         const dir = mkdtempSync(join(tmpdir(), "tool-probe-status-"));
         try {
-            const ref = runPs("scripts/pmo-status.ps1", ["-ProjectPath", dir, "-Format", "Json"]);
+            const ref = goldenNormalized("status-empty-dir-json");
             const cand = runPmoStatus(REPO_ROOT, dir, "Json");
-            const refCanon = jsonCanonical(ref.stdout);
-            const candCanon = jsonCanonical(cand.output);
+            const refCanon = jsonCanonical(ref.stdout_normalized);
+            const candCanon = jsonCanonical(cand.output.replaceAll(dir, "<TREE>"));
             check("pmo-status empty-dir json: equal", refCanon === candCanon && refCanon !== null, refCanon === candCanon ? "" : `ref=${refCanon} cand=${candCanon}`);
-            check("pmo-status empty-dir json: exit", (ref.exitCode ?? 1) === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
+            check("pmo-status empty-dir json: exit", ref.exitCode === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
         }
         finally {
             rmSync(dir, { recursive: true, force: true });
@@ -172,12 +188,12 @@ function compareOutputs(name, ref, cand) {
 // ---------------------------------------------------------------------------
 {
     const cases = [
-        { label: "handoff-demo json", path: join(REPO_ROOT, "examples/HANDOFF-DEMO"), format: "Json" },
-        { label: "valid-handoff-strict json", path: join(REPO_ROOT, "tests/fixtures/valid-handoff-strict"), format: "Json" },
-        { label: "invalid-handoff-missing text", path: join(REPO_ROOT, "tests/fixtures/invalid-handoff-missing"), format: "Text" },
+        { label: "handoff-demo json", key: "assess-handoff-demo-json", path: join(REPO_ROOT, "examples/HANDOFF-DEMO"), format: "Json" },
+        { label: "valid-handoff-strict json", key: "assess-valid-handoff-strict-json", path: join(REPO_ROOT, "tests/fixtures/valid-handoff-strict"), format: "Json" },
+        { label: "invalid-handoff-missing text", key: "assess-invalid-handoff-missing-text", path: join(REPO_ROOT, "tests/fixtures/invalid-handoff-missing"), format: "Text" },
     ];
     for (const c of cases) {
-        const ref = runPs("scripts/assess-handoff.ps1", ["-ProjectPath", c.path, "-Format", c.format]);
+        const ref = goldenCase(c.key);
         const cand = runAssessHandoff(REPO_ROOT, c.path, "Standard", c.format);
         if (c.format === "Json") {
             const refCanon = jsonCanonical(ref.stdout);
@@ -198,24 +214,24 @@ function compareOutputs(name, ref, cand) {
 {
     const vp = join(REPO_ROOT, "examples/DESIGN-SYSTEM-DEMO");
     {
-        const ref = runPs("scripts/visual-proof-digest.ps1", ["-ProjectPath", vp]);
+        const ref = goldenCase("visual-proof-digest");
         const cand = visualProofDigest(REPO_ROOT, vp);
         check("visual-proof-digest: output", getCanonicalGoldenText(ref.stdout) === getCanonicalGoldenText(cand.output), getGoldenDiffReport(getCanonicalGoldenText(ref.stdout), getCanonicalGoldenText(cand.output)).join(" | "));
-        check("visual-proof-digest: exit", (ref.exitCode ?? 1) === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
+        check("visual-proof-digest: exit", ref.exitCode === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
     }
     const hd = join(REPO_ROOT, "examples/HANDOFF-DEMO");
     for (const which of ["Both", "Source", "ReviewInputs"]) {
-        const ref = runPs("scripts/handoff-digest.ps1", ["-ProjectPath", hd, "-Which", which]);
+        const ref = goldenCase(`handoff-digest-${which}`);
         const cand = handoffDigest(REPO_ROOT, hd, which);
         check(`handoff-digest ${which}: output`, getCanonicalGoldenText(ref.stdout) === getCanonicalGoldenText(cand.output), getGoldenDiffReport(getCanonicalGoldenText(ref.stdout), getCanonicalGoldenText(cand.output)).join(" | "));
-        check(`handoff-digest ${which}: exit`, (ref.exitCode ?? 1) === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
+        check(`handoff-digest ${which}: exit`, ref.exitCode === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
     }
     const dp = join(REPO_ROOT, "examples/OPTIONAL-TRACKS");
     {
-        const ref = runPs("scripts/design-provider-digest.ps1", ["-ProjectPath", dp]);
+        const ref = goldenCase("design-provider-digest");
         const cand = designProviderDigest(REPO_ROOT, dp);
         check("design-provider-digest: output", getCanonicalGoldenText(ref.stdout) === getCanonicalGoldenText(cand.output), getGoldenDiffReport(getCanonicalGoldenText(ref.stdout), getCanonicalGoldenText(cand.output)).join(" | "));
-        check("design-provider-digest: exit", (ref.exitCode ?? 1) === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
+        check("design-provider-digest: exit", ref.exitCode === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
     }
 }
 // ---------------------------------------------------------------------------
@@ -225,17 +241,15 @@ function compareOutputs(name, ref, cand) {
 {
     const defaultFiles = ["AGENTS.md", "CLAUDE.md", "CONTEXT-ROUTER.md", "pmo-config/context-map.json", "pmo-config/policy.json"];
     {
-        const ref = runPs("scripts/measure-context.ps1", []);
+        const ref = goldenCase("measure-context-default");
         const cand = formatContextTable(measureContext(REPO_ROOT, defaultFiles));
-        const refClean = stripAnsi(ref.stdout);
-        check("measure-context default files: output", refClean === cand, getGoldenDiffReport(getCanonicalGoldenText(refClean), getCanonicalGoldenText(cand)).join(" | "));
-        check("measure-context default files: exit", (ref.exitCode ?? 1) === 0, `exit ${ref.exitCode}`);
+        check("measure-context default files: output", ref.stdout === cand, getGoldenDiffReport(getCanonicalGoldenText(ref.stdout), getCanonicalGoldenText(cand)).join(" | "));
+        check("measure-context default files: exit", ref.exitCode === 0, `exit ${ref.exitCode}`);
     }
     {
-        const ref = runPs("scripts/measure-context.ps1", ["-Files", "AGENTS.md"]);
+        const ref = goldenCase("measure-context-single");
         const cand = formatContextTable(measureContext(REPO_ROOT, ["AGENTS.md"]));
-        const refClean = stripAnsi(ref.stdout);
-        check("measure-context single file: output", refClean === cand, getGoldenDiffReport(getCanonicalGoldenText(refClean), getCanonicalGoldenText(cand)).join(" | "));
+        check("measure-context single file: output", ref.stdout === cand, getGoldenDiffReport(getCanonicalGoldenText(ref.stdout), getCanonicalGoldenText(cand)).join(" | "));
     }
 }
 // ---------------------------------------------------------------------------
@@ -260,12 +274,11 @@ function advisoryProject(optIn) {
 {
     const { dir, payload } = advisoryProject(true);
     try {
-        const payloadPath = join(dir, "payload.json");
-        writeFileSync(payloadPath, payload);
-        const ref = runPs("scripts/hook-scope-advisory.ps1", ["-ProjectPath", dir, "-PayloadPath", payloadPath]);
+        const ref = goldenNormalized("hook-advisory-out-of-scope");
         const cand = hookScopeAdvisory(dir, payload);
-        check("hook-advisory out-of-scope: output", getCanonicalGoldenText(ref.stdout) === getCanonicalGoldenText(cand.output), getGoldenDiffReport(getCanonicalGoldenText(ref.stdout), getCanonicalGoldenText(cand.output)).join(" | "));
-        check("hook-advisory out-of-scope: exit", (ref.exitCode ?? 1) === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
+        const candN = cand.output.replaceAll(dir, "<TREE>");
+        check("hook-advisory out-of-scope: output", getCanonicalGoldenText(ref.stdout_normalized) === getCanonicalGoldenText(candN), getGoldenDiffReport(getCanonicalGoldenText(ref.stdout_normalized), getCanonicalGoldenText(candN)).join(" | "));
+        check("hook-advisory out-of-scope: exit", ref.exitCode === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
     }
     finally {
         rmSync(dir, { recursive: true, force: true });
@@ -283,11 +296,9 @@ function advisoryProject(optIn) {
         mkdirSync(join(dir, ".axiom"), { recursive: true });
         writeFileSync(join(dir, ".axiom/hooks.json"), JSON.stringify({ scope_advisory: true }));
         const payload = JSON.stringify({ cwd: dir, tool_input: { file_path: "src/payments/charge.ts" } });
-        const payloadPath = join(dir, "payload.json");
-        writeFileSync(payloadPath, payload);
-        const ref = runPs("scripts/hook-scope-advisory.ps1", ["-ProjectPath", dir, "-PayloadPath", payloadPath]);
+        const ref = golden.cases["hook-advisory-in-scope-silent"];
         const cand = hookScopeAdvisory(dir, payload);
-        check("hook-advisory in-scope: silent on both sides", ref.stdout.trim() === "" && cand.output === "", `ref=[${ref.stdout}] cand=[${cand.output}]`);
+        check("hook-advisory in-scope: silent on both sides", ref.ref_is_empty === true && cand.output === "", `ref_is_empty=${ref.ref_is_empty} cand=[${cand.output}]`);
     }
     finally {
         rmSync(dir, { recursive: true, force: true });
@@ -296,11 +307,9 @@ function advisoryProject(optIn) {
 {
     const { dir, payload } = advisoryProject(false);
     try {
-        const payloadPath = join(dir, "payload.json");
-        writeFileSync(payloadPath, payload);
-        const ref = runPs("scripts/hook-scope-advisory.ps1", ["-ProjectPath", dir, "-PayloadPath", payloadPath]);
+        const ref = golden.cases["hook-advisory-no-opt-in-silent"];
         const cand = hookScopeAdvisory(dir, payload);
-        check("hook-advisory no-opt-in: silent on both sides", ref.stdout.trim() === "" && cand.output === "", `ref=[${ref.stdout}] cand=[${cand.output}]`);
+        check("hook-advisory no-opt-in: silent on both sides", ref.ref_is_empty === true && cand.output === "", `ref_is_empty=${ref.ref_is_empty} cand=[${cand.output}]`);
     }
     finally {
         rmSync(dir, { recursive: true, force: true });
@@ -310,12 +319,12 @@ function advisoryProject(optIn) {
 // check-public-hygiene: scans tracked files of the framework repo itself.
 // ---------------------------------------------------------------------------
 {
-    const ref = runPs("scripts/check-public-hygiene.ps1", ["-RepoPath", REPO_ROOT]);
+    const ref = goldenCase("check-public-hygiene");
     const cand = checkPublicHygiene(REPO_ROOT);
     const refCanon = getCanonicalGoldenText(ref.stdout);
     const candCanon = getCanonicalGoldenText(cand.output);
     check("check-public-hygiene: output", refCanon === candCanon, getGoldenDiffReport(refCanon, candCanon).join(" | "));
-    check("check-public-hygiene: exit", (ref.exitCode ?? 1) === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
+    check("check-public-hygiene: exit", ref.exitCode === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
 }
 // ---------------------------------------------------------------------------
 // build-plugin-package: -Check against the real repo, plus a drifted mirror
@@ -323,12 +332,12 @@ function advisoryProject(optIn) {
 // from $PSScriptRoot/.. so the copy carries its own .claude/skills + skills).
 // ---------------------------------------------------------------------------
 {
-    const ref = runPs("scripts/build-plugin-package.ps1", ["-Check"]);
+    const ref = goldenCase("build-plugin-package-check-synced");
     const cand = buildPluginPackage(REPO_ROOT, true);
     const refCanon = getCanonicalGoldenText(ref.stdout);
     const candCanon = getCanonicalGoldenText(cand.output);
     check("build-plugin-package -Check (synced): output", refCanon === candCanon, getGoldenDiffReport(refCanon, candCanon).join(" | "));
-    check("build-plugin-package -Check (synced): exit", (ref.exitCode ?? 1) === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
+    check("build-plugin-package -Check (synced): exit", ref.exitCode === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
 }
 function pluginTree(desync) {
     const dir = mkdtempSync(join(tmpdir(), "tool-probe-plugin-"));
@@ -378,14 +387,12 @@ function treeSnapshot(root, sub) {
 {
     const dir = pluginTree(true);
     try {
-        // The copied script resolves its own roots from $PSScriptRoot/.., so it
-        // operates on the same drifted tree the candidate sees.
-        const refCopy = spawnSync(PWSH, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(dir, "scripts/build-plugin-package.ps1"), "-Check"], { encoding: "utf8", env: { ...process.env, AXIOM_PWSH: PWSH } });
+        const refCopy = goldenNormalized("build-plugin-package-check-drifted");
         const cand = buildPluginPackage(dir, true);
-        const refCanon = getCanonicalGoldenText(refCopy.stdout ?? "");
-        const candCanon = getCanonicalGoldenText(cand.output);
+        const refCanon = getCanonicalGoldenText(refCopy.stdout_normalized);
+        const candCanon = getCanonicalGoldenText(cand.output.replaceAll(dir, "<TREE>"));
         check("build-plugin-package -Check (drifted): output", refCanon === candCanon, getGoldenDiffReport(refCanon, candCanon).join(" | "));
-        check("build-plugin-package -Check (drifted): exit", (refCopy.status ?? 1) === cand.exitCode, `ref=${refCopy.status} cand=${cand.exitCode}`);
+        check("build-plugin-package -Check (drifted): exit", refCopy.exitCode === cand.exitCode, `ref=${refCopy.exitCode} cand=${cand.exitCode}`);
     }
     finally {
         rmSync(dir, { recursive: true, force: true });
@@ -395,12 +402,12 @@ function treeSnapshot(root, sub) {
     const dir = pluginTree(false);
     try {
         rmSync(join(dir, "skills"), { recursive: true, force: true });
-        const ref = spawnSync(PWSH, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(dir, "scripts/build-plugin-package.ps1")], { encoding: "utf8", env: { ...process.env, AXIOM_PWSH: PWSH } });
+        const ref = goldenNormalized("build-plugin-package-generate");
         const cand = buildPluginPackage(dir, false);
-        const refCanon = getCanonicalGoldenText(ref.stdout ?? "");
-        const candCanon = getCanonicalGoldenText(cand.output);
+        const refCanon = getCanonicalGoldenText(ref.stdout_normalized);
+        const candCanon = getCanonicalGoldenText(cand.output.replaceAll(dir, "<TREE>"));
         check("build-plugin-package generate: output", refCanon === candCanon, getGoldenDiffReport(refCanon, candCanon).join(" | "));
-        check("build-plugin-package generate: exit", (ref.status ?? 1) === cand.exitCode, `ref=${ref.status} cand=${cand.exitCode}`);
+        check("build-plugin-package generate: exit", ref.exitCode === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
         const refSnap = treeSnapshot(dir, "skills");
         const candSnap = treeSnapshot(dir, "skills");
         const sameFiles = JSON.stringify(Object.keys(refSnap).sort()) === JSON.stringify(Object.keys(candSnap).sort());
@@ -433,11 +440,13 @@ function treeSnapshot(root, sub) {
             "x",
             "",
         ].join("\n"));
-        const ref = runPs("scripts/update-source-snapshot.ps1", ["-ProjectPath", dir, "-DryRun"]);
+        const ref = goldenNormalized("update-source-snapshot-dryrun");
         const cand = updateSourceSnapshot(dir, true);
-        const norm = (s) => getCanonicalGoldenText(s).replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})/g, "<TS>");
-        check("update-source-snapshot -DryRun: output", norm(ref.stdout) === norm(cand.output), getGoldenDiffReport(norm(ref.stdout), norm(cand.output)).join(" | "));
-        check("update-source-snapshot -DryRun: exit", (ref.exitCode ?? 1) === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
+        const norm = (s) => getCanonicalGoldenText(s).replaceAll(dir, "<TREE>").replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})/g, "<TS>");
+        const refN = norm(ref.stdout_normalized);
+        const candN = norm(cand.output);
+        check("update-source-snapshot -DryRun: output", refN === candN, getGoldenDiffReport(refN, candN).join(" | "));
+        check("update-source-snapshot -DryRun: exit", ref.exitCode === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
     }
     finally {
         rmSync(dir, { recursive: true, force: true });
@@ -447,12 +456,20 @@ function treeSnapshot(root, sub) {
 // prepare-public-release: non-destructive readiness, on the repo itself.
 // ---------------------------------------------------------------------------
 {
-    const ref = runPs("scripts/prepare-public-release.ps1", []);
+    const ref = goldenCase("prepare-public-release");
     const cand = preparePublicRelease(REPO_ROOT, false);
-    const refCanon = getCanonicalGoldenText(ref.stdout);
-    const candCanon = getCanonicalGoldenText(cand.output);
+    // The "Working tree" section reports live `git status --porcelain`, and the
+    // Verdict section's dirty-tree note depends on it -- inherently as
+    // non-reproducible as a timestamp during active development, so both are
+    // normalized out rather than compared byte-for-byte like the rest of the
+    // report.
+    const normTree = (s) => s
+        .replace(/== Working tree ==\n[\s\S]*?(?=\n==)/, "== Working tree ==\n<LIVE_STATUS>")
+        .replace(/\n\s*note: Working tree has uncommitted changes.*$/m, "");
+    const refCanon = getCanonicalGoldenText(normTree(ref.stdout));
+    const candCanon = getCanonicalGoldenText(normTree(cand.output));
     check("prepare-public-release: output", refCanon === candCanon, getGoldenDiffReport(refCanon, candCanon).join(" | "));
-    check("prepare-public-release: exit", (ref.exitCode ?? 1) === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
+    check("prepare-public-release: exit", ref.exitCode === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
 }
 // ---------------------------------------------------------------------------
 // run-ci-suite: -ResolveOnly mapping (host prefix normalized) + unknown suite.
@@ -460,7 +477,7 @@ function treeSnapshot(root, sub) {
 {
     const suites = ["doctor", "hygiene", "golden", "validation-fixtures", "config-mutation", "line-ending", "plugin-drift", "cli", "github-action", "all"];
     for (const suite of suites) {
-        const ref = runPs("scripts/run-ci-suite.ps1", ["-Suite", suite, "-RepoPath", REPO_ROOT, "-ResolveOnly"]);
+        const ref = goldenCase(`run-ci-suite-${suite}`);
         const cand = resolveCiSuite(REPO_ROOT, suite);
         if ("error" in cand) {
             check(`run-ci-suite ${suite}: no error from candidate`, false, cand.error);
@@ -481,7 +498,7 @@ function treeSnapshot(root, sub) {
         check(`run-ci-suite ${suite}: resolve line`, refLine === candLine, `ref=[${refLine}] cand=[${candLine}]`);
     }
     {
-        const ref = runPs("scripts/run-ci-suite.ps1", ["-Suite", "bogus", "-RepoPath", REPO_ROOT]);
+        const ref = goldenCase("run-ci-suite-bogus");
         const cand = resolveCiSuite(REPO_ROOT, "bogus");
         const refCanon = getCanonicalGoldenText(ref.stdout);
         check("run-ci-suite unknown suite: message", "error" in cand && refCanon === getCanonicalGoldenText(cand.error + "\n"), `ref=[${refCanon}] cand=${"error" in cand ? cand.error : "no error"}`);
@@ -493,12 +510,12 @@ function treeSnapshot(root, sub) {
 // validators, so this doubles as a Text-report parity check.
 // ---------------------------------------------------------------------------
 {
-    const ref = runPs("scripts/demo.ps1", ["-Plain", "-NoPause"]);
+    const ref = goldenCase("demo");
     const cand = runDemo(REPO_ROOT, true, true);
     const refCanon = getCanonicalGoldenText(ref.stdout);
     const candCanon = getCanonicalGoldenText(cand.output);
     check("demo: output", refCanon === candCanon, getGoldenDiffReport(refCanon, candCanon).join(" | "));
-    check("demo: exit", (ref.exitCode ?? 1) === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
+    check("demo: exit", ref.exitCode === cand.exitCode, `ref=${ref.exitCode} cand=${cand.exitCode}`);
 }
 // ---------------------------------------------------------------------------
 // run-all-checks: fault-injection path. Both sides stop at the first failing
@@ -506,13 +523,12 @@ function treeSnapshot(root, sub) {
 // with zero-length child output, covered by the checks below it).
 // ---------------------------------------------------------------------------
 {
-    const child = join(REPO_ROOT, "tests/helpers/exit-1.ps1");
-    const ref = runPs("scripts/run-all-checks.ps1", ["-TestChildScript", child]);
-    const cand = runAllChecks(REPO_ROOT, "tests/helpers/exit-1.ps1");
+    const ref = goldenCase("run-all-checks-fault-injection");
+    const cand = runAllChecks(REPO_ROOT, "tests/helpers/exit-1.mjs");
     const refCanon = getCanonicalGoldenText(ref.stdout);
     const candCanon = getCanonicalGoldenText(cand.output);
     check("run-all-checks fault-injection: output", refCanon === candCanon, getGoldenDiffReport(refCanon, candCanon).join(" | "));
-    check("run-all-checks fault-injection: exit 1", (ref.exitCode ?? 1) === cand.exitCode && cand.exitCode === 1, `ref=${ref.exitCode} cand=${cand.exitCode}`);
+    check("run-all-checks fault-injection: exit 1", ref.exitCode === cand.exitCode && cand.exitCode === 1, `ref=${ref.exitCode} cand=${cand.exitCode}`);
 }
 // ---------------------------------------------------------------------------
 // CLI: the wrapper forwards to the same scripts, so the compatibility case is
@@ -522,24 +538,24 @@ function runCli(args, opts = {}) {
     const r = spawnSync(process.execPath, [join(REPO_ROOT, "cli/axiom.mjs"), ...args], {
         encoding: "utf8",
         cwd: opts.cwd ?? REPO_ROOT,
-        env: { ...process.env, AXIOM_PWSH: PWSH },
+        env: { ...process.env },
     });
     return { stdout: r.stdout ?? "", stderr: r.stderr ?? "", exitCode: r.status ?? 1 };
 }
 {
     const hd = join(REPO_ROOT, "examples/HANDOFF-DEMO");
     const cli = runCli(["status", "--project", hd, "--json"]);
-    const direct = runPs("scripts/pmo-status.ps1", ["-ProjectPath", hd, "-Format", "Json"]);
+    const direct = goldenCase("status-handoff-demo-json");
     check("cli status --json: output equals direct script", getCanonicalGoldenText(cli.stdout) === getCanonicalGoldenText(direct.stdout), getGoldenDiffReport(getCanonicalGoldenText(cli.stdout), getCanonicalGoldenText(direct.stdout)).join(" | "));
     check("cli status --json: exit equals direct", cli.exitCode === direct.exitCode, `cli=${cli.exitCode} direct=${direct.exitCode}`);
     const sf = join(REPO_ROOT, "examples/STANDARD-FEATURE");
     const cliV = runCli(["validate", "--project", sf, "--gate", "Release", "--json"]);
-    const directV = runPs("scripts/validate-project.ps1", ["-ProjectPath", sf, "-Mode", "Standard", "-Gate", "Release", "-Format", "Json"]);
+    const directV = goldenCase("validate-standard-feature-release-json");
     check("cli validate --json: output equals direct script", getCanonicalGoldenText(cliV.stdout) === getCanonicalGoldenText(directV.stdout), getGoldenDiffReport(getCanonicalGoldenText(cliV.stdout), getCanonicalGoldenText(directV.stdout)).join(" | "));
     check("cli validate --json: exit equals direct", cliV.exitCode === directV.exitCode, `cli=${cliV.exitCode} direct=${directV.exitCode}`);
     const cliH = runCli(["handoff", "--project", hd, "--json"]);
-    const gateDirect = runPs("scripts/validate-project.ps1", ["-ProjectPath", hd, "-Mode", "Standard", "-Gate", "Handoff", "-Format", "Json"]);
-    const assessDirect = runPs("scripts/assess-handoff.ps1", ["-ProjectPath", hd, "-Mode", "Standard", "-Format", "Json"]);
+    const gateDirect = goldenCase("validate-handoff-demo-handoff-json");
+    const assessDirect = goldenCase("assess-handoff-demo-json");
     let envelope = null;
     try {
         envelope = JSON.parse(cliH.stdout);
@@ -567,7 +583,7 @@ function runCli(args, opts = {}) {
         const r = spawnSync(process.execPath, [join(REPO_ROOT, "scripts/github-action/run-action.mjs"), ...args], {
             encoding: "utf8",
             cwd,
-            env: { ...process.env, AXIOM_PWSH: PWSH, GITHUB_OUTPUT: "", GITHUB_STEP_SUMMARY: "" },
+            env: { ...process.env, GITHUB_OUTPUT: "", GITHUB_STEP_SUMMARY: "" },
         });
         return { stdout: r.stdout ?? "", stderr: r.stderr ?? "", exitCode: r.status ?? 1 };
     };
@@ -577,7 +593,7 @@ function runCli(args, opts = {}) {
         const jsonPath = join(wd, "axiom-report.json");
         const mdPath = join(wd, "axiom-report.md");
         const r = runAction(["--project", sf, "--gate", "Release", "--json-report-path", jsonPath, "--md-report-path", mdPath], wd);
-        const direct = runPs("scripts/validate-project.ps1", ["-ProjectPath", sf, "-Mode", "Standard", "-Gate", "Release", "-Format", "Json"]);
+        const direct = goldenCase("validate-standard-feature-release-json");
         check("action pass fixture: exit 0", r.exitCode === 0, `exit ${r.exitCode}`);
         let report = null;
         try {
