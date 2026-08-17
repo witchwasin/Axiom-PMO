@@ -37,8 +37,7 @@ Axiom-PMO verified handoff
 | | |
 |---|---|
 | Claude Code | any version with `claude plugin` (verified against the CLI shipped alongside this work) |
-| PowerShell | Windows PowerShell 5.1, or PowerShell 7 on Windows, Linux or macOS |
-| Node.js | only for the `axiom` CLI wrapper; the PowerShell scripts run without it |
+| Node.js 18+ | the engine and the `axiom` CLI run entirely in-process |
 
 ## Install the plugin
 
@@ -87,11 +86,8 @@ Then apply it:
 node ../Axiom-PMO/cli/axiom.mjs setup claude --project .
 ```
 
-Or run the script directly, without Node:
-
-```bash
-pwsh -File ../Axiom-PMO/scripts/setup-claude-integration.ps1 -ProjectPath .
-```
+The `setup claude` verb is the only entry point — the engine is Node, so
+`node cli/axiom.mjs` is required.
 
 What it does:
 
@@ -152,26 +148,25 @@ decision at any input — there is no code in it that could. It applies the same
 repo-wide exemptions as SCOPE-DIFF, so the advisory and the gate agree.
 
 > **Platform boundary.** The advisory needs a POSIX shell (`sh`). On native
-> Windows that means Git Bash or an equivalent; a **PowerShell-only Windows
-> environment does not get the hook**, and no error is raised — it simply stays
+> Windows that means Git Bash or an equivalent; a **Windows environment without
+> `sh` does not get the hook**, and no error is raised — it simply stays
 > silent.
 >
-> This applies to the optional advisory *only*. Setup, uninstall, the CLI, the
-> validators and the advisory's own PowerShell logic are all supported on
-> PowerShell-only Windows.
+> This applies to the optional advisory *only*. Setup, uninstall, the CLI, and
+> the validators are all supported on native Windows.
 >
-> The alternative was to invoke PowerShell directly from the hook, which works
+> The alternative was to start the engine directly from the hook, which works
 > everywhere but costs roughly 200 ms on *every* Write and Edit for every user
 > who installed the plugin and never turned the advisory on. That was judged
 > not worth it for a feature that is off by default.
 
 | | Cost per Write/Edit |
 |---|---|
-| Disabled (default) | ~9 ms — the opt-in is checked in shell, before PowerShell is started |
-| Enabled | ~230 ms — a PowerShell process runs the real scope matcher |
+| Disabled (default) | ~9 ms — the opt-in is checked in shell, before Node is started |
+| Enabled | ~230 ms — a Node process runs the real scope matcher |
 
-Measured on the maintainer's macOS machine with PowerShell 7; your numbers will
-differ. The enabled cost is real, and it buys a note rather than a guarantee.
+Measured on the maintainer's macOS machine with the Node engine; your numbers
+will differ. The enabled cost is real, and it buys a note rather than a guarantee.
 
 To disable it, delete `.axiom/hooks.json` or set `scope_advisory` to `false`.
 
@@ -202,11 +197,11 @@ and no backup was taken. Convert it to UTF-8 yourself and re-run.
 **`FRAMEWORK-001 ... needs an Axiom-PMO source checkout`**
 You ran a maintainer tool (`pmo-doctor`, `check-public-hygiene`, the test
 runners) from a plugin install. Those audit the framework's own repository and
-a plugin does not carry one. For your project, use `validate-project.ps1`.
+a plugin does not carry one. For your project, use `node cli/axiom.mjs validate`.
 
 **The hook says nothing**
 That is the default. It needs `.axiom/hooks.json` with `scope_advisory: true`,
-a valid `SCOPE.json`, and PowerShell on `PATH`. Any of those missing means
+a valid `SCOPE.json`, and Node.js on `PATH`. Any of those missing means
 silence rather than an error — a governance advisory that breaks an editing
 session has done more harm than the deviation it was watching for.
 
@@ -224,8 +219,8 @@ real install, not assumed from the manifest schema alone.
 **A version bump is required whenever the plugin's shipped content
 changes** -- the skills mirror, the hooks, or the manifests themselves --
 because that is the only signal Claude Code has that there is something new
-to cache. `scripts/prepare-public-release.ps1` and
-`tests/helpers/plugin-package-tests.ps1` both enforce that
+to cache. `prepare-public-release` (`src/tools/prepare-public-release.ts`) and
+`node --test dist/tools/plugin-package.test.js` both enforce that
 `.claude-plugin/plugin.json`'s version equals the repository's own `VERSION`
 at release time, so a release cannot ship plugin bytes under a stale
 version number.
@@ -251,7 +246,7 @@ Stated rather than discovered later.
 | **Permission-prompt behaviour is not characterised** | Whether invoking the validator from a skill prompts, and how often, depends on your own permission settings. Not measured. |
 | **Update behaviour is bounded, not fully characterised** | The plugin version is verified as the cache/update identity and release checks now prevent version drift. Active-session replacement and GitHub-hosted marketplace-source behaviour were not exercised, and are accepted as non-blocking limits for v1.3.0 (`DEC-009`). |
 | **Windows symlink and read-only cases are skipped** | Those tests run on macOS and Linux. Windows ACL semantics differ from `chmod`, and creating a symlink there needs elevation. |
-| **The advisory hook needs a POSIX shell** | Native Windows requires Git Bash or equivalent. PowerShell-only Windows gets no advisory, silently. Deliberate — see above. Everything else works there. |
+| **The advisory hook needs a POSIX shell** | Native Windows requires Git Bash or equivalent. A Windows environment without `sh` gets no advisory, silently. Deliberate — see above. Everything else works there. |
 | **Non-UTF-8 instruction files are refused, not converted** | UTF-16 and invalid UTF-8 are rejected with `SETUP-008` and left untouched. Converting them is your call, not the tool's. |
 | **A file may be left empty after uninstall** | The file is never deleted, because provenance cannot be inferred from its contents afterwards. |
 | **Ownership is content recognition, not proof of authorship** | A block is treated as the framework's when its body matches text the framework generates. Paste that text into your own file and it will be recognised -- correctly, since it is the framework's text. The guarantee is that content the framework never generates is never touched without `--force`. |

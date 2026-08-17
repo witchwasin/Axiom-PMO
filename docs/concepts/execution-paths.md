@@ -19,7 +19,7 @@ choice explicit, and stops asking a new user to infer either from scratch.
 
 | Path | What it is | The mechanism |
 |---|---|---|
-| **Development Handoff** (`development_handoff`) | Prepare requirements, scope, design, and a work package a human developer or vendor can pick up and build | The Handoff gate: `HANDOFF-001`..`HANDOFF-014`, `scripts/assess-handoff.ps1` |
+| **Development Handoff** (`development_handoff`) | Prepare requirements, scope, design, and a work package a human developer or vendor can pick up and build | The Handoff gate: `HANDOFF-001`..`HANDOFF-014`, `axiom handoff` |
 | **Governed AI Execution** (`governed_ai_execution`) | Hand an approved work item to an AI execution agent under a contract, then verify what it actually did against git ground truth | `axiom export` -> agent implements -> `axiom run` -> `axiom verify`; `EXEC-001`..`EXEC-008` |
 
 Neither path is required to use Axiom-PMO's core governance -- source,
@@ -88,7 +88,7 @@ already gives `reviewer_kind`: no offline validator can prove who typed a
 name, and claiming otherwise would be false assurance.
 
 Once written, the existing mode resolver
-(`scripts/lib/mode-resolver.ps1`) does the rest: a declared strict trigger
+(`src/core/mode-resolver.ts`) does the rest: a declared strict trigger
 escalates the project's effective mode to Strict (`MODE-003`) exactly as it
 would if the trigger had been added by hand later.
 

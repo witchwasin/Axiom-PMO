@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Level | WARN |
-| Runs when | `scripts/validate-project.ps1` is invoked, any gate |
+| Runs when | `node cli/axiom.mjs validate` is invoked, any gate |
 | Artifacts | `PROJECT.md`, `DELIVERY.md`, `.execution/**` |
 
 ## What this rule checks

@@ -12,7 +12,7 @@ The base commit, the head commit, or the `git diff` between them could not be re
 
 ## This is an infrastructure failure, not a governance violation
 
-Every other SCOPE-DIFF rule reports on the *content* of a change. This one reports that the check could not run at all — the scope comparison never happened, so there is no verdict to soften. The GitHub Action wrapper treats a SCOPE-DIFF-004 result the same way it treats a missing PowerShell host: it always propagates as a failure, even when `enforce: false` (report-only). Report-only exists to avoid blocking a pull request on a real governance finding nobody has reviewed yet; it does not exist to hide "the check silently didn't run."
+Every other SCOPE-DIFF rule reports on the *content* of a change. This one reports that the check could not run at all — the scope comparison never happened, so there is no verdict to soften. The GitHub Action wrapper treats a SCOPE-DIFF-004 result the same way it treats an infrastructure failure: it always propagates as a failure, even when `enforce: false` (report-only). Report-only exists to avoid blocking a pull request on a real governance finding nobody has reviewed yet; it does not exist to hide "the check silently didn't run."
 
 ## Most common cause: a shallow checkout
 

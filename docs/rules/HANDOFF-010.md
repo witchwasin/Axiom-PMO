@@ -69,7 +69,7 @@ The second matters more often than it sounds. Rewriting the build sequence after
 Run the `pmo-delivery` skill with the `handoff_review` intent, or write the file by hand from `templates/HANDOFF-REVIEW.json`. Recompute both digests whenever anything the review read changes:
 
 ```bash
-pwsh -File scripts/handoff-digest.ps1 -ProjectPath <project>
+node -e "import('./dist/tools/digest-tools.js').then(m=>process.stdout.write(m.handoffDigest('.', '<project>').output))"
 ```
 
 ## Related

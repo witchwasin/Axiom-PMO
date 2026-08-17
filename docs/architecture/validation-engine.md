@@ -1,45 +1,48 @@
 # Architecture: The Validation Engine
 
-The validator is a PowerShell program driven entirely by JSON policy. There is no
+The validator is a TypeScript program (compiled to `dist/`, run entirely
+in-process by `cli/axiom.mjs`), driven entirely by JSON policy. There is no
 hardcoded fallback: if the config is missing, it fails rather than guessing.
 
-## Entry points (`scripts/`)
+## Entry points (`src/` + `cli/`)
 
-| Script | Role |
+| Entry point | Role |
 |---|---|
-| `validate-project.ps1` | Orchestrator: loads config, resolves effective mode, runs each validator module, aggregates results, writes Text/JSON, sets the exit code. |
-| `pmo-doctor.ps1` | Validates the framework *itself*: required files, skill runtime, version/schema consistency, rule-catalog completeness, permissions, links, table integrity. |
-| `run-validation-tests.ps1` | Positive/negative fixture matrix + golden-master engine. |
-| `run-all-checks.ps1` | Aggregates doctor, fixtures **with golden verification**, example goldens, config-mutation, diagnostics-contract, line-endings, handoff-assessment, demo smoke, example validations, end-to-end tests, and the CLI tests. One pass: verifying goldens separately would re-run the whole fixture matrix. |
-| `new-project.ps1` | Mode-aware project generator (`-IncludeHandoff` adds the handoff scaffolding). |
-| `assess-handoff.ps1` | Runs the Handoff gate and reports readiness per stage, with a capped score. Reporting only — it is not a gate. |
-| `handoff-digest.ps1` | Prints a project's Source Snapshot digest, which `HANDOFF-REVIEW.json` records for freshness. |
-| `demo.ps1` | The three-minute proof: a broken handoff, then a fixed one. |
+| `src/probe/validate-chain.ts` | Orchestrator: loads config, resolves effective mode, runs each validator module, aggregates results, writes Text/JSON, sets the exit code. Backs `axiom validate` (and the demo's gate step). |
+| `src/doctor/pmo-doctor.ts` | Validates the framework *itself*: required files, skill runtime, version/schema consistency, rule-catalog completeness, permissions, links, table integrity. (`axiom doctor`) |
+| `src/tools/validation-fixtures.ts` | Positive/negative fixture matrix + golden-master engine. |
+| `src/tools/run-all-checks.ts` | Aggregates doctor, fixtures **with golden verification**, example goldens, config-mutation, diagnostics-contract, line-endings, handoff-assessment, demo smoke, example validations, end-to-end tests, and the CLI tests. One pass: verifying goldens separately would re-run the whole fixture matrix. (`axiom check`) |
+| `src/tools/new-project.ts` | Mode-aware project generator (`axiom init`; `--handoff` adds the handoff scaffolding). |
+| `src/tools/assess-handoff.ts` | Runs the Handoff gate and reports readiness per stage, with a capped score. Reporting only — it is not a gate. (`axiom handoff`) |
+| `src/tools/digest-tools.ts` | Prints a project's Source Snapshot / design-provider / visual-proof digests, which `HANDOFF-REVIEW.json` and `EXECUTION-REVIEW.json` record for freshness. |
+| `src/tools/demo.ts` | The three-minute proof: a broken handoff, then a fixed one. (`axiom demo`) |
 
-`cli/axiom.mjs` is a thin Node wrapper over the scripts above. It contains no
-validation logic; it locates a PowerShell host, forwards arguments, and
-preserves exit codes.
+`cli/axiom.mjs` is a thin dispatch layer over the engine above. It contains no
+validation logic; it maps verbs to the in-process TypeScript entry points,
+forwards arguments, and preserves exit codes.
 
-## Validator modules (`scripts/lib/`)
+## Validator modules (`src/rules/`, `src/exec/`, `src/core/`)
 
-The orchestrator dot-sources focused modules: config loading, markdown-table
-parsing, reference resolution, mode resolution, artifact policy, approval
-validation, source validation, work-item validation, RTM validation, release
-validation, and handoff validation, plus a result writer. Each raises typed rule
-ids via `Add-Result`.
+The orchestrator calls focused modules: config loading (`src/config/`),
+markdown-table parsing (`src/markdown/table-parser.ts`), reference resolution
+(`src/core/reference-resolver.ts`), mode resolution
+(`src/core/mode-resolver.ts`), artifact policy (`src/core/artifact-policy.ts`),
+approval/source/work-item/RTM/release/handoff validation (`src/rules/`),
+execution-contract validation (`src/exec/`), plus a result writer
+(`src/core/result-writer.ts`). Each raises typed rule ids via `addResult`.
 
-Two modules support the tooling rather than the checks themselves:
+Three modules support the tooling rather than the checks themselves:
 
 | Module | Role |
 |---|---|
-| `pwsh-host.ps1` | Resolves the PowerShell executable for child processes: `AXIOM_PWSH`, then the running host itself, then `pwsh` / `powershell` / `powershell.exe`. |
-| `golden-normalizer.ps1` | Canonicalizes validator output for golden comparison so a capture under one PowerShell host verifies under another. |
-| `ordinal-sort.ps1` | Ordinal string sorting for every sort whose output reaches a freshness digest or a diagnostic. `Sort-Object` is culture-sensitive, which makes both host-dependent. |
+| `src/output/canonical-normalizer.ts` | Canonicalizes validator output for golden comparison so a capture on one OS verifies on any other. |
+| `src/core/ordinal-sort.ts` | Ordinal string sorting for every sort whose output reaches a freshness digest or a diagnostic. |
+| `src/markdown/files.ts` | Markdown discovery and local-link checks for the doctor. |
 
-`handoff-validator.ps1` carries a hard scope boundary: it checks only what the
-artifacts **declare**, and never infers domain meaning. It will not decide that a
-photograph is personal data or that a scanner needs a secure context. Those
-judgements belong to the semantic review — see
+`handoff-validator` (`src/rules/handoff-validator.ts`) carries a hard scope
+boundary: it checks only what the artifacts **declare**, and never infers domain
+meaning. It will not decide that a photograph is personal data or that a scanner
+needs a secure context. Those judgements belong to the semantic review — see
 [handoff readiness](../concepts/handoff-readiness.md).
 
 ## Policy (`pmo-config/`)
@@ -86,8 +89,8 @@ contract is [`docs/reference/diagnostics-contract.md`](../reference/diagnostics-
   fail/warn rule to carry a suggestion, and every referenced documentation page
   to exist — so a diagnostic can never advertise a dead link.
 - **Golden masters** make any behavioral change visible as a reviewed diff,
-  normalized to a `<REPO_ROOT>` placeholder and to a host-independent canonical
-  form, so they are portable across checkouts *and* across PowerShell hosts.
+  normalized to a `<REPO_ROOT>` placeholder and to a platform-independent
+  canonical form, so they are portable across checkouts *and* across OSes.
 - **Diagnostic contract tests** assert the shape of every row the validator
   emits, independently of which findings a fixture happens to produce.
 - **Line-ending tests** assert that regexes, digests, and golden comparison
@@ -97,15 +100,14 @@ contract is [`docs/reference/diagnostics-contract.md`](../reference/diagnostics-
 - **Generator-to-release E2E** exercises a real generated project end to end,
   including the Handoff gate, and asserts that an unfilled generated scaffold
   *fails* that gate.
-- **Cross-host guard** (`DOCTOR-010`) fails the build when a script under
-  `scripts/` invokes a native command without protecting against Windows
-  PowerShell 5.1's stderr-as-terminating-error behaviour. It exists because
-  that one difference caused three separate shipped defects, each invisible
-  on the host they were written on. The wider set of cross-host pitfalls that
-  have actually bitten this codebase — `ConvertTo-Json` spacing, `Get-Content
-  -Raw` returning `$null`, `Invoke-Expression` running in-process,
-  case-insensitive `-match` — is written up in
-  [powershell-portability.md](powershell-portability.md).
+- **Cross-host guard** (the retired `DOCTOR-010`) used to fail the build when
+  a PowerShell script under `scripts/` invoked a native command without
+  protecting against Windows PowerShell 5.1's stderr-as-terminating-error
+  behaviour — that one difference caused three separate shipped defects before
+  the PowerShell reference was deleted. The wider set of cross-host pitfalls
+  that actually bit this codebase is written up in
+  [powershell-portability.md](powershell-portability.md) as a historical
+  record.
 
 See [risk modes](../concepts/risk-modes.md) for effective-mode resolution and
 [evidence-based execution](../concepts/evidence-based-execution.md) for reference

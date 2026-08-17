@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Level | FAIL |
-| Runs when | `scripts/verify-execution-result.ps1` is invoked |
+| Runs when | `node cli/axiom.mjs verify` is invoked |
 | Artifacts | `EXECUTION-CONTRACT.json`, `EXECUTION-CONTRACT.json.sha256`, `EXECUTION-RESULT.json` |
 
 ## What this rule checks
@@ -21,7 +21,7 @@ Four related things, in order:
 
 **A contract and a result that the same actor can edit together prove nothing.** An agent that widens `allowed_paths` (or flips `git_authority.push` to `true`) in the contract, then writes a result that conforms to the edited version, would otherwise verify cleanly — the check would be validating the agent's work against the agent's own rules.
 
-Pinning the contract's identity by content digest at approval time is what makes the later comparison mean anything. The digest is over the file's **raw bytes**, not a canonical re-serialization of its parsed JSON, because `ConvertTo-Json`'s ordering and escaping differ between Windows PowerShell 5.1 and PowerShell 7 — both required hosts. A digest that disagreed across hosts would fail runs for reasons unrelated to tampering.
+Pinning the contract's identity by content digest at approval time is what makes the later comparison mean anything. The digest is over the file's **raw bytes**, not a canonical re-serialization of its parsed JSON, because JSON re-serialization ordering and escaping are not stable across implementations. A digest that disagreed across hosts would fail runs for reasons unrelated to tampering.
 
 ### What this does not catch
 

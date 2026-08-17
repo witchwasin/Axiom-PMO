@@ -123,7 +123,7 @@ A blank section is ambiguous in the worst way: the reader cannot tell whether yo
 The validator has now proven the contract is complete. It cannot prove it is sensible.
 
 ```bash
-pwsh -File scripts/handoff-digest.ps1 -ProjectPath examples/HANDOFF-DEMO
+node -e "import('./dist/tools/digest-tools.js').then(m=>process.stdout.write(m.handoffDigest('.', 'examples/HANDOFF-DEMO').output))"
 # source_snapshot.digest : fba5dc44...   <- the material the requirements came from
 # review_inputs.digest   : 44eda5d0...   <- the artifacts the reviewer actually read
 ```

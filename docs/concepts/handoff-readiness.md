@@ -36,7 +36,7 @@ So the work splits:
 
 ### Layer 1 — deterministic validation
 
-Checks what is provable from the artifacts. `scripts/validate-project.ps1 -Gate Handoff`, rules `HANDOFF-001` to `HANDOFF-014`.
+Checks what is provable from the artifacts. `node cli/axiom.mjs validate --gate Handoff`, rules `HANDOFF-001` to `HANDOFF-014`.
 
 It can prove that a build sequence declares a dependency scheduled after its consumer. It can prove that a row the author marked "contains sensitive data" has no classification decision. It can prove that an acceptance case has no seed strategy, that a work item has no named owner, that a declared capability has no serving model.
 
@@ -65,10 +65,10 @@ A review speaks only for the sources it actually read.
 
 The second is the one people forget. Rewriting the build sequence after a review leaves the source snapshot untouched; with one digest the review would keep reporting as current while no longer describing the plan in front of it.
 
-Get both with:
+Get both with the `handoffDigest` tool (`src/tools/digest-tools.ts`):
 
 ```bash
-pwsh -File scripts/handoff-digest.ps1 -ProjectPath <project>
+node -e "import('./dist/tools/digest-tools.js').then(m=>process.stdout.write(m.handoffDigest('.', '<project>').output))"
 ```
 
 ## Who may close a finding
@@ -87,7 +87,7 @@ This is the part that changes how the gate is used.
 
 "Ready" is not a single state. A project can be entirely ready for two engineers to start writing code and entirely unready to be demonstrated, and those two facts have different owners, different deadlines, and different fixes.
 
-`scripts/assess-handoff.ps1` reports six:
+`node cli/axiom.mjs handoff` reports six:
 
 | Stage | Blocked by |
 |---|---|

@@ -1,6 +1,6 @@
 # Structured diagnostics contract
 
-Machine-readable output of `scripts/validate-project.ps1 -Format Json` and `scripts/assess-handoff.ps1 -Format Json`.
+Machine-readable output of `node cli/axiom.mjs validate --json` and `node cli/axiom.mjs handoff --json`.
 
 The authoritative definition is [`pmo-config/diagnostics-schema.json`](../../pmo-config/diagnostics-schema.json). This page explains the intent and the compatibility rules around it.
 
@@ -61,7 +61,7 @@ v1.1 answers four more questions for every finding: **where** (artifact, item, f
 ### `scope_diff` (optional envelope field, M4.5)
 
 Present only when `-ScopeDiffBase`/`-ScopeDiffHead` were both supplied to
-`scripts/validate-project.ps1` (or `enable-scope-diff: true` on the GitHub
+`node cli/axiom.mjs validate` (or `enable-scope-diff: true` on the GitHub
 Action) — **omitted from the envelope entirely otherwise**, not present as
 `null`. Every existing call site that does not opt into SCOPE-DIFF produces
 byte-for-byte the same JSON it always has; this is why the field is omitted
@@ -106,7 +106,7 @@ covers for existing consumers.
 
 **Ignore what you do not know.** Consumers must tolerate unrecognized fields. A future minor version may add fields; it will not remove or repurpose one.
 
-**Always present, sometimes null.** Every field defined in the schema appears on every row. A field that does not apply is `null` — never omitted, never `""`. This is deliberate: a consumer can index every row identically instead of probing for key presence. The contract test `tests/helpers/diagnostics-contract-tests.ps1` fails the build if an empty string ever appears where `null` belongs.
+**Always present, sometimes null.** Every field defined in the schema appears on every row. A field that does not apply is `null` — never omitted, never `""`. This is deliberate: a consumer can index every row identically instead of probing for key presence. The contract test (`node --test dist/output/diagnostics-contract.test.js`) fails the build if an empty string ever appears where `null` belongs.
 
 **Deprecation.** A field is documented as deprecated here and in the schema for at least one minor release before it can be removed. Removal requires a major bump of `diagnostics_schema_version`.
 
@@ -125,7 +125,7 @@ covers for existing consumers.
 | 0 | No `FAIL`, and no blocking `WARN` when `-FailOnWarning` was passed. |
 | 1 | At least one `FAIL`. |
 | 2 | `-FailOnWarning` was passed and at least one blocking `WARN` was emitted. |
-| 127 | PowerShell could not be located. Emitted by `scripts/check.sh`, `scripts/check.cmd`, and `cli/axiom.mjs` — never by the validator itself. |
+| 127 | Infrastructure failure in the engine (a Node-side error surfaced by `cli/axiom.mjs` — never masked as a governance verdict, and never emitted by the validator itself). |
 
 The CLI (`cli/axiom.mjs`) forwards these unchanged.
 
@@ -157,12 +157,12 @@ The contract test enforces two proxies for this: a message may not span multiple
 
 ## Two other JSON outputs
 
-`validate-project.ps1` is not the only thing that emits JSON. Both of the
+`node cli/axiom.mjs validate` is not the only thing that emits JSON. Both of the
 following are defined in the same schema file.
 
 ### Readiness assessment
 
-`scripts/assess-handoff.ps1 -Format Json`. Reporting output, not a gate result.
+`node cli/axiom.mjs handoff --json`. Reporting output, not a gate result.
 
 The part consumers get wrong is that **stage verdicts are tri-state**:
 

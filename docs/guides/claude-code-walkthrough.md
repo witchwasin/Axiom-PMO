@@ -15,11 +15,9 @@ not a replacement for your developers.
 
 You need:
 
-- **PowerShell** — Windows PowerShell 5.1, or PowerShell 7 on any OS
-  (`pwsh --version`)
+- **Node.js 18+** — the engine and the `axiom` CLI run entirely in-process
 - **Claude Code** with the `claude plugin` command (`claude plugin list`)
 - **git**
-- **Node.js** — optional, only for the `axiom` CLI wrapper
 - **A scratch git repository you do not mind changing.** Do not use real work
   for a first run.
 
@@ -187,7 +185,7 @@ Please report it with:
 What I ran:            (exact command)
 What I expected:       
 What happened:         (exact output, including any error id such as SETUP-004)
-Host:                  macOS / Linux / Windows, and `pwsh --version`
+Host:                  macOS / Linux / Windows, and `node --version`
 Claude Code version:   `claude --version`
 Repository shape:      did it already have AGENTS.md / CLAUDE.md / other frameworks?
 Recoverable?           did the .axiom-backup-* file contain what you expected?

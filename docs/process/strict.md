@@ -54,7 +54,7 @@ Check at minimum:
 
 - No unresolved blocker before release.
 - Release approval is logged in `decision-log.md`.
-- `scripts/validate-project.ps1 -Release` passes.
+- `node cli/axiom.mjs validate --gate Release` passes.
 - Before a developer handoff: `-Gate Handoff` passes, every declared sensitive
   data element carries a classification and retention decision (`HANDOFF-011`),
   every declared runtime capability has a resolved serving model

@@ -60,7 +60,7 @@ gives `reviewer_kind: human`.
 
 ### 3.1 What Milestone 5.5 already proved, reused directly
 
-`Test-CiCheckEvidence` (`scripts/lib/execution-contract-evidence.ps1`),
+`testCiCheckEvidence` (`src/exec/execution-contract-evidence.ts`),
 hardened in Milestone 5.5, already binds, for a `ci-check` test-evidence
 entry with an optional `check_run_id`:
 

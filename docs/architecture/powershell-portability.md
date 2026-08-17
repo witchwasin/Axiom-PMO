@@ -1,8 +1,8 @@
 # Writing validator code that survives every supported host
 
 > For anyone — human or agent — **writing or changing PowerShell under
-> `scripts/`**. For installing a runtime, see
-> [`docs/guides/powershell-runtime.md`](../guides/powershell-runtime.md).
+> `scripts/`**. The companion runtime guide was `docs/guides/powershell-runtime.md`
+> (retired in Phase 10 — the PowerShell runtime no longer exists).
 
 Axiom-PMO's required hosts are Windows PowerShell 5.1, PowerShell 7 on
 Windows, PowerShell 7 on Linux, and PowerShell 7 on macOS
@@ -191,7 +191,7 @@ green locally and red in CI.
 
 - [`validation-engine.md`](validation-engine.md) — how the engine defends itself
 - [`lessons-learned.md`](lessons-learned.md) — the *method* side: how these were found, and the wrong turns taken on the way
-- [`docs/guides/powershell-runtime.md`](../guides/powershell-runtime.md) — installing a host
+- `docs/guides/powershell-runtime.md` — installing a host *(retired in Phase 10)*
 - `DOCTOR-010` — the automated check that enforces §1
 
 ## 6. `$IsWindows` does not exist in Windows PowerShell 5.1

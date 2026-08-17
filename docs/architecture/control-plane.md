@@ -58,7 +58,7 @@ Human / PM / Product Owner
 | Risk, decisions | `RAID-log.md`, `decision-log.md` |
 | Traceability | `RTM.json` (Strict) |
 | Release | `RELEASE.md` (scope, tests, QA/security, rollback, approval) |
-| Enforcement | `scripts/validate-project.ps1` + `scripts/lib/*` + `pmo-config/*` |
+| Enforcement | `src/` engine (via `cli/axiom.mjs`) + `pmo-config/*` |
 
 See [the validation engine](validation-engine.md) for how enforcement works, and
 [the interoperability overview](../integrations/overview.md) for the plane

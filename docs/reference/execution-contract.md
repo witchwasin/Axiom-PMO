@@ -247,8 +247,9 @@ edit. To change a contract legitimately, re-export it — which mints a new dige
 and makes the change visible in review.
 
 The digest is over raw file bytes rather than canonicalized JSON because
-`ConvertTo-Json`'s ordering and escaping differ between Windows PowerShell 5.1
-and PowerShell 7, both required hosts.
+JSON re-serialization ordering and escaping are not stable across
+implementations — a digest over canonical text would disagree across hosts
+for reasons unrelated to tampering.
 
 ## What this does not verify
 

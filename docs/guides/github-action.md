@@ -2,11 +2,10 @@
 
 Axiom-PMO ships as a composite GitHub Action (`action.yml` at the repository
 root) so a consumer repository can run the governance validator inside a pull
-request without installing PowerShell locally. The Action wraps the same
-`scripts/validate-project.ps1` reference validator that `cli/axiom.mjs`
-wraps -- it adds no validation rules of its own. See
-[diagnostics-contract.md](../reference/diagnostics-contract.md) for the JSON
-shape both surfaces read.
+request without installing anything locally. The Action runs the same Node
+engine (`cli/axiom.mjs`) a local run uses -- it adds no validation rules of
+its own. See [diagnostics-contract.md](../reference/diagnostics-contract.md)
+for the JSON shape both surfaces read.
 
 ## Quick start
 
@@ -29,8 +28,8 @@ jobs:
 ```
 
 GitHub-hosted `ubuntu-latest`, `windows-latest`, and `macos-latest` runners
-already ship PowerShell 7. The Action does not install a runtime; it finds
-the one already on the runner, the same way `cli/axiom.mjs` finds one
+already ship Node.js. The Action does not install a runtime; it runs the
+engine with the runner's own Node, the same way `cli/axiom.mjs` runs
 locally.
 
 ## Report-only by default
@@ -52,10 +51,10 @@ wants the check to actually block:
           enforce: "true"
 ```
 
-This default does not soften an infrastructure failure. If no PowerShell
-host is found on the runner (exit code `127`) or the Action receives a bad
-input, the step fails regardless of `enforce` -- a silently-passing check
-that never actually ran would be worse than one that fails loudly.
+This default does not soften an infrastructure failure. If the engine
+crashes (exit code `127`) or the Action receives a bad input, the step fails
+regardless of `enforce` -- a silently-passing check that never actually ran
+would be worse than one that fails loudly.
 
 ## Inputs
 
@@ -78,7 +77,7 @@ that never actually ran would be worse than one that fails loudly.
 
 | Output | Meaning |
 |---|---|
-| `exit-code` | The underlying validator's exit code: `0` pass, `1` fail, `2` blocking warning, `127` no PowerShell host. |
+| `exit-code` | The underlying validator's exit code: `0` pass, `1` fail, `2` blocking warning, `127` infrastructure failure (a Node-side crash, never masked). |
 | `outcome` | `success`, `failure`, `warning`, or `runtime-missing`. Reflects the real result even in report-only mode, so a later step can branch on it. |
 | `json-report` | Path to `axiom-report.json`. |
 | `markdown-report` | Path to `axiom-report.md`. |
@@ -161,10 +160,10 @@ and git range semantics: [docs/reference/scope-declaration.md](../reference/scop
 
 ## Troubleshooting
 
-- **`exit-code: 127`, `outcome: runtime-missing`** -- no PowerShell host was
-  found on the runner. GitHub-hosted runners ship one; a self-hosted runner
-  needs `pwsh` on `PATH` (see
-  [powershell-runtime.md](powershell-runtime.md)).
+- **`exit-code: 127`, `outcome: runtime-missing`** -- an infrastructure
+  failure in the Node engine surfaced visibly (the Action never masks a
+  crash as a governance verdict). See the workflow run log for the
+  underlying error.
 - **Step succeeded but findings exist in the report** -- this is report-only
   mode (`enforce` defaults to `false`), not a bug. Check the Job Summary,
   the uploaded artifact, or the `outcome`/`exit-code` outputs.

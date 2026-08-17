@@ -17,8 +17,8 @@ invoked by this framework; there is no automated Claude Design call.
 2. A Human points Claude Design at that folder and answers its questions.
    Candidate deliverables are exported to `DESIGN/CLAUDE-DESIGN/OUTPUT/**`.
 3. The deterministic preflight checks paths, manifest, declared
-   screens/states, digests, and scope references (`scripts/design-provider-digest.ps1`
-   recomputes the digests it records).
+   screens/states, digests, and scope references (the `designProviderDigest`
+   tool in `src/tools/digest-tools.ts` recomputes the digests it records).
 4. `pmo-design` performs semantic candidate reconciliation
    (business/API/data/permission) before Human review.
 5. A Human reviews UX/UI/business fit and records accept/revise/reject in

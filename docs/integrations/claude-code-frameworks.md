@@ -37,9 +37,9 @@ If two frameworks disagree, an agent must:
 
 - Keep Axiom-PMO's `AGENTS.md` as the behavioral source of truth; let other
   frameworks' instructions layer *below* it.
-- Axiom-PMO ships no hooks and requires none; its enforcement is the PowerShell
-  validator, not settings hooks. If you add Claude Code hooks, they must not
-  grant git authority or bypass approval gates.
+- Axiom-PMO ships no hooks and requires none; its enforcement is the
+  deterministic validator, not settings hooks. If you add Claude Code hooks,
+  they must not grant git authority or bypass approval gates.
 - Skills load on demand (see [`AGENTS.md`](../../AGENTS.md)); a custom skill must
   not instruct the agent to commit, push, tag, deploy, or self-approve.
 

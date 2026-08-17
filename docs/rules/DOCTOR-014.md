@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Level | FAIL |
-| Runs when | `scripts/pmo-doctor.ps1` is invoked |
+| Runs when | `node cli/axiom.mjs doctor` is invoked |
 | Artifacts | `pmo-config/validation-rules.json` |
 
 ## What this rule checks

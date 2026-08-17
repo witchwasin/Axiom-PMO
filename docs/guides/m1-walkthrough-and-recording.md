@@ -23,8 +23,8 @@ coverage:
 
 | Walk | Required environment | Purpose |
 |---|---|---|
-| Windows reference | Clean Windows environment with Windows PowerShell 5.1 available | Proves the reference platform onboarding path |
-| Clean macOS | Clean macOS environment with no repo-local state | Proves the portable `pwsh` onboarding path |
+| Windows reference | Clean Windows environment | Proves the reference platform onboarding path |
+| Clean macOS | Clean macOS environment with no repo-local state | Proves the portable onboarding path |
 
 The Linux clean-room container in `clean-room/` is useful extra evidence, but it
 does not replace either required walk.
@@ -56,7 +56,6 @@ Participant role:
 Participant familiarity with Axiom-PMO:
 Platform:
 Shell:
-PowerShell host and version:
 Node version:
 Repository commit:
 
@@ -101,7 +100,7 @@ tracked as non-blocking.
 Use:
 
 ```bash
-asciinema rec docs/assets/demo/axiom-pmo-demo.cast -c "pwsh -NoProfile -File scripts/demo.ps1 -Plain -NoPause"
+asciinema rec docs/assets/demo/axiom-pmo-demo.cast -c "node cli/axiom.mjs demo -Plain -NoPause"
 ```
 
 Then generate a GIF from that cast and store it beside the cast:

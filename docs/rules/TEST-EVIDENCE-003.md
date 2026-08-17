@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Level | WARN (blocking) at Standard, FAIL at Strict; git infrastructure failures always FAIL |
-| Runs when | `scripts/validate-project.ps1` is invoked at the Release gate with **both** `-ReleaseDiffBase` and `-ReleaseDiffHead` supplied |
+| Runs when | `node cli/axiom.mjs validate` is invoked at the Release gate with **both** `-ReleaseDiffBase` and `-ReleaseDiffHead` supplied |
 | Artifacts | `RELEASE.md` (Test Summary table), the FILE: evidence it cites |
 
 ## What this rule checks
@@ -66,7 +66,7 @@ file has content that is *not part of the verified range*.
   range; an unresolvable one is a configuration error, not a pass.
 - **Opt-in:** the rule only evaluates when the caller supplies both
   `-ReleaseDiffBase` and `-ReleaseDiffHead`. Every existing invocation of
-  `validate-project.ps1` supplies neither, so behavior is byte-identical for
+  the validator supplies neither, so behavior is byte-identical for
   them. The project's own repository is the git ground truth (evidence files
   and commit range live there), so no separate repo-root parameter is needed
   the way SCOPE-DIFF needs `-ScopeDiffRepoRoot`.

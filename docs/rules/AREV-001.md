@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Level | INFO/none (Lite, disabled) / WARN (Standard) / FAIL (Strict) / PASS |
-| Runs when | `scripts/verify-execution-result.ps1` is invoked without `-Preflight` |
+| Runs when | `node cli/axiom.mjs verify` is invoked without `--preflight` |
 | Artifacts | `EXECUTION-REVIEW.json` |
 
 ## What this rule checks

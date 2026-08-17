@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Level | FAIL (also the PASS row for a clean verification) |
-| Runs when | `scripts/verify-execution-result.ps1` is invoked |
+| Runs when | `node cli/axiom.mjs verify` is invoked |
 | Artifacts | `EXECUTION-RESULT.json` |
 
 ## What this rule checks

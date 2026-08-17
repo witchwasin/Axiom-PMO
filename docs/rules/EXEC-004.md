@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Level | FAIL |
-| Runs when | `scripts/verify-execution-result.ps1` is invoked |
+| Runs when | `node cli/axiom.mjs verify` is invoked |
 | Artifacts | the offending changed file |
 
 ## What this rule checks
@@ -17,7 +17,7 @@ A path matching `prohibited_paths` fails even when it also matches `allowed_path
 
 ## Why it exists
 
-This is the execution-side twin of `SCOPE-DIFF-001`, and it reuses the same glob engine, the same precedence rules, and the same case-sensitivity behaviour (`scripts/lib/scope-diff-matcher.ps1`) rather than reimplementing them — one matching engine, one set of rules a reader has to learn.
+This is the execution-side twin of `SCOPE-DIFF-001`, and it reuses the same glob engine, the same precedence rules, and the same case-sensitivity behaviour (`src/rules/scope-diff-matcher.ts`) rather than reimplementing them — one matching engine, one set of rules a reader has to learn.
 
 Two properties worth knowing:
 

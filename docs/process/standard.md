@@ -59,6 +59,6 @@ that is not being handed to anyone. See
 
 - Scope, design, and release decisions are logged when material.
 - Requirements and test claims have `source_ref`.
-- Validation passes with `scripts/validate-project.ps1`.
-- Before a developer handoff: `-Gate Handoff` passes and
-  `scripts/assess-handoff.ps1` reports which stages are ready.
+- Validation passes with `node cli/axiom.mjs validate`.
+- Before a developer handoff: `--gate Handoff` passes and
+  `node cli/axiom.mjs handoff` reports which stages are ready.

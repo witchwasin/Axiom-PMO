@@ -137,8 +137,8 @@ Same for out-of-scope screens and for whether a brand field marked `supported` r
 
 ## Using it
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project> -Mode <mode> -Gate Design
+```bash
+node cli/axiom.mjs validate --project <project> --mode <mode> --gate Design
 ```
 
 Load `pmo-design` and ask for a design system. For new work, the skill first consumes a visual

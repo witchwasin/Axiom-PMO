@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Level | FAIL (whenever the adversarial review check is enabled at all: Standard and Strict; Lite disables the whole AREV family) |
-| Runs when | `scripts/verify-execution-result.ps1` is invoked without `-Preflight` and `EXECUTION-REVIEW.json` is present and valid |
+| Runs when | `node cli/axiom.mjs verify` is invoked without `--preflight` and `EXECUTION-REVIEW.json` is present and valid |
 | Artifacts | `EXECUTION-REVIEW.json` (each finding), `PROJECT.md` (In Scope table) |
 
 ## What this rule checks

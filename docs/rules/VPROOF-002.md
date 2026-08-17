@@ -23,8 +23,8 @@ current files and must not be presented as current.
 Review the current artifacts, update or recreate the required local captures,
 then run:
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/visual-proof-digest.ps1 -ProjectPath <project>
+```bash
+node -e "import('./dist/tools/digest-tools.js').then(m=>process.stdout.write(m.visualProofDigest('.', '<project>').output))"
 ```
 
 Put the returned value in `review_inputs.digest` and record any new human

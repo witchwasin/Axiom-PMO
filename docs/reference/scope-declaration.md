@@ -14,7 +14,7 @@ wrong files. Keep both checks; they cover different risks.
 
 Opt-in and gate-independent: SCOPE-DIFF only runs when both a base and a
 head commit are supplied (`-ScopeDiffBase`/`-ScopeDiffHead` on
-`scripts/validate-project.ps1`, or `enable-scope-diff: true` on the GitHub
+`node cli/axiom.mjs validate`, or `enable-scope-diff: true` on the GitHub
 Action). Every existing invocation that does not supply them is completely
 unaffected — this is additive to the validator and the Action, not a
 replacement for anything.
@@ -78,7 +78,7 @@ an LLM has to interpret" principle:
 
 No character classes (`[abc]`), brace expansion (`{a,b}`), or extglob. A
 smaller grammar is one that can be tested exhaustively — see
-`tests/helpers/scope-diff-tests.ps1` — instead of approximately.
+`node --test dist/tools/scope-diff.test.js` — instead of approximately.
 
 Examples:
 
@@ -138,12 +138,12 @@ allowlist anywhere in SCOPE-DIFF. Every entry:
   fuzzy matching;
 - **appears in the report** — every exempt file is listed with its reason,
   never silently dropped;
-- **has a test** — see `tests/helpers/scope-diff-tests.ps1`'s
+- **has a test** — see `node --test dist/tools/scope-diff.test.js`'s
   "repo-wide exempt" case, and the matching "non-exempt unrelated file
   still fails" case proving the exemption does not leak beyond what it
   actually lists.
 
-`Read-ScopeDiffPolicy` (`scripts/lib/scope-diff-matcher.ps1`) rejects the
+`readScopeDiffPolicy` (`src/rules/scope-diff-matcher.ts`) rejects the
 file outright — a hard error, the same severity as a missing config file —
 if any entry has an empty or missing `reason`, a pattern that fails the
 same `Test-ScopeGlobSyntax` gate `SCOPE.json` patterns go through, a
@@ -167,8 +167,8 @@ magic list this design avoids.
   `pull_request.base.sha` / `pull_request.head.sha`) — the PR's actual
   commits, not the moving branch names.
 - **`scope-diff-base`/`scope-diff-head` Action inputs**, or
-  `-ScopeDiffBase`/`-ScopeDiffHead` on the CLI/`validate-project.ps1`
-  directly, override the event context when supplied. On any non-`pull_request`
+  `-ScopeDiffBase`/`-ScopeDiffHead` on the CLI directly, override the event
+  context when supplied. On any non-`pull_request`
   event (for example `push`), you must supply both explicitly — there is no
   event-derived base for those.
 - If `enable-scope-diff: true` is set but neither an explicit override nor a
@@ -211,20 +211,20 @@ magic list this design avoids.
 
 ### Path normalization (Windows and Linux)
 
-`ConvertTo-ScopeGlobRegex` (`scripts/lib/scope-diff-matcher.ps1`) never
-calls an OS-aware path API (`Join-Path`, `Split-Path`) on a git-diff-derived
+`convertToScopeGlobRegex` (`src/rules/scope-diff-matcher.ts`) never calls
+an OS-aware path API (`path.join`, `path.resolve`) on a git-diff-derived
 path — matching is pure string/regex comparison. `git diff` itself always
 emits forward-slash paths, on every platform, including Windows. Combined
 with rejecting any pattern containing a backslash as `SCOPE-DIFF-003`, this
-means the exact same code path runs identically on Windows PowerShell 5.1,
-PowerShell 7 on Windows, and PowerShell 7 on Linux/macOS — proven by
-`tests/helpers/scope-diff-tests.ps1` running unchanged across all of them in
-this repository's own CI matrix, not by separate OS-specific test code.
+means the exact same code path runs identically on Windows, Linux, and macOS
+— proven by `node --test dist/tools/scope-diff.test.js` running unchanged
+across all of them in this repository's own CI matrix, not by separate
+OS-specific test code.
 
 ### Path matching is case-sensitive
 
-`Resolve-ScopeVerdict` compares every path with PowerShell's `-cmatch`
-(case-sensitive), never the case-insensitive `-match`. `SRC/PAYMENTS/x.ts`
+`resolveScopeVerdict` compares every path case-sensitively (the regex is
+compiled without the `i` flag), never case-insensitively. `SRC/PAYMENTS/x.ts`
 does **not** satisfy `include: ["src/payments/**"]` — this matters because a
 case-insensitive comparison would let a file whose path differs only in
 case pass a scope check on a case-sensitive filesystem or Git checkout
@@ -286,8 +286,8 @@ fail the workflow step unless `enforce: true`.
 `SCOPE-DIFF-003` (invalid declaration) and `SCOPE-DIFF-004` (git range
 unavailable) are different: they mean the comparison itself could not run,
 which is an infrastructure/configuration failure, not a governance verdict.
-Report-only cannot hide those either — the same principle as a missing
-PowerShell host always failing the step regardless of `enforce`.
+Report-only cannot hide those either — the same principle as an
+infrastructure failure always failing the step regardless of `enforce`.
 
 ## Security and privacy
 
@@ -335,10 +335,10 @@ PowerShell host always failing the step regardless of `enforce`.
 - **`dogfood-scope-diff`'s own CI job runs on Ubuntu only** in this
   repository's workflow, matching the same limitation already noted for
   M4's `dogfood-github-action` job. Windows and macOS coverage for
-  SCOPE-DIFF's own logic comes from `tests/helpers/scope-diff-tests.ps1`
-  running across this repository's full CI matrix (Windows PowerShell 5.1,
-  Windows pwsh 7, Ubuntu, macOS), not from a Windows/macOS run of the
-  composite Action definition itself via `uses: ./`.
+  SCOPE-DIFF's own logic comes from `node --test dist/tools/scope-diff.test.js`
+  running across this repository's full CI matrix (Windows, Ubuntu, macOS),
+  not from a Windows/macOS run of the composite Action definition itself via
+  `uses: ./`.
 
 ## Related
 

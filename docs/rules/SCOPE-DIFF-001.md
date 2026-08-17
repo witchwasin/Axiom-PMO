@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Level | FAIL (violation) / PASS (all changed files in scope) |
-| Runs when | `-ScopeDiffBase` and `-ScopeDiffHead` are both supplied to `scripts/validate-project.ps1` |
+| Runs when | `-ScopeDiffBase` and `-ScopeDiffHead` are both supplied to `node cli/axiom.mjs validate` |
 | Artifacts | `SCOPE.json`, and every out-of-scope changed file individually |
 
 ## What this rule checks

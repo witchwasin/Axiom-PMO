@@ -17,10 +17,10 @@ See [Permanent Non-Goals](../../ROADMAP.md#permanent-non-goals) in
 ## The pipeline
 
 ```text
-scripts/validate-project.ps1 -Format Json
+node cli/axiom.mjs validate --json
         |
         v
-scripts/aggregate-diagnostics.ps1
+aggregate-diagnostics (src/tools/aggregate-diagnostics.ts)
         |
         +--> .axiom/learning/events/<utc-timestamp>-<run-id>.jsonl
         |    one immutable file per run, written once, never reopened --
@@ -29,7 +29,7 @@ scripts/aggregate-diagnostics.ps1
         +--> .axiom/learning/FAILURE-PATTERNS.json
         |    rebuilt from EVERY event file, every time -- never itself the
         |    source of truth. A corrupted or deleted registry is a re-run
-        |    of this step, not a data-loss event: axiom aggregate-diagnostics -RebuildOnly
+        |    of this step, not a data-loss event: aggregate-diagnostics -RebuildOnly
         |
         +--> .axiom/learning/candidates/IMP-<rule-id>.json
              only for a cluster crossing the multi-dimensional threshold in
@@ -39,7 +39,7 @@ scripts/aggregate-diagnostics.ps1
 
 ## Local and opt-in
 
-No network call exists anywhere in `aggregate-diagnostics.ps1`. Raw events
+No network call exists anywhere in `aggregate-diagnostics`. Raw events
 are git-ignored by default (`.axiom/learning/events/`, `.axiom/learning/salt`)
 — they are per-run local observations, and committing them by default would
 push that into shared history without anyone choosing to. A team that wants

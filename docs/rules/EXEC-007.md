@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Level | FAIL |
-| Runs when | `scripts/verify-execution-result.ps1` is invoked |
+| Runs when | `node cli/axiom.mjs verify` is invoked |
 | Artifacts | `EXECUTION-RESULT.json` |
 
 ## What this rule checks
@@ -51,7 +51,7 @@ digest or a work item in prose authorizes nothing; that substring search was
 the round-4 bypass, and [`EXEC-005`](EXEC-005.md) records how it was exploited.
 A row with no token fails closed.
 
-**This rule was corrected.** An earlier version only checked that `decision_ref` was non-empty -- `"decision_ref": "DEC-999-NOT-REAL"` passed outright, because nothing ever looked inside `decision-log.md`. A code review found this before it was accepted; `scripts/lib/execution-contract-schema.ps1`'s `Resolve-DecisionRecord` is the real resolver that replaced it.
+**This rule was corrected.** An earlier version only checked that `decision_ref` was non-empty -- `"decision_ref": "DEC-999-NOT-REAL"` passed outright, because nothing ever looked inside `decision-log.md`. A code review found this before it was accepted; `src/exec/execution-contract-schema.ts`'s `resolveDecisionRecord` is the real resolver that replaced it.
 
 ## Why it exists
 

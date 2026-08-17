@@ -48,10 +48,10 @@ When there are none, write `none` under the heading.
 
 ## Open actions are real blockers
 
-`scripts/assess-handoff.ps1` builds each stage's blocker list from **two** sources: open findings in `HANDOFF-REVIEW.json` and open rows in this table. Reading only the review would let a project close every finding, leave both demo actions open, and still be told it is ready to demo.
+`axiom handoff` builds each stage's blocker list from **two** sources: open findings in `HANDOFF-REVIEW.json` and open rows in this table. Reading only the review would let a project close every finding, leave both demo actions open, and still be told it is ready to demo.
 
 A finding whose `item_id` names an action is the same blocker seen from two documents; it is counted once.
 
 ## Related
 
-`HANDOFF-003` (named owner), `HANDOFF-010` (review findings also carry blocking points), `scripts/assess-handoff.ps1` (turns blocking points into stage verdicts).
+`HANDOFF-003` (named owner), `HANDOFF-010` (review findings also carry blocking points), `axiom handoff` (turns blocking points into stage verdicts).

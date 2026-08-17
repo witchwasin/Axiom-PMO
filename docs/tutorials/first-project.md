@@ -1,12 +1,12 @@
 # Tutorial: Your First Project
 
 This walks through creating and validating a project with Axiom-PMO. It assumes
-PowerShell is available (Windows PowerShell 5.1 or `pwsh`).
+Node.js 18+ is available.
 
 ## 1. Generate a skeleton
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/new-project.ps1 -ProjectCode P02-DEMO -Mode Standard
+```bash
+node cli/axiom.mjs init --code P02-DEMO --mode Standard
 ```
 
 This scaffolds a mode-aware project from `templates/`. Standard adds `DESIGN/`
@@ -50,14 +50,12 @@ Strict automatically.
 Draft -> Scope -> Design -> Handoff -> Release
 ```
 
-```powershell
+```bash
 # Scope gate
-powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 `
-  -ProjectPath projects/P02-DEMO -Mode Standard -Gate Scope -FailOnWarning
+node cli/axiom.mjs validate --project projects/P02-DEMO --mode Standard --gate Scope --fail-on-warning
 
 # Release gate
-powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 `
-  -ProjectPath projects/P02-DEMO -Mode Standard -Gate Release -FailOnWarning
+node cli/axiom.mjs validate --project projects/P02-DEMO --mode Standard --gate Release --fail-on-warning
 ```
 
 A non-zero exit means something is missing, placeholder, unresolvable, or
@@ -68,12 +66,10 @@ unapproved. Fix the artifact — do not weaken the check.
 The gates above prove the governance is complete. They do not prove a developer
 can start. That is what the `Handoff` gate is for:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 `
-  -ProjectPath projects/P02-DEMO -Mode Standard -Gate Handoff
+```bash
+node cli/axiom.mjs validate --project projects/P02-DEMO --mode Standard --gate Handoff
 
-powershell -ExecutionPolicy Bypass -File scripts/assess-handoff.ps1 `
-  -ProjectPath projects/P02-DEMO -Mode Standard
+node cli/axiom.mjs handoff --project projects/P02-DEMO --mode Standard
 ```
 
 It reuses your existing `Design Ready` approval and adds no new sign-off. The

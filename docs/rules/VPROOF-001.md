@@ -34,6 +34,6 @@ candidate evidence; the existing human approval row remains the approval.
 Create the review from `templates/VISUAL-REVIEW.json`, capture the configured
 desktop and mobile PNG files locally, calculate their SHA-256 values, complete
 every rubric row honestly, and record the human review decision as a project
-`DEC-###`. Run `scripts/visual-proof-digest.ps1` after the artifacts are final.
+`DEC-###`. Run the `visualProofDigest` tool (`src/tools/digest-tools.ts`) after the artifacts are final.
 
 Related: [Visual Proof architecture](../architecture/visual-proof.md).

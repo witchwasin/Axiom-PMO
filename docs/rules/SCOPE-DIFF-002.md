@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Level | FAIL |
-| Runs when | `-ScopeDiffBase` and `-ScopeDiffHead` are both supplied to `scripts/validate-project.ps1` |
+| Runs when | `-ScopeDiffBase` and `-ScopeDiffHead` are both supplied to `node cli/axiom.mjs validate` |
 | Artifacts | `SCOPE.json` |
 
 ## What this rule checks
