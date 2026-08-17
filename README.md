@@ -595,9 +595,8 @@ full secret scan. Report vulnerabilities per [`SECURITY.md`](SECURITY.md).
 
 Contributions are welcome — especially validation rules, fixtures, and
 interoperability docs. The one hard rule: **do not weaken governance to make
-tests pass.** See [`CONTRIBUTING.md`](CONTRIBUTING.md) and
-[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). AI-assisted contributions are welcome
-but must be disclosed and human-reviewed.
+tests pass.** See [`CONTRIBUTING.md`](CONTRIBUTING.md). AI-assisted
+contributions are welcome but must be disclosed and human-reviewed.
 
 ## Visual Identity
 
@@ -748,9 +747,10 @@ There is no npm package: Milestone 3 Phase B and a v2.0 manifest candidate are
 both deferred, and the plugin is not published to any public marketplace.
 
 Separately from the milestone roadmap, the interpreter itself has been
-migrated from PowerShell to Node/TypeScript (`Fixed_plan/master-plan.md` v3,
-Phases 0–10, `DEC-026`–`DEC-034`), shipped in 2.2.0. This changed the runtime
-only — no governance rule, gate, mode, or artifact requirement changed.
+migrated from PowerShell to Node/TypeScript (Phases 0–10, `DEC-026`–`DEC-034`,
+[`docs/releases/v2.2.0.md`](docs/releases/v2.2.0.md)), shipped in 2.2.0. This
+changed the runtime only — no governance rule, gate, mode, or artifact
+requirement changed.
 
 Upgrading from 2.1 requires no migration: the interpreter migration changed
 only the runtime the CLI executes in, not governance behavior — inputs,

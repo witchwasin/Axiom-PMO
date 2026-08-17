@@ -1,12 +1,12 @@
-# Phase 7 Canary Log
+# Canary Log
 
 Qualifying run: a push-to-main CI run of the full profile with
-AXIOM_ROLLBACK_PWSH unset (PLAN.md §4). N = consecutive clean qualifying
+AXIOM_ROLLBACK_PWSH unset. N = consecutive clean qualifying
 runs; any validation-surface drift (canary-baseline.json mismatch) logs a
-RESET and restarts N at 0 (PLAN.md §3). Every qualifying run appends a line
+RESET and restarts N at 0. Every qualifying run appends a line
 below; the appended lines are committed from the phase7-canary artifact by
-the maintainer -- this is a committed file, matching every other Phase 0-6
-artifact. No external state store.
+the maintainer -- this is a committed file. No external state store. State
+lives under `.ci/canary/`; see `scripts/canary-baseline.mjs`.
 
 ## 2026-08-16 — baseline captured, mechanism landed
 

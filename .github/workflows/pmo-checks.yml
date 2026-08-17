@@ -623,13 +623,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node --test dist/exec/ci-check-evidence-live.test.js
 
-  # Phase 7 canary bookkeeping (Fixed_plan/phase7/PLAN.md §3). Every full-profile
+  # Canary bookkeeping (see scripts/canary-baseline.mjs). Every full-profile
   # run recomputes the SHA-256 manifest over the validation surface (src/**/*.ts,
-  # scripts/**/*.ps1, pmo-config/*.json, Fixed_plan/phase0/compatibility-case-
+  # scripts/**/*.ps1, pmo-config/*.json, .ci/canary/compatibility-case-
   # manifest.md, tests/golden/**) and diffs it against the committed
-  # Fixed_plan/phase7/canary-baseline.json via scripts/canary-baseline.mjs:
+  # .ci/canary/canary-baseline.json via scripts/canary-baseline.mjs:
   #
-  #   * clean + qualifying (push to main, the §4 definition) -> appends
+  #   * clean + qualifying (push to main, full profile) -> appends
   #     "run clean N=..." to canary-log.md; the run counts toward N.
   #   * clean + non-qualifying -> verified but not counted (no log line).
   #   * any difference -> appends "N RESET: <files>" to canary-log.md, re-captures
@@ -671,11 +671,11 @@ jobs:
         with:
           name: phase7-canary
           path: |
-            Fixed_plan/phase7/canary-log.md
-            Fixed_plan/phase7/canary-baseline.json
+            .ci/canary/canary-log.md
+            .ci/canary/canary-baseline.json
           if-no-files-found: error
 
-  # Phase 7 canary matrix (Fixed_plan/phase7/PLAN.md §4): the same 4-host set the
+  # Canary matrix: the same 4-host set the
   # full profile already runs, each on both the pinned Node (24.18.0) and the
   # package.json engines floor (>=22.0.0 -> the oldest supported LTS of the 22.x
   # line, 22.11.0). Each cell drives the CLI (cli/axiom.mjs) against a clean
@@ -751,8 +751,8 @@ jobs:
             console.log("OK: " + env.summary.pass + " pass, 0 fail, exit 0");
           '
 
-      # CR-017 containment (Fixed_plan/phase8/CR-017-review-material.md §5): the
-      # NTFS-junction case can only be exercised on a real Windows host. Windows
+      # CR-017 containment: the NTFS-junction case can only be exercised on a
+      # real Windows host. Windows
       # cells create a real junction and prove SETUP-003 refuses it the same way
       # it refuses a symlink, and that the pointed-at file stays untouched.
       # Phase 9: with the PS reference deleted this is a pure TS-side assertion

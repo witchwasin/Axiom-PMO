@@ -33,10 +33,32 @@ semantics are unchanged from 2.1.0.
   implementation and its adapter code, 92 files total. Every differential
   probe that used to compare live against this reference now runs as a
   golden-fixture regression instead, captured from the reference before
-  deletion. `Fixed_plan/phase0/capture-*.ps1` is kept as historical record
-  of how the original golden fixtures were captured.
+  deletion by `Fixed_plan/phase0/capture-*.ps1` (later retired -- see the
+  2026-08-18 entry below).
 - `docs/guides/powershell-runtime.md` -- the PowerShell 7 install guide,
   retired along with the runtime it documented.
+
+### Post-release cleanup -- `Fixed_plan/` retired, README reconciled (2026-08-18)
+
+- **Removed `Fixed_plan/`** -- the master plan, decision log (`DEC-026`
+  through `DEC-034`), AI-review transcripts, and per-phase reports that
+  documented how the interpreter migration above was planned and executed.
+  Retired now that the migration it tracked has closed, on the same basis as
+  the framework-level `decision-log.md` removed at `2.1.0`: it documented how
+  the migration was built, not how to use the product. Live CI state that
+  depended on it -- the canary baseline/log and the compatibility-case
+  manifest (`scripts/canary-baseline.mjs`) -- moved to `.ci/canary/` rather
+  than being deleted. `README.md`, `ROADMAP.md`, and
+  `docs/releases/v2.2.0.md` citations of `Fixed_plan/` paths were updated
+  accordingly.
+- **Removed `CODE_OF_CONDUCT.md` and `COMMUNITY.md`** -- boilerplate for an
+  external contributor community this solo-maintained project does not have.
+  `README.md`'s Contributing section no longer links `CODE_OF_CONDUCT.md`.
+- Reconciled `README.md`'s version badge, intro line, release table, and
+  Project status narrative to `2.2.0` (they still read `2.1.0`), added the
+  missing `docs/releases/v2.2.0.md`, and corrected a stale claim that the
+  Formal Studio dashboard (M5) was "deferred to v2.1" -- v2.1 shipped without
+  it and no target version is authorized.
 
 ## 2.1.0 - 2026-08-15
 

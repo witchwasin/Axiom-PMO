@@ -13,11 +13,15 @@ separate decisions and have not occurred.
 
 This roadmap's Milestone table tracks the product only. A separate,
 later-authorized workstream -- the PowerShell-to-Node/TypeScript interpreter
-migration (`DEC-026`..`DEC-034`) -- is tracked in `Fixed_plan/master-plan.md`
-and its per-phase `Fixed_plan/phaseN/PLAN.md` files, not in this document. It
-ran 2026-08-15 through 2026-08-17, deleted the PowerShell reference
-implementation entirely (92 files), and is what `v2.2.0` ships; see
-`CHANGELOG.md`'s `2.2.0` entry for the summary.
+migration (`DEC-026`..`DEC-034`) -- was planned and tracked in its own
+`Fixed_plan/` directory, not in this document. It ran 2026-08-15 through
+2026-08-17, deleted the PowerShell reference implementation entirely (92
+files), and is what `v2.2.0` ships; see `CHANGELOG.md`'s `2.2.0` entry for the
+summary and `docs/releases/v2.2.0.md` for the release notes. `Fixed_plan/`
+itself -- internal planning, review, and phase-report material that
+documented how the migration was built, not how to use the product -- was
+retired from the published repository once the migration closed, on the same
+basis as the framework-level `decision-log.md` removed at `2.1.0`.
 
 **Minimum publishable baseline: `f10b608`.** Two post-closure production
 defects were found by CI after the Milestone 7-9 merge and fixed on `main`
@@ -504,7 +508,7 @@ Non-goals:
 - **Status:** Approved
 - **Approved by:** WITCHWASIN K. (Human Owner)
 - **Date:** 2026-08-15
-- **source_ref:** ROADMAP.md (Milestone 3.5 non-goals); Fixed_plan/master-plan.md v3
+- **source_ref:** ROADMAP.md (Milestone 3.5 non-goals); Fixed_plan/master-plan.md v3 (retired 2026-08-18, see `CHANGELOG.md`)
 - **session_ref:** directed by the Human Owner in the planning conversation of 2026-08-15
   (that conversation is not visible to downstream agents; this pointer is recorded so the
   DEC stands on its own)
@@ -531,7 +535,7 @@ distribution target = committed, dependency-free Node bundle.
 - **Status:** Approved
 - **Approved by:** WITCHWASIN K. (Human Owner)
 - **Date:** 2026-08-15
-- **source_ref:** ROADMAP.md (DEC-026); Fixed_plan/master-plan.md v3 §13 items #3 and #7
+- **source_ref:** ROADMAP.md (DEC-026); Fixed_plan/master-plan.md v3 §13 items #3 and #7 (retired 2026-08-18, see `CHANGELOG.md`)
 - **session_ref:** directed by the Human Owner in the planning conversation of 2026-08-15
 - **evidence_status:** supported
 

@@ -60,9 +60,12 @@ entrypoint + project + mode + gate + format + FailOnWarning + optional flags
 present in `doctor-baseline.txt`, but carry no numeric suffix so the coverage regex
 misses them. Counted as covered here.
 
-### Golden capture scripts (retained as reproducibility evidence)
+### Golden capture scripts (historical)
 
-All under `Fixed_plan/phase0/capture-*.ps1` — each replicates the fixture machinery from
-the corresponding `tests/helpers/*.ps1` verbatim, runs the real entrypoint, and stores
-canonical (`Get-CanonicalGoldenText`) output with `<REPO_ROOT>` path normalization.
+The original golden fixtures were captured by `Fixed_plan/phase0/capture-*.ps1` — each
+replicated the fixture machinery from the corresponding `tests/helpers/*.ps1` verbatim,
+ran the real entrypoint, and stored canonical (`Get-CanonicalGoldenText`) output with
+`<REPO_ROOT>` path normalization. The scripts and their `Fixed_plan/` home were removed
+after the migration closed (see `CHANGELOG.md`); the golden fixtures they produced remain
+under `tests/golden/`.
 

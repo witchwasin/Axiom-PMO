@@ -1,6 +1,6 @@
 // CR-017 containment probe: NTFS junctions vs SETUP-003 (Windows only).
 //
-// Fixed_plan/phase8/CR-017-review-material.md §5 flagged one thing nothing in
+// The CR-017 supply-chain/containment review flagged one thing nothing in
 // the project had actually verified: SETUP-003 refuses a symlinked instruction
 // file via lstatSync(...).isSymbolicLink(), but an NTFS junction is a different
 // reparse-point type (IO_REPARSE_TAG_MOUNT_POINT, not SYMLINK), and nothing

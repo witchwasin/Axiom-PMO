@@ -1,8 +1,8 @@
 {
-  "git_sha": "c5343efd0e84df6e3530446a95ae687e48ca6729",
-  "captured_at": "2026-08-17T13:04:16.736Z",
+  "git_sha": "b063f7e7ec2969141f93cc08d9d36c2fcb196b9a",
+  "captured_at": "2026-08-17T17:55:29.883Z",
   "files": {
-    "Fixed_plan/phase0/compatibility-case-manifest.md": "8bea95306b5c929050e3f113de40f28bde3a0b0fbaf302d1c5d55077373b42a7",
+    ".ci/canary/compatibility-case-manifest.md": "5c11c706fcf48d8c1294d30d769fb5f897ca4f3be1d10a254b57bc8653fc4125",
     "pmo-config/adversarial-review-policy.json": "0f40c385c966643a025b32cc13aac90f0804973a101f7c5f348a94881a03b39b",
     "pmo-config/artifact-policy.json": "30e21aff6d569774cec85c2a02b4125a46e0c0abe15bd5c2014e4b78e656de91",
     "pmo-config/context-map.json": "727c7a92c9b2896584c2d068be708ad5400f538ce7318f55e788561a62ac041b",

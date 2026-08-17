@@ -1,29 +1,34 @@
 #!/usr/bin/env node
-// Phase 7 canary baseline (Fixed_plan/phase7/PLAN.md §3).
+// Interpreter-migration canary baseline.
 //
 // The canary measures the validation surface, not the CLI or the CI plumbing
-// itself. The manifest is exactly the path set PLAN.md §3 lists:
+// itself. The manifest is exactly this path set:
 //
 //   - src/**/*.ts
-//   - scripts/**/*.ps1
+//   - scripts/**/*.ps1 (empty since the PowerShell reference was deleted in
+//     Phase 9; kept so a reintroduced .ps1 script is caught, not silently
+//     unwatched)
 //   - pmo-config/*.json
-//   - Fixed_plan/phase0/compatibility-case-manifest.md
+//   - .ci/canary/compatibility-case-manifest.md
 //   - tests/golden/**
 //
 // plus the git SHA the baseline was captured at. The hashing mechanism is the
-// same one the Phase 6 differential report's comparator-hash table uses
-// (SHA-256 per file, committed manifest) -- same mechanism, continuous use.
+// same one the migration's differential-proof work used (SHA-256 per file,
+// committed manifest) -- same mechanism, continuous use. State lives under
+// .ci/canary/ because it is CI-runtime state, not planning material; the
+// internal migration planning records this used to cite (Fixed_plan/) were
+// retired once the migration closed (see CHANGELOG.md).
 //
 // Commands:
-//   --check   Recompute and diff against Fixed_plan/phase7/canary-baseline.json.
+//   --check   Recompute and diff against .ci/canary/canary-baseline.json.
 //             Exit 0 if clean, 1 if the surface moved (prints the changed list).
 //   --update  Re-capture the baseline at the current git SHA.
 //   --record  Canary-run bookkeeping: compute the verdict, append the run line
 //             (or the N RESET line + re-captured baseline) to canary-log.md,
 //             and print the verdict with the consecutive-clean count. Exit 1 on
 //             reset. A run counts toward N only when it is a qualifying run
-//             (push-to-main full profile, PLAN.md §4); pass the event name via
-//             the CANARY_EVENT env var (CI sets it to github.event_name).
+//             (push-to-main full profile); pass the event name via the
+//             CANARY_EVENT env var (CI sets it to github.event_name).
 //             RESETs are logged and the baseline re-captured on ANY full run:
 //             drift is drift, whatever event surfaced it.
 
@@ -34,8 +39,8 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const BASELINE_PATH = join(ROOT, "Fixed_plan/phase7/canary-baseline.json");
-const LOG_PATH = join(ROOT, "Fixed_plan/phase7/canary-log.md");
+const BASELINE_PATH = join(ROOT, ".ci/canary/canary-baseline.json");
+const LOG_PATH = join(ROOT, ".ci/canary/canary-log.md");
 const MANIFEST_HOSTS = "windows-ps51,windows-ps7,linux,macos";
 
 function walkFiles(dir) {
@@ -65,7 +70,7 @@ function manifestPaths() {
       if (f.endsWith(".json")) paths.push(`pmo-config/${f}`);
     }
   }
-  paths.push("Fixed_plan/phase0/compatibility-case-manifest.md");
+  paths.push(".ci/canary/compatibility-case-manifest.md");
   for (const f of walkFiles(join(ROOT, "tests/golden"))) {
     paths.push(relative(ROOT, f).replace(/\\/g, "/"));
   }
@@ -119,7 +124,7 @@ function check() {
 
 function isQualifyingRun() {
   // CI passes github.event_name via CANARY_EVENT. Only push-to-main full runs
-  // qualify (PLAN.md §4); locally (no CANARY_EVENT) a record is treated as a
+  // qualify; locally (no CANARY_EVENT) a record is treated as a
   // qualifying run so the mechanism is usable by hand.
   const event = process.env.CANARY_EVENT;
   if (!event) return true;
@@ -141,12 +146,11 @@ function appendLog(line) {
     "# Phase 7 Canary Log",
     "",
     "Qualifying run: a push-to-main CI run of the full profile with",
-    "AXIOM_ROLLBACK_PWSH unset (PLAN.md §4). N = consecutive clean qualifying",
+    "AXIOM_ROLLBACK_PWSH unset. N = consecutive clean qualifying",
     "runs; any validation-surface drift (canary-baseline.json mismatch) logs a",
-    "RESET and restarts N at 0 (PLAN.md §3). Every qualifying run appends a line",
+    "RESET and restarts N at 0. Every qualifying run appends a line",
     "below; the appended lines are committed from the phase7-canary artifact by",
-    "the maintainer -- this is a committed file, matching every other Phase 0-6",
-    "artifact. No external state store.",
+    "the maintainer -- this is a committed file. No external state store.",
     "",
   ].join("\n");
   const existing = existsSync(LOG_PATH) ? readFileSync(LOG_PATH, "utf8") : "";
@@ -175,11 +179,11 @@ function doRecord() {
 
   const line = `${ts} RESET N=${n}->0 sha=${sha7} changed=${changed.join(",")}`;
   appendLog(line);
-  // Re-capture so the NEXT run has a correct comparison point (PLAN.md §3).
+  // Re-capture so the NEXT run has a correct comparison point.
   const baseline = writeBaseline();
   console.log(`CANARY RESET: N ${n}->0; validation surface changed since baseline ${baselineSha.slice(0, 7)} (HEAD ${sha7}):`);
   for (const c of changed) console.log(`  - ${c}`);
-  console.log(`baseline re-captured at ${baseline.git_sha.slice(0, 7)} -- commit Fixed_plan/phase7/canary-baseline.json + canary-log.md`);
+  console.log(`baseline re-captured at ${baseline.git_sha.slice(0, 7)} -- commit .ci/canary/canary-baseline.json + canary-log.md`);
   return 1;
 }
 
