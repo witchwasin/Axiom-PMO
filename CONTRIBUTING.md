@@ -13,7 +13,7 @@ most important contribution rule follows from that.
 
 ## Project philosophy
 
-- **Deterministic over persuasive.** Rules are enforced by scripts that exit
+- **Deterministic over persuasive.** Rules are enforced by validators that exit
   non-zero, not by asking an agent nicely.
 - **Evidence over assertion.** Requirements, decisions, tests, and release
   claims must carry a source reference and an evidence status.
@@ -24,31 +24,26 @@ most important contribution rule follows from that.
 
 ## Development environment
 
-- **PowerShell.** The validator is the reference implementation. Supported:
-  - PowerShell 7 (`pwsh`) — the recommended portable runtime.
-  - Windows PowerShell 5.1 — reference platform and required compatibility
-    coverage.
-  - Linux/macOS via `pwsh` — supported; verified in CI as non-blocking until it
-    earns a track record (Milestone 3.5).
-- No build step and no runtime dependencies beyond PowerShell. Optional:
-  `make` for the convenience targets, PSScriptAnalyzer for lint.
+- **Node.js 18+.** The entire engine — validators, rules, tools, doctor — runs
+  in-process. TypeScript in `src/` compiles to `dist/`; there are no runtime
+dependencies (dev-only packages are listed in `package.json`).
+- Optional: `make` for the convenience targets. Lint is not enforced by CI.
 
 ## Run every check
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1
-powershell -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1 -RepoPath . -VerifyGolden
-powershell -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -RepoPath .
-powershell -ExecutionPolicy Bypass -File tests/golden/capture-examples.ps1 -Verify
+```bash
+node cli/axiom.mjs doctor
+node dist/tools/run-ci-suite-cli.js -Suite validation-fixtures -RepoPath .   # fixture matrix + golden verify
+node cli/axiom.mjs check
 ```
 
 Or, with `make`: `make check`. Everything must exit 0 before you open a PR.
 
 ## How to add a validation rule
 
-1. **Emit it** from the relevant validator in `scripts/validate-project.ps1`,
-   `scripts/lib/*.ps1`, or `scripts/pmo-doctor.ps1` via `Add-Result <LEVEL>
-   "<message>" "<RULE-ID>"`. Levels: `PASS`, `INFO`, `WARN`, `FAIL` (and the
+1. **Emit it** from the relevant validator in `src/rules/**`, `src/exec/**`, or
+   `src/doctor/pmo-doctor.ts` via `addResult(level, message, ruleId)` (or the
+   equivalent accumulator). Levels: `PASS`, `INFO`, `WARN`, `FAIL` (and the
    release-only `fail_release` severity is expressed in the catalog).
 2. **Register it** in `pmo-config/validation-rules.json` with a `severity`, a
    `description`, and a **`suggestion`**. `DOCTOR-007` reconciles emitted rule
@@ -62,8 +57,8 @@ Or, with `make`: `make check`. Everything must exit 0 before you open a PR.
    when the path does not resolve, so a diagnostic can never advertise a dead
    link. A rule page answers four things: what is checked, why it blocks, **what
    the validator deliberately does not decide**, and how to fix it.
-4. **Pass location context.** `Add-Result` accepts `-Artifact`, `-ItemId`, and
-   `-Field` after `-Blocking`. Supply them wherever the check knows them; a
+4. **Pass location context.** `addResult` accepts artifact, item id, and field
+   context. Supply them wherever the check knows them; a
    consumer annotating a pull request needs the file and row, not just a
    message.
 5. **Decide severity deliberately.** `info` never blocks; `warn` blocks only
@@ -85,7 +80,7 @@ that have already caused a red CI leg:
 - **Anything hashed must normalize line endings first**, or the same content
   produces different digests on different platforms.
 
-`tests/helpers/line-ending-tests.ps1` asserts both properties. Run `make eol`.
+`node --test dist/output/line-ending.test.js` asserts both properties. Run `make eol`.
 
 ### Rules must not guess
 
@@ -108,8 +103,8 @@ needs **both** a positive fixture (the rule passes when it should) and a
 
 1. Create the fixture project directory with the minimal files to exercise the
    rule.
-2. Add a case row to `$cases` (or `$doctorCases`) in
-   `scripts/run-validation-tests.ps1`: `Name`, `Path`, `Mode`, `Gate`,
+2. Add a case row to the fixture matrix (or `DOCTOR_CASES`) in
+   `src/tools/validation-fixtures.ts`: `Name`, `Path`, `Mode`, `Gate`,
    `ShouldPass`, `Rule`, `ExpectedLevel`, `Type`, plus optional `FailOnWarning`,
    `AllowedSecondaryRules`, `ForbiddenRules`.
 3. **Isolate the rule.** A negative fixture should fire the rule under test and
@@ -125,15 +120,19 @@ needs **both** a positive fixture (the rule passes when it should) and a
 Golden masters make behavior changes visible. Only regenerate them when the
 behavioral change is **intentional and reviewed**.
 
-- Fixture-matrix goldens: `run-validation-tests.ps1 -CaptureGolden` writes,
-  `-VerifyGolden` checks. Paths are normalized to `<REPO_ROOT>` for portability.
-- Example goldens: `tests/golden/capture-examples.ps1` captures,
-  `-Verify` checks (also `<REPO_ROOT>`-normalized).
-- Comparison is canonical, not byte-exact: `scripts/lib/golden-normalizer.ps1`
+- Fixture-matrix goldens live under `tests/golden/` and are verified on every
+  run — `node dist/tools/run-ci-suite-cli.js -Suite validation-fixtures -RepoPath .`
+  (the PS-era one-shot `-CaptureGolden` switch is intentionally not ported:
+  goldens are updated deliberately, in a reviewed diff, not re-captured).
+  Paths are normalized to `<REPO_ROOT>` for portability.
+- Example and probe goldens (`tests/golden/probes/*.json`, `tests/golden/*.txt`)
+  are verified the same way from `node cli/axiom.mjs check` and the probe
+  binaries (`node dist/probe/*.js`).
+- Comparison is canonical, not byte-exact: `src/output/canonical-normalizer.ts`
   folds away the BOM, line endings, JSON indentation, numeric character escapes,
-  and path separators, because those differ between PowerShell hosts and are not
-  part of the diagnostic contract. Rule ids, levels, blocking flags, messages,
-  counters, and exit codes are still compared exactly.
+  and path separators, because those are not part of the diagnostic contract.
+  Rule ids, levels, blocking flags, messages, counters, and exit codes are still
+  compared exactly.
 - **Review before you capture.** Diff the current output against the stored
   golden and confirm every change is the one you intended. The useful question is
   narrower than "did anything change": *did any FAIL or WARN row change?* A diff
@@ -152,7 +151,7 @@ points, owner tokens, build-spec sections, and readiness scoring in
 `pmo-config/handoff-policy.json`.
 
 Because these files are load-bearing, add or extend a scenario in
-`tests/helpers/config-mutation-tests.ps1` proving that mutating your new policy
+`src/tools/config-mutation.test.ts` proving that mutating your new policy
 actually changes validator behavior — a policy no test can move is decoration.
 
 No hardcoded fallbacks. If a config file is missing or malformed the validator

@@ -13,8 +13,8 @@ developers or execution frameworks.**
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](CHANGELOG.md)
 
-Version `2.1.0` · MIT License · PowerShell reference implementation (Windows
-PowerShell 5.1 and PowerShell 7; Linux/macOS via `pwsh`)
+Version `2.1.0` · MIT License · Node.js reference implementation (the engine and
+CLI run entirely in-process via `node cli/axiom.mjs`; no other runtime required)
 
 ---
 
@@ -137,7 +137,7 @@ nothing else can stand in for them.
    [3] SCOPE ........ every requirement carries source_ref and
         |             evidence_status -- nothing is invented
         |
-        |--> [SYS]    validate-project.ps1 -Gate Scope
+        |--> [SYS]    axiom validate --gate Scope
         |--> [HUMAN]  ===== Scope Approved =====
         v
    [4] DESIGN ....... FLOW.puml + BUILD-SPEC.md: system design and the
@@ -147,7 +147,7 @@ nothing else can stand in for them.
    [5] HANDOFF ...... HANDOFF.md: build order, owners, constraints, and
         |             acceptance cases a developer can actually act on
         |
-        |--> [SYS]    validate-project.ps1 -Gate Handoff
+        |--> [SYS]    axiom validate --gate Handoff
         |--> [HUMAN]  ===== Design Ready =====
         v
    [6] BUILD ........ developer handoff  OR  governed AI execution
@@ -161,7 +161,7 @@ nothing else can stand in for them.
         v
    [8] RELEASE ...... RELEASE.md: scope, UAT, deployment, rollback
         |
-        |--> [SYS]    validate-project.ps1 -Gate Release
+        |--> [SYS]    axiom validate --gate Release
         |--> [HUMAN]  ===== Release Approved =====
         v
    shipped -- every claim traceable to a source and to an approver
@@ -173,9 +173,8 @@ Scope, Design, risk, or Release approval.
 
 ## Quick start
 
-Requires PowerShell (Windows PowerShell 5.1 or PowerShell 7 / `pwsh`). The CLI
-additionally needs Node.js; everything it does is also available by calling the
-scripts directly.
+Requires Node.js 18+ (the engine and the CLI run in-process; there is no other
+runtime to install).
 
 ```bash
 # See the framework catch something real
@@ -195,13 +194,13 @@ node cli/axiom.mjs handoff --project projects/P02-MYPROJECT --mode Standard
 node cli/axiom.mjs validate --project projects/P02-MYPROJECT --gate Release --fail-on-warning
 ```
 
-Without Node, the same things through PowerShell:
+The same steps through the CLI directly:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/new-project.ps1 -ProjectCode P02-MYPROJECT -Mode Standard -IncludeHandoff -Target demo
-powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath projects/P02-MYPROJECT -Mode Standard -Gate Handoff
-powershell -ExecutionPolicy Bypass -File scripts/assess-handoff.ps1 -ProjectPath projects/P02-MYPROJECT -Mode Standard
-powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath projects/P02-MYPROJECT -Mode Standard -Gate Release -FailOnWarning
+```bash
+node cli/axiom.mjs init --code P02-MYPROJECT --mode Standard --handoff --target demo
+node cli/axiom.mjs validate --project projects/P02-MYPROJECT --mode Standard --gate Handoff
+node cli/axiom.mjs handoff --project projects/P02-MYPROJECT --mode Standard
+node cli/axiom.mjs validate --project projects/P02-MYPROJECT --mode Standard --gate Release --fail-on-warning
 ```
 
 ### The gates
@@ -233,9 +232,8 @@ Standard example combining Guided Research, the Claude Design manifest, and a
 controlled change — a **synthetic fixture**: every person, meeting, provider
 call, approval, and digest in it is fabricated demonstration evidence).
 
-On Linux/macOS or with `make` installed, the same checks are available through
-convenience wrappers (they call the PowerShell reference implementation via
-`pwsh`):
+With `make` installed, the same checks are available through convenience
+wrappers (they call the Node CLI):
 
 ```bash
 make check      # doctor + validation + mutation + e2e
@@ -244,8 +242,8 @@ make check      # doctor + validation + mutation + e2e
 
 ### Run it as a GitHub Action
 
-No local PowerShell install required -- GitHub-hosted runners already ship
-one. Report-only by default, so a first install cannot break a pull request
+No runtime to install -- the Action runs the Node engine on GitHub-hosted
+runners. Report-only by default, so a first install cannot break a pull request
 nobody has configured a rule set for yet.
 
 ```yaml
@@ -345,7 +343,7 @@ linter fails a pull request.
 Every important claim — a requirement, a design decision, a test result, an
 approval — must carry a **source reference** and an **evidence status**
 (`verified`, `supported`, `inferred`, `missing`, or `conflict`). Those claims
-are then run through a **deterministic PowerShell validator** that fails the gate
+are then run through a **deterministic validator** that fails the gate
 if something is missing, placeholder text, unresolvable, or unapproved. Nothing
 is enforced by asking the agent nicely.
 
@@ -475,7 +473,8 @@ repository or project, but portfolio aggregation, centralized identity/RBAC,
 and deep Jira/Azure DevOps/Linear synchronization are not current capabilities.
 
 That boundary is a product-maturity statement, not an architectural claim that
-Markdown or PowerShell stops working when a team reaches a particular headcount.
+Markdown or the governance engine stops working when a team reaches a particular
+headcount.
 Scale depends on repository ownership, concurrent work, project count, CI
 design, and cross-project dependencies — not headcount alone.
 
@@ -499,10 +498,9 @@ if you pass `-Mode Lite` on the command line.
 Beyond validating individual *projects*, Axiom-PMO validates *itself* — proving
 its scripts, configs, and skills are internally consistent:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1            # framework health
-powershell -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1  # positive/negative fixture matrix + golden master
-powershell -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1        # everything: goldens, config-mutation, end-to-end, CLI
+```bash
+node cli/axiom.mjs doctor  # framework health
+node cli/axiom.mjs check   # everything: doctor, fixture matrix + golden masters, e2e, CLI
 ```
 
 The test suite includes a positive/negative fixture matrix, golden masters,
@@ -512,9 +510,8 @@ exit-code tests, and generator-to-release end-to-end flows including the Handoff
 gate. See [`TESTING.md`](TESTING.md).
 
 CI runs the same checks under a [risk-based profile](docs/architecture/ci-risk-based.md):
-`fast` for docs and ordinary work, `targeted` for code in a known area (the
-minimum host is Windows PowerShell 5.1 for PowerShell changes), and `full`
-for the merge/release gate and high-risk changes. The workflow picks the
+`fast` for docs and ordinary work, `targeted` for code in a known area, and
+`full` for the merge/release gate and high-risk changes. The workflow picks the
 profile from the changed paths on a pull request; a push to `main` always runs
 `full`.
 
@@ -527,10 +524,10 @@ templates/                                Blank PROJECT.md / DELIVERY.md / HANDO
 examples/                                 Worked example projects (Lite, Standard, Strict, handoff, and a demo)
 demo/                                     The three-minute proof: a broken handoff and a fixed one
 clean-room/                               Container for walking the docs as a stranger would (issue #8)
-cli/                                      Thin Node wrapper over the PowerShell scripts (no validation logic)
-scripts/                                  The validator, framework doctor, and project generator
-  scripts/lib/                              The validator's modules (config, parsing, per-rule checks, output)
-pmo-config/                               Runtime policy as JSON — the source of truth the scripts read
+cli/                                      The Node CLI (axiom.mjs) — dispatch only, no validation logic
+src/                                      The engine: validators, rules, tools, probes, and the framework doctor
+scripts/                                  Node tooling: check.sh/check.cmd wrappers, GitHub Action, canary baseline
+pmo-config/                               Runtime policy as JSON — the source of truth the engine reads
 .claude/skills/                           The 7 active AI skills (one per workflow stage)
 docs/                                     Concepts, architecture, governance, integrations, tutorials, per-mode guides
 integrations/                             Experimental execution-contract schemas (framework interop)
@@ -623,7 +620,7 @@ Typography: Tahoma / Arial (sans-serif) for voice; Consolas / Courier New
 | | |
 |---|---|
 | **Concepts** | [handoff readiness](docs/concepts/handoff-readiness.md) · [visual direction](docs/concepts/visual-direction.md) · [design system](docs/concepts/design-system.md) · [research workflow](docs/concepts/research-workflow.md) · [externalization](docs/concepts/externalization.md) · [Claude Design workflow](docs/concepts/claude-design-workflow.md) · [change control](docs/concepts/change-control.md) · [anti-hallucination](docs/concepts/anti-hallucination.md) · [evidence-based execution](docs/concepts/evidence-based-execution.md) · [risk modes](docs/concepts/risk-modes.md) · [human authority](docs/concepts/human-authority.md) |
-| **Guides** | [Claude Code integration](docs/guides/claude-code-integration.md) · [Claude Code walkthrough](docs/guides/claude-code-walkthrough.md) · [artifact map](docs/guides/artifact-map.md) · [GitHub Action](docs/guides/github-action.md) · [M1 walkthrough and recording evidence](docs/guides/m1-walkthrough-and-recording.md) · [PowerShell runtime setup](docs/guides/powershell-runtime.md) · [three-day demo handoff](docs/guides/three-day-demo-handoff.md) |
+| **Guides** | [Claude Code integration](docs/guides/claude-code-integration.md) · [Claude Code walkthrough](docs/guides/claude-code-walkthrough.md) · [artifact map](docs/guides/artifact-map.md) · [GitHub Action](docs/guides/github-action.md) · [M1 walkthrough and recording evidence](docs/guides/m1-walkthrough-and-recording.md) · [three-day demo handoff](docs/guides/three-day-demo-handoff.md) |
 | **Reference** | [diagnostics contract](docs/reference/diagnostics-contract.md) · [scope declaration (SCOPE-DIFF)](docs/reference/scope-declaration.md) · [execution contract](docs/reference/execution-contract.md) · [rule reference](docs/rules/) |
 | **Architecture** | [control plane](docs/architecture/control-plane.md) · [Visual Proof](docs/architecture/visual-proof.md) · [M6 threat model](docs/architecture/m6-threat-model.md) · [plugin packaging spike](docs/architecture/plugin-packaging-spike.md) · [validation engine](docs/architecture/validation-engine.md) · [execution contract verification](docs/architecture/execution-contract-verification.md) · [PowerShell portability](docs/architecture/powershell-portability.md) · [lessons learned](docs/architecture/lessons-learned.md) |
 | **Governance** | [release readiness](docs/governance/release-readiness.md) · [source ownership](docs/governance/source-ownership.md) |

@@ -22,7 +22,7 @@ existing issues when possible.
 For bug reports, include:
 
 - Axiom-PMO version from the `VERSION` file;
-- operating system and PowerShell version;
+- operating system and Node.js version (`node --version`);
 - the command you ran;
 - the relevant validation output;
 - a minimal project or fixture that reproduces the problem.

@@ -77,7 +77,8 @@ These actions require explicit human confirmation.
 
 ## Validation Scope
 
-`validate-project.ps1` includes a sensitive file pre-check, not a full security scan.
+The validator (`node cli/axiom.mjs validate`) includes a sensitive file
+pre-check, not a full security scan.
 
 Strict projects still need separate manual security/privacy review.
 

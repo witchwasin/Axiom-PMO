@@ -64,8 +64,8 @@ To adopt a track on an existing project:
    Human evidence for Confidential/Restricted.
 3. **Claude Design** — declare `UI delivery: claude_design`; the generator
    materializes `DESIGN/CLAUDE-DESIGN/INPUT-MANIFEST.json` and
-   `DESIGN/CLAUDE-DESIGN/REVIEW.json`. Compute digests with
-   `scripts/design-provider-digest.ps1`.
+   `DESIGN/CLAUDE-DESIGN/REVIEW.json`. Compute digests with the
+   `designProviderDigest` tool (`src/tools/digest-tools.ts`).
 
 Missing optional declarations never fail a legacy project; the compatibility
 defaults above apply silently.
@@ -78,8 +78,8 @@ defaults above apply silently.
 4. Add `source_ref`, `evidence_status`, and `approval_status`.
 5. Validate with:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project-path> -Mode Standard -Gate Release
+```bash
+node cli/axiom.mjs validate --project <project-path> --mode Standard --gate Release
 ```
 
 ## From 1.0 to 1.1
@@ -96,12 +96,12 @@ To adopt the gate on an existing project:
    `DESIGN/BUILD-SPEC.md`. Each section declares `Status: specified` or
    `not_required` with a written rationale — a blank section is never valid.
 3. Record a semantic review in `HANDOFF-REVIEW.json`. Get the freshness digest
-   with `scripts/handoff-digest.ps1 -ProjectPath <project>`.
+   with the `handoffDigest` tool (`src/tools/digest-tools.ts`).
 4. Run the gate and the assessment:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project-path> -Mode Standard -Gate Handoff
-powershell -ExecutionPolicy Bypass -File scripts/assess-handoff.ps1 -ProjectPath <project-path> -Mode Standard
+```bash
+node cli/axiom.mjs validate --project <project-path> --mode Standard --gate Handoff
+node cli/axiom.mjs handoff --project <project-path> --mode Standard
 ```
 
 The gate adds no new human approval — it reuses the `Design Ready` row already in

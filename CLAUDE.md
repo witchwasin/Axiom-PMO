@@ -18,10 +18,10 @@
 4. Choose a default mode using `docs/process/`, then choose mode per work item in `DELIVERY.md`.
 5. Run validation before release:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath examples/P01-DEMO -Mode Standard -Gate Release -FailOnWarning
-powershell -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1
-powershell -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1
+```bash
+node cli/axiom.mjs validate --project examples/P01-DEMO --mode Standard --gate Release --fail-on-warning
+node cli/axiom.mjs doctor
+node dist/tools/run-ci-suite-cli.js -Suite validation-fixtures -RepoPath .
 ```
 
 ### Existing Legacy Project
@@ -144,9 +144,9 @@ Two layers, deliberately separate:
 
 Readiness is reported per stage, not as one boolean:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project> -Mode <mode> -Gate Handoff
-powershell -ExecutionPolicy Bypass -File scripts/assess-handoff.ps1 -ProjectPath <project> -Mode <mode>
+```bash
+node cli/axiom.mjs validate --project <project> --mode <mode> --gate Handoff
+node cli/axiom.mjs handoff --project <project> --mode <mode>
 ```
 
 Details: `docs/concepts/handoff-readiness.md`, `docs/architecture/visual-proof.md`, `docs/rules/`.
@@ -197,15 +197,15 @@ the repository build command.
 
 ## Hook Policy
 
-Fake echo hooks have been removed. Use `scripts/validate-project.ps1` for real validation.
-Use `scripts/pmo-doctor.ps1` for framework health and `scripts/run-validation-tests.ps1` for positive/negative validator fixtures.
+Fake echo hooks have been removed. Use `node cli/axiom.mjs validate` for real validation.
+Use `node cli/axiom.mjs doctor` for framework health and `node dist/tools/run-ci-suite-cli.js -Suite validation-fixtures -RepoPath .` for positive/negative validator fixtures.
 
 Suggested validation command:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project-folder> -Mode Standard -Gate Release -FailOnWarning
-powershell -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1
-powershell -ExecutionPolicy Bypass -File scripts/run-validation-tests.ps1
+```bash
+node cli/axiom.mjs validate --project <project-folder> --mode Standard --gate Release --fail-on-warning
+node cli/axiom.mjs doctor
+node dist/tools/run-ci-suite-cli.js -Suite validation-fixtures -RepoPath .
 ```
 
 ---

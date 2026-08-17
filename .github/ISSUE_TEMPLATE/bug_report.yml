@@ -30,15 +30,11 @@ body:
       description: Value from the VERSION file.
     validations:
       required: true
-  - type: dropdown
-    id: powershell
+  - type: input
+    id: runtime
     attributes:
-      label: PowerShell environment
-      options:
-        - Windows PowerShell 5.1
-        - PowerShell 7 (Windows)
-        - pwsh (Linux/macOS)
-        - Other / unsure
+      label: Runtime
+      description: Node.js version (node --version) and operating system.
     validations:
       required: true
   - type: checkboxes
