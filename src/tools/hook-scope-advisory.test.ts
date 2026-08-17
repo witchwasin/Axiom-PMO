@@ -13,8 +13,11 @@
 // real scope-diff matcher), per the established pattern. The shell shim
 // (hooks/scope-advisory.sh) is the one exception and is spawned for real:
 // its subject IS subprocess behavior -- reading the payload from stdin,
-// un-escaping a JSON cwd, deciding whether to start PowerShell at all, and
-// degrading to silence when PowerShell is missing.
+// un-escaping a JSON cwd, deciding whether to start Node at all, and
+// degrading to silence when Node is missing (Phase 9: the shim used to start
+// PowerShell against scripts/hook-scope-advisory.ps1; it now starts Node
+// against dist/tools/hook-scope-advisory-cli.js, the reference having been
+// deleted).
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -31,7 +34,7 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SHIM_PATH = join(REPO_ROOT, "hooks/scope-advisory.sh");
 const HOOKS_JSON_PATH = join(REPO_ROOT, "hooks/hooks.json");
 const HOOK_SOURCE_PATH = join(REPO_ROOT, "src/tools/hook-scope-advisory.ts");
-const pwshExe = process.env.AXIOM_PWSH ?? "pwsh";
+const nodeExe = process.execPath;
 
 const DEFAULT_SCOPE = '{"schema_version":"1.0","project":"H","implementation_scope":{"include":["src/payments/**"],"exclude":["src/payments/vendor/**"]}}';
 
@@ -65,10 +68,9 @@ function invokeShim(payload: string, env: Record<string, string>): { exitCode: n
 }
 
 // Comment-stripped hook source, for the "no case could emit a decision"
-// assertions. The PS original stripped '#' comments and <# #> blocks from
-// scripts/hook-scope-advisory.ps1; the port strips // and /* */ from the TS
-// hook, which is the shipped hook in the Node-native world. (The shim cases
-// below still exercise the real .ps1 end-to-end.)
+// assertions. Strips // and /* */ from the TS hook, which is the shipped
+// hook in the Node-native world. (The shim cases below still exercise the
+// real CLI entry point, dist/tools/hook-scope-advisory-cli.js, end-to-end.)
 function hookSourceWithoutComments(): string {
   let src = readFileSync(HOOK_SOURCE_PATH, "utf8");
   src = src.replace(/\/\*[\s\S]*?\*\//g, "");
@@ -238,7 +240,7 @@ test("hook advisory: the shell shim", () => {
   const sandbox = mkdtempSync(join(tmpdir(), "axiom-hook-"));
   try {
     assert.ok(existsSync(SHIM_PATH), "the hook shim is executable");
-    const env = { AXIOM_PWSH: pwshExe, CLAUDE_PLUGIN_ROOT: REPO_ROOT };
+    const env = { AXIOM_NODE: nodeExe, CLAUDE_PLUGIN_ROOT: REPO_ROOT };
 
     const off = newHookProject(sandbox, "shim-off", false);
     let r = invokeShim(newPayload(off, "src/other/x.ts"), env);
@@ -248,14 +250,15 @@ test("hook advisory: the shell shim", () => {
     r = invokeShim(newPayload(on, "src/other/x.ts"), env);
     assert.match(r.text, /scope advisory/, "the shim reports through to the advisory when opted in");
 
-    // No PowerShell available is a normal state for a plugin user who never
-    // installed it. It must mean "no advisory", never "broken edit".
+    // No Node available is a defense-in-depth case (a plugin host missing the
+    // runtime everything else here already requires). It must mean "no
+    // advisory", never "broken edit".
     //
     // Simulated with a PATH containing every utility the shim needs and no
-    // PowerShell. Emptying PATH outright would make grep and sed vanish too,
-    // and the shim would exit 0 for the wrong reason -- passing the assertion
+    // Node. Emptying PATH outright would make grep and sed vanish too, and
+    // the shim would exit 0 for the wrong reason -- passing the assertion
     // while proving nothing about the case it claims to cover.
-    const fakeBin = join(sandbox, "bin-without-pwsh");
+    const fakeBin = join(sandbox, "bin-without-node");
     mkdirSync(fakeBin, { recursive: true });
     for (const tool of ["sh", "sed", "grep", "cat", "dirname", "head", "pwd", "command"]) {
       const which = spawnSync("which", [tool], { encoding: "utf8" });
@@ -263,11 +266,11 @@ test("hook advisory: the shell shim", () => {
       if (real && existsSync(real)) symlinkSync(real, join(fakeBin, tool));
     }
     r = invokeShim(newPayload(on, "src/other/x.ts"), {
-      AXIOM_PWSH: "/nonexistent/pwsh",
+      AXIOM_NODE: "/nonexistent/node",
       CLAUDE_PLUGIN_ROOT: REPO_ROOT,
       PATH: fakeBin,
     });
-    assert.equal(r.exitCode, 0, "no PowerShell on the host means no advisory, not a failure");
+    assert.equal(r.exitCode, 0, "no Node on the host means no advisory, not a failure");
     assert.equal(r.text, "", "...and it stays silent rather than printing an error");
 
     r = invokeShim("", env);
@@ -311,13 +314,13 @@ test("hook advisory: the shell shim", () => {
     assert.equal(r.text, "", "...and a repo-wide exempt path through the same escaped cwd stays silent");
 
     // The disabled path runs on every Write/Edit for every user who installed
-    // the plugin and never enabled this. It must not start PowerShell.
+    // the plugin and never enabled this. It must not start Node.
     const shimSource = readFileSync(SHIM_PATH, "utf8");
     const optinIndex = shimSource.indexOf("scope_advisory");
-    const pwshIndex = shimSource.indexOf("pwsh_bin");
+    const nodeIndex = shimSource.indexOf("node_bin");
     assert.ok(
-      optinIndex > 0 && pwshIndex > optinIndex,
-      `the opt-in check happens before PowerShell is ever located (optin@${optinIndex} pwsh@${pwshIndex})`,
+      optinIndex > 0 && nodeIndex > optinIndex,
+      `the opt-in check happens before Node is ever located (optin@${optinIndex} node@${nodeIndex})`,
     );
   } finally {
     rmSync(sandbox, { recursive: true, force: true });

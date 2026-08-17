@@ -2,11 +2,11 @@
 # Axiom-PMO scope advisory -- the cheap half.
 #
 # This runs on every Write/Edit while the plugin is installed, so the disabled
-# path has to cost almost nothing. Starting PowerShell to discover that the
-# feature is switched off would tax every edit for a feature nobody enabled.
+# path has to cost almost nothing. Starting Node to discover that the feature
+# is switched off would tax every edit for a feature nobody enabled.
 #
 # So the opt-in is checked here, in shell, against the project directory, and
-# PowerShell is started only when a project has actually asked for this.
+# Node is started only when a project has actually asked for this.
 #
 # Every failure exits 0 and prints nothing. A governance advisory that breaks
 # an editing session has done more damage than the deviation it watched for.
@@ -36,15 +36,13 @@ grep -q '"scope_advisory"[[:space:]]*:[[:space:]]*true' "$optin" 2>/dev/null || 
 
 root="${CLAUDE_PLUGIN_ROOT:-$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)}"
 
-pwsh_bin="${AXIOM_PWSH:-}"
-if [ -z "$pwsh_bin" ]; then
-  for candidate in pwsh powershell; do
-    if command -v "$candidate" >/dev/null 2>&1; then pwsh_bin="$candidate"; break; fi
-  done
+node_bin="${AXIOM_NODE:-}"
+if [ -z "$node_bin" ]; then
+  if command -v node >/dev/null 2>&1; then node_bin="node"; fi
 fi
-# No PowerShell means no advisory. It does not mean a broken tool call.
-[ -n "$pwsh_bin" ] || exit 0
+# No Node means no advisory. It does not mean a broken tool call.
+[ -n "$node_bin" ] || exit 0
 
-printf '%s' "$payload" | "$pwsh_bin" -NoProfile -ExecutionPolicy Bypass \
-  -File "$root/scripts/hook-scope-advisory.ps1" -ProjectPath "$cwd" 2>/dev/null || exit 0
+printf '%s' "$payload" | "$node_bin" \
+  "$root/dist/tools/hook-scope-advisory-cli.js" -ProjectPath "$cwd" 2>/dev/null || exit 0
 exit 0
