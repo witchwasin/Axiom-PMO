@@ -17,7 +17,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, readdirSync, statSync,
+  mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, readdirSync, statSync, existsSync,
 } from "node:fs";
 import { tmpdir, platform } from "node:os";
 import { createHash } from "node:crypto";
@@ -228,6 +228,49 @@ test("clean-room: Node-only -- the CLI needs zero PowerShell for a normal run", 
     rmSync(sandbox, { recursive: true, force: true });
     rmSync(emptyPath, { recursive: true, force: true });
   }
+});
+
+// A PATH with every real directory EXCEPT any that resolves pwsh/powershell
+// -- unlike the empty-PATH trick above (fine for init/validate, which touch
+// no external tool), axiom check's own unit suite legitimately shells out to
+// git and other real system tools, so scrubbing PATH to nothing breaks it for
+// a reason that has nothing to do with PowerShell. This keeps every real
+// directory, dropping only the one(s) that would let pwsh/powershell resolve.
+function pathWithoutPowerShell(): string {
+  const sep = platform() === "win32" ? ";" : ":";
+  const dirs = (process.env.PATH ?? "").split(sep).filter(Boolean);
+  const hasPowerShell = (dir: string): boolean =>
+    ["pwsh", "pwsh.exe", "powershell", "powershell.exe"].some((name) => existsSync(join(dir, name)));
+  return dirs.filter((dir) => !hasPowerShell(dir)).join(sep);
+}
+
+// Phase 9 exit criteria (master-plan.md): "re-run the final-tree proof after
+// deletion changes land -- does the repo work correctly with zero PowerShell
+// PRESENT, not just zero PowerShell invoked." The test above proves a normal
+// validate run never touches PowerShell; this one proves the two broadest
+// commands (the full check suite and the three-minute demo) run correctly
+// with pwsh/powershell provably unresolvable via PATH lookup -- not just
+// unset, but absent -- while every other real tool (git, sh, node) stays
+// available, matching what a real post-deletion checkout is (scripts/*.ps1
+// no longer exist to spawn even if something tried).
+test("clean-room: axiom check and axiom demo run correctly with PowerShell provably absent", { timeout: 120_000 }, () => {
+  const env: NodeJS.ProcessEnv = { ...process.env };
+  delete env.AXIOM_PWSH;
+  env.PATH = pathWithoutPowerShell();
+
+  const CLI = join(REPO_ROOT, "cli/axiom.mjs");
+
+  const check = spawnSync(process.execPath, [CLI, "check"], { encoding: "utf8", cwd: REPO_ROOT, env, maxBuffer: 64 * 1024 * 1024 });
+  const checkText = (check.stdout ?? "") + (check.stderr ?? "");
+  assert.equal(check.status, 0,
+    `axiom check completes end to end with no PowerShell: exit=${check.status} ${checkText.slice(-800)}`);
+  assert.ok(checkText.includes("All Axiom-PMO framework checks completed."), `...and reports full completion: ${checkText.slice(-400)}`);
+
+  const demo = spawnSync(process.execPath, [CLI, "demo", "-Plain", "-NoPause"], { encoding: "utf8", cwd: REPO_ROOT, env });
+  const demoText = (demo.stdout ?? "") + (demo.stderr ?? "");
+  assert.equal(demo.status, 0,
+    `axiom demo completes end to end with no PowerShell: exit=${demo.status} ${demoText.slice(-400)}`);
+  assert.ok(demoText.includes("READY TO BUILD, NOT READY TO DEMO"), `...and reaches the real readiness assessment: ${demoText.slice(-300)}`);
 });
 
 test("clean-room: governance is not loosened by the integration", () => {
