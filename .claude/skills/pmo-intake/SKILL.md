@@ -68,7 +68,7 @@ Return confirmed requirements, assumptions, open questions, source references, c
 Scope approval is human-owned. AI may draft rows but must not mark approval as granted without explicit source evidence.
 
 ## Validation Command
-`powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project> -Mode <mode> -Gate Scope`
+`node cli/axiom.mjs validate --project <project> --mode <mode> --gate Scope`
 
 ## Prohibited Actions
 Do not invent requirements, bulk-load all source by default, silently resolve conflicts, push commits, deploy, or approve release. Do not write or infer `Execution path:` or `Default mode:` into `PROJECT.md` without first asking the user per Onboarding above, and never describe either as "detected."

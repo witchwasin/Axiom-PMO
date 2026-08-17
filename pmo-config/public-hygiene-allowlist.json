@@ -8,8 +8,6 @@
         "CHANGELOG.md",
         "docs/migration/from-pmo-template-personal.md",
         "reports/release-overhaul-report.md",
-        "scripts/check-public-hygiene.ps1",
-        "scripts/prepare-public-release.ps1",
         "pmo-config/public-hygiene-allowlist.json",
         "src/tools/check-public-hygiene.ts"
       ],
@@ -17,9 +15,7 @@
     },
     {
       "pattern": "D:\\\\GitHub\\\\PMO-Template-Personal",
-      "paths": [
-        "scripts/prepare-public-release.ps1"
-      ],
+      "paths": [],
       "reason": "Constructed self-audit pattern in the non-destructive release readiness script."
     },
     {
@@ -42,7 +38,6 @@
     {
       "pattern": "/Users/[^/\\s]+",
       "paths": [
-        "scripts/capture-plugin-load-evidence.ps1",
         "pmo-config/public-hygiene-allowlist.json",
         "src/tools/check-public-hygiene.ts"
       ],

@@ -10,7 +10,7 @@
     "Freshness uses TWO digests, because a review goes stale two different ways:",
     "  source_snapshot.digest  the material the requirements came from changed",
     "  review_inputs.digest    a governed artifact the reviewer read changed",
-    "Get both with: scripts/handoff-digest.ps1 -ProjectPath <project>",
+    "Get both with the handoffDigest tool (src/tools/digest-tools.ts)",
     "Without the second digest, rewriting BUILD-SPEC after a review would leave it",
     "reporting as current.",
     "",
@@ -29,10 +29,10 @@
   "handoff_target": "<demo | pilot | production | internal>",
   "source_snapshot": {
     "source_ids": ["<MOM-20260101>", "<REQ-20260101>"],
-    "digest": "<scripts/handoff-digest.ps1 -Which Source>"
+    "digest": "<handoffDigest -Which Source>"
   },
   "review_inputs": {
-    "digest": "<scripts/handoff-digest.ps1 -Which ReviewInputs>"
+    "digest": "<handoffDigest -Which ReviewInputs>"
   },
   "lenses": [
     { "lens": "value_and_scope_slice", "status": "reviewed" },
@@ -67,7 +67,7 @@
     }
   ],
   "recommendation": {
-    "$comment": "A recommendation, not a verdict. scripts/assess-handoff.ps1 computes the stage verdicts; a human decides whether to act on them.",
+    "$comment": "A recommendation, not a verdict. axiom handoff computes the stage verdicts; a human decides whether to act on them.",
     "ready_to_start_development": true,
     "ready_to_demo": false,
     "notes": "<One paragraph: what a reader most needs to know before acting on this review.>"

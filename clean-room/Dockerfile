@@ -11,28 +11,27 @@
 # which is the weakest kind of evidence for a getting-started experience.
 #
 # WHAT THIS CANNOT PROVE
-#   This is a Linux container. Linux/macOS support is EXPERIMENTAL; Windows
-#   PowerShell 5.1 is the reference platform. A clean walkthrough here does not
-#   close the Windows half of issue #8 -- that needs a Windows machine or a
-#   Windows container. Say which one you walked when you report findings.
+#   This is a Linux container. The engine is pure Node.js, so a clean walkthrough
+#   here does cover the getting-started path on Linux/macOS-style environments;
+#   a native Windows walkthrough still needs a Windows machine or container.
+#   Say which one you walked when you report findings.
 #
 # TWO MODES, answering two different questions.
 #
 #   PREREQS=none        (default)
 #     Nothing but git and curl. The walker has to work out how to get
-#     PowerShell and Node from the documentation alone.
+#     Node.js from the documentation alone.
 #     Answers: "does the README tell a stranger how to get started at all?"
 #
 #   PREREQS=documented
-#     Exactly what README.md names as prerequisites -- PowerShell 7 and
-#     Node.js -- and nothing else.
+#     Exactly what README.md names as prerequisites -- Node.js -- and
+#     nothing else.
 #     Answers: "if you install precisely what the docs ask for, does it work?"
 #     That question is machine-checkable; see clean-room/README.md.
 
 FROM ubuntu:24.04
 
 ARG PREREQS=none
-ARG PWSH_VERSION=7.4.6
 
 ENV DEBIAN_FRONTEND=noninteractive \
     AXIOM_CLEAN_ROOM=1 \
@@ -45,27 +44,12 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends git curl ca-certificates less \
  && rm -rf /var/lib/apt/lists/*
 
-# The documented prerequisites, installed only when asked for. The apt method
-# in Microsoft's install-ubuntu page is the documented route; the tarball below
-# is its equivalent and is stable across Ubuntu releases, which matters more in
-# a throwaway container than matching the page step for step.
+# The documented prerequisite, installed only when asked for: Node.js. The
+# engine and CLI run entirely in-process -- there is no other runtime.
 RUN if [ "$PREREQS" = "documented" ]; then \
       set -eux; \
       apt-get update; \
       apt-get install -y --no-install-recommends nodejs; \
-      arch="$(dpkg --print-architecture)"; \
-      case "$arch" in \
-        amd64) pwsh_arch=x64 ;; \
-        arm64) pwsh_arch=arm64 ;; \
-        *) echo "unsupported architecture: $arch" >&2; exit 1 ;; \
-      esac; \
-      curl -fsSL -o /tmp/pwsh.tar.gz \
-        "https://github.com/PowerShell/PowerShell/releases/download/v${PWSH_VERSION}/powershell-${PWSH_VERSION}-linux-${pwsh_arch}.tar.gz"; \
-      mkdir -p /opt/microsoft/powershell/7; \
-      tar zxf /tmp/pwsh.tar.gz -C /opt/microsoft/powershell/7; \
-      chmod +x /opt/microsoft/powershell/7/pwsh; \
-      ln -s /opt/microsoft/powershell/7/pwsh /usr/local/bin/pwsh; \
-      rm -f /tmp/pwsh.tar.gz; \
       rm -rf /var/lib/apt/lists/*; \
     fi
 

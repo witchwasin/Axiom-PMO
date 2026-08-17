@@ -43,7 +43,7 @@ docker run --rm -it axiom-cleanroom:documented
 | Mode | Contains | Finds |
 |---|---|---|
 | `none` *(default)* | `git`, `curl` | Missing or wrong install instructions |
-| `documented` | Above plus PowerShell 7 and Node.js — exactly what `README.md` names | Gaps in the usage instructions |
+| `documented` | Above plus Node.js — exactly what `README.md` names | Gaps in the usage instructions |
 
 `podman` works the same way; substitute `podman` for `docker`.
 
@@ -72,10 +72,9 @@ walkthrough.
 
 ## What this cannot prove
 
-**It is Linux.** Windows PowerShell 5.1 is the reference platform for this
-project; Ubuntu PowerShell 7 is now a blocking CI leg and macOS PowerShell 7 is
-recorded as non-blocking evidence (Milestone 3.5). A clean walk in this
-container is useful Linux evidence for issue #8 and nothing more.
+**It is Linux.** The engine is pure Node.js, so the getting-started path is the
+same on every platform; a clean walk in this container is useful Linux evidence
+for issue #8, and a native Windows walk still needs a Windows machine.
 
 Whoever reports findings should say which platform they walked. "The
 walkthrough passed" without that qualifier is the kind of claim this project
@@ -113,10 +112,10 @@ shape:
 Platform:     Linux container, PREREQS=none
 Step:         README Quick start, second command
 Expected:     a new project under projects/
-Got:          "The term 'pwsh' is not recognized"
-Gap:          README names PowerShell as a prerequisite but never links an
+Got:          "node: command not found"
+Gap:          README names Node.js as a prerequisite but never links an
               install page; the CLI error does, but only if you reach the CLI
-Suggested:    link the install pages from the prerequisite sentence
+Suggested:    link the install page from the prerequisite sentence
 ```
 
 Then fix the docs. A finding without a documentation change is a note, not a

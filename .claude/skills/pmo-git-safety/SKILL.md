@@ -34,7 +34,7 @@ Return branch, account/remote if requested, changed files, test result, and pend
 Commit is local only after per-round diff approval. Push/PR/merge require final explicit approval. Production release approval cannot be automated.
 
 ## Validation Command
-`powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1`
+`node cli/axiom.mjs check`
 
 ## Prohibited Actions
 Do not use destructive git commands, force push, bypass permissions, approve production release, push without explicit per-push confirmation, or commit unrelated user changes.

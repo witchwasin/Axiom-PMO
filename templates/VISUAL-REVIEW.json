@@ -10,7 +10,7 @@
     "decision_ref": "<DEC-NNN for selected or conformance direction>"
   },
   "review_inputs": {
-    "digest": "<digest of final visual direction, design-system files, brand assets, and committed captures; run scripts/visual-proof-digest.ps1>"
+    "digest": "<digest of final visual direction, design-system files, brand assets, and committed captures; run the visualProofDigest tool (src/tools/digest-tools.ts)>"
   },
   "captures": [
     {

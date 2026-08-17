@@ -25,7 +25,7 @@ cat <<'BRIEF'
 BRIEF
 
 if [ "${AXIOM_PREREQS:-none}" = "documented" ]; then
-  echo "      PREREQS=documented -- PowerShell and Node are already installed."
+  echo "      PREREQS=documented -- Node.js is already installed."
   echo "      You are testing the usage instructions, not the install ones."
 else
   echo "      PREREQS=none -- nothing is installed but git and curl."
@@ -34,7 +34,8 @@ fi
 
 cat <<'BRIEF'
 
-  This is Linux. Windows PowerShell 5.1 is the reference platform, so a clean
-  walk here does NOT close the Windows half of issue #8. Say which one you did.
+  This is Linux. The engine is pure Node.js, so the getting-started path is the
+  same everywhere; a native Windows walk still needs a Windows machine. Say
+  which one you did.
 
 BRIEF

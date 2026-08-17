@@ -34,7 +34,7 @@ Return pass/fail summary, open blockers, release approval status, rollback statu
 AI must not approve production release, mark Release Approved for a human, deploy, tag, or push. Human Release Approved evidence is mandatory when required by the configured gate policy.
 
 ## Validation Command
-`powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project> -Mode <mode> -Gate Release`
+`node cli/axiom.mjs validate --project <project> --mode <mode> --gate Release`
 
 ## Prohibited Actions
 Do not release with missing human approval, unresolved blockers, missing configured guardrails, unverified rollback, or Lite artifacts created only to satisfy a hardcoded checklist.

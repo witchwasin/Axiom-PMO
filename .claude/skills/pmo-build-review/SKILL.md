@@ -35,7 +35,7 @@ Return review findings, missing tests, risk flags, and ready/not-ready status.
 AI can recommend ready-for-review but cannot approve production release.
 
 ## Validation Command
-`powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project> -Mode <mode> -Gate Design`
+`node cli/axiom.mjs validate --project <project> --mode <mode> --gate Design`
 
 ## Prohibited Actions
 Do not hide failing checks, skip risk escalation, hardcode release requirements, or mutate git state without human approval.

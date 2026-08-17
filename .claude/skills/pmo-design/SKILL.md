@@ -59,7 +59,7 @@ Only a human may declare `brand_starting_point: undecided | existing`, select an
 
 When `UI delivery: claude_design` is declared (see `docs/concepts/claude-design-workflow.md`):
 
-1. Prepare `DESIGN/CLAUDE-DESIGN/INPUT-MANIFEST.json` from `templates/DESIGN-PROVIDER-INPUT.json`: digest-bound references to the minimum necessary canonical inputs only — never `source/**` by default — plus an approved `EXTERNALIZATION.json` entry, provider, purpose, and generated timestamp. Run `scripts/design-provider-digest.ps1` and record the current digests.
+1. Prepare `DESIGN/CLAUDE-DESIGN/INPUT-MANIFEST.json` from `templates/DESIGN-PROVIDER-INPUT.json`: digest-bound references to the minimum necessary canonical inputs only — never `source/**` by default — plus an approved `EXTERNALIZATION.json` entry, provider, purpose, and generated timestamp. Run the `designProviderDigest` tool (`src/tools/digest-tools.ts`) and record the current digests.
 2. Hand the folder to the Human-operated provider; candidate output lands in `DESIGN/CLAUDE-DESIGN/OUTPUT/**`.
 3. Run the deterministic preflight (paths, manifest, declared screens/states, digests, scope references) before any review is recorded.
 4. Perform semantic candidate reconciliation for business/API/data/permission mismatches before Human review; these are candidate findings, not decisions.
@@ -103,7 +103,7 @@ Do not expand scope, remove source references, invent requirements or decision I
 
 ## Validation
 
-`powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project> -Mode <mode> -Gate Design`
+`node cli/axiom.mjs validate --project <project> --mode <mode> --gate Design`
 
 The artifact pair is candidate evidence only. Design Ready remains human-owned.
 

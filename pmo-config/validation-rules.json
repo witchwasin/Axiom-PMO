@@ -3,7 +3,7 @@
   "schema_version": "1.0",
   "documentation_base_url": "https://github.com/witchwasin/Axiom-PMO/blob/main",
   "documentation_note": "A rule's `documentation` value is a repo-relative path. pmo-doctor DOCTOR-009 fails when the file does not exist, so a rule can never advertise a dead link. Rules without a `documentation` entry emit documentation_url: null.",
-  "suggestion_note": "`suggestion` is the default remediation text attached to every WARN/FAIL diagnostic for that rule (see scripts/lib/result-writer.ps1). It must say what to do, not restate what went wrong, and must never quote artifact content. pmo-doctor DOCTOR-008 requires one on every rule that can fail or warn.",
+  "suggestion_note": "`suggestion` is the default remediation text attached to every WARN/FAIL diagnostic for that rule (see src/core/result-writer.ts). It must say what to do, not restate what went wrong, and must never quote artifact content. pmo-doctor DOCTOR-008 requires one on every rule that can fail or warn.",
   "rules": {
     "GENERAL-001": {
       "severity": "info",
@@ -403,7 +403,7 @@
       "severity": "fail",
       "lifecycle": "enforced",
       "description": "The Visual Proof review is stale because a selected direction, design-system artifact, brand asset, or committed capture changed after the review input digest was recorded.",
-      "suggestion": "Re-capture or re-review the current artifacts as needed, run scripts/visual-proof-digest.ps1, and replace review_inputs.digest with the resulting value before handoff.",
+      "suggestion": "Re-capture or re-review the current artifacts as needed, run the visualProofDigest tool (src/tools/digest-tools.ts), and replace review_inputs.digest with the resulting value before handoff.",
       "documentation": "docs/rules/VPROOF-002.md"
     },
     "HANDOFF-001": {
@@ -615,7 +615,7 @@
     "DPROV-003": {
       "severity": "fail",
       "description": "A manifest input path does not resolve inside the project, its recorded SHA-256 is stale, or the combined digest does not match a recomputation over the declared inputs.",
-      "suggestion": "Point inputs at the canonical governed artifacts (PROJECT.md, SCOPE.json, DESIGN/BUILD-SPEC.md, selected Visual Direction, Acceptance Cases) and rerun scripts/design-provider-digest.ps1 after any change.",
+      "suggestion": "Point inputs at the canonical governed artifacts (PROJECT.md, SCOPE.json, DESIGN/BUILD-SPEC.md, selected Visual Direction, Acceptance Cases) and rerun the designProviderDigest tool (src/tools/digest-tools.ts) after any change.",
       "documentation": "docs/rules/DPROV-003.md"
     },
     "DPROV-004": {
@@ -693,7 +693,7 @@
     "DOCTOR-STRUCT": {
       "severity": "fail",
       "description": "A required framework structural file or directory is missing.",
-      "suggestion": "Restore the missing framework file. Structure is defined in scripts/pmo-doctor.ps1."
+      "suggestion": "Restore the missing framework file. Structure is defined in src/doctor/pmo-doctor.ts."
     },
     "DOCTOR-EXAMPLE": {
       "severity": "fail",
@@ -703,7 +703,7 @@
     "DOCTOR-HOOK": {
       "severity": "fail",
       "description": "Fake PMO echo hooks still exist in settings.",
-      "suggestion": "Remove echo-only hooks from .claude/settings.json and use scripts/validate-project.ps1 for real validation."
+      "suggestion": "Remove echo-only hooks from .claude/settings.json and use node cli/axiom.mjs validate for real validation."
     },
     "DOCTOR-SKILL-001": {
       "severity": "fail",

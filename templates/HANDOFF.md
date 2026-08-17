@@ -4,7 +4,7 @@
 > start from this page, know what to build first, know who to ask, and know what
 > would stop the demo.
 >
-> Validated by `scripts/validate-project.ps1 -Gate Handoff`. Rule reference:
+> Validated by `node cli/axiom.mjs validate --gate Handoff`. Rule reference:
 > `docs/rules/HANDOFF-*.md`.
 
 - Project: <PROJECT-CODE>

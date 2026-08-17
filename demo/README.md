@@ -2,8 +2,6 @@
 
 ```bash
 node cli/axiom.mjs demo
-# or, without Node:
-pwsh -NoProfile -File scripts/demo.ps1
 # or:
 make demo
 ```
@@ -62,10 +60,11 @@ Everything under `broken-project/source/` and `fixed-project/source/` is synthet
 
 ## Recording a terminal cast
 
-`scripts/demo.ps1 -Plain -NoPause` prints the same transcript with no pauses and no timing, which is the form to record:
+`node cli/axiom.mjs demo -Plain -NoPause` prints the same transcript with no
+pauses and no timing, which is the form to record:
 
 ```bash
-asciinema rec docs/assets/demo/axiom-pmo-demo.cast -c "pwsh -NoProfile -File scripts/demo.ps1 -Plain -NoPause"
+asciinema rec docs/assets/demo/axiom-pmo-demo.cast -c "node cli/axiom.mjs demo -Plain -NoPause"
 ```
 
 After recording, generate `docs/assets/demo/axiom-pmo-demo.gif` from the cast

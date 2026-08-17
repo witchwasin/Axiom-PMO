@@ -41,18 +41,18 @@ Use `pmo-config/policy.json` for mode, status, review-stage, task-source, strict
 
 The deterministic validator proves the contract is **complete**. It cannot prove it is **sensible**. This review is the part that reads for sense, and its output is structured so the validator can then check that the reading happened, covered everything, and is still current.
 
-1. Run the gate first: `scripts/validate-project.ps1 -ProjectPath <project> -Mode <mode> -Gate Handoff`. Do not re-report anything it already caught. Structural gaps are its job; this review starts where it stops.
+1. Run the gate first: `node cli/axiom.mjs validate --project <project> --mode <mode> --gate Handoff`. Do not re-report anything it already caught. Structural gaps are its job; this review starts where it stops.
 2. Read the artifacts listed above. Read them together, not one at a time — most real findings are contradictions *between* documents, each of which is defensible alone.
 3. Walk **every** lens in `pmo-config/handoff-policy.json` `semantic_review.lenses`. Record each one in the output even when it found nothing; a lens with no entry is an unfinished review, and `HANDOFF-010` will say so.
 4. Record findings in `HANDOFF-REVIEW.json` (see `templates/HANDOFF-REVIEW.json`).
-5. Record **both** freshness digests. `scripts/handoff-digest.ps1 -ProjectPath <project>` prints them:
+5. Record **both** freshness digests. The `handoffDigest` tool (`src/tools/digest-tools.ts`) prints them:
    - `source_snapshot.digest` — the material the requirements came from
    - `review_inputs.digest` — the governed artifacts you actually read
 
    A review that records only the first keeps reporting as current after
    someone rewrites the build sequence or waives a build-spec section.
 6. If the visual-artifact triple exists, treat Visual Proof as separate conditional candidate evidence: confirm the manifest has two committed captures, an input digest, complete rubric, named human reviewer, and direction decision references. Do not judge aesthetics yourself, replace the human declaration, or describe this check as a new approval.
-7. Re-run the gate, then `scripts/assess-handoff.ps1` for stage verdicts.
+7. Re-run the gate, then `node cli/axiom.mjs handoff` for stage verdicts.
 8. When the Claude Design provider track is active, merge only current accepted output into the Final Handoff — the output set whose digest `DESIGN/CLAUDE-DESIGN/REVIEW.json` records. Unaccepted or stale output is not handoff content (`DPROV-005`/`DPROV-006`).
 
 ### The twelve lenses
@@ -109,10 +109,10 @@ Mode escalation and high-risk work require human confirmation before delivery st
 
 ## Validation Command
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project> -Mode <mode> -Gate Scope
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate-project.ps1 -ProjectPath <project> -Mode <mode> -Gate Handoff
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/assess-handoff.ps1 -ProjectPath <project> -Mode <mode>
+```bash
+node cli/axiom.mjs validate --project <project> --mode <mode> --gate Scope
+node cli/axiom.mjs validate --project <project> --mode <mode> --gate Handoff
+node cli/axiom.mjs handoff --project <project> --mode <mode>
 ```
 
 ## Prohibited Actions

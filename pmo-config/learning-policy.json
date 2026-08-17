@@ -1,7 +1,7 @@
 {
   "version": "2.2.0",
   "schema_version": "1.0",
-  "purpose": "Runtime policy for Milestone 9 (Failure Pattern Registry and Governed Improvement Proposals, scripts/aggregate-diagnostics.ps1). Organizational memory over diagnostics the validator already emits -- an aggregator, not a new engine.",
+  "purpose": "Runtime policy for Milestone 9 (Failure Pattern Registry and Governed Improvement Proposals, src/tools/aggregate-diagnostics.ts). Organizational memory over diagnostics the validator already emits -- an aggregator, not a new engine.",
   "boundary": {
     "local_and_opt_in": true,
     "network_transmission": "never, by default or implicitly. Any future external or cross-organization aggregation requires a separate milestone and Human Owner decision.",

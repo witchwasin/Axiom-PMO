@@ -73,11 +73,11 @@
       "exitCode": 0
     },
     "measure-context-default": {
-      "stdout": "\nFile                        Lines Words EstimatedContextSize\n----                        ----- ----- --------------------\nAGENTS.md                     244  1792             2420.000\nCLAUDE.md                     224  1181             1595.000\nCONTEXT-ROUTER.md              89   730              986.000\npmo-config/context-map.json   394   793             1071.000\npmo-config/policy.json        115   296              400.000\n\n\nEstimated Context Size is an approximation, not a tokenizer measurement.\n",
+      "stdout": "\nFile                        Lines Words EstimatedContextSize\n----                        ----- ----- --------------------\nAGENTS.md                     247  1705             2302.000\nCLAUDE.md                     224  1180             1593.000\nCONTEXT-ROUTER.md              89   730              986.000\npmo-config/context-map.json   394   793             1071.000\npmo-config/policy.json        115   296              400.000\n\n\nEstimated Context Size is an approximation, not a tokenizer measurement.\n",
       "exitCode": 0
     },
     "measure-context-single": {
-      "stdout": "\nFile      Lines Words EstimatedContextSize\n----      ----- ----- --------------------\nAGENTS.md   244  1792             2420.000\n\n\nEstimated Context Size is an approximation, not a tokenizer measurement.\n",
+      "stdout": "\nFile      Lines Words EstimatedContextSize\n----      ----- ----- --------------------\nAGENTS.md   247  1705             2302.000\n\n\nEstimated Context Size is an approximation, not a tokenizer measurement.\n",
       "exitCode": 0
     },
     "hook-advisory-out-of-scope": {

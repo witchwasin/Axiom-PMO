@@ -3,7 +3,7 @@
   "schema_version": "1.0",
   "diagnostics_schema_version": "1.1",
   "title": "Axiom-PMO structured diagnostic contract",
-  "description": "Shape of the JSON emitted by scripts/validate-project.ps1 -Format Json and scripts/assess-handoff.ps1 -Format Json. Consumers (CI annotations, dashboards, the thin CLI) read this contract, not the text report.",
+  "description": "Shape of the JSON emitted by node cli/axiom.mjs validate --json and node cli/axiom.mjs handoff --json. Consumers (CI annotations, dashboards, the thin CLI) read this contract, not the text report.",
   "compatibility": {
     "policy": "additive",
     "stable_fields": [
@@ -29,7 +29,7 @@
     "0": "No FAIL, and no blocking WARN when -FailOnWarning was passed.",
     "1": "At least one FAIL diagnostic.",
     "2": "-FailOnWarning was passed and at least one blocking WARN was emitted.",
-    "127": "PowerShell host could not be located (emitted by the wrappers, not by the validator itself)."
+    "127": "Infrastructure failure in the engine (a Node-side error surfaced by cli/axiom.mjs, never masked and never emitted by the validator itself)."
   },
   "sensitive_data_policy": {
     "rule": "Diagnostics locate a problem; they never reproduce the content of the problem.",
@@ -273,7 +273,7 @@
     }
   },
   "assessment_envelope": {
-    "$comment": "Shape of scripts/assess-handoff.ps1 -Format Json. Reporting output, not a gate result: it never decides anything, and nothing in it is an approval.",
+    "$comment": "Shape of node cli/axiom.mjs handoff --json. Reporting output, not a gate result: it never decides anything, and nothing in it is an approval.",
     "type": "object",
     "required": [
       "schema_version",
