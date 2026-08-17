@@ -197,3 +197,42 @@ phases now.
 **What this completes:** every precondition DEC-027's original table listed for
 Phase 9 is now resolved (Phase 8 live: this decision; second-reviewer gap: DEC-032).
 Phase 9 execution follows.
+
+---
+
+### DEC-034 — Proceed with the CI/CD workflow rewrite discovered mid-Phase-9
+
+- **Status:** Approved
+- **Approved by:** Witchwasin K. (Human Owner)
+- **Date:** 2026-08-17
+
+**Decision:** while executing Phase 9's file-deletion step (Task 12), auditing
+found `.github/workflows/pmo-checks.yml` directly invokes `pwsh`/`scripts/*.ps1`
+in `determine-profile`, `fast-checks`, `targeted-checks`, all three
+full-profile host jobs, and `dogfood-ci-check-evidence` -- none of which were
+in the original file-deletion scope (`Fixed_plan/phase9/PLAN.md` only listed
+the files themselves), but all of which would break CI on the next push once
+those files were gone. Two new Node ports were also needed first
+(`ci-profile-cli.ts` for `scripts/ci-profile.ps1`'s full CLI surface,
+`run-ci-suite-cli.ts` for `scripts/run-ci-suite.ps1`'s execution half) since
+neither had been ported beyond the differential-proof subset already used
+elsewhere.
+
+**Why this needed a decision, not just execution:** modifying live CI/CD
+infrastructure is a hard-to-reverse action this project's own guardrails flag
+for confirmation, and unlike the local code changes earlier in Phase 9, the
+workflow rewrite cannot be fully verified without an actual push-triggered CI
+run -- there is no local GitHub Actions runner to prove it against first.
+Asked explicitly via AskUserQuestion rather than proceeding unilaterally;
+offered doing the rewrite now, pausing Task 12 until CI is handled separately,
+or deleting files anyway and letting CI fail. The Human Owner chose to
+proceed with the rewrite now.
+
+**What this does not change:** the rewrite keeps every job id unchanged
+(`pmo-checks-windows-pwsh7` etc. still literally say "pwsh7" despite no
+longer running PowerShell) specifically because branch protection's
+required-status-checks setting references job ids by name in GitHub's own
+repository settings, which this session cannot see or edit -- renaming would
+risk silently unsatisfying that setting until a human fixes it separately.
+Real correctness of the workflow changes is confirmed by the next CI run
+after push, not by this decision.
