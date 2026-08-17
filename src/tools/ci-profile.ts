@@ -122,3 +122,45 @@ export function resolveCiProfile(paths: string[]): CiProfileResult {
   const reason = reasons.length === 0 ? "no changed paths (default fast)" : [...new Set(reasons)].join("; ");
   return { profile, suite: suiteList.join(","), hosts: hostList.join(","), reason };
 }
+
+// Ported from Resolve-DispatchProfile: the workflow_dispatch path, where the
+// caller states the profile explicitly instead of it being classified from
+// changed paths.
+export function resolveDispatchProfile(profile: "fast" | "targeted" | "full", targetHost: string, suite: string): CiProfileResult {
+  let hostList = ["linux"];
+  if (profile === "full") {
+    hostList = ALL_HOSTS;
+  } else if (profile === "targeted") {
+    if (targetHost && targetHost !== "all") {
+      if (!(targetHost in HOST_CATALOG)) {
+        throw new Error(`Unknown host '${targetHost}'. Expected one of: ${ALL_HOSTS.join(", ")}, or 'all'.`);
+      }
+      hostList = [targetHost];
+    } else {
+      hostList = ALL_HOSTS;
+    }
+  }
+
+  let reason = `workflow_dispatch profile=${profile}`;
+  if (profile === "targeted") {
+    const h = targetHost || "all";
+    const s = suite || "(default)";
+    reason += ` host=${h} suite=${s}`;
+  }
+
+  return { profile, suite, hosts: hostList.join(","), reason };
+}
+
+// Ported from Get-CiMatrixJson: built by hand rather than JSON.stringify so a
+// single-host selection stays a real array in the GITHUB_OUTPUT line (the PS
+// original's own comment: ConvertTo-Json collapses a one-element array to an
+// object, which would break `matrix.include` on the single-host targeted case
+// -- JSON.stringify(arr) does not have that failure mode, but the shape is
+// kept identical to the reference regardless).
+export function getCiMatrixJson(hostList: string[]): string {
+  const parts = hostList.map((h) => {
+    const c = HOST_CATALOG[h]!;
+    return `{"name":"${c.name}","runsOn":"${c.runsOn}","shell":"${c.shell}","exe":"${c.exe}"}`;
+  });
+  return `[${parts.join(",")}]`;
+}
