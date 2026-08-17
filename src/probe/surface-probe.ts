@@ -20,6 +20,15 @@
 // reference no longer exists to compare against live). Call sites that used
 // identical (script, args) pairs share one fixture entry, same as they
 // shared one live PS process before conversion.
+//
+// The fixture was captured on the machine that ran the capture, so any
+// absolute path it embeds (validate-project.ps1 and friends print the
+// resolved project path in their own banners) is baked in as a "<REPO_ROOT>"
+// token rather than that machine's literal checkout path -- otherwise this
+// probe would only pass on the exact machine that captured it, and would
+// leak that machine's local path into a committed file besides (caught by
+// this repo's own check-public-hygiene LOCAL-PATH-002 rule). Substituted
+// back to this machine's real REPO_ROOT at load time below.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, mkdtempSync, readdirSync, statSync } from "node:fs";
 import { spawnSync } from "node:child_process";
@@ -32,10 +41,18 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const CLI = join(REPO_ROOT, "cli/axiom.mjs");
 const ACTION = join(REPO_ROOT, "scripts/github-action/run-action.mjs");
 const FIXTURE = resolve(REPO_ROOT, "tests/golden/probes/surface-probe.json");
-const golden = JSON.parse(readFileSync(FIXTURE, "utf8")) as {
+const REPO_TOKEN = "<REPO_ROOT>";
+function detokenize(s: string): string {
+  return s.split(REPO_TOKEN).join(REPO_ROOT);
+}
+const rawGolden = JSON.parse(readFileSync(FIXTURE, "utf8")) as {
   cases: Record<string, { stdout: string; stderr: string; exitCode: number }>;
   init_exit_code: number;
   init_tree: Record<string, string>;
+};
+const golden = {
+  ...rawGolden,
+  cases: Object.fromEntries(Object.entries(rawGolden.cases).map(([k, v]) => [k, { ...v, stdout: detokenize(v.stdout), stderr: detokenize(v.stderr) }])),
 };
 
 let pass = 0;
