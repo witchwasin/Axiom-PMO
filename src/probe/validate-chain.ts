@@ -12,7 +12,7 @@ import type { Mode, Gate, Diagnostic } from "../core/types.js";
 import { resolveEffectiveMode } from "../core/mode-resolver.js";
 import { testGithubTaskSource, testRequiredArtifacts, getProjectFileSets, getProjectText } from "../core/artifact-policy.js";
 import { testExecutionPath, getProjectExecutionPath } from "../core/execution-path-validator.js";
-import { testGovernedPlaceholders, testProjectSourceSection, testSensitiveFilenames, testLinks } from "../rules/source-validator.js";
+import { testGovernedPlaceholders, testProjectSourceSection, testSensitiveFilenames, testLinks, type ProjectSourceResult } from "../rules/source-validator.js";
 import { testDeliveryWorkItems } from "../rules/workitem-validator.js";
 import { getDecisionIds } from "../rules/decision-log.js";
 import { testChangeControlRegistry } from "../rules/change-control-validator.js";
@@ -63,9 +63,19 @@ export function runPortedChain(
     policy: config.policy,
     handoffPolicy: config.handoffPolicy,
   };
-  const sourceResult = testProjectSourceSection(
-    acc, catalog, ctx, projectText, effectiveMode, gate, sourceRefRegex, policyEnums, decisionIds,
-  );
+  // Reference: validate-project.ps1 only calls Test-ProjectSourceSection
+  // `if ($projectText)`; with no PROJECT.md at all, every downstream
+  // consumer of $sourceResult gets the pre-declared empty defaults instead.
+  // Calling this unconditionally (as this chain did before) fires TASK-001/
+  // SOURCE-001/SOURCE-002/APPROVAL-001 against an empty string, which the
+  // reference never does for a missing-PROJECT.md project -- found via the
+  // newly-ported validation-fixtures golden check (invalid-no-project).
+  let sourceResult: ProjectSourceResult = { projectReqIds: [], projectBusinessIds: [], projectTaskSource: null, projectSourceIds: [] };
+  if (projectText) {
+    sourceResult = testProjectSourceSection(
+      acc, catalog, ctx, projectText, effectiveMode, gate, sourceRefRegex, policyEnums, decisionIds,
+    );
+  }
 
   const deliveryPath = resolve(project, "DELIVERY.md");
   const workItemResult = testDeliveryWorkItems(
