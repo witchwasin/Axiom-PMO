@@ -1,19 +1,25 @@
 // §8.6 fresh-tree probe for stateful commands: export-execution-contract and
-// run-execution-command. Run PS reference and TS candidate in SEPARATE fresh
-// temp trees, then diff the resulting file bytes + digest sidecars.
+// run-execution-command. Runs the TS candidate on a fresh temp tree and
+// compares the resulting file bytes + digest sidecars against a golden
+// fixture frozen from the PS reference on the same fixture-construction path
+// (Phase 9: the reference no longer exists to compare against live).
 
 import { spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync, rmSync, mkdtempSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, rmSync, mkdtempSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { exportExecutionContract } from "../tools/export-execution-contract.js";
 import { runExecutionCommand } from "../tools/run-execution-command.js";
-import { resolvePwsh } from "./pwsh-resolver.js";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const PWSH = resolvePwsh();
+const FIXTURE = resolve(REPO_ROOT, "tests/golden/probes/stateful-probe.json");
+const golden = JSON.parse(readFileSync(FIXTURE, "utf8")) as {
+  export_tree: Record<string, string>;
+  run_exit_code: number;
+  run_record_stable: Record<string, unknown>;
+};
 
 let pass = 0, fail = 0;
 function check(name: string, ok: boolean, detail = ""): void {
@@ -79,51 +85,40 @@ function treeSnapshot(dir: string, exclude: string[] = []): Record<string, strin
   return out;
 }
 
-// --- Case 1: export contract, compare PS vs TS bytes ---
+// --- Case 1: export contract, compare TS bytes vs golden ---
 {
-  const psTree = newProjectFixture();
   const tsTree = newProjectFixture();
   try {
-    spawnSync(PWSH, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(REPO_ROOT, "scripts/export-execution-contract.ps1"),
-      "-ProjectPath", psTree, "-WorkItemId", "D-001", "-Force"], { encoding: "utf8" });
     exportExecutionContract(REPO_ROOT, tsTree, "D-001", null, null, "", true);
 
-    const psSnap = treeSnapshot(psTree);
     const tsSnap = treeSnapshot(tsTree);
     // Compare contract + sidecar (exclude timestamps/nondeterministic: none in export)
     const contractKey = ".execution/D-001/EXECUTION-CONTRACT.json";
     const sidecarKey = ".execution/D-001/EXECUTION-CONTRACT.json.sha256";
-    check("export: contract bytes identical", psSnap[contractKey] === tsSnap[contractKey], `${psSnap[contractKey]?.length ?? 0} vs ${tsSnap[contractKey]?.length ?? 0}`);
-    check("export: sidecar bytes identical", psSnap[sidecarKey] === tsSnap[sidecarKey]);
-    check("export: no unrelated files", JSON.stringify(Object.keys(psSnap).sort()) === JSON.stringify(Object.keys(tsSnap).sort()));
+    check("export: contract bytes identical", golden.export_tree[contractKey] === tsSnap[contractKey], `${golden.export_tree[contractKey]?.length ?? 0} vs ${tsSnap[contractKey]?.length ?? 0}`);
+    check("export: sidecar bytes identical", golden.export_tree[sidecarKey] === tsSnap[sidecarKey]);
+    check("export: no unrelated files", JSON.stringify(Object.keys(golden.export_tree).sort()) === JSON.stringify(Object.keys(tsSnap).sort()));
   } finally {
-    rmSync(psTree, { recursive: true, force: true });
     rmSync(tsTree, { recursive: true, force: true });
   }
 }
 
 // --- Case 2: run-execution-command, compare record structure (exclude nondeterministic run_id/timestamps) ---
 {
-  const psTree = newProjectFixture();
   const tsTree = newProjectFixture();
   try {
-    // export first in both
-    spawnSync(PWSH, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(REPO_ROOT, "scripts/export-execution-contract.ps1"),
-      "-ProjectPath", psTree, "-WorkItemId", "D-001", "-Force"], { encoding: "utf8" });
+    // export first
     exportExecutionContract(REPO_ROOT, tsTree, "D-001", null, null, "", true);
 
-    // run in both
-    const psRun = spawnSync(PWSH, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(REPO_ROOT, "scripts/run-execution-command.ps1"),
-      "-ProjectPath", psTree, "-WorkItemId", "D-001", "-Name", "unit tests", "-Command", "echo ok"], { encoding: "utf8" });
+    // run
     const tsRun = runExecutionCommand(tsTree, "D-001", "unit tests", "echo ok");
 
-    check("run: exit code matches", psRun.status === tsRun.exitCode, `${psRun.status} vs ${tsRun.exitCode}`);
+    check("run: exit code matches", golden.run_exit_code === tsRun.exitCode, `${golden.run_exit_code} vs ${tsRun.exitCode}`);
 
     // Compare record JSON structure ignoring run_id + timestamps
-    const psRecord = JSON.parse(readFileSync(join(psTree, ".execution/D-001/runs/" + readdirSync(join(psTree, ".execution/D-001/runs")).find(f => f.endsWith('.json') && !f.endsWith('.sha256'))!), "utf8"));
     const tsRecord = JSON.parse(readFileSync(join(tsTree, ".execution/D-001/runs/" + readdirSync(join(tsTree, ".execution/D-001/runs")).find(f => f.endsWith('.json') && !f.endsWith('.sha256'))!), "utf8"));
     const stable = (r: Record<string, unknown>) => { const { run_id, started_at, ended_at, ...rest } = r; return rest; };
-    check("run: record structure identical (modulo run_id/timestamps)", JSON.stringify(stable(psRecord)) === JSON.stringify(stable(tsRecord)));
+    check("run: record structure identical (modulo run_id/timestamps)", JSON.stringify(golden.run_record_stable) === JSON.stringify(stable(tsRecord)));
 
     // Verify sidecar integrity for TS record
     const tsRecordFile = readdirSync(join(tsTree, ".execution/D-001/runs")).find(f => f.endsWith('.json') && !f.endsWith('.sha256'))!;
@@ -131,7 +126,6 @@ function treeSnapshot(dir: string, exclude: string[] = []): Record<string, strin
     const tsRecordDigest = createHash("sha256").update(readFileSync(join(tsTree, ".execution/D-001/runs", tsRecordFile))).digest("hex").toLowerCase();
     check("run: TS sidecar matches record digest", tsSidecar === tsRecordDigest);
   } finally {
-    rmSync(psTree, { recursive: true, force: true });
     rmSync(tsTree, { recursive: true, force: true });
   }
 }
