@@ -2,24 +2,41 @@
 
 ## 2.2.0 - 2026-08-17
 
-The Node/TypeScript engine (ported from the PowerShell reference across
-Phases 0-7, differentially proven byte-identical, canary-verified on real
-Windows/Linux/macOS hosts) is now the CLI's only execution path. No governance
-behavior changes: every command produces the exact stdout, stderr, and exit
-code it always has -- this releases what Phase 6/7's proof already
-established, not new logic. The `AXIOM_ROLLBACK_PWSH` toggle introduced during
-the canary window is removed; `cli/axiom.mjs` no longer spawns PowerShell for
-anything. The PowerShell reference scripts under `scripts/` remain on disk
-unchanged (a separate, later decision, tracked in `Fixed_plan/phase9/`) and
-are no longer invoked by the CLI or the GitHub Action.
+The PowerShell-to-Node/TypeScript migration (Phases 0-10) is complete. The
+Node engine -- ported from the PowerShell reference, differentially proven
+byte-identical, canary-verified on real Windows/Linux/macOS hosts -- is now
+the CLI's only execution path, and the PowerShell reference it was proven
+against has been deleted entirely. No governance behavior changes: every
+command produces the exact stdout, stderr, and exit code it always has --
+this releases what the differential proof already established, not new
+logic. Not a breaking change for consumers: inputs, outputs, and exit-code
+semantics are unchanged from 2.1.0.
 
 ### Changed
 
 - `cli/axiom.mjs`: the in-process TypeScript engine is unconditional; no
-  environment variable selects an alternate path anymore.
+  environment variable selects an alternate path anymore. The
+  `AXIOM_ROLLBACK_PWSH` toggle introduced during the canary window is
+  removed.
 - `action.yml`: no longer describes PowerShell as the execution engine.
-- Not a breaking change for consumers: inputs, outputs, and exit-code
-  semantics are unchanged from 2.1.0.
+- All consumer-facing documentation (`README.md`, `TESTING.md`,
+  `CONTRIBUTING.md`, install/runtime guides, architecture and rule docs,
+  skill definitions) reconciled to describe the Node engine; historical
+  records (this changelog, release notes, the PowerShell portability
+  pitfalls document) are left intact.
+
+### Removed
+
+- `scripts/*.ps1` (60 files), `tests/helpers/*.ps1` and `tests/e2e/*.ps1`
+  (29 files), `src/probe/marker-harness.ps1`, and
+  `src/probe/pwsh-resolver.ts` -- the entire PowerShell reference
+  implementation and its adapter code, 92 files total. Every differential
+  probe that used to compare live against this reference now runs as a
+  golden-fixture regression instead, captured from the reference before
+  deletion. `Fixed_plan/phase0/capture-*.ps1` is kept as historical record
+  of how the original golden fixtures were captured.
+- `docs/guides/powershell-runtime.md` -- the PowerShell 7 install guide,
+  retired along with the runtime it documented.
 
 ## 2.1.0 - 2026-08-15
 
