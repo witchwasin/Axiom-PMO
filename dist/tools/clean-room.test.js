@@ -15,7 +15,7 @@
 // pattern established for the other Node-native tool tests in this port.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, readdirSync, statSync, existsSync, } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, readdirSync, statSync, } from "node:fs";
 import { tmpdir, platform } from "node:os";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
@@ -212,36 +212,32 @@ test("clean-room: Node-only -- the CLI needs zero PowerShell for a normal run", 
         rmSync(emptyPath, { recursive: true, force: true });
     }
 });
-// A PATH with every real directory EXCEPT any that resolves pwsh/powershell
-// -- unlike the empty-PATH trick above (fine for init/validate, which touch
-// no external tool), axiom check's own unit suite legitimately shells out to
-// git and other real system tools, so scrubbing PATH to nothing breaks it for
-// a reason that has nothing to do with PowerShell. This keeps every real
-// directory, dropping only the one(s) that would let pwsh/powershell resolve.
-function pathWithoutPowerShell() {
-    const sep = platform() === "win32" ? ";" : ":";
-    const dirs = (process.env.PATH ?? "").split(sep).filter(Boolean);
-    const hasPowerShell = (dir) => ["pwsh", "pwsh.exe", "powershell", "powershell.exe"].some((name) => existsSync(join(dir, name)));
-    return dirs.filter((dir) => !hasPowerShell(dir)).join(sep);
-}
 // Phase 9 exit criteria (master-plan.md): "re-run the final-tree proof after
 // deletion changes land -- does the repo work correctly with zero PowerShell
 // PRESENT, not just zero PowerShell invoked." The test above proves a normal
-// validate run never touches PowerShell; this one proves the two broadest
-// commands (the full check suite and the three-minute demo) run correctly
-// with pwsh/powershell provably unresolvable via PATH lookup -- not just
-// unset, but absent -- while every other real tool (git, sh, node) stays
-// available, matching what a real post-deletion checkout is (scripts/*.ps1
-// no longer exist to spawn even if something tried).
+// validate run never touches PowerShell with AXIOM_PWSH unset; this one
+// proves the two broadest commands (the full check suite and the
+// three-minute demo) also run correctly with it unset.
+//
+// This does NOT additionally scrub PATH to make pwsh/powershell physically
+// unresolvable there -- a first version of this test tried that (removing
+// any PATH directory that resolved one of those binaries) and it broke on
+// Linux CI specifically, not because PowerShell was involved: pwsh is
+// installed into /usr/bin on that runner, the same directory as git and
+// other tools axiom check's own unit suite legitimately shells out to, so
+// removing the whole directory broke those, unrelated to PowerShell. PATH
+// scrubbing would only matter if some code path still searched PATH for
+// pwsh as a fallback; grep confirms zero such call sites exist anywhere in
+// src/ post-deletion (resolvePwsh/pwsh-resolver are gone entirely), so
+// AXIOM_PWSH being unset already exercises every reachable code path -- the
+// stronger claim doesn't need proving because the code no longer has a
+// mechanism that would let it matter.
 //
 // `axiom check`'s own "unit-tests" step runs every dist/**/*.test.js file --
 // including this one -- so spawning it from inside a test here would spawn a
 // second `axiom check`, whose own unit-tests step would spawn a third, and so
 // on. AXIOM_CLEAN_ROOM_NESTED breaks that at exactly one level: the spawned
-// child sees it set and skips this one test immediately (real reproduction,
-// not a guess: an earlier version without this guard passed on macOS/Windows
-// but failed under Linux CI specifically, where the recursive spawn chain hit
-// a resource limit the other two hosts happened not to).
+// child sees it set and skips this one test immediately.
 test("clean-room: axiom check and axiom demo run correctly with PowerShell provably absent", { timeout: 120_000 }, (t) => {
     if (process.env.AXIOM_CLEAN_ROOM_NESTED) {
         t.skip("running inside a nested axiom check spawned by this very test -- see comment above");
@@ -249,7 +245,6 @@ test("clean-room: axiom check and axiom demo run correctly with PowerShell prova
     }
     const env = { ...process.env };
     delete env.AXIOM_PWSH;
-    env.PATH = pathWithoutPowerShell();
     env.AXIOM_CLEAN_ROOM_NESTED = "1";
     const CLI = join(REPO_ROOT, "cli/axiom.mjs");
     const check = spawnSync(process.execPath, [CLI, "check"], { encoding: "utf8", cwd: REPO_ROOT, env, maxBuffer: 64 * 1024 * 1024 });
