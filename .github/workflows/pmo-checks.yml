@@ -38,7 +38,7 @@ jobs:
   #   * workflow_dispatch -> the caller's explicit `profile` input
   #   * push to main       -> always `full` (the merge/release gate)
   #   * pull_request       -> classified from the changed paths by
-  #                           scripts/ci-profile.ps1 (single source of truth)
+  #                           dist/tools/ci-profile-cli.js (single source of truth)
   #
   # Every downstream job is gated on this output, so ordinary work never fires
   # every host by accident, and a validator/config change can never be narrowed
@@ -59,9 +59,15 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24.18.0'
+          package-manager-cache: false
+
       - name: Resolve CI profile
         id: resolve
-        shell: pwsh
+        shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
           DISPATCH_PROFILE: ${{ inputs.profile }}
@@ -70,40 +76,30 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          $ErrorActionPreference = "Stop"
-          $classifier = Join-Path $env:GITHUB_WORKSPACE "scripts/ci-profile.ps1"
-          if ($env:EVENT_NAME -eq "workflow_dispatch") {
-            & $classifier -Profile $env:DISPATCH_PROFILE -TargetHost $env:DISPATCH_HOST -Suite $env:DISPATCH_SUITE -GithubOutput
+          set -euo pipefail
+          classifier="dist/tools/ci-profile-cli.js"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            node "$classifier" -Profile "$DISPATCH_PROFILE" -TargetHost "$DISPATCH_HOST" -Suite "$DISPATCH_SUITE" -GithubOutput
             exit 0
-          }
-          if ($env:EVENT_NAME -eq "push") {
+          fi
+          if [ "$EVENT_NAME" = "push" ]; then
             # A push to main is the merge/release gate: always the full matrix.
-            & $classifier -Profile "full" -GithubOutput
+            node "$classifier" -Profile full -GithubOutput
             exit 0
-          }
+          fi
 
           # pull_request: classify from the changed paths.
-          $changed = @()
-          $base = $env:BASE_SHA
-          $head = $env:HEAD_SHA
-          if ($base -and $head -and $base -ne $head) {
-            $previousErrorActionPreference = $ErrorActionPreference
-            $ErrorActionPreference = "Continue"
-            $diff = @(git diff --name-only "$base...$head" 2>&1)
-            $diffExit = $LASTEXITCODE
-            $ErrorActionPreference = $previousErrorActionPreference
-            if ($diffExit -eq 0) {
-              $changed = @($diff | Where-Object { $_.Trim() })
-            } else {
+          changed_path="$RUNNER_TEMP/changed-files.txt"
+          : > "$changed_path"
+          if [ -n "$BASE_SHA" ] && [ -n "$HEAD_SHA" ] && [ "$BASE_SHA" != "$HEAD_SHA" ]; then
+            if ! git diff --name-only "$BASE_SHA...$HEAD_SHA" > "$changed_path" 2>"$RUNNER_TEMP/diff-err.txt"; then
               # Could not resolve the diff: fail safe to full, never silent-fast.
-              Write-Host "::warning::git diff failed (exit $diffExit); resolving to full profile"
-              & $classifier -Profile "full" -GithubOutput
+              echo "::warning::git diff failed ($(cat "$RUNNER_TEMP/diff-err.txt")); resolving to full profile"
+              node "$classifier" -Profile full -GithubOutput
               exit 0
-            }
-          }
-          $changedPath = Join-Path $env:RUNNER_TEMP "changed-files.txt"
-          $changed | Set-Content -LiteralPath $changedPath -Encoding utf8
-          & $classifier -ChangedPathsPath $changedPath -GithubOutput
+            fi
+          fi
+          node "$classifier" -ChangedPathsPath "$changed_path" -GithubOutput
 
   # fast: docs/report-only changes and ordinary work. Runs the five cheap,
   # high-value local-equivalent checks on one Linux pwsh host. This is the
@@ -127,35 +123,52 @@ jobs:
           package-manager-cache: false
 
       - name: Framework doctor
-        shell: pwsh
+        shell: bash
         run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/pmo-doctor.ps1 -RepoPath .
+          node -e '
+            import { runPmoDoctor, formatDoctorText } from "./dist/doctor/pmo-doctor.js";
+            const r = runPmoDoctor(process.cwd());
+            console.log(formatDoctorText(process.cwd(), r));
+            process.exit(r.fail > 0 ? 1 : 0);
+          '
 
       - name: Public hygiene
-        shell: pwsh
+        shell: bash
         run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/check-public-hygiene.ps1 -RepoPath .
+          node -e '
+            import { checkPublicHygiene } from "./dist/tools/check-public-hygiene.js";
+            const r = checkPublicHygiene(process.cwd());
+            console.log(r.output);
+            process.exit(r.exitCode);
+          '
 
-      - name: Example goldens
-        shell: pwsh
-        run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File tests/golden/capture-examples.ps1 -RepoPath . -Verify
+      # example-goldens (tests/golden/capture-examples.ps1) is dropped
+      # entirely per master-plan.md's Phase 9 exit criteria; its case
+      # coverage is carried forward by differential-probe.ts and
+      # validation-fixtures.ts (both exercised by "Unit tests" below).
 
       - name: Plugin mirror drift
-        shell: pwsh
+        shell: bash
         run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/build-plugin-package.ps1 -Check
+          node -e '
+            import { buildPluginPackage } from "./dist/tools/build-plugin-package.js";
+            const r = buildPluginPackage(process.cwd(), true);
+            console.log(r.output);
+            process.exit(r.exitCode);
+          '
 
       - name: CLI tests
-        shell: pwsh
+        shell: bash
         run: |
           node tests/helpers/cli-tests.mjs
 
   # targeted: code in a known area. Runs the full local-equivalent suite
-  # (run-all-checks + hygiene + fault injection) on only the host(s) the
-  # classifier selects -- e.g. Windows PowerShell 5.1 + PowerShell 7 for a
-  # scripts/ change, Linux pwsh for a cli/ change. A dispatch may instead name a
-  # single `suite` to narrow further via scripts/run-ci-suite.ps1.
+  # (axiom check + hygiene + fault injection) on only the host(s) the
+  # classifier selects. A dispatch may instead name a single `suite` to
+  # narrow further via run-ci-suite-cli.js. Phase 9: every leg now runs the
+  # same Node engine regardless of matrix.name/matrix.exe (kept in the
+  # matrix JSON for host selection and informational value, but no longer
+  # consumed to pick an interpreter -- there is only one now).
   targeted-checks:
     needs: determine-profile
     if: needs.determine-profile.outputs.profile == 'targeted'
@@ -178,54 +191,54 @@ jobs:
           package-manager-cache: false
 
       - name: Run PMO framework checks (${{ matrix.name }})
-        # A literal, not ${{ matrix.shell }}: GitHub Actions does not make the
-        # matrix context available to the `shell:` key (only to `run:`/`env:`/
-        # `with:` etc. -- see docs/architecture/ci-risk-based.md). pwsh is
-        # preinstalled on every runner in the matrix (windows-2025,
-        # ubuntu-24.04, macos-15) and only interprets this script; the actual
-        # host under test is still ${{ matrix.exe }}, invoked as a child
-        # process below, so windows-ps51 still genuinely runs
-        # powershell.exe 5.1.
-        shell: pwsh
+        shell: bash
         run: |
-          if ($env:SUITE -and $env:SUITE -ne '') {
-            ${{ matrix.exe }} -NoProfile -ExecutionPolicy Bypass -File scripts/run-ci-suite.ps1 -Suite $env:SUITE -RepoPath .
-          } else {
-            ${{ matrix.exe }} -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -RepoPath .
-          }
+          if [ -n "$SUITE" ]; then
+            node dist/tools/run-ci-suite-cli.js -Suite "$SUITE" -RepoPath .
+          else
+            node cli/axiom.mjs check
+          fi
         env:
           SUITE: ${{ inputs.suite }}
 
       - name: Run public hygiene checks
-        shell: pwsh
+        shell: bash
         run: |
-          ${{ matrix.exe }} -NoProfile -ExecutionPolicy Bypass -File scripts/check-public-hygiene.ps1 -RepoPath .
+          node -e '
+            import { checkPublicHygiene } from "./dist/tools/check-public-hygiene.js";
+            const r = checkPublicHygiene(process.cwd());
+            console.log(r.output);
+            process.exit(r.exitCode);
+          '
 
       - name: Verify fault injection propagates as a failure
-        shell: pwsh
+        shell: bash
         run: |
-          ${{ matrix.exe }} -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -RepoPath . -TestChildScript tests/helpers/exit-1.ps1
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "FAULT INJECTION DID NOT PROPAGATE: run-all-checks.ps1 exited 0 with a failing -TestChildScript"
+          set +e
+          node cli/axiom.mjs check -TestChildScript tests/helpers/exit-1.mjs
+          code=$?
+          set -e
+          if [ "$code" -eq 0 ]; then
+            echo "FAULT INJECTION DID NOT PROPAGATE: check exited 0 with a failing -TestChildScript"
             exit 1
-          }
-          Write-Host "Fault injection correctly propagated as exit $LASTEXITCODE"
+          fi
+          echo "Fault injection correctly propagated as exit $code"
           exit 0
 
-  # Windows PowerShell 7 (pwsh). Milestone 3.5 makes PowerShell 7 the primary
-  # portable runtime, and Windows is a reference platform, so this leg is
-  # required too. It proves the validator behaves identically on PowerShell 7
-  # and Windows PowerShell 5.1: a failure here points at a real cross-host
-  # difference (JSON depth, encoding, regex), not at this leg. Confirm it is
-  # green on the first CI run before relying on it; branch protection must add
-  # it as a required check separately (a human action).
+  # Windows, full profile. Job id kept as pmo-checks-windows-pwsh7 even though
+  # it no longer runs PowerShell at all (Phase 9): branch protection's
+  # required-status-checks list references job ids by name, and renaming this
+  # would silently unsatisfy that setting until a human updates it separately
+  # -- not something to risk as a side effect of a code change. Before Phase 9
+  # this leg proved the validator behaved identically on PowerShell 7 and
+  # Windows PowerShell 5.1; there is no longer a PowerShell reference to
+  # compare against, so it now proves the same thing pmo-checks-linux-pwsh7
+  # and pmo-checks-macos-pwsh7 prove on their own OS: the Node engine itself
+  # works end to end on this platform.
   pmo-checks-windows-pwsh7:
     needs: determine-profile
     if: needs.determine-profile.outputs.profile == 'full'
     runs-on: windows-2025
-    # Single run-all-checks.ps1 pass, but on 2026-08-03 (commit 4750395) it
-    # still finished with only ~13s of margin inside the old 15-minute
-    # budget. Same growth pressure as pmo-checks above; matching headroom.
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -240,30 +253,36 @@ jobs:
           package-manager-cache: false
 
       - name: Run PMO framework checks
-        shell: pwsh
+        shell: bash
         run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts\run-all-checks.ps1 -RepoPath .
+          node cli/axiom.mjs check
 
       - name: Run public hygiene checks
-        shell: pwsh
+        shell: bash
         run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts\check-public-hygiene.ps1 -RepoPath .
+          node -e '
+            import { checkPublicHygiene } from "./dist/tools/check-public-hygiene.js";
+            const r = checkPublicHygiene(process.cwd());
+            console.log(r.output);
+            process.exit(r.exitCode);
+          '
 
       - name: Verify fault injection propagates as a failure
-        shell: pwsh
+        shell: bash
         run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts\run-all-checks.ps1 -RepoPath . -TestChildScript tests\helpers\exit-1.ps1
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "FAULT INJECTION DID NOT PROPAGATE: run-all-checks.ps1 exited 0 with a failing -TestChildScript"
+          set +e
+          node cli/axiom.mjs check -TestChildScript tests/helpers/exit-1.mjs
+          code=$?
+          set -e
+          if [ "$code" -eq 0 ]; then
+            echo "FAULT INJECTION DID NOT PROPAGATE: check exited 0 with a failing -TestChildScript"
             exit 1
-          }
-          Write-Host "Fault injection correctly propagated as exit $LASTEXITCODE"
+          fi
+          echo "Fault injection correctly propagated as exit $code"
           exit 0
 
-  # Ubuntu + PowerShell 7. PowerShell 7 is the documented minimum for Linux.
-  # This leg is now a blocking workflow job. Milestone 3.5 acceptance still
-  # requires two consecutive green main runs after this promotion, plus human
-  # acceptance; branch protection is a separate repository setting.
+  # Linux, full profile. Job id kept as pmo-checks-linux-pwsh7 for the same
+  # branch-protection reason as the Windows leg above.
   pmo-checks-linux-pwsh7:
     needs: determine-profile
     if: needs.determine-profile.outputs.profile == 'full'
@@ -281,35 +300,39 @@ jobs:
           node-version: '24.18.0'
           package-manager-cache: false
 
-      # Golden masters are stored in a form independent of the PowerShell host's
-      # JSON pretty-printer (see scripts/lib/golden-normalizer.ps1). This leg is
-      # what proves it: run-all-checks verifies the same golden files here under
-      # pwsh 7 that the Windows jobs verify above.
-      - name: Run PMO framework checks under pwsh
-        shell: pwsh
+      - name: Run PMO framework checks
+        shell: bash
         run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -RepoPath .
+          node cli/axiom.mjs check
 
       - name: Run public hygiene checks
-        shell: pwsh
+        shell: bash
         run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/check-public-hygiene.ps1 -RepoPath .
+          node -e '
+            import { checkPublicHygiene } from "./dist/tools/check-public-hygiene.js";
+            const r = checkPublicHygiene(process.cwd());
+            console.log(r.output);
+            process.exit(r.exitCode);
+          '
 
       - name: Verify fault injection propagates as a failure
-        shell: pwsh
+        shell: bash
         run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -RepoPath . -TestChildScript tests/helpers/exit-1.ps1
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "FAULT INJECTION DID NOT PROPAGATE: run-all-checks.ps1 exited 0 with a failing -TestChildScript"
+          set +e
+          node cli/axiom.mjs check -TestChildScript tests/helpers/exit-1.mjs
+          code=$?
+          set -e
+          if [ "$code" -eq 0 ]; then
+            echo "FAULT INJECTION DID NOT PROPAGATE: check exited 0 with a failing -TestChildScript"
             exit 1
-          }
-          Write-Host "Fault injection correctly propagated as exit $LASTEXITCODE"
+          fi
+          echo "Fault injection correctly propagated as exit $code"
           exit 0
 
-  # macOS + PowerShell 7 smoke test (Milestone 3.5). Non-blocking: macOS is a
-  # developer convenience surface, not a reference platform. It exists to gather
-  # cross-host evidence, not to gate releases. Promote only with a reliable
-  # track record.
+  # macOS, full profile smoke test. Non-blocking: macOS is a developer
+  # convenience surface, not a reference platform. Job id kept as
+  # pmo-checks-macos-pwsh7 for the same branch-protection reason as the other
+  # two full-profile jobs above (it stopped running PowerShell in Phase 9).
   pmo-checks-macos-pwsh7:
     needs: determine-profile
     if: needs.determine-profile.outputs.profile == 'full'
@@ -328,10 +351,10 @@ jobs:
           node-version: '24.18.0'
           package-manager-cache: false
 
-      - name: Run PMO framework checks under pwsh
-        shell: pwsh
+      - name: Run PMO framework checks
+        shell: bash
         run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-checks.ps1 -RepoPath .
+          node cli/axiom.mjs check
 
   # Milestone 4 dogfooding: exercise action.yml itself, via `uses: ./`, the
   # same way an external consumer would -- not just the Node scripts behind
@@ -373,7 +396,7 @@ jobs:
       # Same broken fixture, enforcement on. continue-on-error catches the
       # expected failure so the job can assert on it, exactly like the
       # existing "Verify fault injection propagates as a failure" steps
-      # above assert on run-all-checks.ps1 -TestChildScript.
+      # above assert on axiom check -TestChildScript.
       - name: Governance check, enforced, on the same broken project
         id: enforced_fail
         continue-on-error: true
@@ -597,11 +620,17 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24.18.0'
+          package-manager-cache: false
+
       - name: Verify the ci-check adapter against the real GitHub API
-        shell: pwsh
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: pwsh -NoProfile -ExecutionPolicy Bypass -File tests/helpers/ci-check-evidence-live-tests.ps1 -RepoPath .
+        run: node --test dist/exec/ci-check-evidence-live.test.js
 
   # Phase 7 canary bookkeeping (Fixed_plan/phase7/PLAN.md §3). Every full-profile
   # run recomputes the SHA-256 manifest over the validation surface (src/**/*.ts,
