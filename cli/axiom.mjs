@@ -31,11 +31,7 @@ import { fileURLToPath } from "node:url";
 // (master-plan.md's target shape: "cli/axiom.mjs — thin dispatch over dist/").
 // These imports are evaluation-free at load time; no rules run until a command
 // is dispatched.
-import { runPortedChain } from "../dist/probe/validate-chain.js";
-import { invokeScopeDiffCheck } from "../dist/rules/scope-diff-validator.js";
-import { importPmoConfig } from "../dist/config/config-loader.js";
-import { writeValidationOutput, getExitCode } from "../dist/core/result-writer.js";
-import { DIAGNOSTICS_SCHEMA_VERSION } from "../dist/core/types.js";
+import { runValidateEnvelope } from "../dist/probe/validate-chain.js";
 import { runPmoStatus } from "../dist/tools/pmo-status.js";
 import { runPmoDoctor, formatDoctorText } from "../dist/doctor/pmo-doctor.js";
 import { runAssessHandoff } from "../dist/tools/assess-handoff.js";
@@ -147,37 +143,11 @@ function runTsStep(step) {
 // `validate` through the in-process engine, byte-identical in contract to
 // validate-project.ps1: runs the ported chain, optionally the opt-in
 // SCOPE-DIFF check, assembles the diagnostic envelope exactly as the
-// reference's result-writer does, and renders Text or JSON.
+// reference's result-writer does, and renders Text or JSON. Shared with
+// demo.ts's own gate step via src/probe/validate-chain.ts's exported
+// runValidateEnvelope, rather than duplicating this logic per caller.
 function runValidateTs(project, mode, gate, failOnWarning, format, scopeDiff) {
-  const chain = runPortedChain(REPO_ROOT, project, mode, gate);
-  const acc = chain.accumulator;
-  let scopeDiffResult = null;
-  if (scopeDiff.base && scopeDiff.head) {
-    const config = importPmoConfig(REPO_ROOT);
-    const gitRoot = scopeDiff.repoRoot ? resolve(scopeDiff.repoRoot) : REPO_ROOT;
-    scopeDiffResult = invokeScopeDiffCheck(acc, config.validationRules, project, gitRoot, REPO_ROOT, scopeDiff.base, scopeDiff.head);
-  }
-  const exitCode = getExitCode(acc.fail, acc.warnBlocking, failOnWarning);
-  const envelope = {
-    schema_version: DIAGNOSTICS_SCHEMA_VERSION,
-    project,
-    requested_mode: mode,
-    effective_mode: chain.effectiveMode,
-    gate,
-    summary: {
-      pass: acc.pass,
-      warn: acc.warn,
-      warn_blocking: acc.warnBlocking,
-      fail: acc.fail,
-      exit_code: exitCode,
-    },
-    results: acc.messages,
-  };
-  if (scopeDiffResult) envelope.scope_diff = scopeDiffResult;
-  return {
-    output: writeValidationOutput(format, envelope, project, mode, chain.effectiveMode, gate) + "\n",
-    exitCode,
-  };
+  return runValidateEnvelope(REPO_ROOT, project, mode, gate, failOnWarning, format, scopeDiff);
 }
 
 // --- interactive prompting (M7 onboarding) ----------------------------------

@@ -1,12 +1,8 @@
 # Phase 9 — Human-approved PowerShell deletion: reference checklist
 
-**Status:** PRE-AUTHORIZED IN PRINCIPLE by DEC-027 (`Fixed_plan/decision-log.md`,
-2026-08-16) — the go/no-go decision for this phase is already made. Still **not**
-executable: Phase 8 has not happened yet, and the "separate Human reviewer" gap below
-is unresolved. When Phase 8 has been live for a period the Human Owner judges
-sufficient (their call at that time, not fixed here), report status and ask
-specifically how to resolve the reviewer gap — do not re-ask whether to proceed with
-Phase 9 at all.
+**Status:** EXECUTING. Every precondition resolved: CR-017 sign-off given (DEC-031),
+second-reviewer gap waived (DEC-032), Phase 8 live-period resolved as "proceed
+immediately" (DEC-033) — all `Fixed_plan/decision-log.md`, 2026-08-17.
 
 ## Open point that needs the Human Owner's decision when this comes up
 

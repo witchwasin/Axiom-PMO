@@ -1,26 +1,18 @@
 // Smoke test for the three-minute demo, ported from tests/helpers/demo-smoke-tests.ps1.
-// Runs the demo (via pwsh reference) and asserts its own claims against output.
+// Runs the demo in-process (runDemo) and asserts its own claims against output --
+// no PowerShell host required, matching cli/axiom.mjs's own in-process demo path.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolvePwsh } from "../probe/pwsh-resolver.js";
+import { runDemo } from "./demo.js";
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-test("demo runs and its claims match output", (t) => {
-    let pwsh;
-    try {
-        pwsh = resolvePwsh();
-    }
-    catch {
-        t.skip("pwsh not available (set AXIOM_PWSH to run the demo smoke test)");
-        return;
-    }
+test("demo runs and its claims match output", () => {
     const started = Date.now();
-    const r = spawnSync(pwsh, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", resolve(REPO_ROOT, "scripts/demo.ps1"), "-RepoPath", REPO_ROOT, "-NoPause", "-Plain"], { encoding: "utf8" });
+    const r = runDemo(REPO_ROOT, true, true);
     const elapsed = (Date.now() - started) / 1000;
-    const text = (r.stdout ?? "") + (r.stderr ?? "");
-    assert.equal(r.status, 0, "demo exits 0");
+    const text = r.output;
+    assert.equal(r.exitCode, 0, "demo exits 0");
     assert.ok(elapsed < 180, "demo completes well inside three minutes");
     for (const rule of ["HANDOFF-003", "HANDOFF-004", "HANDOFF-007", "HANDOFF-011", "HANDOFF-012"]) {
         assert.ok(new RegExp(`\\[FAIL\\]\\s+${rule}`).test(text), `demo shows a real ${rule} failure`);

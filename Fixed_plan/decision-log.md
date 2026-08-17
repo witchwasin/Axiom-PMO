@@ -175,3 +175,25 @@ it structurally cannot be.
 **What this means going forward:** the Phase 9 deletion diff gets exactly one reviewer
 — the Human Owner themself. This decision is the record of why that's considered
 acceptable for this project, so it doesn't read as an oversight later.
+
+---
+
+### DEC-033 — Phase 8's "live for a period" precondition: proceed immediately
+
+- **Status:** Approved
+- **Approved by:** Witchwasin K. (Human Owner)
+- **Date:** 2026-08-17
+
+**Decision:** `Fixed_plan/phase9/PLAN.md`'s remaining Phase 9 precondition — "Phase 8
+cutover has been live for a period the Human Owner decides at that time" — is
+resolved as: no additional waiting period. Phase 9 proceeds immediately following
+Phase 8 (`901035d`/`6e92b8b`, landed 2026-08-17).
+
+**Context:** this was the one item explicitly left open across DEC-030/031/032 --
+those three resolved N, CR-017, and the second-reviewer gap, but not this. Asked
+directly rather than assumed; the Human Owner's answer was to start the remaining
+phases now.
+
+**What this completes:** every precondition DEC-027's original table listed for
+Phase 9 is now resolved (Phase 8 live: this decision; second-reviewer gap: DEC-032).
+Phase 9 execution follows.

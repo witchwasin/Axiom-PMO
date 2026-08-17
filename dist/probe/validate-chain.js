@@ -21,6 +21,9 @@ import { testDesignSystemTokens } from "../rules/design-system-validator.js";
 import { testDesignProviderWorkflow } from "../rules/design-provider-validator.js";
 import { testVisualProofReview } from "../rules/visual-proof-validator.js";
 import { testHandoffReadiness, testEarlyTestDesign } from "../rules/handoff-validator.js";
+import { invokeScopeDiffCheck } from "../rules/scope-diff-validator.js";
+import { writeValidationOutput, getExitCode } from "../core/result-writer.js";
+import { DIAGNOSTICS_SCHEMA_VERSION } from "../core/types.js";
 export function runPortedChain(repoRoot, project, mode, gate) {
     const acc = createAccumulator();
     const config = importPmoConfig(repoRoot);
@@ -64,4 +67,41 @@ export function runPortedChain(repoRoot, project, mode, gate) {
     testSensitiveFilenames(acc, catalog, fileSets.allProjectFiles, project);
     testLinks(acc, catalog, fileSets.governedFiles, fileSets.userSourceFiles, gate);
     return { diagnostics: acc.messages, accumulator: acc, effectiveMode };
+}
+// Assembles and renders one full validate envelope -- runs the chain,
+// optionally the opt-in SCOPE-DIFF check, computes the exit code, and writes
+// Text or JSON. Shared by cli/axiom.mjs's `validate`/`handoff` commands and
+// demo.ts's own gate step, which used to spawn validate-project.ps1 directly
+// instead of calling this (Phase 9 fix -- see demo.ts's own comment).
+export function runValidateEnvelope(repoRoot, project, mode, gate, failOnWarning, format, scopeDiff = {}) {
+    const chain = runPortedChain(repoRoot, project, mode, gate);
+    const acc = chain.accumulator;
+    let scopeDiffResult = null;
+    if (scopeDiff.base && scopeDiff.head) {
+        const config = importPmoConfig(repoRoot);
+        const gitRoot = scopeDiff.repoRoot ? resolve(scopeDiff.repoRoot) : repoRoot;
+        scopeDiffResult = invokeScopeDiffCheck(acc, config.validationRules, project, gitRoot, repoRoot, scopeDiff.base, scopeDiff.head);
+    }
+    const exitCode = getExitCode(acc.fail, acc.warnBlocking, failOnWarning);
+    const envelope = {
+        schema_version: DIAGNOSTICS_SCHEMA_VERSION,
+        project,
+        requested_mode: mode,
+        effective_mode: chain.effectiveMode,
+        gate,
+        summary: {
+            pass: acc.pass,
+            warn: acc.warn,
+            warn_blocking: acc.warnBlocking,
+            fail: acc.fail,
+            exit_code: exitCode,
+        },
+        results: acc.messages,
+    };
+    if (scopeDiffResult)
+        envelope.scope_diff = scopeDiffResult;
+    return {
+        output: writeValidationOutput(format, envelope, project, mode, chain.effectiveMode, gate) + "\n",
+        exitCode,
+    };
 }

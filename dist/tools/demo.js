@@ -1,10 +1,13 @@
 // `demo`, ported from scripts/demo.ps1. Three-minute proof: run the Handoff gate
-// on broken + fixed demo projects. Spawns child validators via pwsh (the
-// validate-project.ps1 reference), same as the original.
-import { spawnSync } from "node:child_process";
+// on broken + fixed demo projects. Calls the in-process TS engine directly
+// (runValidateEnvelope / runAssessHandoff) -- the same functions cli/axiom.mjs's
+// `validate`/`handoff` commands use -- rather than spawning validate-project.ps1
+// / assess-handoff.ps1 via pwsh, which this file used to do and which meant
+// `axiom demo` failed outright with no PowerShell host present.
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { resolvePwsh } from "../probe/pwsh-resolver.js";
+import { runValidateEnvelope } from "../probe/validate-chain.js";
+import { runAssessHandoff } from "./assess-handoff.js";
 function writeRule(text) {
     const bar = "=".repeat(74);
     // One trailing newline only: the caller joins output lines with "\n", so a
@@ -21,20 +24,23 @@ export function runDemo(repoRoot, plain, noPause) {
             return { output: `Demo project not found: ${p}\n`, exitCode: 1 };
     }
     const out = [];
-    const pwsh = resolvePwsh();
-    function invokeChild(script, scriptArgs) {
-        const r = spawnSync(pwsh, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(repo, script), ...scriptArgs], { encoding: "utf8" });
-        // trimEnd so the following out.push("") contributes exactly the one blank
-        // line the reference's Write-Host "" emits after a child; a raw push would
-        // double-count the child's own trailing newline.
-        if (r.stdout && r.stdout.trim() !== "")
-            out.push(r.stdout.trimEnd());
-        if (r.stderr)
-            out.push(r.stderr);
-        return r.status ?? 1;
+    // trimEnd so the following out.push("") contributes exactly the one blank
+    // line the reference's Write-Host "" emits after a child; a raw push would
+    // double-count the child's own trailing newline.
+    function pushChildOutput(text) {
+        if (text && text.trim() !== "")
+            out.push(text.trimEnd());
     }
-    const invokeGate = (projectPath, extra = []) => invokeChild("scripts/validate-project.ps1", ["-ProjectPath", projectPath, "-Mode", "Standard", "-Gate", "Handoff", ...extra]);
-    const invokeAssess = (projectPath) => invokeChild("scripts/assess-handoff.ps1", ["-ProjectPath", projectPath, "-Mode", "Standard"]);
+    const invokeGate = (projectPath, failOnWarning = false) => {
+        const r = runValidateEnvelope(repo, projectPath, "Standard", "Handoff", failOnWarning, "Text");
+        pushChildOutput(r.output);
+        return r.exitCode;
+    };
+    const invokeAssess = (projectPath) => {
+        const r = runAssessHandoff(repo, projectPath, "Standard", "Text");
+        pushChildOutput(r.output);
+        return r.exitCode;
+    };
     out.push(writeRule("Axiom-PMO -- the Handoff gate in three minutes"));
     out.push("Two synthetic projects. Both have a PROJECT.md, a design, a work-item");
     out.push("board, and an approved Design Ready gate. Both would pass every gate");
@@ -65,7 +71,7 @@ export function runDemo(repoRoot, plain, noPause) {
     out.push("");
     out.push("None of these are style violations. Each one costs days.");
     out.push(writeRule("2/3  demo/fixed-project  --  same command"));
-    const fixedExit = invokeGate(fixed, ["-FailOnWarning"]);
+    const fixedExit = invokeGate(fixed, true);
     out.push("");
     out.push(`Exit code: ${fixedExit}`);
     out.push(writeRule("3/3  Readiness is not one boolean"));
