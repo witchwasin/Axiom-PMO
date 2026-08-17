@@ -47,9 +47,9 @@ one-to-one onto the commands below.
 
 The engine is pure Node.js, so there is no host-resolution step and no
 PowerShell compatibility matrix. CI still runs the full profile on Windows,
-Linux, and macOS (the job ids retain their historical `pwsh7` suffix only
-because branch protection pins them — see `.github/workflows/pmo-checks.yml`),
-and a test that cannot run on a given host must say so rather than passing
+Linux, and macOS (`pmo-checks-windows`, `pmo-checks-linux`,
+`pmo-checks-macos` in `.github/workflows/pmo-checks.yml`), and a test that
+cannot run on a given host must say so rather than passing
 silently.
 
 ## Validation Rules

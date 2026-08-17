@@ -37,15 +37,14 @@ Two hard boundaries, taken from the plan that introduced this:
 | `targeted` | Code in a known area | `run-all-checks` + hygiene + fault injection on only the relevant host(s) |
 | `full` | Merge/release gate, or a high-risk change | Every required host + the three dogfood jobs (unchanged from before) |
 
-`full` runs the three OS legs — `pmo-checks-windows-pwsh7` (windows-2025),
-`pmo-checks-linux-pwsh7` (ubuntu-24.04), `pmo-checks-macos-pwsh7` (macos-15) —
+`full` runs the three OS legs — `pmo-checks-windows` (windows-2025),
+`pmo-checks-linux` (ubuntu-24.04), `pmo-checks-macos` (macos-15) —
 plus `dogfood-github-action`, `dogfood-scope-diff`, and
-`dogfood-ci-check-evidence`. The job ids keep their historical `pwsh7` suffix
-only because branch protection pins them by name; none of the legs runs
-PowerShell anymore (the PowerShell reference was deleted in Phase 9 — each leg
-now proves the Node engine works end to end on its OS). Risk-based CI did not
-widen or narrow `full`; it only changed how often `full` is selected
-automatically.
+`dogfood-ci-check-evidence`. None of the legs runs PowerShell anymore (the
+PowerShell reference was deleted in Phase 9 — each leg proves the Node engine
+works end to end on its OS; the historical `pwsh7` job id suffix was dropped
+in Phase 10). Risk-based CI did not widen or narrow `full`; it only changed
+how often `full` is selected automatically.
 
 ---
 

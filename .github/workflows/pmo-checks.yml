@@ -225,17 +225,10 @@ jobs:
           echo "Fault injection correctly propagated as exit $code"
           exit 0
 
-  # Windows, full profile. Job id kept as pmo-checks-windows-pwsh7 even though
-  # it no longer runs PowerShell at all (Phase 9): branch protection's
-  # required-status-checks list references job ids by name, and renaming this
-  # would silently unsatisfy that setting until a human updates it separately
-  # -- not something to risk as a side effect of a code change. Before Phase 9
-  # this leg proved the validator behaved identically on PowerShell 7 and
-  # Windows PowerShell 5.1; there is no longer a PowerShell reference to
-  # compare against, so it now proves the same thing pmo-checks-linux-pwsh7
-  # and pmo-checks-macos-pwsh7 prove on their own OS: the Node engine itself
-  # works end to end on this platform.
-  pmo-checks-windows-pwsh7:
+  # Windows, full profile. Proves the Node engine works end to end on Windows
+  # (the PowerShell reference was deleted in Phase 9; the historical pwsh7 job
+  # id suffix was dropped in Phase 10).
+  pmo-checks-windows:
     needs: determine-profile
     if: needs.determine-profile.outputs.profile == 'full'
     runs-on: windows-2025
@@ -281,9 +274,8 @@ jobs:
           echo "Fault injection correctly propagated as exit $code"
           exit 0
 
-  # Linux, full profile. Job id kept as pmo-checks-linux-pwsh7 for the same
-  # branch-protection reason as the Windows leg above.
-  pmo-checks-linux-pwsh7:
+  # Linux, full profile. (Historical pwsh7 job id suffix dropped in Phase 10.)
+  pmo-checks-linux:
     needs: determine-profile
     if: needs.determine-profile.outputs.profile == 'full'
     runs-on: ubuntu-24.04
@@ -330,10 +322,9 @@ jobs:
           exit 0
 
   # macOS, full profile smoke test. Non-blocking: macOS is a developer
-  # convenience surface, not a reference platform. Job id kept as
-  # pmo-checks-macos-pwsh7 for the same branch-protection reason as the other
-  # two full-profile jobs above (it stopped running PowerShell in Phase 9).
-  pmo-checks-macos-pwsh7:
+  # convenience surface, not a reference platform. (Historical pwsh7 job id
+  # suffix dropped in Phase 10.)
+  pmo-checks-macos:
     needs: determine-profile
     if: needs.determine-profile.outputs.profile == 'full'
     runs-on: macos-15
