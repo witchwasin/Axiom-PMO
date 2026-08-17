@@ -13,8 +13,15 @@ export function getCanonicalGoldenText(text) {
     //    lookbehind stops the second backslash of an escaped `\\` pair from being
     //    read as the start of an escape.
     normalized = normalized.replace(/(?<!\\)\\u([0-9a-fA-F]{4})/g, (_m, hex) => String.fromCharCode(parseInt(hex, 16)));
-    // 4. Fold backslashes to forward slashes (Windows path separators).
-    normalized = normalized.replace(/\\/g, "/");
+    // 4. Fold a JSON-escaped backslash pair (\\, how a Windows path separator
+    //    appears inside a JSON string value) to a forward slash. This is a
+    //    literal two-character replace, exactly like golden-normalizer.ps1's
+    //    .Replace('\\', '/') -- NOT a per-backslash fold: folding each lone
+    //    backslash would turn a Windows JSON value `<REPO_ROOT>\\tests\\x`
+    //    into `<REPO_ROOT>//tests//x`, which can never match a POSIX-captured
+    //    golden (`<REPO_ROOT>/tests/x`). A lone raw backslash (host text, not
+    //    JSON-escaped) is deliberately left alone, matching the reference.
+    normalized = normalized.replace(/\\\\/g, "/");
     // 5-6. Per line: drop indentation and collapse the run of spaces after a key's colon.
     const lines = normalized.split("\n");
     const canonicalLines = lines.map((line) => {

@@ -63,11 +63,24 @@ test("harness passes on CRLF and BOM diff", () => {
 });
 
 test("harness passes on path-separator diff", () => {
-  const backslash = BASE_JSON.replaceAll("<REPO_ROOT>/examples", "<REPO_ROOT>\\examples");
+  // A Windows path separator inside a JSON string value arrives escaped as a
+  // backslash PAIR (`\\`) -- the realistic form, and the one the golden
+  // normalizer's literal two-character fold (golden-normalizer.ps1
+  // .Replace('\\', '/')) canonicalizes to a single forward slash.
+  const backslash = BASE_JSON.replaceAll("<REPO_ROOT>/examples", "<REPO_ROOT>\\\\examples");
   assert.equal(run(backslash).equivalent, true);
 });
 
 test("canonical normalizer decodes \\uXXXX escapes", () => {
   assert.equal(getCanonicalGoldenText("\\u0061"), "a");
   assert.equal(getCanonicalGoldenText("value's"), "value's");
+});
+
+test("canonical normalizer folds JSON-escaped backslash pairs, not lone backslashes", () => {
+  // `\\` (escaped backslash, Windows separator in JSON) -> `/`, matching the
+  // PowerShell reference's literal two-character replace.
+  assert.equal(getCanonicalGoldenText('"<REPO_ROOT>\\\\a\\\\b"'), '"<REPO_ROOT>/a/b"');
+  // A lone raw backslash (host text, not JSON-escaped) is left alone -- the
+  // reference folds only the `\\` pair, so parity demands the same here.
+  assert.equal(getCanonicalGoldenText('"<REPO_ROOT>\\a"'), '"<REPO_ROOT>\\a"');
 });
