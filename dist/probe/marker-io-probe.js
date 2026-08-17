@@ -1,15 +1,18 @@
 // §8.6 fresh-tree methodology for marker-block I/O: run the stateful setup
-// (install + uninstall) via BOTH the PowerShell reference and the TS port in
-// SEPARATE fresh temp trees, then diff the resulting file bytes and manifest.
-// This proves the I/O layer matches without touching any real user file.
-import { spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdtempSync, rmSync } from "node:fs";
+// (install + uninstall) via the TS port in a fresh temp tree, and for the one
+// case that used to also drive the PS reference (Case 1), compare against a
+// golden fixture frozen from that reference instead (Phase 9: the reference
+// no longer exists to compare against live). This proves the I/O layer
+// matches without touching any real user file.
+import { readFileSync, writeFileSync, readdirSync, statSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { readTextFileState, writeTextFileAtomic, newAxiomBackup } from "../marker/marker-io.js";
 import { setAxiomBlock, removeAxiomBlock, getAxiomCanonicalBody } from "../marker/marker-block.js";
-import { resolvePwsh } from "./pwsh-resolver.js";
-const PWSH = resolvePwsh();
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const FIXTURE = resolve(REPO_ROOT, "tests/golden/probes/marker-io-probe.json");
+const golden = JSON.parse(readFileSync(FIXTURE, "utf8"));
 let pass = 0;
 let fail = 0;
 function check(name, ok, detail = "") {
@@ -28,12 +31,6 @@ function freshTree() {
 function writeUserFile(dir, name, content, bom = false) {
     const p = join(dir, name);
     writeFileSync(p, bom ? Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from(content)]) : content);
-}
-function psSetup(dir, action) {
-    const r = spawnSync(PWSH, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/setup-claude-integration.ps1",
-        "-ProjectPath", dir, ...(action === "remove" ? ["-Uninstall"] : [])], { encoding: "utf8" });
-    if (r.status !== 0)
-        throw new Error(`ps setup ${action} failed: ${r.stderr}`);
 }
 function tsSetup(dir, action) {
     const file = join(dir, "AGENTS.md");
@@ -64,25 +61,19 @@ function treeSnapshot(dir) {
     walk(dir);
     return out;
 }
-// --- Case 1: install onto a fresh AGENTS.md, compare PS vs TS trees ---
+// --- Case 1: install onto a fresh AGENTS.md, compare TS tree vs golden ---
 {
-    const psTree = freshTree();
     const tsTree = freshTree();
     try {
-        writeUserFile(psTree, "AGENTS.md", "# User rules\n\nBe careful.\n");
         writeUserFile(tsTree, "AGENTS.md", "# User rules\n\nBe careful.\n");
-        psSetup(psTree, "install");
         tsSetup(tsTree, "install");
-        const psSnap = treeSnapshot(psTree);
         const tsSnap = treeSnapshot(tsTree);
         // Compare AGENTS.md content (ignore backup filenames which carry a timestamp).
-        const psAgents = readFileSync(join(psTree, "AGENTS.md"), "utf8");
         const tsAgents = readFileSync(join(tsTree, "AGENTS.md"), "utf8");
-        check("install: AGENTS.md bytes identical", psAgents === tsAgents, `ps=${psAgents.length}b ts=${tsAgents.length}b`);
-        check("install: backup created (both)", psSnap["AGENTS.md.axiom-backup"] === undefined && tsSnap["AGENTS.md.axiom-backup"] === undefined && Object.keys(psSnap).length >= 2, "backup present");
+        check("install: AGENTS.md bytes identical", golden.installed_agents_md === tsAgents, `golden=${golden.installed_agents_md.length}b ts=${tsAgents.length}b`);
+        check("install: backup created (both)", !golden.has_literal_backup_name && tsSnap["AGENTS.md.axiom-backup"] === undefined && Object.keys(tsSnap).length >= 2, "backup present");
     }
     finally {
-        rmSync(psTree, { recursive: true, force: true });
         rmSync(tsTree, { recursive: true, force: true });
     }
 }

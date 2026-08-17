@@ -1,33 +1,15 @@
-// Marker-block differential probe: compare the pure string transforms
-// (find/ownership/render/set/remove) against the PowerShell reference on the
-// same inputs. Stateful filesystem I/O (backup, atomic write) is verified by
-// the §8.6 fresh-tree methodology, not here.
-import { spawnSync } from "node:child_process";
-import { getAxiomCanonicalBody, getAxiomBlockDigest, findAxiomBlock, newAxiomBlockText, setAxiomBlock, removeAxiomBlock, testAxiomBlockOwnership } from "../marker/marker-block.js";
-const PWSH = resolvePwsh();
-// Run a PS function with a JSON hashtable of named args, using the harness
-// file (marker-harness.ps1) which decodes to a hashtable, splats it, and
-// lowercases the result keys for field-level comparison.
-import { writeFileSync, unlinkSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join, dirname } from "node:path";
+// Marker-block regression probe: compare the pure string transforms
+// (find/ownership/render/set/remove) against a golden fixture frozen from the
+// PowerShell reference on the same inputs (Phase 9: the reference no longer
+// exists to compare against live). Stateful filesystem I/O (backup, atomic
+// write) is verified by the §8.6 fresh-tree methodology, not here.
+import { readFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolvePwsh } from "./pwsh-resolver.js";
-const HARNESS = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "src", "probe", "marker-harness.ps1");
-function runPs(fn, args) {
-    const argsPath = join(tmpdir(), `marker-args-${process.pid}-${Math.random().toString(36).slice(2)}.json`);
-    writeFileSync(argsPath, JSON.stringify(args), "utf8");
-    try {
-        const r = spawnSync(PWSH, ["-NoProfile", "-File", HARNESS, "-Fn", fn, "-ArgsPath", argsPath], { encoding: "utf8" });
-        if (r.status !== 0)
-            throw new Error(`ps ${fn} failed: ${r.stderr}`);
-        const out = r.stdout.trim();
-        return out === "null" ? null : JSON.parse(out);
-    }
-    finally {
-        unlinkSync(argsPath);
-    }
-}
+import { getAxiomCanonicalBody, getAxiomBlockDigest, findAxiomBlock, newAxiomBlockText, setAxiomBlock, removeAxiomBlock, testAxiomBlockOwnership } from "../marker/marker-block.js";
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const FIXTURE = resolve(REPO_ROOT, "tests/golden/probes/marker-probe.json");
+const golden = JSON.parse(readFileSync(FIXTURE, "utf8"));
 const body = getAxiomCanonicalBody("1");
 let pass = 0;
 let fail = 0;
@@ -43,25 +25,24 @@ function check(name, actual, expected) {
         console.log(`[FAIL] ${name}\n  expected: ${e}\n  actual:   ${a}`);
     }
 }
-// 1. canonical body digest matches PS
-check("canonical digest", getAxiomBlockDigest(body), runPs("Get-AxiomBlockDigest", { Content: body }));
+// 1. canonical body digest matches golden
+check("canonical digest", getAxiomBlockDigest(body), golden.digest);
 check("canonical body known", testAxiomBlockOwnership({ status: "present", content: body, digest: getAxiomBlockDigest(body) }), "owned");
 // 2. render round-trips: set then remove on a fresh file returns original bytes
 const rendered = newAxiomBlockText(body, "\n");
 const installed = setAxiomBlock("some user content\n", body, "\n").text;
 const removed = removeAxiomBlock(installed).text;
 check("set+remove round-trip", removed, "some user content\n");
-// 3. PS render matches TS render
-check("render", newAxiomBlockText(body, "\n"), runPs("New-AxiomBlockText", { Body: body, Newline: "\n" }));
+// 3. golden render matches TS render
+check("render", newAxiomBlockText(body, "\n"), golden.render);
 // 4. find absent / present / malformed
-check("find absent", findAxiomBlock("no markers here"), runPs("Find-AxiomBlock", { Text: "no markers here" }));
-const psFound = runPs("Find-AxiomBlock", { Text: installed });
+check("find absent", findAxiomBlock("no markers here"), golden.find_absent);
 const tsFound = findAxiomBlock(installed);
-check("find present status", tsFound.status, psFound["status"]);
-check("find present digest", tsFound.digest, psFound["digest"]);
-check("find present startIndex", tsFound.startIndex, psFound["startindex"]);
-check("find present endIndex", tsFound.endIndex, psFound["endindex"]);
-check("find present content", tsFound.content, psFound["content"]);
+check("find present status", tsFound.status, golden.find_present.status);
+check("find present digest", tsFound.digest, golden.find_present.digest);
+check("find present startIndex", tsFound.startIndex, golden.find_present.startindex);
+check("find present endIndex", tsFound.endIndex, golden.find_present.endindex);
+check("find present content", tsFound.content, golden.find_present.content);
 // 5. ownership states
 const edited = installed.replace("You may not approve", "You CAN approve");
 check("edited ownership", testAxiomBlockOwnership(findAxiomBlock(edited)), "edited");
