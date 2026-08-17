@@ -242,11 +242,22 @@ test("hook advisory: the shell shim", () => {
             if (real && existsSync(real))
                 symlinkSync(real, join(fakeBin, tool));
         }
-        r = invokeShim(newPayload(on, "src/other/x.ts"), {
+        // AXIOM_NODE=/nonexistent/node is what forces the degradation the
+        // assertion checks (the shim execs it, fails, and exits 0 silent). The
+        // PATH narrowing to a tool-less bin additionally proves node is not on
+        // PATH at all -- but only on POSIX, where the shim is resolved from the
+        // child's narrowed PATH. On Windows the executable itself is resolved
+        // from the env PATH (SearchPathW), and the fakeBin ends up empty because
+        // `which` prints MSYS paths Node's existsSync cannot verify, so a
+        // narrowed PATH cannot even launch the shim there; the AXIOM_NODE override
+        // alone still exercises the exact no-Node degradation.
+        const noNodeEnv = {
             AXIOM_NODE: "/nonexistent/node",
             CLAUDE_PLUGIN_ROOT: REPO_ROOT,
-            PATH: fakeBin,
-        });
+        };
+        if (process.platform !== "win32")
+            noNodeEnv.PATH = fakeBin;
+        r = invokeShim(newPayload(on, "src/other/x.ts"), noNodeEnv);
         assert.equal(r.exitCode, 0, "no Node on the host means no advisory, not a failure");
         assert.equal(r.text, "", "...and it stays silent rather than printing an error");
         r = invokeShim("", env);
