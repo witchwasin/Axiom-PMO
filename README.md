@@ -11,9 +11,9 @@ developers or execution frameworks.**
 
 [![Axiom-PMO Checks](https://github.com/witchwasin/Axiom-PMO/actions/workflows/pmo-checks.yml/badge.svg)](https://github.com/witchwasin/Axiom-PMO/actions/workflows/pmo-checks.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](CHANGELOG.md)
 
-Version `2.1.0` · MIT License · Node.js reference implementation (the engine and
+Version `2.2.0` · MIT License · Node.js reference implementation (the engine and
 CLI run entirely in-process via `node cli/axiom.mjs`; no other runtime required)
 
 ---
@@ -627,7 +627,7 @@ Typography: Tahoma / Arial (sans-serif) for voice; Consolas / Courier New
 | **Process** | [Lite](docs/process/lite.md) · [Standard](docs/process/standard.md) · [Strict](docs/process/strict.md) |
 | **Tutorials** | [your first project](docs/tutorials/first-project.md) · [using it with an AI agent](docs/tutorials/using-with-an-ai-agent.md) |
 | **Integrations** | [overview](docs/integrations/overview.md) · [Superpowers](docs/integrations/superpowers.md) · [BMAD](docs/integrations/bmad.md) · [spec-kit](docs/integrations/spec-kit.md) · [OpenSpec](docs/integrations/openspec.md) |
-| **Releases** | [2.1.0](docs/releases/v2.1.0.md) · [2.0.0](docs/releases/v2.0.0.md) · [1.5.0](docs/releases/v1.5.0.md) · [1.4.0](docs/releases/v1.4.0.md) · [1.3.0](docs/releases/v1.3.0.md) · [1.2.0](docs/releases/v1.2.0.md) · [1.1.1](docs/releases/v1.1.1.md) · [1.1.0](docs/releases/v1.1.0.md) · [1.0.0](docs/releases/v1.0.0.md) · [changelog](CHANGELOG.md) |
+| **Releases** | [2.2.0](docs/releases/v2.2.0.md) · [2.1.0](docs/releases/v2.1.0.md) · [2.0.0](docs/releases/v2.0.0.md) · [1.5.0](docs/releases/v1.5.0.md) · [1.4.0](docs/releases/v1.4.0.md) · [1.3.0](docs/releases/v1.3.0.md) · [1.2.0](docs/releases/v1.2.0.md) · [1.1.1](docs/releases/v1.1.1.md) · [1.1.0](docs/releases/v1.1.0.md) · [1.0.0](docs/releases/v1.0.0.md) · [changelog](CHANGELOG.md) |
 
 If you are an AI agent working in this repository, start with
 [`AGENTS.md`](AGENTS.md), [`CLAUDE.md`](CLAUDE.md), and
@@ -705,7 +705,7 @@ strengthen the product direction without weakening governance.
 
 ## Project status
 
-Version `2.1.0`. The validation engine, governance model, and diagnostic
+Version `2.2.0`. The validation engine, governance model, and diagnostic
 contract are stable. 1.1 added the `Handoff` gate between `Design` and
 `Release`; 1.2 added a reusable GitHub Action and SCOPE-DIFF changed-file
 scope enforcement, so a pull request can be checked — and, optionally,
@@ -726,18 +726,38 @@ on AI-executed adversarial review findings (`AREV-007`) and repository
 ground-truth reconciliation for test evidence on both the execution and
 release paths (`EXEC-005`, `TEST-EVIDENCE-003`) — closing `DEC-025`. `DEC-023`
 separately widens the `Design Ready` approval matrix to `Product Owner` and
-`Project Manager` for teams without a `Tech Lead` or `Solution Architect`. See
-[`docs/releases/v2.0.0.md`](docs/releases/v2.0.0.md) for upgrade notes.
+`Project Manager` for teams without a `Tech Lead` or `Solution Architect`. 2.1
+adds three optional governed tracks — an externalization gate, the Claude
+Design provider workflow, and guided research — plus risk-based CI so ordinary
+changes stop paying for the full cross-host matrix. 2.2 completes the
+PowerShell-to-Node/TypeScript interpreter migration: the Node engine, proven
+byte-identical to the PowerShell reference by differential testing and
+canary-verified on real Windows/Linux/macOS hosts, is now the CLI's only
+execution path, and the PowerShell reference has been deleted. No governance
+behavior changed. See [`docs/releases/v2.0.0.md`](docs/releases/v2.0.0.md),
+[`docs/releases/v2.1.0.md`](docs/releases/v2.1.0.md), and
+[`docs/releases/v2.2.0.md`](docs/releases/v2.2.0.md) for upgrade notes.
 
 **Milestones 1–10 are complete, and MasterPlan v.2.0's core scope (M0, M3, M4)
 is complete.** Milestones 1–7 are the core governance and development-handoff
 framework (`DEC-006`, amended by `DEC-017`); Milestones 6, 8.0, 8.1, 9, and 10
 are optional and nothing in the core requires them. A read-only Formal Studio
-dashboard (M5) is deferred to v2.1. There is no npm package: Milestone 3 Phase
-B and a v2.0 manifest candidate are both deferred, and the plugin is not
-published to any public marketplace.
+dashboard (M5) remains a candidate item only — it was not authorized or built
+in 2.1, and no target version is currently authorized (see `ROADMAP.md`).
+There is no npm package: Milestone 3 Phase B and a v2.0 manifest candidate are
+both deferred, and the plugin is not published to any public marketplace.
 
-Upgrading from 1.5 requires no migration: every new check (`AREV-007`,
+Separately from the milestone roadmap, the interpreter itself has been
+migrated from PowerShell to Node/TypeScript (`Fixed_plan/master-plan.md` v3,
+Phases 0–10, `DEC-026`–`DEC-034`), shipped in 2.2.0. This changed the runtime
+only — no governance rule, gate, mode, or artifact requirement changed.
+
+Upgrading from 2.1 requires no migration: the interpreter migration changed
+only the runtime the CLI executes in, not governance behavior — inputs,
+outputs, and exit codes are unchanged. Upgrading from 2.0 requires no
+migration: every 2.1 track is opt-in by artifact existence, so a project that
+declares none of them validates exactly as it did on 2.0.0. Upgrading from 1.5
+requires no migration: every new check (`AREV-007`,
 `TEST-EVIDENCE-003`) is opt-in or anchored to an already-executed review
 artifact, so no existing project, fixture, or invocation changes behavior.
 Upgrading from 1.4 requires no migration: Visual Proof activates only for a
