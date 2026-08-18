@@ -215,10 +215,10 @@ the only package mirror and is refreshed through the repository build command.
 
 ## Validation
 
-Before treating a project as ready, run:
+Before treating a project as ready, run (`examples/P01-DEMO` is intentionally left at `design-ready` and will not pass a Release gate -- point `<project-folder>` at your own project, or use `examples/STANDARD-FEATURE` to see a passing run):
 
 ```bash
-node cli/axiom.mjs validate --project examples/P01-DEMO --mode Standard --gate Release --fail-on-warning
+node cli/axiom.mjs validate --project <project-folder> --mode Standard --gate Release --fail-on-warning
 node cli/axiom.mjs doctor
 node dist/tools/run-ci-suite-cli.js -Suite validation-fixtures -RepoPath .
 ```

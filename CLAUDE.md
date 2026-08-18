@@ -16,10 +16,10 @@
 2. Put source files under `source/MOM/`, `source/Transcript/`, and `source/REQ/`.
 3. Fill `PROJECT.md` from source.
 4. Choose a default mode using `docs/process/`, then choose mode per work item in `DELIVERY.md`.
-5. Run validation before release:
+5. Run validation before release (replace `<project-folder>` with your project, e.g. `examples/STANDARD-FEATURE`; `examples/P01-DEMO` is intentionally left at `design-ready` and will not pass a Release gate):
 
 ```bash
-node cli/axiom.mjs validate --project examples/P01-DEMO --mode Standard --gate Release --fail-on-warning
+node cli/axiom.mjs validate --project <project-folder> --mode Standard --gate Release --fail-on-warning
 node cli/axiom.mjs doctor
 node dist/tools/run-ci-suite-cli.js -Suite validation-fixtures -RepoPath .
 ```
