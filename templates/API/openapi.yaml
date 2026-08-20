@@ -1,0 +1,21 @@
+openapi: 3.0.3
+info:
+  title: <PROJECT_NAME> API Contract
+  version: 1.0.0
+  description: Governed API contract for <PROJECT_NAME>
+paths:
+  /api/v1/resource:
+    get:
+      summary: Retrieve resource
+      operationId: getResource
+      responses:
+        '200':
+          description: Successful response
+    post:
+      summary: Create or update resource
+      operationId: postResource
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Validation error

@@ -118,11 +118,11 @@ export function testRequiredArtifacts(
 
   const deliveryOptionalViaGithub = taskSourceIsGithub && matrixRequired.includes("DELIVERY.md");
 
-  const allTrackedArtifacts = ["DELIVERY.md", "RELEASE.md", "RAID-log.md", "decision-log.md", "DESIGN", "RTM.json", "HANDOFF.md", "DESIGN/BUILD-SPEC.md", "DESIGN/SRS.md"];
+  const allTrackedArtifacts = ["DELIVERY.md", "RELEASE.md", "RAID-log.md", "decision-log.md", "DESIGN", "RTM.json", "HANDOFF.md", "DESIGN/BUILD-SPEC.md", "DESIGN/SRS.md", "DESIGN/DATA-FLOW.md", "TESTS/TEST-CASES.md"];
   for (const artifact of allTrackedArtifacts) {
     let requirement: "required" | "optional" = matrixRequired.includes(artifact) ? "required" : "optional";
     if (artifact === "DELIVERY.md" && deliveryOptionalViaGithub) requirement = "optional";
-    if ((artifact === "HANDOFF.md" || artifact === "DESIGN/BUILD-SPEC.md" || artifact === "DESIGN/SRS.md") && requirement === "optional") continue;
+    if ((artifact === "HANDOFF.md" || artifact === "DESIGN/BUILD-SPEC.md" || artifact === "DESIGN/SRS.md" || artifact === "DESIGN/DATA-FLOW.md" || artifact === "TESTS/TEST-CASES.md") && requirement === "optional") continue;
     if (artifact === "DESIGN") {
       testDir(acc, catalog, project, "DESIGN", requirement);
     } else {

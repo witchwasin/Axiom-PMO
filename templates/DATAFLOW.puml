@@ -1,0 +1,31 @@
+@startuml DATAFLOW
+!theme plain
+autonumber
+
+actor "User / Client" as User
+participant "API Gateway / App" as App
+database "Database / State" as DB
+participant "External Services" as Ext
+
+User -> App : 1. Action / Request
+activate App
+
+App -> DB : 2. Query / Validate Constraints
+activate DB
+DB --> App : 3. Current State
+deactivate DB
+
+App -> Ext : 4. External Sync / Process (if applicable)
+activate Ext
+Ext --> App : 5. Response / Result
+deactivate Ext
+
+App -> DB : 6. Persist Transition / Audit Log
+activate DB
+DB --> App : 7. Acknowledged
+deactivate DB
+
+App --> User : 8. Response / View Update
+deactivate App
+
+@enduml
