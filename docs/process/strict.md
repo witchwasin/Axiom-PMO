@@ -28,6 +28,34 @@ Source-backed Intake -> Risk Review -> Design + Acceptance Criteria -> Separate 
   is handed to a developer
 - `RELEASE.md` with rollback notes
 
+When `PROJECT.md` declares `> Spec depth: full` — the case a Strict project
+should default to — Strict additionally requires:
+
+- `DESIGN/SRS.md`: actors, non-functional requirements, external interfaces,
+  data requirements, compliance notes
+- `DESIGN/DATA-DICTIONARY.md`: every `BUILD-SPEC.md` Data Model attribute
+  joined to its PII classification, agreeing with the Security/Privacy
+  Inventory table
+- `DESIGN/DATA-FLOW.md`: the End-to-End Journeys table, with every scoped
+  requirement reachable from at least one journey
+- `TESTS/TEST-CASES.md`: one row per `(spec element, category)` pair the
+  `detailed_requirement_and_risk_cases` profile in
+  `pmo-config/depth-policy.json` requires — happy, negative, boundary, and
+  security paths across requirements, business rules, NFRs, data constraints,
+  API operations, state transitions, journey steps, and every declared strict
+  trigger. This is what makes a Strict test suite land in the hundreds of
+  cases rather than a handful, derived from the project's own declared
+  complexity rather than a fixed count.
+- `RTM.json` rows carrying `status: verified` must additionally satisfy
+  `RTM-011`: the row's `delivery_ref` work item is `Done`, its `test_ref`
+  shows `passed` in `RELEASE.md`'s Test Summary, and `PROJECT.md`'s Release
+  Approved gate is `approved`. A row can be `supported` before all three are
+  true; it cannot be `verified`.
+
+See [document-depth](../concepts/document-depth.md) for why breadth alone
+(more required files) was not enough, and what changed. A project that never
+declares `Spec depth` defaults to `legacy` and is unaffected by any of this.
+
 ## AI Guardrails
 
 - Every requirement, business rule, acceptance criterion, and release claim needs `source_ref`.

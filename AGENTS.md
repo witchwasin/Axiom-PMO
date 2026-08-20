@@ -30,11 +30,18 @@ projects/P01-CODE/
 |   +-- FLOW.puml
 |   +-- WIREFRAME.md or WIREFRAME.html
 |   +-- BUILD-SPEC.md           <- technical spec, required at Handoff (Standard/Strict)
+|   +-- SRS.md                  <- required under `Spec depth: full`; actors, NFRs, interfaces, constraints
+|   +-- DATA-FLOW.md            <- required under `Spec depth: full`; End-to-End Journeys table
+|   +-- DATA-DICTIONARY.md      <- required under `Spec depth: full`; field-level PII/classification join
+|   +-- ERD.puml                <- required under `Spec depth: full`; entity relationship diagram
+|   +-- API/openapi.yaml        <- Strict + `Spec depth: full`; only when the API contract is machine-checked
 |   +-- VISUAL-DIRECTION.md     <- optional; creative brief, explored directions, human selection
 |   +-- DESIGN-SYSTEM.md        <- optional; token/component contract a developer builds from
 |   +-- DESIGN-SYSTEM.html      <- optional; the same contract as one visual page
 |   +-- VISUAL-REVIEW.json      <- conditional Handoff evidence when all visual artifacts exist
 |   +-- BRAND/                  <- optional; BRAND.md plus logo and icon SVG assets
++-- TESTS/
+|   +-- TEST-CASES.md           <- required under `Spec depth: full`; one row per (spec element x category)
 +-- DELIVERY.md
 +-- HANDOFF.md                  <- required at the Handoff gate
 +-- HANDOFF-REVIEW.json         <- semantic review evidence (Standard/Strict)
@@ -42,6 +49,11 @@ projects/P01-CODE/
 +-- RAID-log.md                 <- required for Strict or meaningful risks
 +-- decision-log.md             <- required for Strict or meaningful decisions
 ```
+
+`Spec depth: full` (declared in `PROJECT.md`) is what makes the five rows above
+required rather than absent; a project that omits the declaration defaults to
+`legacy` and is unaffected. See
+[document-depth](docs/concepts/document-depth.md).
 
 Legacy folders such as `MOM/`, `REQ/`, `SystemFlow/`, `Wireframe/`, and `TaskBreakdown/` are still acceptable for old projects. New projects should prefer the lightweight shape above.
 

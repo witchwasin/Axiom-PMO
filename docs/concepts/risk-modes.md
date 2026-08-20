@@ -12,6 +12,15 @@ more; you cannot silently do less.
 | **Standard** | Normal feature delivery | `PROJECT.md`, a design artifact when there's a flow/UI, `DELIVERY.md` or GitHub Issues, a test checklist. |
 | **Strict** | Any strict trigger applies | Everything Standard requires, plus full source references, `RAID-log.md`, `decision-log.md`, an `RTM.json` traceability matrix, and separate QA **and** security approval. |
 
+Mode has always decided which *files* a project needs (the table above). Since
+2.3.0 it also decides how much must be *inside* the ones both Standard and
+Strict already require — an SRS with real NFRs, a derived test-case matrix
+instead of a handful of examples, a data dictionary joining fields to their
+classification. This is opt-in per project via `> Spec depth: full` in
+`PROJECT.md` (the default for anything created with `axiom init`); it does not
+change which files are required, only how complete they must be. See
+[document-depth](document-depth.md).
+
 ## Strict triggers
 
 A work item is Strict if it involves any of: payment or financial calculation;

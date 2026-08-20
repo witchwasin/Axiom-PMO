@@ -129,6 +129,15 @@ Required artifacts (see `pmo-config/artifact-policy.json`):
 | Standard | above plus `DESIGN/`, `DESIGN/BUILD-SPEC.md` |
 | Strict | above plus `RAID-log.md`, `decision-log.md` |
 
+When `PROJECT.md` declares `> Spec depth: full` (the default `axiom init`
+scaffolds), Standard and Strict additionally require `DESIGN/SRS.md`,
+`DESIGN/DATA-DICTIONARY.md`, and `TESTS/TEST-CASES.md`, with Strict also
+requiring `DESIGN/DATA-FLOW.md` and a test case for every
+`(spec element, category)` pair `pmo-config/depth-policy.json` derives from
+the project's own declared complexity. A project without the declaration
+defaults to `legacy` and this paragraph does not apply to it. See
+`docs/concepts/document-depth.md`.
+
 Two layers, deliberately separate:
 
 1. **Deterministic** (`HANDOFF-001` to `HANDOFF-014`) checks what the artifacts
@@ -174,7 +183,7 @@ Update this when a reusable project/example is added.
 | LITE-BUGFIX | Lite Bug Fix Example | `examples/LITE-BUGFIX` | Ready | Minimal docs for low-risk change |
 | STANDARD-FEATURE | Standard Feature Example | `examples/STANDARD-FEATURE` | Ready | Normal flow, delivery, QA, release |
 | DESIGN-SYSTEM-DEMO | Visual Direction and Design System at the Design Gate | `examples/DESIGN-SYSTEM-DEMO` | Ready | Brief, selected direction, brand, tokens, components, mockups; stops at Design on purpose |
-| STRICT-HIGH-RISK | Strict High-Risk Example | `examples/STRICT-HIGH-RISK` | Ready | Permission/audit example with RTM |
+| STRICT-HIGH-RISK | Strict High-Risk Example | `examples/STRICT-HIGH-RISK` | Ready | Permission/audit example with RTM; full spec depth (SRS, data dictionary, ERD, derived test matrix) |
 | DEMO-BROKEN / DEMO-FIXED | Three-minute proof | `demo/` | Ready | Synthetic; drives `make demo` |
 
 ## Active Skill Runtime

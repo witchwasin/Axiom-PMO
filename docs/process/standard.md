@@ -18,6 +18,13 @@ Intake & Scope -> Flow & UX -> Plan & Handoff -> Build & Verify -> Release & Clo
 - `RAID-log.md` for meaningful risks/issues
 - `RELEASE.md` for release/UAT
 
+When `PROJECT.md` declares `> Spec depth: full`, Standard additionally requires
+`DESIGN/SRS.md`, `DESIGN/DATA-DICTIONARY.md`, and `TESTS/TEST-CASES.md`, and the
+`Test Cases Inventory` table must cover every declared spec element at the
+`strategy_and_scenarios` depth (happy + negative paths). A project that never
+declares `Spec depth` defaults to `legacy` and none of this applies. See
+[document-depth](../concepts/document-depth.md).
+
 ## Optional Artifacts
 
 - `DESIGN/DESIGN-SYSTEM.md` plus `DESIGN/DESIGN-SYSTEM.html` and `DESIGN/BRAND/` when the

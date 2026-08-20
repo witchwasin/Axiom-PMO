@@ -30,6 +30,41 @@ These pages are linked automatically. A rule's `documentation` path in `pmo-conf
 | [VPROOF-001](VPROOF-001.md) | Conditional Visual Proof record or capture evidence is incomplete |
 | [VPROOF-002](VPROOF-002.md) | Conditional Visual Proof evidence is stale |
 
+## Specification depth (`> Spec depth: full`)
+
+Gated on `PROJECT.md`'s `Spec depth` declaration; a `legacy` project (the
+default before this declaration existed) never triggers any of these. See
+[document-depth](../concepts/document-depth.md).
+
+| Rule | Summary |
+|---|---|
+| [REQ-TYPE-001](REQ-TYPE-001.md) | Requirement type validation |
+| [SRS-001](SRS-001.md) | Software Requirements Specification section presence and status |
+| [SRS-002](SRS-002.md) | Non-Functional Requirements measurement completeness |
+| [SRS-003](SRS-003.md) | Non-Functional Requirements traceability and evidence |
+| [SRS-004](SRS-004.md) | Mandatory NFR categories in Strict mode |
+| [ARCH-001](ARCH-001.md) | Technology Decisions completeness and decision log linkage |
+| [DATA-003](DATA-003.md) | Entity Relationships consistency with Data Model |
+| [DATA-004](DATA-004.md) | Foreign key field consistency with Data Model |
+| [DATAFLOW-001](DATAFLOW-001.md) | Data Dictionary completeness against BUILD-SPEC Data Model |
+| [DATAFLOW-002](DATAFLOW-002.md) | Data Dictionary sensitive classification agreement |
+| [JOURNEY-001](JOURNEY-001.md) | Journey step State Before/After resolution against State Machine |
+| [JOURNEY-002](JOURNEY-002.md) | Scoped requirement journey coverage |
+| [TEST-CASE-001](TEST-CASE-001.md) | Test cases completeness and criteria definition |
+| [TEST-CASE-002](TEST-CASE-002.md) | Test case uniqueness, categories, and target linkage |
+| [TEST-CASE-003](TEST-CASE-003.md) | Test case source traceability and evidence status |
+| [TEST-COVERAGE-001](TEST-COVERAGE-001.md) | Specification depth test coverage matrix |
+| [TEST-COVERAGE-002](TEST-COVERAGE-002.md) | Scoped requirements coverage completeness |
+| [API-001](API-001.md) | OpenAPI specification presence and version header |
+| [API-002](API-002.md) | OpenAPI operationId correspondence with BUILD-SPEC |
+| [RTM-011](RTM-011.md) | Anti-forged verified status in RTM |
+
+## Framework doctor
+
+| Rule | Summary |
+|---|---|
+| [DOCTOR-015](DOCTOR-015.md) | Template BUILD-SPEC sections and table columns match policy |
+
 ## Other rules
 
-Rules outside the Handoff gate carry a `suggestion` in the catalog but do not yet have a dedicated page. The catalog entry in `pmo-config/validation-rules.json` is the reference for those.
+Rules outside the tables above carry a `suggestion` in the catalog but do not yet have a dedicated page. The catalog entry in `pmo-config/validation-rules.json` is the reference for those.

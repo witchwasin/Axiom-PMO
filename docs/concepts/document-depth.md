@@ -48,8 +48,11 @@ the project's own declared specification elements.
 
 ## The Specification Depth Architecture
 
-Axiom-PMO 2.3.0 introduces a centralized depth policy (`pmo-config/depth-policy.json`)
-and profile selector (`pmo-config/orchestration-policy.json` `testability`):
+Axiom-PMO 2.3.0 introduces a centralized depth policy
+(`pmo-config/depth-policy.json`), keyed by the same three profile names
+`pmo-config/orchestration-policy.json` `testability` declares (the mode-to-profile
+mapping is fixed and lives directly in the validator, since Strict never needs a
+profile other than `detailed_requirement_and_risk_cases`):
 
 | Profile | Mode | Depth Expectation |
 |---|---|---|
@@ -108,12 +111,14 @@ unintended regressions, specification depth is gated via `PROJECT.md` declaratio
 
 ```markdown
 > Spec depth: legacy       # existing projects; new rules stay silent
-> Spec depth: full         # opt-in mode; enforces SRS, FSD depth, and test coverage
+> Spec depth: full         # enforces SRS, FSD depth, and the derived test matrix
 ```
 
-In Phase 1–3, scaffolding defaults to `legacy` with opt-in `--spec-depth full`
-support. The default flips to `full` in Phase 4 when full exemplars and authoring
-skills are in place.
+`node cli/axiom.mjs init` scaffolds `Spec depth: full` by default; pass
+`--spec-depth legacy` to opt a new project out. Any project created before this
+declaration existed has no `Spec depth` line and is treated as `legacy`
+automatically — it is unaffected by every rule this document describes until
+someone deliberately adds the line.
 
 ---
 
