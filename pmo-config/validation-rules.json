@@ -1,5 +1,5 @@
 {
-  "version": "2.2.0",
+  "version": "2.3.0",
   "schema_version": "1.0",
   "documentation_base_url": "https://github.com/witchwasin/Axiom-PMO/blob/main",
   "documentation_note": "A rule's `documentation` value is a repo-relative path. pmo-doctor DOCTOR-009 fails when the file does not exist, so a rule can never advertise a dead link. Rules without a `documentation` entry emit documentation_url: null.",
@@ -689,6 +689,12 @@
       "description": "A rule catalog entry carries lifecycle=experimental but a blocking severity (fail or fail_release). An experimental rule -- one not yet promoted to enforced by a Human Owner DEC-### and a ROADMAP.md entry -- must never be able to block a real gate.",
       "suggestion": "Set the rule's severity to info or warn while it remains experimental, or record a DEC-### promoting it to enforced and add the corresponding ROADMAP.md entry. See docs/rules/DOCTOR-014.md.",
       "documentation": "docs/rules/DOCTOR-014.md"
+    },
+    "DOCTOR-015": {
+      "severity": "fail",
+      "description": "templates/BUILD-SPEC.md sections and table columns must match handoff-policy.json build_spec.sections.",
+      "suggestion": "Update templates/BUILD-SPEC.md or pmo-config/handoff-policy.json so the section headings and table columns agree. See docs/rules/DOCTOR-015.md.",
+      "documentation": "docs/rules/DOCTOR-015.md"
     },
     "DOCTOR-STRUCT": {
       "severity": "fail",

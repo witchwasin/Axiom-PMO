@@ -1,11 +1,15 @@
 {
-  "version": "2.2.0",
+  "version": "2.3.0",
   "schema_version": "1.0",
   "compatibility_defaults": {
     "research_mode": "off",
     "research_depth": "standard",
     "research_provider": "none",
-    "ui_delivery": "legacy"
+    "ui_delivery": "legacy",
+    "spec_depth": "legacy"
+  },
+  "spec_depth": {
+    "values": ["legacy", "full"]
   },
   "research": {
     "modes": ["off", "guided", "auto"],

@@ -18,6 +18,7 @@ export function importPmoConfig(repoRoot) {
     const validationRulesPath = join(repoRoot, "pmo-config/validation-rules.json");
     const handoffPolicyPath = join(repoRoot, "pmo-config/handoff-policy.json");
     const orchestrationPolicyPath = join(repoRoot, "pmo-config/orchestration-policy.json");
+    const depthPolicyPath = join(repoRoot, "pmo-config/depth-policy.json");
     for (const p of [
         policyPath,
         artifactPolicyPath,
@@ -25,6 +26,7 @@ export function importPmoConfig(repoRoot) {
         validationRulesPath,
         handoffPolicyPath,
         orchestrationPolicyPath,
+        depthPolicyPath,
     ]) {
         try {
             readFileSync(p);
@@ -39,6 +41,7 @@ export function importPmoConfig(repoRoot) {
     const validationRules = parseJsonFile(validationRulesPath);
     const handoffPolicy = parseJsonFile(handoffPolicyPath);
     const orchestrationPolicy = parseJsonFile(orchestrationPolicyPath);
+    const depthPolicy = parseJsonFile(depthPolicyPath);
     return {
         policy,
         policyEnums: policy["enums"] ?? {},
@@ -48,6 +51,7 @@ export function importPmoConfig(repoRoot) {
         validationRules,
         handoffPolicy,
         orchestrationPolicy,
+        depthPolicy,
     };
 }
 /** Placeholder detection, ported from Test-PlaceholderValue. */

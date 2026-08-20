@@ -15,6 +15,7 @@ export interface Config {
   validationRules: ValidationRules;
   handoffPolicy: Record<string, unknown>;
   orchestrationPolicy: Record<string, unknown>;
+  depthPolicy: Record<string, unknown>;
 }
 
 export interface ValidationRules {

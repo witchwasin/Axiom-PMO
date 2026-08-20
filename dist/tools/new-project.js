@@ -14,7 +14,7 @@ function isoDate(d) {
 function psWrite(path, content) {
     writeFileSync(path, content + "\n", "utf8");
 }
-export function newProject(repoRoot, projectCode, mode, executionPath, researchMode, researchDepth, researchProvider, uiDelivery, strictTrigger, modeReason, modeApprovedBy, outputRoot, includeHandoff, target, horizonDays) {
+export function newProject(repoRoot, projectCode, mode, executionPath, researchMode, researchDepth, researchProvider, uiDelivery, strictTrigger, modeReason, modeApprovedBy, outputRoot, includeHandoff, target, horizonDays, specDepth = "legacy") {
     const repo = resolve(repoRoot);
     const targetRoot = isAbsolute(outputRoot) ? outputRoot : join(repo, outputRoot);
     const projectDir = join(targetRoot, projectCode);
@@ -34,6 +34,7 @@ export function newProject(repoRoot, projectCode, mode, executionPath, researchM
         .replace("quick / standard / deep", researchDepth)
         .replace("none / feyman / web / auto", researchProvider)
         .replace("not_applicable / dev_guided / claude_design", uiDelivery)
+        .replace("legacy / full", specDepth)
         .replaceAll("<YYYY-MM-DD>", today)
         .replaceAll("YYYY-MM-DD", today);
     psWrite(join(projectDir, "PROJECT.md"), projectText);

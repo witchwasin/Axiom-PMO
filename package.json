@@ -1,6 +1,6 @@
 {
   "name": "axiom-pmo",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "private": true,
   "description": "Axiom-PMO governance validation engine (Node.js/TypeScript)",
   "type": "module",

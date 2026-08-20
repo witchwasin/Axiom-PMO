@@ -42,6 +42,7 @@ import { runExecutionCommand } from "../dist/tools/run-execution-command.js";
 import { runVerifyExecutionResult, formatVerifyText } from "../dist/exec/verify-execution-result.js";
 import { runDemo } from "../dist/tools/demo.js";
 import { runAllChecks } from "../dist/tools/run-all-checks.js";
+import { buildPluginPackage } from "../dist/tools/build-plugin-package.js";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const EXIT_NO_POWERSHELL = 127;
@@ -672,6 +673,8 @@ async function buildInit(args) {
   rest = researchProvider.rest;
   const uiDelivery = takeOption(rest, "ui-delivery");
   rest = uiDelivery.rest;
+  const specDepth = takeOption(rest, "spec-depth");
+  rest = specDepth.rest;
   const output = takeOption(rest, "output");
   rest = output.rest;
   const target = takeOption(rest, "target");
@@ -690,6 +693,7 @@ async function buildInit(args) {
   let resolvedResearchDepth = researchDepth.value;
   let resolvedResearchProvider = researchProvider.value;
   let resolvedUiDelivery = uiDelivery.value;
+  let resolvedSpecDepth = specDepth.value ?? "legacy";
   let strictTrigger;
   let modeReason;
   let modeApprovedBy;
@@ -737,7 +741,25 @@ async function buildInit(args) {
         resolvedUiDelivery ?? "not_applicable", strictTrigger ?? "none", modeReason ?? "normal feature",
         modeApprovedBy ?? "PM", output.value ?? "projects", handoff.present, target.value ?? "internal",
         horizon.value ? Number(horizon.value) : 14,
+        resolvedSpecDepth,
       );
+    },
+  };
+}
+
+function buildPackage(args) {
+  let rest = args;
+  const write = takeFlag(rest, "write");
+  rest = write.rest;
+  const check = takeFlag(rest, "check");
+  rest = check.rest;
+
+  return {
+    ts: () => {
+      if (rest.length > 0) throw new UsageError(`package: unrecognised option(s): ${rest.join(" ")}`);
+      const isCheck = check.present || !write.present;
+      const res = buildPluginPackage(REPO_ROOT, isCheck);
+      return { output: res.output, exitCode: res.exitCode };
     },
   };
 }
@@ -804,8 +826,14 @@ const COMMANDS = {
   init: {
     summary: "Create a new project from the templates (interactive on a TTY)",
     usage:
-      "axiom init [--code <PROJECT-CODE>] [--mode Standard] [--execution-path development_handoff] [--research-mode off] [--research-depth standard] [--research-provider none] [--ui-delivery not_applicable] [--handoff] [--target demo] [--horizon-days 14] [--no-interactive]",
+      "axiom init [--code <PROJECT-CODE>] [--mode Standard] [--execution-path development_handoff] [--research-mode off] [--research-depth standard] [--research-provider none] [--ui-delivery not_applicable] [--spec-depth legacy|full] [--handoff] [--target demo] [--horizon-days 14] [--no-interactive]",
     build: (args) => buildInit(args),
+  },
+
+  package: {
+    summary: "Package or check the skills/ mirror from .claude/skills/",
+    usage: "axiom package [--write] [--check]",
+    build: (args) => buildPackage(args),
   },
 
   status: {

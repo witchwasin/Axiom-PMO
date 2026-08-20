@@ -39,6 +39,14 @@ node cli/axiom.mjs check
 
 Or, with `make`: `make check`. Everything must exit 0 before you open a PR.
 
+### Packaging skills mirror
+
+`.claude/skills/` is the single source of truth for agent skills. The `skills/` directory is a generated package mirror checked by `PLUGIN-PKG-002`. After modifying files in `.claude/skills/`, regenerate the mirror with:
+
+```bash
+node cli/axiom.mjs package --write
+```
+
 ## How to add a validation rule
 
 1. **Emit it** from the relevant validator in `src/rules/**`, `src/exec/**`, or

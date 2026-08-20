@@ -146,6 +146,14 @@ test("config mutation proves JSON runtime config is the source of truth", () => 
         writeJson(rulesPath, rules);
         doctor = runPmoDoctor(tempRepo);
         assert.ok(doctor.rows.some((r) => r.rule_id === "DOCTOR-014" && r.level === "FAIL"), "experimental blocking rule fires DOCTOR-014");
+        // 12. build_spec section heading mutation → DOCTOR-015
+        copyFileSync(join(REPO_ROOT, "pmo-config/validation-rules.json"), rulesPath);
+        handoff = readJson(handoffPath);
+        const sections = handoff["build_spec"]["sections"];
+        sections[0]["heading"] = "Mutated Technology Stack Heading";
+        writeJson(handoffPath, handoff);
+        doctor = runPmoDoctor(tempRepo);
+        assert.ok(doctor.rows.some((r) => r.rule_id === "DOCTOR-015" && r.level === "FAIL"), "build_spec section heading mutation fires DOCTOR-015");
     }
     finally {
         rmSync(workRoot, { recursive: true, force: true });

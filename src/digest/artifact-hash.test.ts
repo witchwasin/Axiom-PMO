@@ -16,10 +16,10 @@ test("canonical text hash matches PowerShell on a no-BOM markdown file", () => {
 test("canonical text hash matches PowerShell on a BOM JSON file", () => {
   // Expected digest re-verified directly against Get-ArtifactSha256 (the PS
   // reference) after the Phase 8 version bump changed this fixture's content
-  // (2.1.0 -> 2.2.0) -- not just updated to whatever Node happened to compute.
+  // (2.2.0 -> 2.3.0) -- not just updated to whatever Node happened to compute.
   assert.equal(
     getArtifactSha256("pmo-config/policy.json"),
-    "a72ec270fab19740a05cf9579b8e503f3db05905c6aeb6b1b299fe3abefe7a17",
+    "4a833f0d2a9ee57b164f710083d75b56ba32698b6535392a7defbb438a0494ba",
   );
 });
 

@@ -66,7 +66,7 @@ function resolveLeadingReference(value: string, decisionIds: string[] | null, re
   return result.resolved;
 }
 
-function getTableHeaderCells(text: string, heading: string, level = 2): string[] | null {
+export function getTableHeaderCells(text: string, heading: string, level = 2): string[] | null {
   const lines = getTableLinesAfterHeading(text, getHeadingPattern(heading, level));
   if (lines.length < 2) return null;
   const parts = lines[0]!.split("|");

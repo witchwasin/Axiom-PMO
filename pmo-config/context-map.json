@@ -1,5 +1,5 @@
 {
-  "version": "2.2.0",
+  "version": "2.3.0",
   "schema_version": "1.0",
   "purpose": "Machine-readable context guidance. This is guidance, not enforcement.",
   "config_refs": {
@@ -23,12 +23,75 @@
     "review_policy": "Semantic handoff review and conditional Visual Proof are candidate evidence. Neither is an approval or substitutes for the Design Ready row in PROJECT.md; Visual Proof reads its review and declared captures only when the visual-direction/design-system artifact triple exists."
   },
   "optional_intents": {
-    "research": { "required_context": ["PROJECT.md", "RESEARCH/RESEARCH.md", "RESEARCH/PROVENANCE.json"], "conditional_context": ["EXTERNALIZATION.json", "decision-log.md"], "max_initial_files": 5 },
-    "externalization": { "required_context": ["PROJECT.md", "EXTERNALIZATION.json"], "conditional_context": ["declared outgoing artifacts", "decision-log.md"], "max_initial_files": 5 },
-    "system_design": { "required_context": ["PROJECT.md", "DESIGN/BUILD-SPEC.md"], "conditional_context": ["DELIVERY.md", "decision-log.md"], "max_initial_files": 5 },
-    "design_provider": { "required_context": ["PROJECT.md", "DESIGN/BUILD-SPEC.md", "DESIGN/CLAUDE-DESIGN/INPUT-MANIFEST.json"], "conditional_context": ["DESIGN/CLAUDE-DESIGN/OUTPUT/**", "DESIGN/CLAUDE-DESIGN/REVIEW.json", "EXTERNALIZATION.json"], "max_initial_files": 7 },
-    "change_control": { "required_context": ["PROJECT.md", "CHANGE-REQUESTS.json"], "conditional_context": ["affected governed artifacts", "decision-log.md"], "max_initial_files": 6 },
-    "testability": { "required_context": ["PROJECT.md", "DESIGN/BUILD-SPEC.md"], "conditional_context": ["DELIVERY.md", "HANDOFF.md"], "max_initial_files": 5 }
+    "research": {
+      "required_context": [
+        "PROJECT.md",
+        "RESEARCH/RESEARCH.md",
+        "RESEARCH/PROVENANCE.json"
+      ],
+      "conditional_context": [
+        "EXTERNALIZATION.json",
+        "decision-log.md"
+      ],
+      "max_initial_files": 5
+    },
+    "externalization": {
+      "required_context": [
+        "PROJECT.md",
+        "EXTERNALIZATION.json"
+      ],
+      "conditional_context": [
+        "declared outgoing artifacts",
+        "decision-log.md"
+      ],
+      "max_initial_files": 5
+    },
+    "system_design": {
+      "required_context": [
+        "PROJECT.md",
+        "DESIGN/BUILD-SPEC.md"
+      ],
+      "conditional_context": [
+        "DELIVERY.md",
+        "decision-log.md"
+      ],
+      "max_initial_files": 5
+    },
+    "design_provider": {
+      "required_context": [
+        "PROJECT.md",
+        "DESIGN/BUILD-SPEC.md",
+        "DESIGN/CLAUDE-DESIGN/INPUT-MANIFEST.json"
+      ],
+      "conditional_context": [
+        "DESIGN/CLAUDE-DESIGN/OUTPUT/**",
+        "DESIGN/CLAUDE-DESIGN/REVIEW.json",
+        "EXTERNALIZATION.json"
+      ],
+      "max_initial_files": 7
+    },
+    "change_control": {
+      "required_context": [
+        "PROJECT.md",
+        "CHANGE-REQUESTS.json"
+      ],
+      "conditional_context": [
+        "affected governed artifacts",
+        "decision-log.md"
+      ],
+      "max_initial_files": 6
+    },
+    "testability": {
+      "required_context": [
+        "PROJECT.md",
+        "DESIGN/BUILD-SPEC.md"
+      ],
+      "conditional_context": [
+        "DELIVERY.md",
+        "HANDOFF.md"
+      ],
+      "max_initial_files": 5
+    }
   },
   "modes": {
     "Lite": {

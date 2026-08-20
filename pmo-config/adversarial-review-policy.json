@@ -1,5 +1,5 @@
 {
-  "version": "2.2.0",
+  "version": "2.3.0",
   "schema_version": "1.0",
   "purpose": "Runtime policy for Milestone 8.1 adversarial review evidence (src/exec/adversarial-review-validator.ts). Defines what an EXECUTION-REVIEW.json may claim, which claims Axiom-PMO can verify against external ground truth, and who may set which finding status. Design rationale and threat model: docs/architecture/adversarial-review.md.",
   "core_principle": "An EXECUTION-REVIEW.json is candidate evidence, never authority. A verdict recorded in it must never change a validator exit code, and it never substitutes for a human approval row in PROJECT.md -- the same standing pmo-config/handoff-policy.json already gives a semantic handoff review.",
@@ -46,7 +46,12 @@
     "note": "pinned_workflow_digest is null by default: no adversarial-review workflow has been authored or pinned yet. Until an organization sets this, an externally-observed review cannot satisfy Strict on its own -- it fails closed to unverified, the same posture Test-CiCheckEvidence already takes when the gh CLI or a resolvable remote is unavailable. This is deliberate: a partial binding is artifact-observed wearing a stronger name, and must not be sold as more.",
     "digest_semantics": "SHA-256 of the workflow file's GIT BLOB at the verified commit, not of the file as it sits in your working tree. The two differ whenever git normalizes line endings on commit (core.autocrlf, or a text attribute), so compute it the same way the validator reads it: `git cat-file blob <commit>:.github/workflows/adversarial-review.yml | shasum -a 256`. Reading the blob rather than the working tree is deliberate -- it makes the pinned value a property of the commit under verification, not of whichever machine happens to be running the check."
   },
-  "finding_severities": ["critical", "major", "minor", "info"],
+  "finding_severities": [
+    "critical",
+    "major",
+    "minor",
+    "info"
+  ],
   "finding_categories": [
     "acceptance-criteria-gap",
     "hidden-behavior-change",
@@ -59,7 +64,14 @@
     "privacy",
     "other"
   ],
-  "finding_statuses": ["open", "disputed", "resolved", "false_positive", "accepted_risk", "deferred"],
+  "finding_statuses": [
+    "open",
+    "disputed",
+    "resolved",
+    "false_positive",
+    "accepted_risk",
+    "deferred"
+  ],
   "output_contract": {
     "_note": "M3 (Semantic Audit Contract), enforced by AREV-007. Every semantic finding of an adversarial review must say which requirement it speaks about, what it claims about the implementation and its tests, and which named human is accountable for it. requirement_ref is mandatory and must resolve against PROJECT.md In Scope (REQ-###), parsed the same way RTM does. implementation_claim/test_claim are conditional: a finding with no natural claim (e.g. a build-order or acceptance-seed-reachability observation) must state the explicit marker below rather than leave the field blank, so 'not applicable' is distinguishable from 'forgot to fill in'. owner is mandatory and never conditional: a group name or placeholder is not a person accountable for a finding, and the same owner_policy that governs handoff owners (pmo-config/handoff-policy.json owner_policy) applies here. This is a shape check only -- it never judges whether the review's content is thorough, correct, or intelligent, and it never reads recommendation.",
     "n_a_marker": "N/A",
@@ -90,18 +102,44 @@
   },
   "closure_policy": {
     "$comment": "Authority attaches to ROLE (reviewer / executor / human), never to KIND (ai / human) -- an AI serving as a human-attested reviewer's assistant still cannot self-close, and a human executor is still an executor. Enforced by AREV-006, not by prompt.",
-    "open_statuses": ["open"],
+    "open_statuses": [
+      "open"
+    ],
     "settable_by": {
-      "open": ["reviewer"],
-      "disputed": ["executor"],
-      "resolved": ["reviewer"],
-      "false_positive": ["human"],
-      "accepted_risk": ["human"],
-      "deferred": ["human"]
+      "open": [
+        "reviewer"
+      ],
+      "disputed": [
+        "executor"
+      ],
+      "resolved": [
+        "reviewer"
+      ],
+      "false_positive": [
+        "human"
+      ],
+      "accepted_risk": [
+        "human"
+      ],
+      "deferred": [
+        "human"
+      ]
     },
-    "non_closure_statuses": ["open", "disputed"],
-    "statuses_requiring_decision_ref": ["false_positive", "accepted_risk", "deferred"],
-    "human_only_categories": ["security", "legal", "business", "privacy"],
+    "non_closure_statuses": [
+      "open",
+      "disputed"
+    ],
+    "statuses_requiring_decision_ref": [
+      "false_positive",
+      "accepted_risk",
+      "deferred"
+    ],
+    "human_only_categories": [
+      "security",
+      "legal",
+      "business",
+      "privacy"
+    ],
     "human_only_close_note": "A finding under a human-only category may be marked resolved by a reviewer only when reviewer_kind is human, or closed to false_positive/accepted_risk/deferred by a human citing a decision record -- an AI reviewer may never close a human-only-category finding under any status, whatever the decision reference says. Mirrors HANDOFF-010 exactly."
   },
   "evaluator_isolation": {

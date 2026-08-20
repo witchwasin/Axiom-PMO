@@ -21,6 +21,7 @@ export function importPmoConfig(repoRoot: string): Config {
   const validationRulesPath = join(repoRoot, "pmo-config/validation-rules.json");
   const handoffPolicyPath = join(repoRoot, "pmo-config/handoff-policy.json");
   const orchestrationPolicyPath = join(repoRoot, "pmo-config/orchestration-policy.json");
+  const depthPolicyPath = join(repoRoot, "pmo-config/depth-policy.json");
 
   for (const p of [
     policyPath,
@@ -29,6 +30,7 @@ export function importPmoConfig(repoRoot: string): Config {
     validationRulesPath,
     handoffPolicyPath,
     orchestrationPolicyPath,
+    depthPolicyPath,
   ]) {
     try {
       readFileSync(p);
@@ -43,6 +45,7 @@ export function importPmoConfig(repoRoot: string): Config {
   const validationRules = parseJsonFile(validationRulesPath) as unknown as ValidationRules;
   const handoffPolicy = parseJsonFile(handoffPolicyPath) as Record<string, unknown>;
   const orchestrationPolicy = parseJsonFile(orchestrationPolicyPath) as Record<string, unknown>;
+  const depthPolicy = parseJsonFile(depthPolicyPath) as Record<string, unknown>;
 
   return {
     policy,
@@ -53,6 +56,7 @@ export function importPmoConfig(repoRoot: string): Config {
     validationRules,
     handoffPolicy,
     orchestrationPolicy,
+    depthPolicy,
   };
 }
 

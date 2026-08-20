@@ -1,0 +1,169 @@
+{
+  "version": "2.3.0",
+  "schema_version": "1.0",
+  "spec_elements": {
+    "requirement": {
+      "artifact": "PROJECT.md",
+      "heading": "In Scope",
+      "id_column": "ID"
+    },
+    "business_rule": {
+      "artifact": "PROJECT.md",
+      "heading": "Business Rules",
+      "id_column": "ID"
+    },
+    "nfr": {
+      "artifact": "DESIGN/SRS.md",
+      "heading": "Non-Functional Requirements",
+      "id_column": "ID"
+    },
+    "data_constraint": {
+      "artifact": "DESIGN/BUILD-SPEC.md",
+      "heading": "Data Model",
+      "id_column": "Constraint ID"
+    },
+    "api_operation": {
+      "artifact": "DESIGN/BUILD-SPEC.md",
+      "heading": "API or Command Contract",
+      "id_column": "Operation ID"
+    },
+    "state_transition": {
+      "artifact": "DESIGN/BUILD-SPEC.md",
+      "heading": "State Machine and Transition Guards",
+      "id_column": "Transition ID"
+    },
+    "journey_step": {
+      "artifact": "DESIGN/DATA-FLOW.md",
+      "heading": "End-to-End Journeys",
+      "id_column": "Step ID"
+    },
+    "strict_trigger": {
+      "artifact": "DELIVERY.md",
+      "heading": "Work Items",
+      "id_column": "Strict Trigger"
+    }
+  },
+  "test_categories": [
+    "happy",
+    "negative",
+    "boundary",
+    "security",
+    "concurrency",
+    "recovery"
+  ],
+  "profiles": {
+    "delivery_checklist": {
+      "requirement": ["happy"]
+    },
+    "strategy_and_scenarios": {
+      "requirement": ["happy", "negative"],
+      "business_rule": ["happy", "negative"],
+      "api_operation": ["happy", "negative"],
+      "state_transition": ["happy", "negative"]
+    },
+    "detailed_requirement_and_risk_cases": {
+      "requirement": ["happy", "negative", "boundary", "security"],
+      "business_rule": ["happy", "negative", "boundary"],
+      "nfr": ["happy", "boundary"],
+      "data_constraint": ["happy", "negative"],
+      "api_operation": ["happy", "negative", "security"],
+      "state_transition": ["happy", "negative", "recovery"],
+      "journey_step": ["happy"],
+      "strict_trigger": ["security", "negative"]
+    }
+  },
+  "srs_sections": [
+    {
+      "id": "purpose_and_scope",
+      "heading": "Purpose and Scope Reference",
+      "required_modes": ["Standard", "Strict"],
+      "allow_not_required": false
+    },
+    {
+      "id": "actors_and_roles",
+      "heading": "Actors and Roles",
+      "required_modes": ["Standard", "Strict"],
+      "allow_not_required": false,
+      "table": true,
+      "columns": ["Actor", "Description", "Permissions", "Source Ref"]
+    },
+    {
+      "id": "requirement_detail",
+      "heading": "Requirement Detail",
+      "required_modes": ["Strict"],
+      "allow_not_required": false
+    },
+    {
+      "id": "nfr",
+      "heading": "Non-Functional Requirements",
+      "required_modes": ["Standard", "Strict"],
+      "allow_not_required": false,
+      "table": true,
+      "columns": ["ID", "Category", "Target", "Measurement Method", "Source Ref", "Evidence Status"]
+    },
+    {
+      "id": "external_interfaces",
+      "heading": "External Interfaces",
+      "required_modes": ["Standard", "Strict"],
+      "allow_not_required": true
+    },
+    {
+      "id": "constraints_and_assumptions",
+      "heading": "Constraints and Assumptions",
+      "required_modes": ["Standard", "Strict"],
+      "allow_not_required": true
+    },
+    {
+      "id": "data_requirements",
+      "heading": "Data Requirements",
+      "required_modes": ["Strict"],
+      "allow_not_required": true
+    },
+    {
+      "id": "compliance_regulatory",
+      "heading": "Compliance and Regulatory",
+      "required_modes": ["Strict"],
+      "allow_not_required": true
+    },
+    {
+      "id": "glossary",
+      "heading": "Glossary",
+      "required_modes": ["Standard", "Strict"],
+      "allow_not_required": true
+    }
+  ],
+  "dataflow_sections": [
+    {
+      "id": "system_context",
+      "heading": "System Context and Trust Boundaries",
+      "required_modes": ["Standard", "Strict"],
+      "allow_not_required": false
+    },
+    {
+      "id": "end_to_end_journeys",
+      "heading": "End-to-End Journeys",
+      "required_modes": ["Standard", "Strict"],
+      "allow_not_required": false,
+      "table": true,
+      "columns": [
+        "Step ID",
+        "Journey",
+        "Actor",
+        "Trigger",
+        "Data In",
+        "System Action",
+        "Data Out",
+        "State Before",
+        "State After",
+        "Observable Result",
+        "Spec Element Ref"
+      ]
+    },
+    {
+      "id": "failure_and_degradation_paths",
+      "heading": "Failure and Degradation Paths",
+      "required_modes": ["Strict"],
+      "allow_not_required": true
+    }
+  ]
+}

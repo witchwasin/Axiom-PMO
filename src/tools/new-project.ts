@@ -39,6 +39,7 @@ export function newProject(
   includeHandoff: boolean,
   target: string,
   horizonDays: number,
+  specDepth: string = "legacy",
 ): NewProjectResult {
   const repo = resolve(repoRoot);
   const targetRoot = isAbsolute(outputRoot) ? outputRoot : join(repo, outputRoot);
@@ -62,6 +63,7 @@ export function newProject(
     .replace("quick / standard / deep", researchDepth)
     .replace("none / feyman / web / auto", researchProvider)
     .replace("not_applicable / dev_guided / claude_design", uiDelivery)
+    .replace("legacy / full", specDepth)
     .replaceAll("<YYYY-MM-DD>", today)
     .replaceAll("YYYY-MM-DD", today);
   psWrite(join(projectDir, "PROJECT.md"), projectText);

@@ -6,6 +6,7 @@ import { join, dirname, basename } from "node:path";
 import { getMarkdownFiles, readMarkdownText, testMarkdownLocalLinkPath } from "../markdown/files.js";
 import { sortOrdinal } from "../core/ordinal-sort.js";
 import { testFrameworkCheckout, frameworkCheckoutFailureMessage } from "../core/framework-checkout.js";
+import { getTableHeaderCells } from "../rules/handoff-validator.js";
 function loadJson(repo, rel) {
     const path = join(repo, rel);
     if (!existsSync(path))
@@ -43,6 +44,7 @@ export function runPmoDoctor(repo, skillRootOverride = "", templateRootOverride 
     const diagnosticsSchema = loadJson(repo, "pmo-config/diagnostics-schema.json");
     const onboardingQuestions = loadJson(repo, "pmo-config/onboarding-questions.json");
     const contextMapConfig = loadJson(repo, "pmo-config/context-map.json");
+    const depthPolicy = loadJson(repo, "pmo-config/depth-policy.json");
     const requireFile = (rel) => {
         if (existsSync(join(repo, rel)))
             add("PASS", `Found ${rel}`, "DOCTOR-STRUCT");
@@ -53,7 +55,7 @@ export function runPmoDoctor(repo, skillRootOverride = "", templateRootOverride 
     // checks the Node implementation that replaced it.
     for (const f of ["AGENTS.md", "CLAUDE.md", "VERSION", "CHANGELOG.md", "README.md", "TESTING.md", "SECURITY.md", "MIGRATION.md", "CONTEXT-ROUTER.md",
         "pmo-config/context-map.json", "pmo-config/policy.json", "pmo-config/skill-manifest.json", "pmo-config/validation-rules.json",
-        "pmo-config/artifact-policy.json", "pmo-config/reference-types.json", "pmo-config/orchestration-policy.json",
+        "pmo-config/artifact-policy.json", "pmo-config/reference-types.json", "pmo-config/orchestration-policy.json", "pmo-config/depth-policy.json",
         "cli/axiom.mjs", "src/probe/validate-chain.ts", "src/tools/run-all-checks.ts", "src/tools/validation-fixtures.ts",
         "src/tools/new-project.ts", "src/tools/update-source-snapshot.ts", "src/tools/measure-context.ts"]) {
         requireFile(f);
@@ -180,7 +182,7 @@ export function runPmoDoctor(repo, skillRootOverride = "", templateRootOverride 
     const versionText = readFileSync(join(repo, "VERSION"), "utf8").trim();
     const changelogText = readFileSync(join(repo, "CHANGELOG.md"), "utf8");
     const changelogFirstVersion = /^##\s+([^\s]+)\s+-/m.exec(changelogText)?.[1] ?? "";
-    const configVersions = [policy?.["version"], skillManifest?.["version"], validationRules?.["version"], contextMapConfig?.["version"], handoffPolicy?.["version"], orchestrationPolicy?.["version"], diagnosticsSchema?.["version"]].filter(Boolean).map(String);
+    const configVersions = [policy?.["version"], skillManifest?.["version"], validationRules?.["version"], contextMapConfig?.["version"], handoffPolicy?.["version"], orchestrationPolicy?.["version"], diagnosticsSchema?.["version"], depthPolicy?.["version"]].filter(Boolean).map(String);
     if (versionText === changelogFirstVersion && configVersions.every((v) => v === versionText)) {
         add("PASS", "VERSION, CHANGELOG, and JSON config versions match", "DOCTOR-005");
     }
@@ -193,6 +195,7 @@ export function runPmoDoctor(repo, skillRootOverride = "", templateRootOverride 
         "policy.json": policy, "artifact-policy.json": loadJson(repo, "pmo-config/artifact-policy.json"), "reference-types.json": loadJson(repo, "pmo-config/reference-types.json"),
         "skill-manifest.json": skillManifest, "validation-rules.json": validationRules, "context-map.json": contextMapConfig,
         "handoff-policy.json": handoffPolicy, "diagnostics-schema.json": diagnosticsSchema, "onboarding-questions.json": onboardingQuestions, "orchestration-policy.json": orchestrationPolicy,
+        "depth-policy.json": depthPolicy,
     };
     const schemaVersionProblems = [];
     for (const [name, cfg] of Object.entries(schemaVersionConfigs)) {
@@ -311,6 +314,53 @@ export function runPmoDoctor(repo, skillRootOverride = "", templateRootOverride 
         add("PASS", "No experimental rule carries a blocking severity", "DOCTOR-014");
     else
         add("FAIL", `Experimental rules with a blocking severity (promotion to enforced requires a DEC-### and a ROADMAP.md entry first): ${sortOrdinal(experimentalBlocking).join(", ")}`, "DOCTOR-014");
+    // DOCTOR-015 template ↔ policy drift guard
+    {
+        const templateRoot = templateRootOverride ? templateRootOverride : join(repo, "templates");
+        const buildSpecPath = join(templateRoot, "BUILD-SPEC.md");
+        if (existsSync(buildSpecPath) && handoffPolicy?.["build_spec"]) {
+            const text = readFileSync(buildSpecPath, "utf8");
+            const declaredSections = handoffPolicy["build_spec"]["sections"] ?? [];
+            const declaredHeadings = declaredSections.map((s) => String(s["heading"] ?? ""));
+            // Extract all `### ` headings from templates/BUILD-SPEC.md
+            const headingMatches = [...text.matchAll(/^###\s+(.+?)\s*$/gm)].map((m) => m[1].trim());
+            const problems = [];
+            if (declaredHeadings.join("|") !== headingMatches.join("|")) {
+                const missingInTemplate = declaredHeadings.filter((h) => !headingMatches.includes(h));
+                const unexpectedInTemplate = headingMatches.filter((h) => !declaredHeadings.includes(h));
+                if (missingInTemplate.length > 0)
+                    problems.push(`Missing sections in BUILD-SPEC.md template: ${missingInTemplate.join(", ")}`);
+                if (unexpectedInTemplate.length > 0)
+                    problems.push(`Unexpected sections in BUILD-SPEC.md template: ${unexpectedInTemplate.join(", ")}`);
+                if (missingInTemplate.length === 0 && unexpectedInTemplate.length === 0) {
+                    problems.push("BUILD-SPEC.md template sections are in different order than handoff-policy.json");
+                }
+            }
+            // Check table columns for sections with table: true and columns: [...]
+            for (const section of declaredSections) {
+                if (section["table"] !== true || !Array.isArray(section["columns"]))
+                    continue;
+                const heading = String(section["heading"] ?? "");
+                const expectedCols = section["columns"].map((c) => c.trim());
+                const actualCols = getTableHeaderCells(text, heading, 3);
+                if (!actualCols) {
+                    problems.push(`Section '${heading}' declared as table but no table header found in template`);
+                }
+                else if (actualCols.join("|") !== expectedCols.join("|")) {
+                    problems.push(`Section '${heading}' column mismatch: expected [${expectedCols.join(" | ")}], got [${actualCols.join(" | ")}]`);
+                }
+            }
+            if (problems.length === 0) {
+                add("PASS", "templates/BUILD-SPEC.md sections and table columns match handoff-policy.json", "DOCTOR-015");
+            }
+            else {
+                add("FAIL", `BUILD-SPEC.md template drift: ${problems.join("; ")}`, "DOCTOR-015");
+            }
+        }
+        else if (!existsSync(buildSpecPath)) {
+            add("FAIL", "Missing templates/BUILD-SPEC.md", "DOCTOR-015");
+        }
+    }
     // PERMISSION-* from .claude/settings.json
     const settingsPath = join(repo, ".claude/settings.json");
     if (existsSync(settingsPath)) {

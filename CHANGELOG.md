@@ -1,5 +1,32 @@
 # Changelog
 
+## 2.3.0 - 2026-08-20
+
+Specification Depth (Phase 1). Introduces the mode-scaled specification depth
+policy spine (`pmo-config/depth-policy.json`), the template-to-policy drift
+guard (`DOCTOR-015`), the `package --write` CLI verb for skills mirror
+synchronization, and the foundational breadth-vs-depth thesis documentation.
+
+### Added
+
+- `pmo-config/depth-policy.json`: defines spec elements, test categories,
+  depth profiles, and section requirements for SRS and Data Flow.
+- `DOCTOR-015`: validation doctor checks that `templates/BUILD-SPEC.md` section
+  headings and table columns stay in sync with `handoff-policy.json`.
+- `docs/rules/DOCTOR-015.md`: rule documentation for the template drift guard.
+- `docs/concepts/document-depth.md`: architectural rationale for mode-scaled
+  specification depth.
+- `cli/axiom.mjs package --write`: CLI command to regenerate the `skills/`
+  mirror from `.claude/skills/`.
+
+### Changed
+
+- `pmo-config/orchestration-policy.json`: added `spec_depth` compatibility default
+  and declared values (`legacy`, `full`).
+- `templates/PROJECT.md`: added `> Spec depth:` declaration line.
+- `cli/axiom.mjs` & `src/tools/new-project.ts`: added `--spec-depth` option.
+- All configuration files bumped to `2.3.0`.
+
 ## 2.2.0 - 2026-08-17
 
 The PowerShell-to-Node/TypeScript migration (Phases 0-10) is complete. The

@@ -7,6 +7,7 @@
 > Research depth: quick / standard / deep
 > Research provider: none / feyman / web / auto
 > UI delivery: not_applicable / dev_guided / claude_design
+> Spec depth: legacy / full
 > Task source: file / github
 > Owner: <PM/PO>
 > Last updated: <YYYY-MM-DD>

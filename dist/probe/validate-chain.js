@@ -42,6 +42,7 @@ export function runPortedChain(repoRoot, project, mode, gate) {
         referenceTypesConfig: config.referenceTypesConfig,
         policy: config.policy,
         handoffPolicy: config.handoffPolicy,
+        depthPolicy: config.depthPolicy,
     };
     // Reference: validate-project.ps1 only calls Test-ProjectSourceSection
     // `if ($projectText)`; with no PROJECT.md at all, every downstream

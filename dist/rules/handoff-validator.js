@@ -63,7 +63,7 @@ function resolveLeadingReference(value, decisionIds, requirementIds, ctx) {
     const result = resolveReference(token, ctx.referenceTypesConfig, ctx.project, decisionIds, requirementIds);
     return result.resolved;
 }
-function getTableHeaderCells(text, heading, level = 2) {
+export function getTableHeaderCells(text, heading, level = 2) {
     const lines = getTableLinesAfterHeading(text, getHeadingPattern(heading, level));
     if (lines.length < 2)
         return null;
