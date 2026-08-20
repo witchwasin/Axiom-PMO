@@ -760,6 +760,54 @@
       "severity": "fail",
       "description": "Sensitive ignore patterns are too broad, stale, or missing.",
       "suggestion": "Use precise .gitignore patterns for sensitive files instead of broad wildcards that hide governed artifacts."
+    },
+    "REQ-TYPE-001": {
+      "severity": "fail",
+      "description": "Requirement type in PROJECT.md is invalid or missing.",
+      "suggestion": "Set Type to one of the values declared in policy.json enums.requirement_types (functional, non_functional, constraint, interface, data).",
+      "documentation": "docs/rules/REQ-TYPE-001.md"
+    },
+    "SRS-001": {
+      "severity": "fail",
+      "description": "Required SRS section in DESIGN/SRS.md is missing or has invalid status.",
+      "suggestion": "Declare every section required for the mode with Status: specified and content, or Status: not_required with rationale.",
+      "documentation": "docs/rules/SRS-001.md"
+    },
+    "SRS-002": {
+      "severity": "fail",
+      "description": "Non-Functional Requirements table has missing target or measurement method.",
+      "suggestion": "Fill Target and Measurement Method for every NFR row. Unmeasured NFRs cannot be verified.",
+      "documentation": "docs/rules/SRS-002.md"
+    },
+    "SRS-003": {
+      "severity": "fail",
+      "description": "Non-Functional Requirements row carries invalid source reference or evidence status.",
+      "suggestion": "Ensure every NFR has a resolvable Source Ref and an evidence status from policy.json enums.evidence_statuses.",
+      "documentation": "docs/rules/SRS-003.md"
+    },
+    "SRS-004": {
+      "severity": "fail",
+      "description": "Strict mode is missing NFRs covering mandatory categories.",
+      "suggestion": "Declare at least one NFR in each mandatory category: performance, security, reliability.",
+      "documentation": "docs/rules/SRS-004.md"
+    },
+    "ARCH-001": {
+      "severity": "fail",
+      "description": "Technology Decisions table is incomplete or cites unresolved decisions.",
+      "suggestion": "Fill all columns in Technology Decisions and ensure Decision Ref resolves to a DEC-### in decision-log.md.",
+      "documentation": "docs/rules/ARCH-001.md"
+    },
+    "DATA-003": {
+      "severity": "fail",
+      "description": "Entity Relationships cite entities not declared in Data Model.",
+      "suggestion": "Add the referenced From Entity and To Entity to the Data Model table in BUILD-SPEC.md.",
+      "documentation": "docs/rules/DATA-003.md"
+    },
+    "DATA-004": {
+      "severity": "fail",
+      "description": "Entity Relationships FK field does not exist in Data Model entity attributes.",
+      "suggestion": "Declare the FK Field attribute on the From Entity in the Data Model table.",
+      "documentation": "docs/rules/DATA-004.md"
     }
   }
 }

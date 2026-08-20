@@ -32,6 +32,14 @@ Status: specified
 
 <UI library and version, or `not_required` with a rationale for a headless component.>
 
+### Technology Decisions
+
+Status: specified
+
+| Decision ID | Area | Chosen | Alternatives Considered | Rationale | Trade-offs Accepted | Decision Ref | Source Ref |
+|---|---|---|---|---|---|---|---|
+| TD-001 | <language / framework / storage> | <chosen technology> | <alternatives considered> | <why chosen> | <trade-offs accepted> | DEC-001 | MOM-YYYYMMDD item-1 |
+
 ### Target Devices and Runtime Capabilities
 
 Status: specified
@@ -59,22 +67,33 @@ Status: specified
 > Cardinality and unit are separate columns for a reason: "stock" without a
 > quantity and a unit is a name, not a model.
 
-| Entity | Attribute | Type | Unit | Cardinality | Constraint |
-|---|---|---|---|---|---|
-| <Part> | <quantity_on_hand> | <integer> | <pieces> | <1 per part per location> | <>= 0> |
+| Constraint ID | Entity | Attribute | Type | Unit | Cardinality | Constraint |
+|---|---|---|---|---|---|---|
+| DC-001 | <Part> | <quantity_on_hand> | <integer> | <pieces> | <1 per part per location> | <>= 0> |
+
+### Entity Relationships
+
+Status: specified
+
+| Relationship ID | From Entity | To Entity | Cardinality | FK Field | Required | On Delete |
+|---|---|---|---|---|---|---|
+| ER-001 | <Part> | <Location> | N:1 | location_id | yes | restrict |
 
 ### API or Command Contract
 
 Status: specified
 
-<Operations, inputs, outputs, errors. Include the reverse of every mutation.>
+| Operation ID | Operation | Input | Success | Failure Modes | Idempotent | Auth / Role |
+|---|---|---|---|---|---|---|
+| API-001 | <createPart> | <name, sku, unit> | <201 Created + part_id> | <400 invalid_sku, 409 duplicate> | no | <role> |
 
 ### State Machine and Transition Guards
 
 Status: specified
 
-<States, allowed transitions, the guard on each, terminal states, and how a
-transition is reversed.>
+| Transition ID | From | To | Guard | Reverse | Terminal |
+|---|---|---|---|---|---|
+| TR-001 | <draft> | <active> | <all required fields filled> | <deactivate> | no |
 
 ### Transaction Boundaries
 
@@ -113,6 +132,24 @@ Status: specified
 | Data Element | Contains Sensitive Data | Classification Decision | Retention Decision |
 |---|---|---|---|
 | <element> | <yes / no> | <DEC-001 or 'not applicable'> | <DEC-002 or 'retained with the record'> |
+
+### Performance, Capacity and Availability
+
+Status: specified
+
+<Latency targets, throughput requirements, concurrency limits, and failover behavior.>
+
+### Integration Contracts
+
+Status: specified
+
+<External system integration touchpoints, authentication models, failure handling, and circuit breaking.>
+
+### Audit and Logging
+
+Status: specified
+
+<Audit trail requirements, security event logging, structured log schema, and retention for audit logs.>
 
 ### Retention, Backup and Restore
 

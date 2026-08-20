@@ -576,6 +576,29 @@
         "allow_not_required": true
       },
       {
+        "id": "technology_decisions",
+        "heading": "Technology Decisions",
+        "required_modes": [
+          "Strict"
+        ],
+        "allow_not_required": false,
+        "required_declarations": [
+          "Spec depth"
+        ],
+        "table": true,
+        "columns": [
+          "Decision ID",
+          "Area",
+          "Chosen",
+          "Alternatives Considered",
+          "Rationale",
+          "Trade-offs Accepted",
+          "Decision Ref",
+          "Source Ref"
+        ],
+        "rule": "ARCH-001"
+      },
+      {
         "id": "target_devices",
         "heading": "Target Devices and Runtime Capabilities",
         "required_modes": [
@@ -599,7 +622,9 @@
           "Standard",
           "Strict"
         ],
-        "allow_not_required": true
+        "allow_not_required_modes": [
+          "Standard"
+        ]
       },
       {
         "id": "data_model",
@@ -611,6 +636,7 @@
         "allow_not_required": false,
         "table": true,
         "columns": [
+          "Constraint ID",
           "Entity",
           "Attribute",
           "Type",
@@ -620,13 +646,48 @@
         ]
       },
       {
+        "id": "entity_relationships",
+        "heading": "Entity Relationships",
+        "required_modes": [
+          "Standard",
+          "Strict"
+        ],
+        "allow_not_required": false,
+        "required_declarations": [
+          "Spec depth"
+        ],
+        "table": true,
+        "columns": [
+          "Relationship ID",
+          "From Entity",
+          "To Entity",
+          "Cardinality",
+          "FK Field",
+          "Required",
+          "On Delete"
+        ],
+        "rule": "DATA-003"
+      },
+      {
         "id": "api_contract",
         "heading": "API or Command Contract",
         "required_modes": [
           "Standard",
           "Strict"
         ],
-        "allow_not_required": true
+        "allow_not_required_modes": [
+          "Standard"
+        ],
+        "table": true,
+        "columns": [
+          "Operation ID",
+          "Operation",
+          "Input",
+          "Success",
+          "Failure Modes",
+          "Idempotent",
+          "Auth / Role"
+        ]
       },
       {
         "id": "state_machine",
@@ -635,7 +696,18 @@
           "Standard",
           "Strict"
         ],
-        "allow_not_required": true
+        "allow_not_required_modes": [
+          "Standard"
+        ],
+        "table": true,
+        "columns": [
+          "Transition ID",
+          "From",
+          "To",
+          "Guard",
+          "Reverse",
+          "Terminal"
+        ]
       },
       {
         "id": "transaction_boundaries",
@@ -644,7 +716,9 @@
           "Standard",
           "Strict"
         ],
-        "allow_not_required": true
+        "allow_not_required_modes": [
+          "Standard"
+        ]
       },
       {
         "id": "concurrency",
@@ -653,7 +727,9 @@
           "Standard",
           "Strict"
         ],
-        "allow_not_required": true
+        "allow_not_required_modes": [
+          "Standard"
+        ]
       },
       {
         "id": "error_states",
@@ -689,6 +765,39 @@
           "Retention Decision"
         ],
         "rule": "HANDOFF-011"
+      },
+      {
+        "id": "performance_capacity",
+        "heading": "Performance, Capacity and Availability",
+        "required_modes": [
+          "Strict"
+        ],
+        "allow_not_required": true,
+        "required_declarations": [
+          "Spec depth"
+        ]
+      },
+      {
+        "id": "integration_contracts",
+        "heading": "Integration Contracts",
+        "required_modes": [
+          "Strict"
+        ],
+        "allow_not_required": true,
+        "required_declarations": [
+          "Spec depth"
+        ]
+      },
+      {
+        "id": "audit_logging",
+        "heading": "Audit and Logging",
+        "required_modes": [
+          "Strict"
+        ],
+        "allow_not_required": true,
+        "required_declarations": [
+          "Spec depth"
+        ]
       },
       {
         "id": "retention",

@@ -73,7 +73,7 @@ export function getTableHeaderCells(text, heading, level = 2) {
         cells.push(parts[i].trim());
     return cells;
 }
-function testTableHeader(acc, catalog, text, heading, level, expected, artifact, handoffPolicy, state) {
+function testTableHeader(acc, catalog, text, heading, level, expected, artifact, handoffPolicy, state, isFullSpecDepth = false) {
     const policy = handoffPolicy["table_headers"];
     if (!policy || policy["enforce"] !== true)
         return true;
@@ -82,6 +82,17 @@ function testTableHeader(acc, catalog, text, heading, level, expected, artifact,
     const actual = getTableHeaderCells(text, heading, level);
     if (actual === null)
         return true;
+    if (!isFullSpecDepth) {
+        if (heading === "Data Model" && actual.join("|") === ["Entity", "Attribute", "Type", "Unit", "Cardinality", "Constraint"].join("|")) {
+            return true;
+        }
+        if (heading === "API or Command Contract" && actual.join("|") === ["Operation", "Input", "Success", "Failure"].join("|")) {
+            return true;
+        }
+        if (heading === "State Machine and Transition Guards") {
+            return true;
+        }
+    }
     const expectedList = expected;
     if (actual.join("|") === expectedList.join("|"))
         return true;
@@ -109,7 +120,7 @@ function getDeclaredProjectCode(projectText, handoffPolicy) {
     const m = new RegExp(pattern, "m").exec(projectText);
     return m ? m[1].trim() : null;
 }
-function getSectionBody(text, heading, level = 2) {
+export function getSectionBody(text, heading, level = 2) {
     const lines = text.split(/\r?\n/);
     const pattern = new RegExp(getHeadingPattern(heading, level));
     let start = -1;
@@ -462,6 +473,7 @@ function testBuildSpec(acc, catalog, project, mode, handoffTarget, handoffPolicy
     const statusMarker = String(spec["status_marker"]);
     const rationaleMarker = String(spec["rationale_marker"]);
     const minWords = Number(spec["not_required_policy"]["min_rationale_words"]);
+    const isFullSpecDepth = /^\s*>?\s*Spec depth:\s*full\s*$/im.test(projectText);
     const sectionProblems = [];
     for (const section of spec["sections"] ?? []) {
         const heading = String(section["heading"]);
@@ -499,7 +511,17 @@ function testBuildSpec(acc, catalog, project, mode, handoffTarget, handoffPolicy
             continue;
         }
         if (status === "not_required") {
-            if (section["allow_not_required"] !== true) {
+            let isAllowed = false;
+            if (isFullSpecDepth && Array.isArray(section["allow_not_required_modes"])) {
+                isAllowed = section["allow_not_required_modes"].includes(mode);
+            }
+            else if (!isFullSpecDepth) {
+                isAllowed = section["allow_not_required"] === true || Array.isArray(section["allow_not_required_modes"]);
+            }
+            else {
+                isAllowed = section["allow_not_required"] === true;
+            }
+            if (!isAllowed) {
                 sectionProblems.push(`'${heading}' is marked not_required but policy does not allow waiving it`);
                 continue;
             }
@@ -522,12 +544,17 @@ function testBuildSpec(acc, catalog, project, mode, handoffTarget, handoffPolicy
             continue;
         }
         if (section["table"] === true) {
-            const rows = getTableRowsAfterHeading(text, getHeadingPattern(heading, 3));
-            if (rows.length === 0)
-                sectionProblems.push(`'${heading}' is marked specified but its table has no rows`);
-            if (section["columns"]) {
-                if (!testTableHeader(acc, catalog, text, heading, 3, section["columns"], "DESIGN/BUILD-SPEC.md", handoffPolicy, state)) {
-                    state.headerOk = false;
+            if (!isFullSpecDepth && (heading === "API or Command Contract" || heading === "State Machine and Transition Guards")) {
+                // legacy projects can write prose in API/State Machine
+            }
+            else {
+                const rows = getTableRowsAfterHeading(text, getHeadingPattern(heading, 3));
+                if (rows.length === 0)
+                    sectionProblems.push(`'${heading}' is marked specified but its table has no rows`);
+                if (section["columns"]) {
+                    if (!testTableHeader(acc, catalog, text, heading, 3, section["columns"], "DESIGN/BUILD-SPEC.md", handoffPolicy, state, isFullSpecDepth)) {
+                        state.headerOk = false;
+                    }
                 }
             }
         }

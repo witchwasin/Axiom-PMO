@@ -199,8 +199,13 @@ function fillProjectContent(project: string, mode: "Lite" | "Standard" | "Strict
       // Table cells first (they carry enum values the prose sweep below would
       // flatten); identical replacements to fillHandoffContent, which runs
       // later for handoff projects and becomes a no-op on already-filled rows.
+      text2 = rep(text2, "\\| TD-001 \\| <language / framework / storage> \\| <chosen technology> \\| <alternatives considered> \\| <why chosen> \\| <trade-offs accepted> \\| DEC-001 \\| MOM-YYYYMMDD item-1 \\|", "| TD-001 | runtime | Node.js | Deno, Bun | Industry standard | None | DEC-002 | MOM-20260710 item-1 |");
       text2 = rep(text2, "\\| <rear camera / offline read / file export> \\| <AC-002> \\| <how it is actually served> \\| <DEC-001> \\|", "| Local file read | AC-001 | Same-origin fetch over HTTPS | DEC-002 |");
-      text2 = rep(text2, "\\| <Part> \\| <quantity_on_hand> \\| <integer> \\| <pieces> \\| <1 per part per location> \\| <>= 0> \\|", "| Record | count | integer | items | 1 per record | >= 0 |");
+      text2 = rep(text2, "\\| DC-001 \\| <Part> \\| <quantity_on_hand> \\| <integer> \\| <pieces> \\| <1 per part per location> \\| <>= 0> \\|", "| DC-001 | Record | count | integer | items | 1 per record | >= 0 |");
+      text2 = rep(text2, "\\| <Part> \\| <quantity_on_hand> \\| <integer> \\| <pieces> \\| <1 per part per location> \\| <>= 0> \\|", "| DC-001 | Record | count | integer | items | 1 per record | >= 0 |");
+      text2 = rep(text2, "\\| ER-001 \\| <Part> \\| <Location> \\| N:1 \\| location_id \\| yes \\| restrict \\|", "| ER-001 | Record | Record | 1:1 | count | no | restrict |");
+      text2 = rep(text2, "\\| API-001 \\| <createPart> \\| <name, sku, unit> \\| <201 Created \\+ part_id> \\| <400 invalid_sku, 409 duplicate> \\| no \\| <role> \\|", "| API-001 | createRecord | name, count | 201 Created + id | 400 invalid_input | no | admin |");
+      text2 = rep(text2, "\\| TR-001 \\| <draft> \\| <active> \\| <all required fields filled> \\| <deactivate> \\| no \\|", "| TR-001 | draft | active | all required fields filled | deactivate | no |");
       text2 = rep(text2, "\\| <element> \\| <yes / no> \\| <DEC-001 or .not applicable.> \\| <DEC-002 or .retained with the record.> \\|", "| Record identifier | no | not applicable | retained with the record |");
       text2 = rep(text2, "\\| AC-001 \\| <REQ-001> \\| <Given \\.\\.\\., when \\.\\.\\., then \\.\\.\\.> \\| <automated> \\| <seed name> \\| <how to reset> \\|", "| AC-001 | REQ-001 | Given a seeded record, when it is read, then the count is returned | automated | e2e-seed | Regenerate the fixture |");
       text2 = rep(text2, "\\| <area> \\| <REQ-001 or R-001> \\| <unit / integration / system / security / usability> \\| <automated> \\| <environment> \\| <named owner> \\|", "| E2E happy path | REQ-001 | system | automated | local | E2E PM |");
@@ -246,8 +251,13 @@ function fillHandoffContent(project: string, mode: "Lite" | "Standard" | "Strict
 
     // Tables first: their cells carry enum values the generic sweep below
     // would flatten into prose.
+    text2 = rep(text2, "\\| TD-001 \\| <language / framework / storage> \\| <chosen technology> \\| <alternatives considered> \\| <why chosen> \\| <trade-offs accepted> \\| DEC-001 \\| MOM-YYYYMMDD item-1 \\|", "| TD-001 | runtime | Node.js | Deno, Bun | Industry standard | None | DEC-002 | MOM-20260710 item-1 |");
     text2 = rep(text2, "\\| <rear camera / offline read / file export> \\| <AC-002> \\| <how it is actually served> \\| <DEC-001> \\|", "| Local file read | AC-001 | Same-origin fetch over HTTPS | DEC-002 |");
-    text2 = rep(text2, "\\| <Part> \\| <quantity_on_hand> \\| <integer> \\| <pieces> \\| <1 per part per location> \\| <>= 0> \\|", "| Record | count | integer | items | 1 per record | >= 0 |");
+    text2 = rep(text2, "\\| DC-001 \\| <Part> \\| <quantity_on_hand> \\| <integer> \\| <pieces> \\| <1 per part per location> \\| <>= 0> \\|", "| DC-001 | Record | count | integer | items | 1 per record | >= 0 |");
+    text2 = rep(text2, "\\| <Part> \\| <quantity_on_hand> \\| <integer> \\| <pieces> \\| <1 per part per location> \\| <>= 0> \\|", "| DC-001 | Record | count | integer | items | 1 per record | >= 0 |");
+    text2 = rep(text2, "\\| ER-001 \\| <Part> \\| <Location> \\| N:1 \\| location_id \\| yes \\| restrict \\|", "| ER-001 | Record | Record | 1:1 | count | no | restrict |");
+    text2 = rep(text2, "\\| API-001 \\| <createPart> \\| <name, sku, unit> \\| <201 Created \\+ part_id> \\| <400 invalid_sku, 409 duplicate> \\| no \\| <role> \\|", "| API-001 | createRecord | name, count | 201 Created + id | 400 invalid_input | no | admin |");
+    text2 = rep(text2, "\\| TR-001 \\| <draft> \\| <active> \\| <all required fields filled> \\| <deactivate> \\| no \\|", "| TR-001 | draft | active | all required fields filled | deactivate | no |");
     text2 = rep(text2, "\\| <element> \\| <yes / no> \\| <DEC-001 or .not applicable.> \\| <DEC-002 or .retained with the record.> \\|", "| Record identifier | no | not applicable | retained with the record |");
     text2 = rep(text2, "\\| AC-001 \\| <REQ-001> \\| <Given \\.\\.\\., when \\.\\.\\., then \\.\\.\\.> \\| <automated> \\| <seed name> \\| <how to reset> \\|", "| AC-001 | REQ-001 | Given a seeded record, when it is read, then the count is returned | automated | e2e-seed | Regenerate the fixture |");
 

@@ -94,6 +94,20 @@ export function testProjectSourceSection(acc, catalog, ctx, projectText, mode, g
         else {
             addResult(acc, catalog, missingLevel, `${missingEvidence.length} requirement line(s) may be missing or invalid evidence status`, { ruleId: "EVIDENCE-001" });
         }
+        const isFullSpecDepth = /^\s*>?\s*Spec depth:\s*full\s*$/im.test(projectText);
+        if (isFullSpecDepth) {
+            const validReqTypes = policyEnums["requirement_types"] ?? [];
+            const invalidTypes = reqRows.filter((r) => !validReqTypes.includes((r["Type"] ?? "").trim().toLowerCase()));
+            if (invalidTypes.length === 0) {
+                addResult(acc, catalog, "PASS", "Requirement lines include valid requirement type", { ruleId: "REQ-TYPE-001" });
+            }
+            else {
+                const typeLevel = gate === "Draft" ? "INFO" : "FAIL";
+                for (const r of invalidTypes) {
+                    addResult(acc, catalog, typeLevel, `Requirement ${r["ID"] ?? "unknown"} has invalid or missing Type '${r["Type"] ?? ""}' (expected one of: ${validReqTypes.join(", ")})`, { ruleId: "REQ-TYPE-001", artifact: "PROJECT.md", itemId: r["ID"] ?? null, field: "Type" });
+                }
+            }
+        }
     }
     const sourceRows = [
         ...getTableRowsAfterHeading(projectText, "^##\\s+Source Snapshot"),

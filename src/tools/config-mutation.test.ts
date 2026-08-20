@@ -170,6 +170,22 @@ test("config mutation proves JSON runtime config is the source of truth", () => 
     writeJson(handoffPath, handoff);
     doctor = runPmoDoctor(tempRepo);
     assert.ok(doctor.rows.some((r) => r.rule_id === "DOCTOR-015" && r.level === "FAIL"), "build_spec section heading mutation fires DOCTOR-015");
+
+    // 13. allow_not_required_modes waiver restriction → HANDOFF-005
+    copyFileSync(join(REPO_ROOT, "pmo-config/handoff-policy.json"), handoffPath);
+    const demoProjectMd = join(tempRepo, "examples/HANDOFF-DEMO/PROJECT.md");
+    const origDemoMd = readFileSync(demoProjectMd, "utf8");
+    writeFileSync(demoProjectMd, origDemoMd + "\n> Spec depth: full\n", "utf8");
+    handoff = readJson(handoffPath);
+    const specSections = ((handoff["build_spec"] as Record<string, unknown>)["sections"] as Array<Record<string, unknown>>);
+    const smSection = specSections.find((s) => s["id"] === "state_machine");
+    if (smSection) {
+      delete smSection["allow_not_required"];
+      smSection["allow_not_required_modes"] = ["Strict"]; // disallowed in Standard
+    }
+    writeJson(handoffPath, handoff);
+    diags = validate("examples/HANDOFF-DEMO", "Standard", "Handoff");
+    assert.ok(diags.some((d) => d.rule_id === "HANDOFF-005" && d.level === "FAIL" && d.message.includes("State Machine")), "allow_not_required_modes restriction fires HANDOFF-005 on disallowed mode");
   } finally {
     rmSync(workRoot, { recursive: true, force: true });
   }

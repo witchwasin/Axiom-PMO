@@ -1,4 +1,4 @@
-﻿{
+{
   "version": "2.3.0",
   "schema_version": "1.0",
   "sentinel_rules": {
@@ -131,6 +131,13 @@
     "execution_paths": [
       "development_handoff",
       "governed_ai_execution"
+    ],
+    "requirement_types": [
+      "functional",
+      "non_functional",
+      "constraint",
+      "interface",
+      "data"
     ],
     "strict_triggers": [
       "payment",

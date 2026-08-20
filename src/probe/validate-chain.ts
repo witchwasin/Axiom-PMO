@@ -23,6 +23,7 @@ import { testDesignSystemTokens } from "../rules/design-system-validator.js";
 import { testDesignProviderWorkflow } from "../rules/design-provider-validator.js";
 import { testVisualProofReview } from "../rules/visual-proof-validator.js";
 import { testHandoffReadiness, testEarlyTestDesign } from "../rules/handoff-validator.js";
+import { testSpecificationDepth } from "../rules/depth-validator.js";
 import { invokeScopeDiffCheck } from "../rules/scope-diff-validator.js";
 import { writeValidationOutput, getExitCode } from "../core/result-writer.js";
 import { DIAGNOSTICS_SCHEMA_VERSION, type Envelope } from "../core/types.js";
@@ -118,6 +119,10 @@ export function runPortedChain(
     testHandoffReadiness(acc, catalog, ctx, effectiveMode, gate, workItemResult.workItems, workItemResult.deliveryIds, sourceResult.projectReqIds, decisionIds, projectText);
     testVisualProofReview(acc, catalog, project, effectiveMode, config.handoffPolicy, projectText, decisionIds);
   }
+  testSpecificationDepth(
+    acc, catalog, ctx, projectText, effectiveMode, gate,
+    sourceResult.projectReqIds, decisionIds, sourceRefRegex,
+  );
   testDesignSystemTokens(acc, catalog, project, gate);
   testSensitiveFilenames(acc, catalog, fileSets.allProjectFiles, project);
   testLinks(acc, catalog, fileSets.governedFiles, fileSets.userSourceFiles, gate);
