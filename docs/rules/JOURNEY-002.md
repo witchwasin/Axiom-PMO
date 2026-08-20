@@ -1,21 +1,21 @@
-# JOURNEY-002 - Journey step spec element traceability
+# JOURNEY-002 - Scoped requirement journey coverage
 
 | | |
 |---|---|
 | Level | FAIL |
 | Gate | Design, Handoff, Release |
-| Applies to | Standard, Strict (when `Spec depth: full`) |
-| Artifacts | `DESIGN/DATA-FLOW.md` |
+| Applies to | Strict (when `Spec depth: full`) |
+| Artifacts | `DESIGN/DATA-FLOW.md`, `PROJECT.md` |
 
 ## What this rule checks
 
-In `DESIGN/DATA-FLOW.md`:
-Every `Spec Element Ref` in the `End-to-End Journeys` table must resolve to a declared `REQ-###` in `PROJECT.md` or a declared `Operation ID` in `DESIGN/BUILD-SPEC.md`.
+In Strict mode under `Spec depth: full`:
+Every scoped requirement (`REQ-###`) in `PROJECT.md` must be referenced in at least one journey step's `Spec Element Ref` in `DESIGN/DATA-FLOW.md` `## End-to-End Journeys`.
 
 ## Why it blocks
 
-Unresolvable journey step references decouple user workflows from governing scope requirements.
+Strict governance requires every functional requirement to be validated through a concrete end-to-end user or system journey.
 
 ## How to fix
 
-Ensure all `Spec Element Ref` entries reference valid requirement IDs or API operations.
+Add or update journey steps in `DESIGN/DATA-FLOW.md` to reference all declared scoped requirements in `Spec Element Ref`.

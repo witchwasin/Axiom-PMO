@@ -64,6 +64,8 @@ export function newProject(repoRoot, projectCode, mode, executionPath, researchM
     if (specDepth === "full" && mode !== "Lite") {
         copyTemplate(join(repo, "templates/SRS.md"), join(projectDir, "DESIGN/SRS.md"));
         copyTemplate(join(repo, "templates/DATA-FLOW.md"), join(projectDir, "DESIGN/DATA-FLOW.md"));
+        copyTemplate(join(repo, "templates/DATA-DICTIONARY.md"), join(projectDir, "DESIGN/DATA-DICTIONARY.md"));
+        copyTemplate(join(repo, "templates/ERD.puml"), join(projectDir, "DESIGN/ERD.puml"));
         mkdirSync(join(projectDir, "TESTS"), { recursive: true });
         copyTemplate(join(repo, "templates/TESTS/TEST-PLAN.md"), join(projectDir, "TESTS/TEST-PLAN.md"));
         copyTemplate(join(repo, "templates/TESTS/TEST-CASES.md"), join(projectDir, "TESTS/TEST-CASES.md"));

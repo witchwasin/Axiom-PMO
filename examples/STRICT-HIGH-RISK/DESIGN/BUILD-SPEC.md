@@ -124,6 +124,9 @@ Status: specified
 
 | Data Element | Contains Sensitive Data | Classification Decision | Retention Decision |
 |---|---|---|---|
+| ExportRequest.requester_id | yes | DEC-002 | DEC-002 |
+| ExportRequest.approver_id | yes | DEC-002 | DEC-002 |
+| AuditLog.actor_id | yes | DEC-002 | DEC-002 |
 | User Identity and Email | yes | DEC-002 | DEC-002 |
 | Ticket Audit Stream | no | not applicable | retained with the record |
 

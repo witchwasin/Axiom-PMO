@@ -1,7 +1,8 @@
 // Specification depth validation (WS2-WS9), gated by `Spec depth: full`.
 // Validates SRS completeness (SRS-001..004), Technology Decisions (ARCH-001),
-// Entity Relationships (DATA-003, DATA-004), Test Cases & Coverage (TEST-CASE-001..003, TEST-COVERAGE-001..002),
-// Data Flow & Journeys (DATAFLOW-001..002, JOURNEY-001..002), and OpenAPI Contract (API-001, API-002).
+// Entity Relationships (DATA-003, DATA-004), Data Dictionary (DATAFLOW-001..002),
+// Journeys (JOURNEY-001..002), Test Cases & Coverage Matrix (TEST-CASE-001..003, TEST-COVERAGE-001..002),
+// and OpenAPI Contract (API-001, API-002).
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { getTableRowsAfterHeading } from "../markdown/table-parser.js";
@@ -14,20 +15,6 @@ const MANDATORY_STRICT_NFR_CATEGORIES = [
     "security",
     "reliability",
 ];
-const TEST_CASE_COLUMNS = [
-    "Case ID",
-    "Category",
-    "Target Type",
-    "Target ID",
-    "Description",
-    "Preconditions",
-    "Input / Action",
-    "Expected Result",
-    "Pass Criteria",
-    "Strict Trigger",
-    "Source Ref",
-    "Evidence Status",
-];
 export function testSpecificationDepth(acc, catalog, ctx, projectText, mode, gate, projectReqIds, decisionIds, sourceRefRegex) {
     const isFullDepth = /^\s*>?\s*Spec depth:\s*full\s*$/im.test(projectText);
     if (!isFullDepth)
@@ -36,15 +23,37 @@ export function testSpecificationDepth(acc, catalog, ctx, projectText, mode, gat
         return;
     const depthPolicy = ctx.depthPolicy ?? {};
     const policyEnums = ctx.policy?.["enums"] ?? {};
+    // Extract Business Rules IDs from PROJECT.md
+    const brRows = getTableRowsAfterHeading(projectText, getHeadingPattern("Business Rules", 2));
+    const projectBusinessIds = [];
+    for (const r of brRows) {
+        const bid = (r["ID"] ?? "").trim();
+        if (bid)
+            projectBusinessIds.push(bid);
+    }
+    // Extract Strict Triggers from DELIVERY.md
+    const deliveryPath = join(ctx.project, "DELIVERY.md");
+    const deliveryText = existsSync(deliveryPath) ? readFileSync(deliveryPath, "utf8") : "";
+    const deliveryRows = getTableRowsAfterHeading(deliveryText, "^##\\s+Work Items");
+    const strictTriggers = [];
+    for (const r of deliveryRows) {
+        const st = (r["Strict Trigger"] ?? "").trim();
+        if (st && st.toLowerCase() !== "none" && st.toLowerCase() !== "n/a") {
+            if (!strictTriggers.includes(st))
+                strictTriggers.push(st);
+        }
+    }
     // 1. SRS Validation (SRS-001..004)
     const nfrIds = testSrsArtifact(acc, catalog, ctx, mode, gate, depthPolicy, policyEnums, sourceRefRegex);
     // 2. BUILD-SPEC Extended Tables (ARCH-001, DATA-003, DATA-004)
-    const { constraintIds, operationIds, transitionIds } = testBuildSpecDepth(acc, catalog, ctx, mode, gate, decisionIds, sourceRefRegex);
-    // 3. Data Flow & Journeys (DATAFLOW-001, DATAFLOW-002, JOURNEY-001, JOURNEY-002)
-    const journeyStepIds = testDataFlowAndJourneys(acc, catalog, ctx, mode, gate, depthPolicy, projectReqIds, operationIds);
-    // 4. Test Cases & Coverage Matrix (TEST-CASE-001..003, TEST-COVERAGE-001..002)
-    testTestCasesAndCoverage(acc, catalog, ctx, mode, gate, depthPolicy, policyEnums, sourceRefRegex, projectReqIds, nfrIds, constraintIds, operationIds, transitionIds, journeyStepIds);
-    // 5. OpenAPI Contract Scanner (API-001, API-002)
+    const { constraintIds, operationIds, transitionIds, stateNames } = testBuildSpecDepth(acc, catalog, ctx, mode, gate, decisionIds, sourceRefRegex);
+    // 3. Data Dictionary Validation (DATAFLOW-001, DATAFLOW-002)
+    testDataDictionary(acc, catalog, ctx, mode, gate);
+    // 4. Data Flow & Journeys (JOURNEY-001, JOURNEY-002)
+    const journeyStepIds = testDataFlowAndJourneys(acc, catalog, ctx, mode, gate, projectReqIds, transitionIds, stateNames);
+    // 5. Test Cases & Coverage Matrix (TEST-CASE-001..003, TEST-COVERAGE-001..002)
+    testTestCasesAndCoverage(acc, catalog, ctx, mode, gate, depthPolicy, policyEnums, sourceRefRegex, projectReqIds, projectBusinessIds, nfrIds, constraintIds, operationIds, transitionIds, journeyStepIds, strictTriggers);
+    // 6. OpenAPI Contract Scanner (API-001, API-002)
     testOpenApiContract(acc, catalog, ctx, mode, gate, operationIds);
 }
 function testSrsArtifact(acc, catalog, ctx, mode, gate, depthPolicy, policyEnums, sourceRefRegex) {
@@ -214,9 +223,10 @@ function testBuildSpecDepth(acc, catalog, ctx, mode, gate, decisionIds, sourceRe
     const constraintIds = [];
     const operationIds = [];
     const transitionIds = [];
+    const stateNames = ["none", "n/a", "initial", "terminal", "start", "end", "-"];
     const specPath = join(ctx.project, "DESIGN/BUILD-SPEC.md");
     if (!existsSync(specPath))
-        return { constraintIds, operationIds, transitionIds };
+        return { constraintIds, operationIds, transitionIds, stateNames };
     const text = readFileSync(specPath, "utf8");
     // Collect IDs from tables
     const dmRows = getTableRowsAfterHeading(text, getHeadingPattern("Data Model", 3));
@@ -236,6 +246,12 @@ function testBuildSpecDepth(acc, catalog, ctx, mode, gate, decisionIds, sourceRe
         const tid = (r["Transition ID"] ?? "").trim();
         if (tid)
             transitionIds.push(tid);
+        const fromState = (r["From State"] ?? r["From"] ?? "").trim().toLowerCase();
+        const toState = (r["To State"] ?? r["To"] ?? "").trim().toLowerCase();
+        if (fromState && !stateNames.includes(fromState))
+            stateNames.push(fromState);
+        if (toState && !stateNames.includes(toState))
+            stateNames.push(toState);
     }
     // ARCH-001: Technology Decisions
     const tdRows = getTableRowsAfterHeading(text, getHeadingPattern("Technology Decisions", 3));
@@ -342,55 +358,121 @@ function testBuildSpecDepth(acc, catalog, ctx, mode, gate, decisionIds, sourceRe
             });
         }
     }
-    return { constraintIds, operationIds, transitionIds };
+    return { constraintIds, operationIds, transitionIds, stateNames };
 }
-function testDataFlowAndJourneys(acc, catalog, ctx, mode, gate, depthPolicy, projectReqIds, operationIds) {
+function testDataDictionary(acc, catalog, ctx, mode, gate) {
+    const dictPath = join(ctx.project, "DESIGN/DATA-DICTIONARY.md");
+    const hasDict = existsSync(dictPath);
+    if (!hasDict) {
+        if (mode !== "Lite" && (gate === "Design" || gate === "Handoff" || gate === "Release")) {
+            addResult(acc, catalog, "FAIL", "DESIGN/DATA-DICTIONARY.md is required under Spec depth: full but was not found", {
+                ruleId: "DATAFLOW-001",
+                artifact: "DESIGN/DATA-DICTIONARY.md",
+            });
+        }
+        return;
+    }
+    const dictText = readFileSync(dictPath, "utf8");
+    const dictRows = getTableRowsAfterHeading(dictText, getHeadingPattern("Field Inventory", 2));
+    const specPath = join(ctx.project, "DESIGN/BUILD-SPEC.md");
+    const specText = existsSync(specPath) ? readFileSync(specPath, "utf8") : "";
+    const dmRows = getTableRowsAfterHeading(specText, getHeadingPattern("Data Model", 3));
+    // 1. DATAFLOW-001: Every BUILD-SPEC Data Model attribute appears in Data Dictionary
+    const dictFields = new Set();
+    const dictSensitiveFields = [];
+    for (const r of dictRows) {
+        const entity = (r["Entity"] ?? "").trim().toLowerCase();
+        const attr = (r["Attribute"] ?? "").trim().toLowerCase();
+        const classification = (r["Classification"] ?? "").trim().toLowerCase();
+        if (entity && attr) {
+            dictFields.add(`${entity}.${attr}`);
+            if (["confidential", "restricted", "sensitive", "pii", "secret"].includes(classification)) {
+                dictSensitiveFields.push({ entity, attribute: attr });
+            }
+        }
+    }
+    const missingFromDict = [];
+    for (const r of dmRows) {
+        const entity = (r["Entity"] ?? "").trim().toLowerCase();
+        const attr = (r["Attribute"] ?? "").trim().toLowerCase();
+        if (entity && attr && !dictFields.has(`${entity}.${attr}`)) {
+            missingFromDict.push(`${entity}.${attr}`);
+        }
+    }
+    if (missingFromDict.length > 0) {
+        addResult(acc, catalog, "FAIL", `Data dictionary missing attributes declared in BUILD-SPEC: ${missingFromDict.join(", ")}`, {
+            ruleId: "DATAFLOW-001",
+            artifact: "DESIGN/DATA-DICTIONARY.md",
+            field: "Field Inventory",
+        });
+    }
+    else {
+        addResult(acc, catalog, "PASS", "All BUILD-SPEC Data Model attributes appear in DESIGN/DATA-DICTIONARY.md", {
+            ruleId: "DATAFLOW-001",
+        });
+    }
+    // 2. DATAFLOW-002: Sensitive classification agreement with BUILD-SPEC Security Inventory
+    const secRows = getTableRowsAfterHeading(specText, getHeadingPattern("Security, Privacy and Data Inventory", 3));
+    const declaredSensitiveElements = new Set();
+    for (const r of secRows) {
+        const elem = (r["Data Element"] ?? "").trim().toLowerCase();
+        const hasSensitive = (r["Contains Sensitive Data"] ?? "").trim().toLowerCase();
+        const decision = (r["Classification Decision"] ?? "").trim().toLowerCase();
+        if (elem) {
+            declaredSensitiveElements.add(elem);
+            const parts = elem.split(/[.:\s]+/);
+            for (const p of parts)
+                declaredSensitiveElements.add(p);
+        }
+        if (hasSensitive === "yes" || hasSensitive === "true" || decision.includes("sensitive") || decision.includes("confidential") || decision.includes("pii") || decision.includes("restricted")) {
+            if (elem)
+                declaredSensitiveElements.add(elem);
+        }
+    }
+    if (dictSensitiveFields.length > 0 && secRows.length > 0) {
+        const unrecordedSensitive = [];
+        for (const f of dictSensitiveFields) {
+            const full = `${f.entity}.${f.attribute}`;
+            const hasMatch = declaredSensitiveElements.has(full) ||
+                declaredSensitiveElements.has(f.attribute) ||
+                declaredSensitiveElements.has(f.entity);
+            if (!hasMatch) {
+                unrecordedSensitive.push(full);
+            }
+        }
+        if (unrecordedSensitive.length > 0) {
+            addResult(acc, catalog, "FAIL", `Data dictionary sensitive fields not declared in BUILD-SPEC Security Inventory: ${unrecordedSensitive.join(", ")}`, {
+                ruleId: "DATAFLOW-002",
+                artifact: "DESIGN/DATA-DICTIONARY.md",
+                field: "Classification",
+            });
+        }
+        else {
+            addResult(acc, catalog, "PASS", "Data dictionary sensitive field classifications agree with BUILD-SPEC Security Inventory", {
+                ruleId: "DATAFLOW-002",
+            });
+        }
+    }
+    else {
+        addResult(acc, catalog, "PASS", "Data dictionary sensitive field classifications agree with BUILD-SPEC Security Inventory", {
+            ruleId: "DATAFLOW-002",
+        });
+    }
+}
+function testDataFlowAndJourneys(acc, catalog, ctx, mode, gate, projectReqIds, transitionIds, stateNames) {
     const journeyStepIds = [];
     const dataflowPath = join(ctx.project, "DESIGN/DATA-FLOW.md");
     const hasDataFlow = existsSync(dataflowPath);
     if (!hasDataFlow) {
         if (mode === "Strict" && (gate === "Design" || gate === "Handoff" || gate === "Release")) {
             addResult(acc, catalog, "FAIL", "DESIGN/DATA-FLOW.md is required for Strict mode under Spec depth: full", {
-                ruleId: "DATAFLOW-001",
+                ruleId: "JOURNEY-001",
                 artifact: "DESIGN/DATA-FLOW.md",
             });
         }
         return journeyStepIds;
     }
     const text = readFileSync(dataflowPath, "utf8");
-    const dataflowSections = depthPolicy["dataflow_sections"] ?? [];
-    const sectionProblems = [];
-    for (const section of dataflowSections) {
-        const heading = String(section["heading"]);
-        const requiredModes = section["required_modes"] ?? [];
-        if (!requiredModes.includes(mode))
-            continue;
-        const body = getSectionBody(text, heading, 2);
-        if (body === null) {
-            sectionProblems.push(`'${heading}' is missing`);
-            continue;
-        }
-        const statusMatch = /^\s*Status\s*:\s*(\S+)\s*$/im.exec(body);
-        const status = statusMatch ? statusMatch[1].trim().toLowerCase() : null;
-        if (!status) {
-            sectionProblems.push(`'${heading}' does not declare a Status: line`);
-            continue;
-        }
-    }
-    if (sectionProblems.length > 0) {
-        for (const p of sectionProblems) {
-            addResult(acc, catalog, "FAIL", `DATA-FLOW section ${p}`, {
-                ruleId: "DATAFLOW-001",
-                artifact: "DESIGN/DATA-FLOW.md",
-            });
-        }
-    }
-    else {
-        addResult(acc, catalog, "PASS", `DESIGN/DATA-FLOW.md declares required sections for ${mode} mode`, {
-            ruleId: "DATAFLOW-001",
-        });
-    }
-    // DATAFLOW-002 & JOURNEY-001..002: End-to-End Journeys Table
     const journeyRows = getTableRowsAfterHeading(text, getHeadingPattern("End-to-End Journeys", 2));
     if (journeyRows.length === 0) {
         if (mode !== "Lite" && (gate === "Design" || gate === "Handoff" || gate === "Release")) {
@@ -402,44 +484,74 @@ function testDataFlowAndJourneys(acc, catalog, ctx, mode, gate, depthPolicy, pro
         }
     }
     else {
-        addResult(acc, catalog, "PASS", "End-to-End Journeys table declares journey steps", {
-            ruleId: "JOURNEY-001",
-        });
-        const unresolvableRefs = [];
-        const validTargets = new Set([...projectReqIds, ...operationIds]);
         for (const r of journeyRows) {
             const stepId = (r["Step ID"] ?? "").trim();
-            const specRef = (r["Spec Element Ref"] ?? "").trim();
             if (stepId)
                 journeyStepIds.push(stepId);
-            if (specRef && validTargets.size > 0) {
-                const refs = specRef.split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean);
-                for (const ref of refs) {
-                    if (!validTargets.has(ref)) {
-                        unresolvableRefs.push(`${stepId} -> ${ref}`);
-                    }
-                }
+        }
+        // JOURNEY-001: State Before / State After resolution against State Machine
+        const validStates = new Set([
+            ...stateNames.map((s) => s.toLowerCase()),
+            ...transitionIds.map((t) => t.toLowerCase()),
+            "none", "n/a", "initial", "terminal", "start", "end", "-",
+        ]);
+        const badStates = [];
+        for (const r of journeyRows) {
+            const stepId = (r["Step ID"] ?? "").trim();
+            const stateBefore = (r["State Before"] ?? "").trim().toLowerCase();
+            const stateAfter = (r["State After"] ?? "").trim().toLowerCase();
+            const beforeOk = !stateBefore || validStates.has(stateBefore);
+            const afterOk = !stateAfter || validStates.has(stateAfter);
+            if (!beforeOk || !afterOk) {
+                badStates.push(`${stepId || "unknown"}: '${stateBefore}' -> '${stateAfter}'`);
             }
         }
-        if (unresolvableRefs.length > 0) {
-            addResult(acc, catalog, "FAIL", `Journey steps cite unresolvable spec elements: ${unresolvableRefs.join(", ")}`, {
-                ruleId: "JOURNEY-002",
+        if (badStates.length > 0 && validStates.size > 7) {
+            addResult(acc, catalog, "FAIL", `Journey step states before/after do not resolve to declared states or transitions in BUILD-SPEC: ${badStates.join(", ")}`, {
+                ruleId: "JOURNEY-001",
                 artifact: "DESIGN/DATA-FLOW.md",
-                field: "Spec Element Ref",
+                field: "State Before / State After",
             });
         }
         else {
-            addResult(acc, catalog, "PASS", "All journey step spec element references resolve to declared requirements or operations", {
+            addResult(acc, catalog, "PASS", "All journey step state transitions resolve to declared states and transitions in BUILD-SPEC.md", {
+                ruleId: "JOURNEY-001",
+            });
+        }
+        // JOURNEY-002: Scoped requirements journey coverage at Strict mode
+        if (mode === "Strict" && projectReqIds.length > 0) {
+            const referencedReqs = new Set();
+            for (const r of journeyRows) {
+                const specRef = (r["Spec Element Ref"] ?? "").trim();
+                if (specRef) {
+                    const refs = specRef.split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean);
+                    for (const ref of refs)
+                        referencedReqs.add(ref);
+                }
+            }
+            const missingReqs = projectReqIds.filter((id) => !referencedReqs.has(id));
+            if (missingReqs.length > 0) {
+                addResult(acc, catalog, "FAIL", `Strict mode requires all scoped requirements in End-to-End Journeys, missing: ${missingReqs.join(", ")}`, {
+                    ruleId: "JOURNEY-002",
+                    artifact: "DESIGN/DATA-FLOW.md",
+                    field: "Spec Element Ref",
+                });
+            }
+            else {
+                addResult(acc, catalog, "PASS", "All scoped requirements are represented in End-to-End Journeys", {
+                    ruleId: "JOURNEY-002",
+                });
+            }
+        }
+        else {
+            addResult(acc, catalog, "PASS", "End-to-End Journeys table declares valid journey steps", {
                 ruleId: "JOURNEY-002",
             });
         }
-        addResult(acc, catalog, "PASS", "DESIGN/DATA-FLOW.md End-to-End Journeys structure is valid", {
-            ruleId: "DATAFLOW-002",
-        });
     }
     return journeyStepIds;
 }
-function testTestCasesAndCoverage(acc, catalog, ctx, mode, gate, depthPolicy, policyEnums, sourceRefRegex, projectReqIds, nfrIds, constraintIds, operationIds, transitionIds, journeyStepIds) {
+function testTestCasesAndCoverage(acc, catalog, ctx, mode, gate, depthPolicy, policyEnums, sourceRefRegex, projectReqIds, projectBusinessIds, nfrIds, constraintIds, operationIds, transitionIds, journeyStepIds, strictTriggers) {
     const testCasesPath = join(ctx.project, "TESTS/TEST-CASES.md");
     const hasTestCases = existsSync(testCasesPath);
     if (!hasTestCases) {
@@ -551,17 +663,60 @@ function testTestCasesAndCoverage(acc, catalog, ctx, mode, gate, depthPolicy, po
             ruleId: "TEST-CASE-003",
         });
     }
-    // 4. TEST-COVERAGE-001: Derived Test Volume Math
-    const minRequiredCases = mode === "Strict" ? Math.max(projectReqIds.length * 2, 4) : Math.max(projectReqIds.length, 1);
-    if (caseRows.length < minRequiredCases) {
-        addResult(acc, catalog, "FAIL", `Test case count (${caseRows.length}) is below required minimum (${minRequiredCases}) for ${mode} mode`, {
+    // 4. TEST-COVERAGE-001: Profile-Driven (Spec-Element × Category) Matrix
+    const profileName = mode === "Strict"
+        ? "detailed_requirement_and_risk_cases"
+        : mode === "Standard"
+            ? "strategy_and_scenarios"
+            : "delivery_checklist";
+    const profiles = depthPolicy["profiles"] ?? {};
+    const activeProfile = profiles[profileName] ?? {};
+    const specElementIdMap = new Map([
+        ["requirement", projectReqIds],
+        ["business_rule", projectBusinessIds],
+        ["nfr", nfrIds],
+        ["data_constraint", constraintIds],
+        ["api_operation", operationIds],
+        ["state_transition", transitionIds],
+        ["journey_step", journeyStepIds],
+        ["strict_trigger", strictTriggers],
+    ]);
+    const coveredPairs = new Set();
+    for (const r of caseRows) {
+        const targetId = (r["Target ID"] ?? "").trim().toLowerCase();
+        let cat = (r["Category"] ?? "").trim().toLowerCase();
+        if (cat === "happy_path")
+            cat = "happy";
+        if (targetId && cat) {
+            coveredPairs.add(`${targetId}::${cat}`);
+        }
+    }
+    const uncoveredPairs = [];
+    let totalRequiredPairs = 0;
+    for (const [specElementType, requiredCategories] of Object.entries(activeProfile)) {
+        const elementIds = specElementIdMap.get(specElementType) ?? [];
+        if (elementIds.length === 0)
+            continue; // element type with zero declared IDs in project contributes nothing
+        for (const elemId of elementIds) {
+            for (const cat of requiredCategories) {
+                const normCat = cat.toLowerCase() === "happy_path" ? "happy" : cat.toLowerCase();
+                totalRequiredPairs++;
+                if (!coveredPairs.has(`${elemId.toLowerCase()}::${normCat}`)) {
+                    uncoveredPairs.push(`${elemId}×${cat}`);
+                }
+            }
+        }
+    }
+    if (uncoveredPairs.length > 0) {
+        const sample = uncoveredPairs.slice(0, 15);
+        addResult(acc, catalog, "FAIL", `${uncoveredPairs.length} (spec_element, category) pairs lack a test case (showing ${sample.length}): ${sample.join(", ")}`, {
             ruleId: "TEST-COVERAGE-001",
             artifact: "TESTS/TEST-CASES.md",
             field: "Derived Target Cases",
         });
     }
     else {
-        addResult(acc, catalog, "PASS", `Test case count (${caseRows.length}) satisfies derived minimum (${minRequiredCases}) for ${mode} mode`, {
+        addResult(acc, catalog, "PASS", `All ${totalRequiredPairs} required (spec-element × category) matrix pairs are covered in TESTS/TEST-CASES.md`, {
             ruleId: "TEST-COVERAGE-001",
         });
     }

@@ -236,8 +236,30 @@ function fillProjectContent(project: string, mode: "Lite" | "Standard" | "Strict
   const dfFile = join(project, "DESIGN/DATA-FLOW.md");
   if (existsSync(dfFile)) {
     let df = readFileSync(dfFile, "utf8");
+    const dfHeader = "| Step ID | Journey | Actor | Trigger | Data In | System Action | Data Out | State Before | State After | Observable Result | Spec Element Ref |\n|---|---|---|---|---|---|---|---|---|---|---|";
+    const dfRows = `| STEP-001 | Record Lifecycle | User | Create record | count | Insert record | id | draft | active | Record active | REQ-001, createRecord |`;
+    df = rep(df, "\\| Step ID \\| Journey \\| [\\s\\S]*", `${dfHeader}\n${dfRows}\n`);
     df = rep(df, "<[^>\\r\\n]+>", "Specified deterministically by the E2E fixture.");
     psWrite(dfFile, df);
+  }
+
+  // --- DESIGN/DATA-DICTIONARY.md ---
+  const ddFile = join(project, "DESIGN/DATA-DICTIONARY.md");
+  if (existsSync(ddFile)) {
+    let dd = readFileSync(ddFile, "utf8");
+    const ddHeader = "| Field ID | Entity | Attribute | Type | Unit | Allowed Values | Classification | Source of Record | Enters At | Leaves At | Transformation | Retention | Masking | Source Ref |\n|---|---|---|---|---|---|---|---|---|---|---|---|---|---|";
+    const ddRows = `| FD-001 | Record | count | integer | items | 1..100 | internal | Database | API | Response | none | 30 days | none | ${momId} item-1 |`;
+    dd = rep(dd, "\\| Field ID \\| Entity \\| [\\s\\S]*", `${ddHeader}\n${ddRows}\n`);
+    dd = rep(dd, "<[^>\\r\\n]+>", "Specified deterministically by the E2E fixture.");
+    psWrite(ddFile, dd);
+  }
+
+  // --- DESIGN/ERD.puml ---
+  const erdFile = join(project, "DESIGN/ERD.puml");
+  if (existsSync(erdFile)) {
+    let erd = readFileSync(erdFile, "utf8");
+    erd = rep(erd, "<[^>\\r\\n]+>", "E2E");
+    psWrite(erdFile, erd);
   }
 
   // --- TESTS/TEST-PLAN.md ---
@@ -255,13 +277,33 @@ function fillProjectContent(project: string, mode: "Lite" | "Standard" | "Strict
     let tc = readFileSync(tcFile, "utf8");
     tc = rep(tc, "<MOM-YYYYMMDD item-1>", `${momId} item-1`);
     tc = rep(tc, "MOM-20260710 item-1", `${momId} item-1`);
-    tc = rep(tc, "<COUNT>", "4");
+    tc = rep(tc, "<COUNT>", "20");
     const tableHeader = "| Case ID | Category | Target Type | Target ID | Description | Preconditions | Input / Action | Expected Result | Pass Criteria | Strict Trigger | Source Ref | Evidence Status |\n|---|---|---|---|---|---|---|---|---|---|---|---|";
     const tableRows = [
-      `| TC-001 | happy_path | requirement | REQ-001 | E2E happy path test | Given valid state | Run test | Expected result observed | HTTP 200 and verified | none | ${momId} item-1 | supported |`,
+      `| TC-001 | happy | requirement | REQ-001 | E2E happy path test | Given valid state | Run test | Expected result observed | HTTP 200 and verified | none | ${momId} item-1 | supported |`,
       `| TC-002 | negative | requirement | REQ-001 | E2E negative test | Given invalid input | Run test | Expected error handled | HTTP 400 and error returned | none | ${momId} item-1 | supported |`,
       `| TC-003 | boundary | requirement | REQ-001 | E2E boundary test | Given boundary edge | Run test | Boundary handled | Edge case handled | none | ${momId} item-1 | supported |`,
       `| TC-004 | security | requirement | REQ-001 | E2E security test | Given unauthorized user | Run test | Access denied | HTTP 403 returned | none | ${momId} item-1 | supported |`,
+      `| TC-005 | happy | api_operation | API-001 | E2E API happy test | Given valid payload | POST API | Record created | HTTP 201 | none | ${momId} item-1 | supported |`,
+      `| TC-006 | negative | api_operation | API-001 | E2E API negative test | Given invalid payload | POST API | Error returned | HTTP 400 | none | ${momId} item-1 | supported |`,
+      `| TC-007 | security | api_operation | API-001 | E2E API security test | Given unauthenticated | POST API | Auth denied | HTTP 401 | none | ${momId} item-1 | supported |`,
+      `| TC-008 | happy | state_transition | TR-001 | E2E transition happy | State draft | Transition | State active | State updated | none | ${momId} item-1 | supported |`,
+      `| TC-009 | negative | state_transition | TR-001 | E2E transition negative | State active | Transition | Blocked | Transition rejected | none | ${momId} item-1 | supported |`,
+      `| TC-010 | recovery | state_transition | TR-001 | E2E transition recovery | Fault injected | Transition | State draft | Clean rollback | none | ${momId} item-1 | supported |`,
+      `| TC-011 | happy | data_constraint | DC-001 | E2E constraint happy | Count 10 | Insert | Success | Record saved | none | ${momId} item-1 | supported |`,
+      `| TC-012 | negative | data_constraint | DC-001 | E2E constraint negative | Count -1 | Insert | Blocked | Validation error | none | ${momId} item-1 | supported |`,
+      `| TC-013 | happy | nfr | NFR-001 | E2E NFR 1 happy | Load 10 RPS | Test | Target met | p99 < 100ms | none | ${momId} item-1 | supported |`,
+      `| TC-014 | boundary | nfr | NFR-001 | E2E NFR 1 boundary | Peak load | Test | Target met | Latency within limit | none | ${momId} item-1 | supported |`,
+      `| TC-015 | happy | nfr | NFR-002 | E2E NFR 2 happy | Auth test | Test | Auth enforced | Zero breach | none | ${momId} item-1 | supported |`,
+      `| TC-016 | boundary | nfr | NFR-002 | E2E NFR 2 boundary | Expired token | Test | Access denied | Immediate 401 | none | ${momId} item-1 | supported |`,
+      `| TC-017 | happy | nfr | NFR-003 | E2E NFR 3 happy | Uptime test | Test | Target met | 99.9% uptime | none | ${momId} item-1 | supported |`,
+      `| TC-018 | boundary | nfr | NFR-003 | E2E NFR 3 boundary | Node failover | Test | Target met | Recovery verified | none | ${momId} item-1 | supported |`,
+      `| TC-019 | happy | journey_step | STEP-001 | E2E journey happy | User logged in | Run journey | Observable result | Journey complete | none | ${momId} item-1 | supported |`,
+      `| TC-020 | security | strict_trigger | permission | E2E strict security | Cross tenant | Request | Access denied | 403 Forbidden | none | ${momId} item-1 | supported |`,
+      `| TC-021 | negative | strict_trigger | permission | E2E strict negative | Revoked perm | Request | Access denied | 403 Forbidden | none | ${momId} item-1 | supported |`,
+      `| TC-022 | happy | business_rule | BR-001 | E2E BR happy test | Given valid condition | Apply rule | Rule satisfied | Verification passed | none | ${momId} item-1 | supported |`,
+      `| TC-023 | negative | business_rule | BR-001 | E2E BR negative test | Given invalid condition | Apply rule | Rule blocks | Verification error | none | ${momId} item-1 | supported |`,
+      `| TC-024 | boundary | business_rule | BR-001 | E2E BR boundary test | Given boundary condition | Apply rule | Edge handled | Boundary verified | none | ${momId} item-1 | supported |`,
     ].join("\n");
     tc = rep(tc, "\\| Case ID \\| Category \\| Target Type [\\s\\S]*", `${tableHeader}\n${tableRows}\n`);
     tc = rep(tc, "<[^>\\r\\n]+>", "Specified deterministically by the E2E fixture.");

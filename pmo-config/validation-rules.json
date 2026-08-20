@@ -835,8 +835,8 @@
     },
     "TEST-COVERAGE-001": {
       "severity": "fail",
-      "description": "Test case count is below derived mathematical minimum for the mode.",
-      "suggestion": "Add test cases covering positive, negative, boundary, and security dimensions to satisfy the mode's coverage requirements.",
+      "description": "Test cases do not cover all required (spec-element × category) matrix pairs defined in depth policy.",
+      "suggestion": "Add test cases covering positive, negative, boundary, security, or recovery dimensions for every declared spec element.",
       "documentation": "docs/rules/TEST-COVERAGE-001.md"
     },
     "TEST-COVERAGE-002": {
@@ -847,26 +847,26 @@
     },
     "DATAFLOW-001": {
       "severity": "fail",
-      "description": "DESIGN/DATA-FLOW.md is missing or does not declare required sections.",
-      "suggestion": "Create DESIGN/DATA-FLOW.md from templates/DATA-FLOW.md and declare System Context and End-to-End Journeys.",
+      "description": "Data dictionary is missing or does not include all Data Model attributes declared in BUILD-SPEC.",
+      "suggestion": "Ensure every (Entity, Attribute) in BUILD-SPEC.md Data Model appears in DESIGN/DATA-DICTIONARY.md.",
       "documentation": "docs/rules/DATAFLOW-001.md"
     },
     "DATAFLOW-002": {
       "severity": "fail",
-      "description": "DESIGN/DATA-FLOW.md End-to-End Journeys table columns do not match policy.",
-      "suggestion": "Format the End-to-End Journeys table with the standard columns defined in depth-policy.json.",
+      "description": "Data dictionary sensitive field classifications disagree with BUILD-SPEC Security Inventory.",
+      "suggestion": "Ensure sensitive fields in DESIGN/DATA-DICTIONARY.md are declared in the Security, Privacy and Data Inventory in BUILD-SPEC.md.",
       "documentation": "docs/rules/DATAFLOW-002.md"
     },
     "JOURNEY-001": {
       "severity": "fail",
-      "description": "End-to-End Journeys table in DESIGN/DATA-FLOW.md has no journey steps.",
-      "suggestion": "Declare at least one end-to-end journey step with actor, trigger, action, and observable result.",
+      "description": "Journey step State Before or State After does not resolve to a declared Transition ID or state in BUILD-SPEC.",
+      "suggestion": "Ensure State Before and State After in DESIGN/DATA-FLOW.md resolve to valid states or transitions declared in BUILD-SPEC.md.",
       "documentation": "docs/rules/JOURNEY-001.md"
     },
     "JOURNEY-002": {
       "severity": "fail",
-      "description": "Journey step cites an unresolvable spec element reference.",
-      "suggestion": "Point Spec Element Ref in the journey step table to a declared REQ-### or Operation ID.",
+      "description": "Strict mode requires every scoped requirement to appear in at least one End-to-End Journey.",
+      "suggestion": "Add journey steps referencing each scoped REQ-### in the Spec Element Ref column of DESIGN/DATA-FLOW.md.",
       "documentation": "docs/rules/JOURNEY-002.md"
     },
     "API-001": {

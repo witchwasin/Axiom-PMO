@@ -233,6 +233,31 @@ console.log("");
     const absolute = runCli(["validate", "--project", join(REPO_ROOT, "examples/LITE-BUGFIX"), "--mode", "Lite", "--gate", "Scope"]);
     assert("an absolute --project path resolves", absolute.status === 0, `exit=${absolute.status}`);
   }
+
+  {
+    const sandbox = mkdtempSync(join(tmpdir(), "axiom-cli-init-"));
+    try {
+      const initRes = runCli([
+        "init",
+        "--code", "P-CLITEST",
+        "--mode", "Standard",
+        "--execution-path", "development_handoff",
+        "--research-mode", "off",
+        "--research-depth", "standard",
+        "--research-provider", "none",
+        "--ui-delivery", "not_applicable",
+        "--no-interactive",
+        "--output", sandbox,
+      ]);
+      assert("axiom init with no spec-depth flag defaults to full", initRes.status === 0, `exit=${initRes.status}`);
+      const projPath = join(sandbox, "P-CLITEST/PROJECT.md");
+      assert("generated PROJECT.md declares Spec depth: full",
+        existsSync(projPath) && /^\s*>?\s*Spec depth:\s*full\s*$/im.test(readFileSync(projPath, "utf8")),
+        existsSync(projPath) ? readFileSync(projPath, "utf8").slice(0, 300) : "no PROJECT.md");
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
+  }
 }
 
 console.log("");

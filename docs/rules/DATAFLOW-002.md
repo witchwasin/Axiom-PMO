@@ -1,22 +1,21 @@
-# DATAFLOW-002 - Data flow table column structure
+# DATAFLOW-002 - Data Dictionary sensitive classification agreement
 
 | | |
 |---|---|
 | Level | FAIL |
 | Gate | Design, Handoff, Release |
 | Applies to | Standard, Strict (when `Spec depth: full`) |
-| Artifacts | `DESIGN/DATA-FLOW.md` |
+| Artifacts | `DESIGN/DATA-DICTIONARY.md`, `DESIGN/BUILD-SPEC.md` |
 
 ## What this rule checks
 
-In `DESIGN/DATA-FLOW.md`:
-The table columns in `## End-to-End Journeys` must match the declared schema:
-`Step ID`, `Journey`, `Actor`, `Trigger`, `Data In`, `System Action`, `Data Out`, `State Before`, `State After`, `Observable Result`, `Spec Element Ref`.
+In `DESIGN/DATA-DICTIONARY.md`:
+Any field classified as sensitive (`confidential`, `restricted`, `sensitive`, `pii`, or `secret`) must agree with and be declared in `DESIGN/BUILD-SPEC.md` under `### Security, Privacy and Data Inventory`.
 
 ## Why it blocks
 
-Inconsistent column formatting disrupts journey traceability across test case matrices and state models.
+Discrepancies between field-level classifications and project-level privacy/security commitments lead to unmanaged compliance and data leakage risks.
 
 ## How to fix
 
-Format the table headers in `DESIGN/DATA-FLOW.md` to match `templates/DATA-FLOW.md`.
+Ensure all sensitive fields identified in `DESIGN/DATA-DICTIONARY.md` are documented in the Security, Privacy and Data Inventory table in `DESIGN/BUILD-SPEC.md`.

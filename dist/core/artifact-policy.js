@@ -99,12 +99,12 @@ export function testRequiredArtifacts(acc, catalog, project, mode, gate, artifac
         matrixRequired.push(...modeMatrix[gate]);
     }
     const deliveryOptionalViaGithub = taskSourceIsGithub && matrixRequired.includes("DELIVERY.md");
-    const allTrackedArtifacts = ["DELIVERY.md", "RELEASE.md", "RAID-log.md", "decision-log.md", "DESIGN", "RTM.json", "HANDOFF.md", "DESIGN/BUILD-SPEC.md", "DESIGN/SRS.md", "DESIGN/DATA-FLOW.md", "TESTS/TEST-CASES.md"];
+    const allTrackedArtifacts = ["DELIVERY.md", "RELEASE.md", "RAID-log.md", "decision-log.md", "DESIGN", "RTM.json", "HANDOFF.md", "DESIGN/BUILD-SPEC.md", "DESIGN/SRS.md", "DESIGN/DATA-FLOW.md", "DESIGN/DATA-DICTIONARY.md", "DESIGN/ERD.puml", "TESTS/TEST-CASES.md"];
     for (const artifact of allTrackedArtifacts) {
         let requirement = matrixRequired.includes(artifact) ? "required" : "optional";
         if (artifact === "DELIVERY.md" && deliveryOptionalViaGithub)
             requirement = "optional";
-        if ((artifact === "HANDOFF.md" || artifact === "DESIGN/BUILD-SPEC.md" || artifact === "DESIGN/SRS.md" || artifact === "DESIGN/DATA-FLOW.md" || artifact === "TESTS/TEST-CASES.md") && requirement === "optional")
+        if ((artifact === "HANDOFF.md" || artifact === "DESIGN/BUILD-SPEC.md" || artifact === "DESIGN/SRS.md" || artifact === "DESIGN/DATA-FLOW.md" || artifact === "DESIGN/DATA-DICTIONARY.md" || artifact === "DESIGN/ERD.puml" || artifact === "TESTS/TEST-CASES.md") && requirement === "optional")
             continue;
         if (artifact === "DESIGN") {
             testDir(acc, catalog, project, "DESIGN", requirement);

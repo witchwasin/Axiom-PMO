@@ -1,23 +1,32 @@
-# TEST-COVERAGE-001 - Derived test case count sufficiency
+# TEST-COVERAGE-001 - Specification depth test coverage matrix
 
 | | |
 |---|---|
 | Level | FAIL |
 | Gate | Design, Handoff, Release |
-| Applies to | Standard, Strict (when `Spec depth: full`) |
-| Artifacts | `TESTS/TEST-CASES.md` |
+| Applies to | Lite, Standard, Strict (when `Spec depth: full`) |
+| Artifacts | `TESTS/TEST-CASES.md`, `pmo-config/depth-policy.json` |
 
 ## What this rule checks
 
 Under `Spec depth: full`:
-The total volume of declared test cases in `TESTS/TEST-CASES.md` must satisfy the derived mathematical minimum for the project's governance mode:
-- Standard: at least 1 test case per scoped requirement.
-- Strict: at least 2 test cases per scoped requirement (happy + negative/boundary) plus coverage across operational risk dimensions.
+Every declared specification element (`requirement`, `business_rule`, `nfr`, `data_constraint`, `api_operation`, `state_transition`, `journey_step`, `strict_trigger`) must have matching test cases covering all required categories defined in the active mode profile in `pmo-config/depth-policy.json`:
+- **Lite (`delivery_checklist`)**: `requirement × [happy]`
+- **Standard (`strategy_and_scenarios`)**: `requirement × [happy, negative]`, `business_rule × [happy, negative]`, `api_operation × [happy, negative]`, `state_transition × [happy, negative]`
+- **Strict (`detailed_requirement_and_risk_cases`)**:
+  - `requirement × [happy, negative, boundary, security]`
+  - `business_rule × [happy, negative, boundary]`
+  - `nfr × [happy, boundary]`
+  - `data_constraint × [happy, negative]`
+  - `api_operation × [happy, negative, security]`
+  - `state_transition × [happy, negative, recovery]`
+  - `journey_step × [happy]`
+  - `strict_trigger × [security, negative]`
 
 ## Why it blocks
 
-A high-risk project cannot be declared ready for engineering handoff with shallow test coverage. The test case inventory must match the complexity and risk profile of the specification.
+A high-risk project cannot be declared ready for engineering handoff with shallow test coverage. The test case matrix must cover every functional and architectural element across positive, negative, security, boundary, and recovery dimensions.
 
 ## How to fix
 
-Expand the test case inventory in `TESTS/TEST-CASES.md` to cover negative, boundary, security, and concurrency scenarios.
+Add the missing `(Target ID, Category)` test case rows to `TESTS/TEST-CASES.md`.

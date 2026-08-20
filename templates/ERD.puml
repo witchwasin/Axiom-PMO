@@ -1,0 +1,23 @@
+@startuml
+!theme plain
+hide empty methods
+
+entity "ExportRequest" as ExportRequest {
+  * request_id : uuid [PK]
+  --
+  * requester_id : text
+  * status : text
+    approver_id : text
+}
+
+entity "AuditLog" as AuditLog {
+  * audit_id : uuid [PK]
+  --
+  * request_id : uuid [FK]
+  * actor_id : text
+  * action : text
+  * timestamp : timestamp
+}
+
+ExportRequest ||..o{ AuditLog : "tracks"
+@enduml

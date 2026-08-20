@@ -693,7 +693,7 @@ async function buildInit(args) {
   let resolvedResearchDepth = researchDepth.value;
   let resolvedResearchProvider = researchProvider.value;
   let resolvedUiDelivery = uiDelivery.value;
-  let resolvedSpecDepth = specDepth.value ?? "legacy";
+  let resolvedSpecDepth = specDepth.value ?? "full";
   let strictTrigger;
   let modeReason;
   let modeApprovedBy;

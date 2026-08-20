@@ -208,9 +208,26 @@ export function testRtmTraceability(acc, catalog, project, referenceTypesConfig,
             const projText = existsSync(projPath) ? readFileSync(projPath, "utf8") : "";
             const isFullSpecDepth = /^\s*>?\s*Spec depth:\s*full\s*$/im.test(projText);
             if (isFullSpecDepth) {
+                // Condition 1: delivery_ref.Status == Done
+                const deliveryPath = join(project, "DELIVERY.md");
+                const deliveryText = existsSync(deliveryPath) ? readFileSync(deliveryPath, "utf8") : "";
+                const deliveryRows = getTableRowsAfterHeading(deliveryText, "^##\\s+Work Items");
+                const deliveryRow = deliveryRows.find((r) => r["ID"] === row.delivery_ref);
+                const deliveryStatus = (deliveryRow?.["Status"] ?? "").trim();
+                if (deliveryStatus !== "Done") {
+                    addResult(acc, catalog, "FAIL", `RTM row ${rid} claims status: verified but delivery item ${row.delivery_ref} Status is '${deliveryStatus || "missing"}' (expected Done)`, { ruleId: "RTM-011", artifact: "RTM.json", itemId: rid });
+                }
+                // Condition 2: test_ref.Result == passed
                 const hasPassedTest = registry.testRows.some((t) => t["ID"] === row.test_ref && (t["Result"] ?? "").trim().toLowerCase() === "passed");
                 if (!hasPassedTest) {
-                    addResult(acc, catalog, "FAIL", `RTM row ${rid} claims status: verified without passed test execution evidence in Test Summary`, { ruleId: "RTM-011", artifact: "RTM.json", itemId: rid });
+                    addResult(acc, catalog, "FAIL", `RTM row ${rid} claims status: verified but test ${row.test_ref} Result is not passed in Test Summary`, { ruleId: "RTM-011", artifact: "RTM.json", itemId: rid });
+                }
+                // Condition 3: Release Approved == approved in PROJECT.md
+                const approvalRows = getTableRowsAfterHeading(projText, "^##\\s+Approvals");
+                const releaseApprovalRow = approvalRows.find((r) => (r["Gate"] ?? "").trim() === "Release Approved");
+                const releaseApprovalStatus = (releaseApprovalRow?.["Approval Status"] ?? "").trim().toLowerCase();
+                if (releaseApprovalStatus !== "approved") {
+                    addResult(acc, catalog, "FAIL", `RTM row ${rid} claims status: verified but Release Approved gate is '${releaseApprovalStatus || "missing"}' (expected approved)`, { ruleId: "RTM-011", artifact: "RTM.json", itemId: rid });
                 }
             }
         }
