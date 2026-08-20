@@ -14,7 +14,7 @@ function isoDate(d) {
 function psWrite(path, content) {
     writeFileSync(path, content + "\n", "utf8");
 }
-export function newProject(repoRoot, projectCode, mode, executionPath, researchMode, researchDepth, researchProvider, uiDelivery, strictTrigger, modeReason, modeApprovedBy, outputRoot, includeHandoff, target, horizonDays, specDepth = "legacy") {
+export function newProject(repoRoot, projectCode, mode, executionPath, researchMode, researchDepth, researchProvider, uiDelivery, strictTrigger, modeReason, modeApprovedBy, outputRoot, includeHandoff, target, horizonDays, specDepth = "full") {
     const repo = resolve(repoRoot);
     const targetRoot = isAbsolute(outputRoot) ? outputRoot : join(repo, outputRoot);
     const projectDir = join(targetRoot, projectCode);
@@ -44,13 +44,29 @@ export function newProject(repoRoot, projectCode, mode, executionPath, researchM
     const defaultDesignRef = mode === "Lite" ? "not_required" : "DESIGN/BUILD-SPEC.md";
     deliveryText = deliveryText.replace(/\| D-001 \| Standard \| none \| normal feature \| PM \| <feature> \| REQ-001 \| DESIGN\/FLOW\.puml \|/, `| D-001 | ${mode} | ${strictTrigger} | ${modeReason} | ${modeApprovedBy} | <feature> | REQ-001 | ${defaultDesignRef} |`);
     psWrite(join(projectDir, "DELIVERY.md"), deliveryText);
-    const copyTemplate = (src, dest) => {
-        psWrite(dest, readFileSync(src, "utf8").replaceAll("<PROJECT-CODE>", projectCode));
+    const copyTemplate = (src, dst) => {
+        if (!existsSync(src))
+            return;
+        const content = readFileSync(src, "utf8")
+            .replaceAll("<PROJECT-CODE>", projectCode)
+            .replaceAll("<PROJECT_NAME>", projectCode)
+            .replace("Lite / Standard / Strict", mode)
+            .replace("<MODE>", mode)
+            .replaceAll("<YYYY-MM-DD>", today)
+            .replaceAll("YYYY-MM-DD", today);
+        psWrite(dst, content);
     };
     if (mode !== "Lite") {
         mkdirSync(join(projectDir, "DESIGN"), { recursive: true });
         copyTemplate(join(repo, "templates/RELEASE.md"), join(projectDir, "RELEASE.md"));
         copyTemplate(join(repo, "templates/BUILD-SPEC.md"), join(projectDir, "DESIGN/BUILD-SPEC.md"));
+    }
+    if (specDepth === "full" && mode !== "Lite") {
+        copyTemplate(join(repo, "templates/SRS.md"), join(projectDir, "DESIGN/SRS.md"));
+        copyTemplate(join(repo, "templates/DATA-FLOW.md"), join(projectDir, "DESIGN/DATA-FLOW.md"));
+        mkdirSync(join(projectDir, "TESTS"), { recursive: true });
+        copyTemplate(join(repo, "templates/TESTS/TEST-PLAN.md"), join(projectDir, "TESTS/TEST-PLAN.md"));
+        copyTemplate(join(repo, "templates/TESTS/TEST-CASES.md"), join(projectDir, "TESTS/TEST-CASES.md"));
     }
     if (mode !== "Lite" && uiDelivery !== "not_applicable") {
         copyTemplate(join(repo, "templates/WIREFRAME.md"), join(projectDir, "DESIGN/WIREFRAME.md"));

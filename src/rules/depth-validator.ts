@@ -53,6 +53,7 @@ export function testSpecificationDepth(
 ): void {
   const isFullDepth = /^\s*>?\s*Spec depth:\s*full\s*$/im.test(projectText);
   if (!isFullDepth) return;
+  if (gate === "Draft" || gate === "Scope") return;
 
   const depthPolicy = ctx.depthPolicy ?? {};
   const policyEnums = (ctx.policy?.["enums"] as Record<string, unknown>) ?? {};

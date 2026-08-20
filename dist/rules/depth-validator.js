@@ -32,6 +32,8 @@ export function testSpecificationDepth(acc, catalog, ctx, projectText, mode, gat
     const isFullDepth = /^\s*>?\s*Spec depth:\s*full\s*$/im.test(projectText);
     if (!isFullDepth)
         return;
+    if (gate === "Draft" || gate === "Scope")
+        return;
     const depthPolicy = ctx.depthPolicy ?? {};
     const policyEnums = ctx.policy?.["enums"] ?? {};
     // 1. SRS Validation (SRS-001..004)

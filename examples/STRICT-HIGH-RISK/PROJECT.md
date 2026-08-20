@@ -2,6 +2,7 @@
 
 > Status: release-approved
 > Default mode: Strict
+> Spec depth: full
 > Task source: file
 > Owner: Demo PM
 > Last updated: 2026-07-10
@@ -33,8 +34,8 @@ Add role-based approval for exporting internal ticket data.
 
 | ID | Requirement | Type | Source Ref | Evidence Status | Approval Status |
 |---|---|---|---|---:|---|
-| REQ-001 | Only users with Export Approver role can approve exports. | permission | REQ-20260710 row 1 | supported | approved |
-| REQ-002 | Export action must write an audit record. | audit | REQ-20260710 row 2 | supported | approved |
+| REQ-001 | Only users with Export Approver role can approve exports. | functional | REQ-20260710 row 1 | supported | approved |
+| REQ-002 | Export action must write an audit record. | functional | REQ-20260710 row 2 | supported | approved |
 
 ### Out of Scope
 

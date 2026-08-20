@@ -117,18 +117,24 @@ function fillProjectContent(project, mode, projectCode, today) {
     // --- RELEASE.md (Standard/Strict) ---
     if (mode !== "Lite") {
         let release = readFileSync(join(project, "RELEASE.md"), "utf8");
+        release = rep(release, "<PROJECT-CODE>", projectCode);
         release = rep(release, "<Decision ID or MOM>", "DEC-003");
         // H2: Test Summary rows default to "pending" with no evidence; a real
         // release needs a real result, not just an ID the RTM can point at.
         release = rep(release, "\\|\\s*(TEST-\\d{3})\\s*\\|([^|]*)\\|\\s*pending\\s*\\|\\s*\\|\\s*\\|", "| $1 |$2| passed | DEC-003 |");
-        const qaRow = `| QA | approved | E2E QA Lead | QA Lead | ${today} | DEC-003 |`;
-        release = rep(release, "\\| QA \\| pending \\| <reviewer> \\| QA Lead \\| YYYY-MM-DD \\| <evidence ref> \\|", qaRow);
-        if (mode === "Strict") {
-            const escapedQa = qaRow.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-            release = rep(release, `(${escapedQa})`, `$1\n| Security | approved | E2E Security Lead | Security Reviewer | ${today} | DEC-003 |`);
-        }
+        release = rep(release, "\\| pending \\| DELIVERY\\.md D-001 \\| QA/PM \\|", "| approved | DELIVERY.md D-001 | QA/PM |");
+        release = rep(release, "\\| pending \\| <Decision ID or MOM> \\| PO/Client \\|", "| approved | DEC-003 | PO/Client |");
+        release = rep(release, "\\| pending \\| RAID-log\\.md \\| PM \\|", "| approved | RAID-log.md | PM |");
+        release = rep(release, "\\| pending \\| This file \\| Tech Lead \\|", "| approved | This file | Tech Lead |");
+        const qaTable = mode === "Strict"
+            ? `| QA | approved | E2E QA Lead | QA Lead | ${today} | DEC-003 |\n| Security | approved | E2E Security Lead | Security Reviewer | ${today} | DEC-003 |`
+            : `| QA | approved | E2E QA Lead | QA Lead | ${today} | DEC-003 |`;
+        release = rep(release, "\\| QA \\| pending \\| [^|]+ \\| QA Lead \\| [^|]+ \\| [^|]+ \\|", qaTable);
         release = rep(release, "\\| <rollback trigger> \\| <owner> \\| <numbered rollback steps> \\| <how rollback is verified> \\| <evidence ref> \\|", "| Fixture release blocker | E2E Tech Lead | Revert the E2E change | Fixture no longer shows the change | DEC-003 |");
-        release = rep(release, "\\| Release Approved \\| pending \\| <approver name> \\| Product Owner \\| YYYY-MM-DD \\| DEC-001 \\|", `| Release Approved | approved | E2E Approver | Product Owner | ${today} | DEC-003 |`);
+        release = rep(release, "\\| Release Approved \\| pending \\| [^|]+ \\| Product Owner \\| [^|]+ \\| DEC-001 \\|", `| Release Approved | approved | E2E Approver | Product Owner | ${today} | DEC-003 |`);
+        release = rep(release, "<[^>\\r\\n]+>", "Specified deterministically by the E2E fixture.");
+        release = rep(release, "YYYY-MM-DD", today);
+        release = rep(release, "\\| pending \\|", "| approved |");
         psWrite(join(project, "RELEASE.md"), release);
     }
     // --- RTM.json (Strict only) ---
@@ -184,9 +190,53 @@ function fillProjectContent(project, mode, projectCode, today) {
             text2 = rep(text2, "\\| <element> \\| <yes / no> \\| <DEC-001 or .not applicable.> \\| <DEC-002 or .retained with the record.> \\|", "| Record identifier | no | not applicable | retained with the record |");
             text2 = rep(text2, "\\| AC-001 \\| <REQ-001> \\| <Given \\.\\.\\., when \\.\\.\\., then \\.\\.\\.> \\| <automated> \\| <seed name> \\| <how to reset> \\|", "| AC-001 | REQ-001 | Given a seeded record, when it is read, then the count is returned | automated | e2e-seed | Regenerate the fixture |");
             text2 = rep(text2, "\\| <area> \\| <REQ-001 or R-001> \\| <unit / integration / system / security / usability> \\| <automated> \\| <environment> \\| <named owner> \\|", "| E2E happy path | REQ-001 | system | automated | local | E2E PM |");
-            text2 = rep(text2, "^<[^>\\r\\n]+>[ \\t]*\\r?$", "Specified deterministically by the E2E fixture.", "gm");
+            text2 = rep(text2, "<[^>\\r\\n]+>", "Specified deterministically by the E2E fixture.");
             psWrite(specFile, text2);
         }
+    }
+    // --- DESIGN/SRS.md ---
+    const srsFile = join(project, "DESIGN/SRS.md");
+    if (existsSync(srsFile)) {
+        let srs = readFileSync(srsFile, "utf8");
+        srs = rep(srs, "\\| <Actor Name> \\| <Role description and context> \\| <Allowed actions and capabilities> \\| MOM-YYYYMMDD item-1 \\|", `| User | Standard User | all | ${momId} item-1 |`);
+        srs = rep(srs, "\\| <Actor Name> \\| <Description> \\| <Permissions> \\| <MOM-YYYYMMDD item-1> \\|", `| User | Standard User | all | ${momId} item-1 |`);
+        srs = rep(srs, "\\| NFR-001 \\| <performance / security / reliability> \\| <measurable target> \\| <measurement method> \\| <MOM-YYYYMMDD item-1> \\| <supported / verified> \\|", `| NFR-001 | performance | p99 < 100ms | load test | ${momId} item-1 | supported |\n| NFR-002 | security | auth enforced | security test | ${momId} item-1 | supported |\n| NFR-003 | reliability | 99.9% uptime | health check | ${momId} item-1 | supported |`);
+        srs = rep(srs, "\\| NFR-001 \\| performance \\| <target metric e\\.g\\. p95 < 200ms> \\| <load testing tool or metric query> \\| MOM-YYYYMMDD item-2 \\| supported \\|", `| NFR-001 | performance | p99 < 100ms | load test | ${momId} item-1 | supported |\n| NFR-002 | security | auth enforced | security test | ${momId} item-1 | supported |\n| NFR-003 | reliability | 99.9% uptime | health check | ${momId} item-1 | supported |`);
+        srs = rep(srs, "<[^>\\r\\n]+>", "Specified deterministically by the E2E fixture.");
+        psWrite(srsFile, srs);
+    }
+    // --- DESIGN/DATA-FLOW.md ---
+    const dfFile = join(project, "DESIGN/DATA-FLOW.md");
+    if (existsSync(dfFile)) {
+        let df = readFileSync(dfFile, "utf8");
+        df = rep(df, "<[^>\\r\\n]+>", "Specified deterministically by the E2E fixture.");
+        psWrite(dfFile, df);
+    }
+    // --- TESTS/TEST-PLAN.md ---
+    const tpFile = join(project, "TESTS/TEST-PLAN.md");
+    if (existsSync(tpFile)) {
+        let tp = readFileSync(tpFile, "utf8");
+        tp = rep(tp, "<STRATEGY>", "detailed_requirement_and_risk_cases");
+        tp = rep(tp, "<[^>\\r\\n]+>", "Specified deterministically by the E2E fixture.");
+        psWrite(tpFile, tp);
+    }
+    // --- TESTS/TEST-CASES.md ---
+    const tcFile = join(project, "TESTS/TEST-CASES.md");
+    if (existsSync(tcFile)) {
+        let tc = readFileSync(tcFile, "utf8");
+        tc = rep(tc, "<MOM-YYYYMMDD item-1>", `${momId} item-1`);
+        tc = rep(tc, "MOM-20260710 item-1", `${momId} item-1`);
+        tc = rep(tc, "<COUNT>", "4");
+        const tableHeader = "| Case ID | Category | Target Type | Target ID | Description | Preconditions | Input / Action | Expected Result | Pass Criteria | Strict Trigger | Source Ref | Evidence Status |\n|---|---|---|---|---|---|---|---|---|---|---|---|";
+        const tableRows = [
+            `| TC-001 | happy_path | requirement | REQ-001 | E2E happy path test | Given valid state | Run test | Expected result observed | HTTP 200 and verified | none | ${momId} item-1 | supported |`,
+            `| TC-002 | negative | requirement | REQ-001 | E2E negative test | Given invalid input | Run test | Expected error handled | HTTP 400 and error returned | none | ${momId} item-1 | supported |`,
+            `| TC-003 | boundary | requirement | REQ-001 | E2E boundary test | Given boundary edge | Run test | Boundary handled | Edge case handled | none | ${momId} item-1 | supported |`,
+            `| TC-004 | security | requirement | REQ-001 | E2E security test | Given unauthorized user | Run test | Access denied | HTTP 403 returned | none | ${momId} item-1 | supported |`,
+        ].join("\n");
+        tc = rep(tc, "\\| Case ID \\| Category \\| Target Type [\\s\\S]*", `${tableHeader}\n${tableRows}\n`);
+        tc = rep(tc, "<[^>\\r\\n]+>", "Specified deterministically by the E2E fixture.");
+        psWrite(tcFile, tc);
     }
     // --- source/ (real files so REQ-001's Source Ref and the Others/ folder
     //     both resolve; a TODO here must never block Release). ---

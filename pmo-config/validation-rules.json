@@ -256,6 +256,12 @@
       "description": "RTM row has an invalid status (not an evidence-status enum value).",
       "suggestion": "Set status to verified, supported, inferred, missing, or conflict."
     },
+    "RTM-011": {
+      "severity": "fail",
+      "description": "RTM row claims status: verified without passed test execution evidence in Test Summary.",
+      "suggestion": "Keep RTM status as supported until test execution in RELEASE.md Test Summary passes with verified evidence.",
+      "documentation": "docs/rules/RTM-011.md"
+    },
     "LINK-001": {
       "severity": "fail_release",
       "description": "Local markdown link is broken.",

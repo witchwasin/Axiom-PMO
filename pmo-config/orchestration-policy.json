@@ -6,7 +6,7 @@
     "research_depth": "standard",
     "research_provider": "none",
     "ui_delivery": "legacy",
-    "spec_depth": "legacy"
+    "spec_depth": "full"
   },
   "spec_depth": {
     "values": ["legacy", "full"]

@@ -250,6 +250,16 @@ export function testRtmTraceability(
     const validStatuses = (policyEnums["evidence_statuses"] as string[]) ?? [];
     if (!row.status || !validStatuses.includes(row.status)) {
       addResult(acc, catalog, "FAIL", `RTM row ${rid} has an invalid status: ${row.status}`, { ruleId: "RTM-010" });
+    } else if (row.status === "verified") {
+      const projPath = join(project, "PROJECT.md");
+      const projText = existsSync(projPath) ? readFileSync(projPath, "utf8") : "";
+      const isFullSpecDepth = /^\s*>?\s*Spec depth:\s*full\s*$/im.test(projText);
+      if (isFullSpecDepth) {
+        const hasPassedTest = registry.testRows.some((t) => t["ID"] === row.test_ref && (t["Result"] ?? "").trim().toLowerCase() === "passed");
+        if (!hasPassedTest) {
+          addResult(acc, catalog, "FAIL", `RTM row ${rid} claims status: verified without passed test execution evidence in Test Summary`, { ruleId: "RTM-011", artifact: "RTM.json", itemId: rid });
+        }
+      }
     }
   }
 }

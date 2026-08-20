@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0",
+  "project_code": "STRICT-HIGH-RISK",
+  "reviewed_at": "2026-07-10",
+  "reviewer_kind": "human",
+  "reviewer": "Demo Security Lead (Tech Lead)",
+  "handoff_target": "internal",
+  "source_snapshot": {
+    "source_ids": [
+      "REQ-20260710",
+      "DEC-20260710"
+    ],
+    "digest": "5207527853ee213e546cdac2188eb66bd692bc0086fc1d799310350f54649348"
+  },
+  "review_inputs": {
+    "digest": "ac4d1e167b156bf17ca286472d3da1d2cf542b398885bb594f9cf18c04036e1e"
+  },
+  "lenses": [
+    {
+      "lens": "value_and_scope_slice",
+      "status": "reviewed"
+    },
+    {
+      "lens": "capability_lifecycle",
+      "status": "reviewed"
+    },
+    {
+      "lens": "data_cardinality_and_units",
+      "status": "reviewed"
+    },
+    {
+      "lens": "state_transitions_and_rollback",
+      "status": "reviewed"
+    },
+    {
+      "lens": "concurrency_and_idempotency",
+      "status": "reviewed"
+    },
+    {
+      "lens": "dependencies_and_build_order",
+      "status": "reviewed"
+    },
+    {
+      "lens": "ownership_and_capacity",
+      "status": "reviewed"
+    },
+    {
+      "lens": "acceptance_seed_reachability",
+      "status": "reviewed"
+    },
+    {
+      "lens": "automated_manual_test_split",
+      "status": "reviewed"
+    },
+    {
+      "lens": "privacy_and_data_classification",
+      "status": "reviewed"
+    },
+    {
+      "lens": "environment_and_device_constraints",
+      "status": "reviewed"
+    },
+    {
+      "lens": "demo_startup_reset_and_recovery",
+      "status": "reviewed"
+    }
+  ],
+  "findings": [],
+  "recommendation": {
+    "ready_to_start_development": true,
+    "ready_to_demo": true,
+    "notes": "Strict handoff package reviewed and verified against full specification depth requirements."
+  },
+  "review_origin": "Drafted by the pmo-delivery handoff_review skill, then reviewed and signed off by the named human."
+}
